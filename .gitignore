@@ -1,0 +1,9 @@
+# for Python
+__pycache__/
+
+# for compilation
+build
+out
+
+# for debug dump
+dump_*
