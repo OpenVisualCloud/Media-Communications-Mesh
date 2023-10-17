@@ -1,0 +1,89 @@
+name: Scan
+
+on:
+  # Triggers the workflow on push or pull request events but only for the master branch
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  coverity:
+    name: Coverity
+    runs-on: [self-hosted, Scan]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Coverity Scan
+        uses: intel-innersource/frameworks.devops.github.actions.coverity@main
+        with:
+          # URL to the Coverity server
+          # Default: https://coverityent.devtools.intel.com/prod5
+          server: ${{ secrets.COVERITY_SERVER }}
+        
+          # Username to connect to Coverity server
+          username: ${{ secrets.COVERITY_USER }}
+        
+          # Password to connect to Coverity server
+          password: ${{ secrets.COVERITY_PASSWORD }}
+        
+          # Coverity project name
+          project: ${{ secrets.COVERITY_PROJECT }}
+        
+          # Coverity project version
+          # project_version: ""
+        
+          # Prebuild script to run prior to build (typically used to install dependencies)
+          # prebuild: ""
+        
+          # Command that compiles the code (make clean build)
+          build: "./build.sh"
+        
+          # Coverity Stream name
+          # Default: ${{ github.event.repository.name }}_${{ github.ref_name }}
+          stream: "MCM-Dev-main"
+        
+          # Coverity Compiler (c, c++)
+          # Default: c++
+          compiler: "c"
+        
+          # Coverity Compiler Type (gcc, cs, java, javascript, msvc)
+          # Default: gcc
+          compiler_type: "gcc"
+        
+          # Coverity Checker Config
+          # Default: --concurrency --security --rule --enable-constraint-fpp --enable-fnptr --enable-virtual
+          # checker_config: ""
+        
+          # Coverity Report Config
+          # report_config: ""
+        
+          # Coverity Docker Image
+          # Default: amr-registry.caas.intel.com/rbhe-public/coverity-build-agent:latest
+          image: "gar-registry.caas.intel.com/mcm/dp-sdk-coverity:latest"
+        
+          # User name or id to use when running the docker image
+          # image_usr: ""
+        
+          # Group name or id to use when running the docker image
+          # image_group: ""
+        
+          # Optional, Custom arguments to pass into the  docker image
+          # image_args: ""
+        
+          # Path to store Coverity scan reports
+          # Default: artifacts/Coverity
+          # report_path: ""
+        
+          # Optional, Issue threshold for failing the build (low, medium, high, critical)
+          # Default: none
+          # fail_threshold: ""
+  hadolint:
+    name: Hadolint
+    runs-on: [self-hosted, Scan]
+    steps:
+      - uses: actions/checkout@v3
+      - name: Hadolint Scan
+        uses: intel-innersource/frameworks.devops.github.actions.hadolint@main
+        with:
+          recursive: true
