@@ -85,7 +85,7 @@ This project is under development.
 All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
 
 <!-- References -->
-[build-actions-img]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-communications-mesh/actions/workflows/build.yml/badge.svg
-[build-actions]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-communications-mesh/actions/workflows/build.yml
+[build-actions-img]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml/badge.svg
+[build-actions]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
 [license]: https://opensource.org/license/bsd-3-clause

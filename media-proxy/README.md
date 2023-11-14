@@ -1,7 +1,6 @@
 ## MCM Media Proxy
 
 [![build][build-actions-img]][build-actions]
-[![linter][scan-actions-img]][scan-actions]
 [![BSD 3-Clause][license-img]][license]
 
 The primary function of the Media Proxy is to provide a single memory-mapped API to all media microservices to abstract away the complexity of media transport.
@@ -69,9 +68,7 @@ $ kubectl apply -f deployment/DaemonSet/media-proxy.yaml
 - The Authentication function of Media Proxy interfaces is missing. This feature is under development, and current implentation is weak to defend network attacks.
 
 <!-- References -->
-[build-actions-img]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-proxy/actions/workflows/build.yml/badge.svg
-[build-actions]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-proxy/actions/workflows/build.yml
-[scan-actions-img]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-proxy/actions/workflows/action.yml/badge.svg
-[scan-actions]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-proxy/actions/workflows/action.yml
+[build-actions-img]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml/badge.svg
+[build-actions]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
 [license]: https://opensource.org/license/bsd-3-clause
