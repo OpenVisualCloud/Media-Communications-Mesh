@@ -1,7 +1,7 @@
 # <img align="center" src="docs/img/logo.png" alt="drawing" height="50"/> Media Communications Mesh
 
 [![build][build-actions-img]][build-actions]
-[![linter][scan-actions-img]][scan-actions]
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenVisualCloud/Media-Communications-Mesh/badge)](https://securityscorecards.dev/viewer/?uri=github.com/OpenVisualCloud/Media-Communications-Mesh)
 [![BSD 3-Clause][license-img]][license]
 
 ## Table of Contents
@@ -85,9 +85,7 @@ This project is under development.
 All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
 
 <!-- References -->
-[build-actions-img]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-communications-mesh/actions/workflows/build.yml/badge.svg
-[build-actions]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-communications-mesh/actions/workflows/build.yml
-[scan-actions-img]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-communications-mesh/actions/workflows/action.yml/badge.svg
-[scan-actions]: https://github.com/intel-innersource/frameworks.cloud.mcm.media-communications-mesh/actions/workflows/action.yml
+[build-actions-img]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml/badge.svg
+[build-actions]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
 [license]: https://opensource.org/license/bsd-3-clause
