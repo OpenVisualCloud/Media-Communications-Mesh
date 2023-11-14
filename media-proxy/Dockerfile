@@ -78,7 +78,7 @@ RUN cmake -DgRPC_INSTALL=ON \
     rm -rf /tmp/*
 
 # Build MCM
-RUN git clone --depth 1 --branch main https://github.com/intel-innersource/frameworks.cloud.mcm.media-communications-mesh.git ${MCM_DIR}
+RUN git clone --depth 1 --branch main https://github.com/OpenVisualCloud/Media-Communications-Mesh.git ${MCM_DIR}
 WORKDIR $MCM_DIR
 RUN ./build.sh
 
