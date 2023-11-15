@@ -23,8 +23,8 @@ Detailed information about Media Proxy can be found under the [media-proxy](medi
 
 ### Key features:
 - Zero memory copy, ultra low-latency media transfers between containers.
-- Transport video stream with compressed (JPEG-XS) or RAW (uncompressed) protocols.
-- Support multiple media transport protocols (SMPTE ST2110, RTSP, ...).
+- Transport video stream with compressed (JPEG XS) or RAW (uncompressed) protocols.
+- Support multiple media transport protocols (SMPTE ST 2110, RTSP, ...).
 
 ### MemIF
 Media Proxy implements the shared memory buffer communications using [MemIF](https://s3-docs.fd.io/vpp/24.02/interfacing/libmemif/index.html) protocol.
