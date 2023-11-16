@@ -1,6 +1,6 @@
 # MCM Data Plane SDK
 
-[![Build][build-actions-img]][build-actions]
+[![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml)
 [![BSD 3-Clause][license-img]][license]
 
 ## Overview
@@ -61,7 +61,5 @@ This application use MCM DP SDK to handle on the data input/output functions.
 Source code: https://github.com/intel-sandbox/raisr-microservice
 
 <!-- References -->
-[build-actions-img]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml/badge.svg
-[build-actions]: https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build.yml
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
 [license]: https://opensource.org/license/bsd-3-clause
