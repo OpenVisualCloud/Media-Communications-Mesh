@@ -15,6 +15,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <assert.h>
 
 #include "mcm_dp.h"
 
@@ -67,7 +68,7 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-n, --number=frame_number\t\t"
                 "Total frame number to send (default: %d).\n",
         DEFAULT_TOTAL_NUM);
-    fprintf(fp, "-f, --file=input_file\t\t\t"
+    fprintf(fp, "-i, --file=input_file\t\t\t"
                 "Input file name (optional).\n");
     fprintf(fp, "-s, --socketpath=socket_path\t\t"
                 "Set memif socket path (default: %s)\n",
@@ -80,10 +81,12 @@ void usage(FILE* fp, const char* path)
         DEFAULT_MEMIF_INTERNFACE_ID);
 }
 
-int read_test_data(FILE* fp, mcm_buffer* buf)
+int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t width, uint32_t height, video_pixel_format pix_fmt)
 {
     int ret = 0;
-    int frame_size = buf->len;
+    static int frm_idx = 0;
+    int frame_size = width * height * 3 / 2; //TODO: assume NV12
+    assert(buf->len >= frame_size);
 
     assert(fp != NULL && buf != NULL);
 
@@ -91,6 +94,8 @@ int read_test_data(FILE* fp, mcm_buffer* buf)
         perror("Error when read frame file");
         ret = -1;
     }
+    //TODO: metadata is not carried to receiver side
+    buf->metadata.seq_num = buf->metadata.timestamp = frm_idx++;
 
     return ret;
 }
@@ -107,8 +112,6 @@ int gen_test_data(mcm_buffer* buf, uint32_t frame_count)
     /* timestamp */
     clock_gettime(CLOCK_REALTIME, (struct timespec*)ptr);
 
-    buf->len = sizeof(uint32_t) + sizeof(struct timespec);
-
     return 0;
 }
 
@@ -116,7 +119,7 @@ int main(int argc, char** argv)
 {
     char send_addr[46] = DEFAULT_SEND_IP;
     char send_port[6] = DEFAULT_SEND_PORT;
-    char* input_file = NULL;
+    char input_file[128] = {0};
     char payload_type[32] = "";
     char protocol_type[32] = "";
     char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
@@ -127,6 +130,7 @@ int main(int argc, char** argv)
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
+    video_pixel_format pix_fmt = PIX_FMT_NV12; //PIX_FMT_YUV444M;
 
     mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = { 0 };
@@ -267,14 +271,10 @@ int main(int argc, char** argv)
     case PAYLOAD_TYPE_ST22_VIDEO:
     default:
         /* video format */
-        param.width = width;
-        param.height = height;
-        param.fps = vid_fps;
-        param.pix_fmt = PIX_FMT_YUV444M;
-        param.payload_args.video_args.width = width;
-        param.payload_args.video_args.height = height;
-        param.payload_args.video_args.fps = vid_fps;
-        param.payload_args.video_args.pix_fmt = PIX_FMT_YUV444M;
+        param.payload_args.video_args.width   = param.width = width;
+        param.payload_args.video_args.height  = param.height = height;
+        param.payload_args.video_args.fps     = param.fps = vid_fps;
+        param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
         break;
     }
 
@@ -295,7 +295,7 @@ int main(int argc, char** argv)
     struct timespec ts_begin = {}, ts_end = {};
     // struct timespec ts_frame_begin = {}, ts_frame_end = {};
 
-    if (input_file != NULL) {
+    if (strlen(input_file) > 0) {
         struct stat statbuf = { 0 };
         if (stat(input_file, &statbuf) == -1) {
             perror(NULL);
@@ -314,11 +314,14 @@ int main(int argc, char** argv)
         if (buf == NULL) {
             break;
         }
+        printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
+        printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
+        printf("INFO: buf->len = %ld\n", buf->len);
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
         } else {
-            if (read_test_data(input_fp, buf) < 0) {
+            if (read_test_data(input_fp, buf, width, height, pix_fmt) < 0) {
                 break;
             }
         }
