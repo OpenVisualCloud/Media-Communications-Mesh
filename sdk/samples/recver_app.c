@@ -95,6 +95,7 @@ int main(int argc, char** argv)
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
+    video_pixel_format pix_fmt = PIX_FMT_NV12;
 
     mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = {};
@@ -232,14 +233,11 @@ int main(int argc, char** argv)
     case PAYLOAD_TYPE_ST22_VIDEO:
     default:
         /* video format */
-        param.width = width;
-        param.height = height;
-        param.fps = vid_fps;
         param.pix_fmt = PIX_FMT_YUV444M;
-        param.payload_args.video_args.width = width;
-        param.payload_args.video_args.height = height;
-        param.payload_args.video_args.fps = vid_fps;
-        param.payload_args.video_args.pix_fmt = PIX_FMT_YUV444M;
+        param.payload_args.video_args.width   = param.width = width;
+        param.payload_args.video_args.height  = param.height = height;
+        param.payload_args.video_args.fps     = param.fps = vid_fps;
+        param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
         break;
     }
 
@@ -254,9 +252,10 @@ int main(int argc, char** argv)
     signal(SIGINT, intHandler);
 
     uint32_t frame_count = 0;
+    uint32_t frm_size = width * height * 3 / 2; //TODO:assume it's NV12
     const uint32_t fps_interval = 30;
     double fps = 0.0;
-    void* ptr = NULL;
+    void *ptr = NULL;
     int timeout = -1;
     bool first_frame = true;
     long latency = 0;
@@ -283,61 +282,60 @@ int main(int argc, char** argv)
             printf("get data from buffer fail\n");
             break;
         }
+        printf("INFO: buf->metadata.seq_num   = %d\n", buf->metadata.seq_num);
+        printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
+        printf("INFO: buf->len                = %ld\n", buf->len);
+
         clock_gettime(CLOCK_REALTIME, &ts_recv);
         if (first_frame) {
             ts_begin = ts_recv;
             first_frame = false;
         }
 
-        /* operate on the buffer */
-        ptr = buf->data;
         if (strncmp(payload_type, "rtsp", sizeof(payload_type)) != 0) {
-            if (*(uint32_t*)ptr != frame_count) {
-                printf("Wrong data content: expected %d, got %u\n", frame_count, *(uint32_t*)ptr);
-                /* catch up the sender frame count */
-                frame_count = *(uint32_t*)ptr;
-            }
-            ptr += sizeof(frame_count);
-            ts_send = *(struct timespec*)ptr;
             if (dump_fp) {
-                fwrite(buf->data, buf->len, 1, dump_fp);
+                fwrite(buf->data, frm_size, 1, dump_fp);
+            } else {
+                // Following code are mainly for test purpose, it requires the sender side to
+                // pre-set the first several bytes
+                ptr = buf->data;
+                if (*(uint32_t *)ptr != frame_count) {
+                    printf("Wrong data content: expected %d, got %u\n", frame_count, *(uint32_t*)ptr);
+                    /* catch up the sender frame count */
+                    frame_count = *(uint32_t*)ptr;
+                }
+                ptr += sizeof(frame_count);
+                ts_send = *(struct timespec *)ptr;
+
+                if (frame_count % fps_interval == 0) {
+                    /* calculate FPS */
+                    clock_gettime(CLOCK_REALTIME, &ts_end);
+
+                    fps = 1e9 * (ts_end.tv_sec - ts_begin.tv_sec);
+                    fps += (ts_end.tv_nsec - ts_begin.tv_nsec);
+                    fps /= 1e9;
+                    fps = (double)fps_interval / fps;
+
+                    clock_gettime(CLOCK_REALTIME, &ts_begin);
+                }
+
+                latency = 1000 * (ts_recv.tv_sec - ts_send.tv_sec);
+                latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000;
+
+                printf("RX frames: [%u], latency: %ld ms, FPS: %0.3f\n", frame_count, latency, fps);
             }
-
-            /* free buffer */
-            if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
-                break;
-            }
-
-            frame_count++;
-
-            if (frame_count % fps_interval == 0) {
-                /* calculate FPS */
-                clock_gettime(CLOCK_REALTIME, &ts_end);
-
-                fps = 1e9 * (ts_end.tv_sec - ts_begin.tv_sec);
-                fps += (ts_end.tv_nsec - ts_begin.tv_nsec);
-                fps /= 1e9;
-                fps = (double)fps_interval / fps;
-
-                clock_gettime(CLOCK_REALTIME, &ts_begin);
-            }
-
-            latency = 1000 * (ts_recv.tv_sec - ts_send.tv_sec);
-            latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000;
-
-            printf("RX frames: [%u], latency: %ld ms, FPS: %0.3f\n", frame_count, latency, fps);
-        } else {
+        } else { //TODO: rtsp receiver side test code
             if (dump_fp) {
                 fwrite(buf->data, buf->len, 1, dump_fp);
             }
             printf("RX package number:%d   seq_num: %d, timestamp: %u, RX H264 NALU: %ld\n", frame_count, buf->metadata.seq_num, buf->metadata.timestamp, buf->len);
+        }
 
-            /* free buffer */
-            if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
-                printf("free buffer fail\n");
-                break;
-            }
-            frame_count = frame_count + 1;
+        frame_count++;
+
+        /* enqueue buffer */
+        if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
+            break;
         }
     }
 
