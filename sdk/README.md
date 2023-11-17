@@ -4,28 +4,38 @@
 [![BSD 3-Clause][license-img]][license]
 
 ## Overview
-The SDK library designed to make microservice applications transport media data through MCM media-proxy.
 
-## Build
+The MCM SDK is a lightweight and versatile library designed to facilitate seamless media data transportation between microservices, with or without the MCM Media Proxy. By leveraging the MCM SDK, developers can easily establish efficient media streaming and enable zero-copied handling of media data transfers.
+
+## Installation
+
+1. Dependencies
+
+Install the required dependencies by running the command:
+
 ```bash
-$ cmake -B build .
-$ cmake --build build -j
+$ sudo apt-get install -y cmake libbsd-dev
+```
+
+2. Build SDK Library
+
+```bash
+$ cmake -B out .
+$ cmake --build out -j 4
+```
+
+3. Install on System
+
+To install the MCM SDK on your system, execute the following command:
+
+```bash
+$ cmake --install out
 ```
 
 ## Sample Applications
-```bash
-$ cd build/samples
-$ ./sender_app
-$ ./recver_app
-```
 
-## Install
-```bash
-$ cmake --install build
-```
-
-## Sample Applications
 The usage of SDK APIs could refer to the "samples" applications.
+
 1. Sender
 
 Sample code for the application which send out data to others.
@@ -58,7 +68,7 @@ usage: recver_app [OPTION]
 Standalone microservice to apply "super resolution" to RAW YUV format video frames.
 This application use MCM DP SDK to handle on the data input/output functions.
 
-Source code: https://github.com/intel-sandbox/raisr-microservice
+Source code: (will be released later)
 
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
