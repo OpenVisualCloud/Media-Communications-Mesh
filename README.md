@@ -5,46 +5,79 @@
 [![BSD 3-Clause][license-img]][license]
 
 ## Table of Contents
-- [Overview](#overview)
+- [Introduction](#introduction)
 - [Media Proxy](#media-proxy)
 - [MCM SDK](#mcm-sdk)
+- [Getting Started](#getting-started)
 - [Usage](#usage)
 - [Known Issues](#known-issues)
 - [Support](#support)
 
-## Overview
-The Media Communications Mesh (MCM) enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media
-data plane for inter-microservices communications using a new media proxy leveraging the [Intel® Media Transport Library (IMTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
+## Introduction
+
+The Media Communications Mesh (MCM) enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Intel® Media Transport Library (IMTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
 
 ## Media Proxy
-The Media Proxy can work as a Data Plane component in "Service Mesh" for media applications. It provides "Shared Memory" APIs to all media microservices to abstract away the complexity of media transport.
 
-Detailed information about Media Proxy can be found under the [media-proxy](media-proxy) subdirectory.
+The Media Proxy component in this project is responsible for transporting audio and video stream media data. It handles the routing and forwarding of media data between mesh nodes, ensuring low latency and efficient resource utilization.
 
-### Key features:
-- Zero memory copy, ultra low-latency media transfers between containers.
-- Transport video stream with compressed (JPEG XS) or RAW (uncompressed) protocols.
-- Support multiple media transport protocols (SMPTE ST 2110, RTSP, ...).
+It serves as a Data Plane component in a media application's Service Mesh. Media Proxy provides Shared Memory APIs to abstract the complexity of media transport.
+
+More information about the Media Proxy component can be found in the [media-proxy](media-proxy) subdirectory.
+
+### Key Features
+
+- Enables zero memory copy and ultra-low-latency media transfers between containers.
+- Supports transport of video streams via compressed (JPEG XS) or RAW (uncompressed) protocols.
+- Offers compatibility with multiple media transport protocols (SMPTE ST 2110, RTSP, ...).
 
 ### MemIF
-Media Proxy implements the shared memory buffer communications using [MemIF](https://s3-docs.fd.io/vpp/24.02/interfacing/libmemif/index.html) protocol.
+
+The Media Proxy leverages the [MemIF](https://s3-docs.fd.io/vpp/24.02/interfacing/libmemif/index.html) protocol for implementing shared memory buffer communications.
 
 ## MCM SDK
-The MCM SDK library can be used by microservice application to offload the media transport functionalities.
-It is designed to abstract the network transport functions for media data, and wrap the "libmemif" APIs to communicate with "Media Proxy".
+
+The MCM SDK library is designed for microservice applications to offload media transport functionalities. By abstracting network transport functions for media data and wrapping the "libmemif" APIs, MCM SDK facilitates communication with "Media Proxy".
 
 Detailed information about MCM SDK can be found in [sdk](sdk) directory.
 
+## Getting Started
+
+### Prerequisites
+- Linux server (Intel Xeon processor recommended)
+- Network Interface Card (NIC) compatible with DPDK
+- Docker installed
+
+### Basic Installation
+
+0. **Install Dependencies**
+    - IMTL: Follow the [IMTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation.
+    - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
+
+1. **Clone the repository**
+   ```sh
+   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
+   ```
+
+2. Navigate to the Media Proxy directory
+    ```sh
+    $ cd Media-Communications-Mesh
+    ```
+
+3. Build the Media Proxy binary (run on Host)
+    ```sh
+    $ ./build.sh
+    ```
+
+4. Build the Media Proxy Docker image (run in Container)
+    ```sh
+    $ docker build -t media-proxy ./media-proxy
+    ```
+
+By following these instructions, you'll be able to perform the basic installation of the Media Communications Mesh application.
+
 ## Usage
 
-### Build & Install
-The MCM source code can be compiled with the "build.sh" script.
-
-```bash
-$ ./build.sh
-```
-
-### Run
 The program "media_proxy" and SDK library can be installed on system, after the "build.sh" script run successfully.
 And the "Media Proxy" can be run with below command.
 
@@ -54,11 +87,12 @@ INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-If Media Proxy successfully launches up, it will open 2 port to listen on control messages.
+This will start the "Media Proxy" program. When the "Media Proxy" program launches successfully, it will open two ports to listen for control messages:
 - gRPC port (default 8001) is for service mesh control plane connection.
 - TCP port (default 8002) is for the connection with MCM SDK.
 
-All supported parameters can get with the program "helper" function.
+To get a list of all supported parameters, use the "helper" function with the following command:
+
 ```bash
 $ media_proxy -h
 Usage: media_proxy [OPTION]
