@@ -1,0 +1,9 @@
+name: "MCM CodeQL Config"
+
+paths:
+  - media-proxy
+  - sdk
+
+paths-ignore:
+  - sdk/3rdparty
+

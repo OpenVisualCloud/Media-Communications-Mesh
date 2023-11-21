@@ -303,7 +303,10 @@ int main(int argc, char** argv)
         }
 
         input_fp = fopen(input_file, "rb");
-        assert(input_fp != NULL);
+        if (input_fp == NULL) {
+            printf("Fail to open input file: %s\n", input_file);
+            exit(-1);
+        }
     }
 
     // const useconds_t pacing = 1000000.0 / vid_fps;
