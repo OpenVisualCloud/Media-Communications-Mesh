@@ -7,7 +7,7 @@
 #include "common.h"
 
 #define APP_NAME "service-app-tx"
-#define SOCKET_PATH "/run/mmf/media-proxy-tx-shm.sock"
+#define SOCKET_PATH "/run/mcm/media-proxy-tx-shm.sock"
 
 /* for libmemif */
 #define IF_NAME "tx-app-proxy-shm"

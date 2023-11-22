@@ -5,7 +5,7 @@
 # Minimum CMake required
 cmake_minimum_required(VERSION 3.16)
 
-project(MMF VERSION 0.0.1 LANGUAGES CXX C)
+project(MediaProxy VERSION 0.0.1 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
