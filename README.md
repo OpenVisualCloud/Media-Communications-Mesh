@@ -106,7 +106,7 @@ Usage: media_proxy [OPTION]
 ## Known Issues
 - There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
 
-- The Authentication function of Media Proxy interfaces is missing. This feature is under development, and current implentation is weak to defend network attacks.
+- The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
 
 ## Support
 If you have any problem during use this project, you could find support in following ways.

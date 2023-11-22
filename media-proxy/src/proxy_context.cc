@@ -192,8 +192,8 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->log_level = MTL_LOG_LEVEL_DEBUG;
     st_param->priv = NULL;
     st_param->ptp_get_time_fn = NULL;
-    st_param->rx_queues_cnt[MTL_PORT_P] = 8;
-    st_param->tx_queues_cnt[MTL_PORT_P] = 8;
+    st_param->rx_queues_cnt[MTL_PORT_P] = 32;
+    st_param->tx_queues_cnt[MTL_PORT_P] = 32;
     st_param->lcores = NULL;
 
     INFO("ProxyContext: ParseStInitParam...");

@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:20.04 as builder
+FROM ubuntu:22.04 as builder
 LABEL maintainer="qiang.han@intel.com"
 
 ENV DEBIAN_FRONTEND noninteractive
@@ -15,6 +15,7 @@ RUN apt-get update --fix-missing \
     libtool autoconf automake pkg-config \
     sudo jq \
     python3 python3-pip \
+    cmake \
     build-essential gcc meson \
     libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
     libsdl2-dev libsdl2-ttf-dev libssl-dev nlohmann-json3-dev \
@@ -44,7 +45,7 @@ RUN adduser ${USER} sudo \
         && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 # Install latest versions of CMake and Conan using pip3 package installer
-RUN python3 -m pip install --no-cache-dir --upgrade pip setuptools wheel cmake "conan<2"
+RUN python3 -m pip install --no-cache-dir "conan<2"
 
 # Build DPDK/IMTL
 ENV DPDK_VER=23.03
@@ -65,8 +66,8 @@ WORKDIR $MTL_DIR
 RUN ./build.sh
 
 # gRPC
-ARG GPRC_VERSION=1.53.0
-RUN git clone --recurse-submodules -b v${GPRC_VERSION} --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc \
+ARG GPRC_VERSION="v1.58.0"
+RUN git clone --recurse-submodules -b ${GPRC_VERSION} --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc \
     && mkdir -p /tmp/grpc/cmake/build
 WORKDIR /tmp/grpc/cmake/build
 RUN cmake -DgRPC_INSTALL=ON \
@@ -83,13 +84,13 @@ WORKDIR $MCM_DIR
 RUN ./build.sh
 
 ## Re-build container for optimised runtime environment using clean Ubuntu release
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
 ARG USER=docker
 RUN useradd -l -m -s /bin/bash ${USER}
 
 RUN apt-get update --fix-missing \
-&& apt-get install -y --no-install-recommends libnuma1 libjson-c4 libpcap0.8 libssl1.1 libatomic1 libbsd0 \
+&& apt-get install -y --no-install-recommends libnuma1 libjson-c5 libpcap0.8 libssl3 libatomic1 libbsd0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/*
 

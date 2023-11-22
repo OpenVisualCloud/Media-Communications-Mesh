@@ -20,6 +20,14 @@ on:
   schedule:
     - cron: '42 8 * * 1'
 
+env:
+  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
+  BUILD_TYPE: Release
+  MTL_BUILD_DISABLE_PCAPNG: true
+  # GPRC_VERSION: v1.58.0
+  PREFIX_DIR: /usr/local
+  DEBIAN_FRONTEND: noninteractive
+
 jobs:
   analyze:
     name: Analyze
@@ -28,7 +36,7 @@ jobs:
     #   - https://gh.io/supported-runners-and-hardware-resources
     #   - https://gh.io/using-larger-runners
     # Consider using larger runners for possible analysis time improvements.
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-latest' }}
+    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-22.04' }}
     timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
     permissions:
       actions: read
@@ -53,6 +61,7 @@ jobs:
       uses: github/codeql-action/init@v2
       with:
         languages: ${{ matrix.language }}
+        config-file: ./.github/codeql/codeql-config.yml
         # If you wish to specify custom queries, you can do so here or in a config file.
         # By default, queries listed here will override any specified in a config file.
         # Prefix the list here with "+" to use these queries and those in the config file.
@@ -60,11 +69,38 @@ jobs:
         # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
         # queries: security-extended,security-and-quality
 
+    - name: Setup
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git gcc meson python3 python3-pip pkg-config libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev libsdl2-ttf-dev libssl-dev
+        sudo apt-get install -y cmake build-essential autoconf libtool pkg-config
+        sudo apt-get install -y dpdk-dev
+
+    - name: Install the python package
+      run: pip install pyelftools ninja
+
+    - name: Install IMTL
+      run: |
+        git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
+        pushd imtl
+        ./build.sh
+        popd
+
+    - uses: eWaterCycle/setup-grpc@v5
+      with:
+        grpc-version: 1.58.0
+
+    # - name: Install gRPC
+    #   run: |
+    #     git clone --recurse-submodules -b ${GPRC_VERSION} --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc
+    #     cmake -B /tmp/grpc/cmake/build -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} /tmp/grpc/
+    #     cmake --build /tmp/grpc/cmake/build -j 4
+    #     sudo cmake --install /tmp/grpc/cmake/build
 
     # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
     # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
+    # - name: Autobuild
+    #   uses: github/codeql-action/autobuild@v2
 
     # ℹ️ Command-line programs to run using the OS shell.
     # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
@@ -72,9 +108,9 @@ jobs:
     #   If the Autobuild fails above, remove it and uncomment the following three lines.
     #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
 
-    # - run: |
-    #     echo "Run, Build Application using script"
-    #     ./location_of_script_within_repo/buildscript.sh
+    - run: |
+        echo "Run, Build Application using script"
+        ./build.sh
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
