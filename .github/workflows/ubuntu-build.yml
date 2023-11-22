@@ -10,6 +10,9 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
 
+permissions:
+  contents: read
+
 jobs:
   build:
     timeout-minutes: 10
