@@ -94,8 +94,9 @@ int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t width, uint32_t height, v
         perror("Error when read frame file");
         ret = -1;
     }
-    //TODO: metadata is not carried to receiver side
+
     buf->metadata.seq_num = buf->metadata.timestamp = frm_idx++;
+    buf->len = frame_size;
 
     return ret;
 }
