@@ -247,6 +247,8 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
     }
     if (ret != MEMIF_ERR_SUCCESS) {
         log_info("memif_create: %s", memif_strerror(ret));
+        free(shm_conn);
+        shm_conn = NULL;
         memif_delete_socket(&memif_socket);
         return NULL;
     }
@@ -255,6 +257,9 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
         ret = memif_poll_event(shm_conn->sockfd, -1);
         if (ret != MEMIF_ERR_SUCCESS) {
             log_error("Create memif connection failed.");
+            free(shm_conn);
+            shm_conn = NULL;
+            memif_delete_socket(&memif_socket);
             return NULL;
         }
     } while (shm_conn->is_connected == 0);
@@ -262,6 +267,9 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
     conn_ctx = calloc(1, sizeof(mcm_conn_context));
     if (conn_ctx == NULL) {
         log_error("Outof Memory.");
+        free(shm_conn);
+        shm_conn = NULL;
+        memif_delete_socket(&memif_socket);
         return NULL;
     }
 
@@ -414,6 +422,10 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
             log_error("Unknown buffer address.");
             return -1;
         }
+
+        *(uint16_t *)(memif_conn->working_bufs[0].data) = buf->metadata.seq_num;
+        *(uint32_t *)(memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num)) = buf->metadata.timestamp;
+        *(size_t *)(memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp)) = buf->len;
 
         err = memif_tx_burst(memif_conn->conn, memif_conn->qid, &memif_conn->working_bufs[0], 1, &buf_num);
         if (err != MEMIF_ERR_SUCCESS) {
