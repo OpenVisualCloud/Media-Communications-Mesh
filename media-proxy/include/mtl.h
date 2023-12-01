@@ -23,6 +23,7 @@ extern "C" {
 #include "utils.h"
 /*used by UDP H264*/
 #include <mtl/mudp_api.h>
+#include <mtl/mtl_sch_api.h>
 
 #ifndef NS_PER_S
 #define NS_PER_S (1000000000)
@@ -35,6 +36,9 @@ extern "C" {
 #ifndef NS_PER_MS
 #define NS_PER_MS (1000 * 1000)
 #endif
+
+#define SCH_CNT 1
+#define TASKLETS 100
 
 enum direction {
     TX,
@@ -353,6 +357,17 @@ typedef struct {
     char name[32];
     pthread_t memif_event_thread;
 
+    /*udp poll*/
+    //mtl_sch_handle schs[SCH_CNT];
+    mtl_tasklet_handle udp_tasklet;
+    struct mtl_tasklet_ops udp_tasklet_ops;
+    struct mudp_pollfd udp_pollfd;
+    bool sch_start;
+    int new_NALU;
+    bool check_first_new_NALU;
+    //int sch_idx;
+    //int tasklet_idx;
+
 } rx_udp_h264_session_context_t;
 
 typedef struct {
@@ -514,7 +529,7 @@ void mtl_st22p_rx_session_destroy(rx_st22p_session_context_t** p_rx_ctx);
 void mtl_rtsp_rx_session_destroy(rx_udp_h264_session_context_t** p_rx_ctx);
 
 /* RX: Create UDP H264 session */
-rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_handle, mcm_dp_addr* dp_addr, memif_ops_t* memif_ops);
+rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_handle, mcm_dp_addr* dp_addr, memif_ops_t* memif_ops, mtl_sch_handle schs[]);
 
 /* TX: Stop ST30 session */
 void mtl_st30_tx_session_stop(tx_st30_session_context_t* pctx);
