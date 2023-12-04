@@ -44,8 +44,8 @@ RUN mkdir -p /opt/mcm/3rd_party/
 RUN adduser ${USER} sudo \
         && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
-# Install latest versions of CMake and Conan using pip3 package installer
-RUN python3 -m pip install --no-cache-dir "conan<2"
+# Install Conan using pip3 package installer.
+RUN python3 -m pip install --no-cache-dir conan=1.62.0
 
 # Build DPDK/IMTL
 ENV DPDK_VER=23.03
