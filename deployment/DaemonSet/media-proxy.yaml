@@ -1,3 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mcm
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: memif-socket-fs
+  namespace: mcm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 64Mi
+---
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -6,11 +23,16 @@ metadata:
   labels:
     app: media-proxy
 spec:
+  selector:
+    matchLabels:
+      app: media-proxy
   template:
     metadata:
       labels:
         app: media-proxy
     spec:
+      nodeSelector:
+        node-role.mcm.intel.com/worker: "true"
       containers:
         - name: media-proxy
           image: mcm/media-proxy:latest
@@ -61,14 +83,3 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 4Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: memif-socket-fs
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 64Mi

@@ -55,12 +55,49 @@ docker run --privileged -v /dev/vfio:/dev/vfio mcm/media-proxy:latest
 The "--privileged" argument is necessary to access NIC hardware with DPDK driver.
 
 ### Kubernetes
-The Media Proxy designed to run as DaemonSet of MCM system, to save the system resouce.
-There's a sample YAML file integrated in this repo as reference.
+The Media Proxy is designed to operate as a DaemonSet within the MCM system, aiming to conserve system resources. For details, a sample YAML file has been integrated into this repository as a reference.
+
+To deploy the Media Proxy as a DaemonSet in your Kubernetes cluster, you can use the following command:
+
+### Dependencies Installation
+
+Before deploying the Media Proxy on Kubernetes using Minikube, you'll need to ensure that Docker & Minikube are installed. Follow these steps to install all dependencies:
+
+1. **Install Docker**: You can find installation instructions for Docker based on your operating system from [Docker's official documentation](https://docs.docker.com/get-docker/).
+
+2. **Install a Hypervisor**: Minikube requires a virtualization solution to create a virtual machine. You can use [VirtualBox](https://www.virtualbox.org/) or [KVM](https://www.linux-kvm.org/page/Main_Page) as the hypervisor.
+
+3. **Install kubectl**: kubectl is a command line tool for interacting with the Kubernetes API server. You can find installation instructions for kubectl [here](https://kubernetes.io/docs/tasks/tools/install-kubectl/).
+
+4. **Install Minikube**: Follow the installation instructions for Minikube based on your operating system from [Minikube's official documentation](https://minikube.sigs.k8s.io/docs/start/).
+
+Once you've completed the above steps, you'll have Docker, a hypervisor, kubectl, and Minikube installed and ready to deploy the Media Proxy on your local Kubernetes cluster.
+
+#### Setup K8s Cluster
+Before deploy media proxy to the K8s cluster, you need to execute following steps to setup the K8s cluster to be ready for MCM.
+
+1. Start the K8s Cluster, and add MCM worker node on it.
 
 ```bash
-$ kubectl apply -f deployment/DaemonSet/media-proxy.yaml
+$ minikube start
+$ minikube node add -n 1
 ```
+
+2. Set the label for the worker node.
+
+```bash
+$ kubectl label nodes minikube-m02 mcm.intel.com/role=worker
+```
+
+#### Deploy Media Proxy
+
+```bash
+$ cd Media-Communications-Mesh
+$ kubectl apply -f deployment/DaemonSet/media-proxy.yaml
+$ kubectl get daemonsets.apps -n mcm
+```
+
+If all commands are executed successfully, you will see the MCM media proxy deployed as a K8s DaemonSet to the MCM worker node (labeled with "mcm.intel.com/role=worker").
 
 ## Known Issues
 - There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).

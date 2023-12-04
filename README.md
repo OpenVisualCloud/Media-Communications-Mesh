@@ -109,10 +109,16 @@ Usage: media_proxy [OPTION]
 - The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
 
 ## Support
-If you have any problem during use this project, you could find support in following ways.
-- Search in the project [documents](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main/docs)
-- Ask your question in the [Discussions](https://github.com/OpenVisualCloud/Media-Communications-Mesh/discussions/categories/q-a)
-- Submit [Issues](https://github.com/OpenVisualCloud/Media-Communications-Mesh/issues) for bug.
+
+If you encounter any issues or need assistance, there are several ways to seek support:
+
+- **Project Documents:** Search for solutions in the [project documents](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main/docs).
+- **Discussions:** Ask questions and seek help in the [Discussions](https://github.com/OpenVisualCloud/Media-Communications-Mesh/discussions/categories/q-a) section on the project's GitHub page.
+- **Issue Submission:** Report bugs and specific issues by submitting them on the [Issues](https://github.com/OpenVisualCloud/Media-Communications-Mesh/issues) page of the project's GitHub repository.
+
+Before submitting an issue, please check the existing documentation and discussions to avoid duplication and streamline the support process.
+
+We are here to help, so don't hesitate to reach out if you need assistance.
 
 ## Note
 This project is under development.
