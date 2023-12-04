@@ -2820,6 +2820,7 @@ int rx_udp_h264_shm_deinit(rx_udp_h264_session_context_t* rx_ctx)
 /* Stop RX UDP H264 session */
 void mtl_rtsp_rx_session_stop(rx_udp_h264_session_context_t* rx_ctx)
 {
+    int ret;
     if (rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
         return;
@@ -2827,17 +2828,16 @@ void mtl_rtsp_rx_session_stop(rx_udp_h264_session_context_t* rx_ctx)
 
     rx_ctx->stop = true;
 
-    int ret = mudp_close(rx_ctx->socket);
+    ret = mtl_sch_unregister_tasklet(rx_ctx->udp_tasklet);
+    if (ret != 0) {
+        INFO("%s, mtl_sch_unregister_tasklet fail %d\n", __func__, ret);
+    }
+
+    ret = mudp_close(rx_ctx->socket);
     if (ret < 0) {
         INFO("%s, udp close fail %d\n", __func__, ret);
         // return NULL;
     }
-
-    st_pthread_mutex_lock(&rx_ctx->wake_mutex);
-    st_pthread_cond_signal(&rx_ctx->wake_cond);
-    st_pthread_mutex_unlock(&rx_ctx->wake_mutex);
-
-    pthread_join(rx_ctx->thread, NULL);
 }
 
 /* Destroy RX UDP h264 session */
@@ -2852,15 +2852,6 @@ void mtl_rtsp_rx_session_destroy(rx_udp_h264_session_context_t** p_rx_ctx)
     }
 
     rx_ctx = *p_rx_ctx;
-
-    // ret = st22p_rx_free(rx_ctx->handle);
-    // if (ret < 0) {
-    //     printf("%s, session free failed\n", __func__);
-    //     return;
-    // }
-
-    st_pthread_mutex_destroy(&rx_ctx->wake_mutex);
-    st_pthread_cond_destroy(&rx_ctx->wake_cond);
 
     rx_udp_h264_shm_deinit(rx_ctx);
 

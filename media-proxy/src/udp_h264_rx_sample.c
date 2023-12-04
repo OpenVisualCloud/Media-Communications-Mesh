@@ -22,7 +22,6 @@ static void* rx_memif_event_loop(void* arg)
     do {
          INFO("media-proxy waiting event.");
         err = memif_poll_event(memif_socket, -1);
-         //INFO("media-proxy received event.");
     } while (err == MEMIF_ERR_SUCCESS);
 
     INFO("MEMIF DISCONNECTED.");
@@ -150,9 +149,8 @@ static void* udp_server_h264(void* arg)
     }
     //INFO("%s, start socket %p\n", __func__, socket);
     rtp_header = calloc(1, sizeof(mcm_buffer));
-    /*udp poll*/
-    //while (!s->stop) {
 
+    if ( s->stop != true) {
         ssize_t recv = mudp_recvfrom(socket, buf, sizeof(buf), 0, NULL, NULL);
         // printf("[%s] : recv = %d\n", __FUNCTION__, (int)recv);
         /*udp poll*/
@@ -172,12 +170,8 @@ static void* udp_server_h264(void* arg)
                 unsigned char RTP_payload_type = *((unsigned char*)buf + 1);
                 unsigned char mark = RTP_payload_type & 0x80;
                 if (mark > 0) {
-                    /*udp poll*/
-                    //new_NALU = 1;
                     s->new_NALU = 1;
                     // printf("First Mark = %d\n", mark);
-                    /*udp poll*/
-                    //check_first_new_NALU = false;
                     s->check_first_new_NALU = false;
                     //continue;
                     return NULL;
@@ -320,11 +314,13 @@ static void* udp_server_h264(void* arg)
     //INFO("%s, stop\n", __func__);
     // fclose(fp);
 
-    if (rtp_header != NULL) {
-        free(rtp_header);
-        rtp_header = NULL;
+        if (rtp_header != NULL) {
+            free(rtp_header);
+            rtp_header = NULL;
+        }
+    } else {
+        INFO("%s, has stopped\n", __func__);
     }
-
     return NULL;
 }
 
@@ -355,11 +351,8 @@ static int udp_poll_tasklet_stop(void* priv) {
   return 0;
 }
 
-// rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_handle, memif_ops_t* memif_ops)
-// int mtl_udp_h264_rx_session_create(mtl_handle dev_handle) {
 rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_handle, mcm_dp_addr* dp_addr, memif_ops_t* memif_ops, mtl_sch_handle schs[])
 {
-    printf("m20230905111234_mtl_udp_h264_rx_session_create --> !\n");
     // struct st_sample_context ctx;
     rx_udp_h264_session_context_t* ctx;
     static int idx = 0;
@@ -392,15 +385,10 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
         return NULL;
     }
 
-    st_pthread_mutex_init(&ctx->wake_mutex, NULL);
-    st_pthread_cond_init(&ctx->wake_cond, NULL);
-
     /*initialize share memory*/
     ret = rx_udp_h264_shm_init(ctx, memif_ops);
     if (ret < 0) {
         printf("%s, fail to initialize udp h264 share memory.\n", __func__);
-        st_pthread_mutex_destroy(&ctx->wake_mutex);
-        st_pthread_cond_destroy(&ctx->wake_cond);
         return NULL;
     }
 
@@ -408,8 +396,6 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
 
     if (!ctx->socket) {
         INFO("%s, socket create fail\n", __func__);
-        st_pthread_mutex_destroy(&ctx->wake_mutex);
-        st_pthread_cond_destroy(&ctx->wake_cond);
         return NULL;
     }
     mudp_init_sockaddr(&ctx->client_addr, ctx->rx_sip_addr[MTL_PORT_P],
@@ -420,8 +406,6 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
         sizeof(ctx->bind_addr));
     if (ret < 0) {
         INFO("%s, bind fail %d\n", __func__, ret);
-        st_pthread_mutex_destroy(&ctx->wake_mutex);
-        st_pthread_cond_destroy(&ctx->wake_cond);
         return NULL;
     }
     
@@ -448,36 +432,6 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
             continue;
         }
     }
-    
-    /*udp poll
-    printf("m20230905112027_ctx.udp_mode = SAMPLE_UDP_TRANSPORT_H264\n");
-    ret = pthread_create(&ctx->thread, NULL, udp_server_h264_thread, ctx); // test for UDP H264
-    if (ret < 0) {
-        INFO("%s, thread create fail %d\n", __func__, ret);
-        st_pthread_mutex_destroy(&ctx->wake_mutex);
-        st_pthread_cond_destroy(&ctx->wake_cond);
-        return NULL;
-    }
-    udp poll*/
-    //	while (!ctx->exit) {
-
-    //		sleep(1);
-    //	}
-
-    // ctx->stop = true;
-    // st_pthread_mutex_lock(&ctx->wake_mutex);
-    // st_pthread_cond_signal(&ctx->wake_cond);
-    // st_pthread_mutex_unlock(&ctx->wake_mutex);
-    // if (ctx->thread) pthread_join(ctx->thread, NULL);
-    // if (ctx->socket) mudp_close(ctx->socket);
-
-    // release sample(st) dev
-    // if (ctx->st) {
-    //	mtl_uninit(ctx->st);
-    //	ctx->st = NULL;
-    //}
-    // return ret;
-    /* increase session index */
 
     return ctx;
 }
