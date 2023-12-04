@@ -45,7 +45,7 @@ RUN adduser ${USER} sudo \
         && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 # Install Conan using pip3 package installer.
-RUN python3 -m pip install --no-cache-dir conan=1.62.0
+RUN python3 -m pip install --no-cache-dir conan==1.62.0
 
 # Build DPDK/IMTL
 ENV DPDK_VER=23.03
