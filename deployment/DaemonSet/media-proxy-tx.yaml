@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: media-proxy-tx
+  namespace: mcm
+  labels:
+    app: media-proxy-tx
+spec:
+  selector:
+    matchLabels:
+      app: media-proxy-tx
+  template:
+    metadata:
+      labels:
+        app: media-proxy-tx
+    spec:
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
+        mcm-type: tx
+      containers:
+        - name: media-proxy-tx
+          image: mcm/media-proxy-dev:latest
+          imagePullPolicy: Never
+          # command: [ "media_proxy" ]
+          # args: [ "-d", "0000:31:01.5", "-i", "192.168.96.10" ]
+          command: ["sleep"]
+          args: ["infinity"]
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+          resources:
+            limits:
+              cpu: 2
+              memory: 8Gi
+              hugepages-2Mi: 1Gi
+              hugepages-1Gi: 2Gi
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+          ports:
+            - containerPort: 8001
+              hostPort: 8001
+              protocol: TCP
+              name: grpc-port
+            - containerPort: 8002
+              hostPort: 8002
+              protocol: TCP
+              name: sdk-port
+          volumeMounts:
+            - name: memif-dir  # Using hostPath volume
+              mountPath: /run/mcm  # Mount path in the pod
+            - name: dev-vfio
+              mountPath: /dev/vfio
+            - mountPath: /hugepages-2Mi
+              name: hugepage-2mi
+            - mountPath: /hugepages-1Gi
+              name: hugepage-1gi
+      volumes:
+        - name: memif-dir  # Using hostPath volume
+          hostPath:
+            path: /tmp/mcm/memif
+        - name: dev-vfio
+          hostPath:
+            path: /dev/vfio
+        - name: hugepage-2mi
+          emptyDir:
+            medium: HugePages-2Mi
+        - name: hugepage-1gi
+          emptyDir:
+            medium: HugePages-1Gi

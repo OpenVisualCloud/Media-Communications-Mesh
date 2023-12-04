@@ -15,8 +15,6 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include <assert.h>
-
 #include "mcm_dp.h"
 
 #define DEFAULT_SEND_IP "127.0.0.1"
@@ -86,9 +84,9 @@ int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t width, uint32_t height, v
     int ret = 0;
     static int frm_idx = 0;
     int frame_size = width * height * 3 / 2; //TODO: assume NV12
-    assert(buf->len >= frame_size);
 
     assert(fp != NULL && buf != NULL);
+    assert(buf->len >= frame_size);
 
     if (fread(buf->data, frame_size, 1, fp) < 1) {
         perror("Error when read frame file");

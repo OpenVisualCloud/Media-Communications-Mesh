@@ -13,7 +13,6 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-
 #include "mcm_dp.h"
 
 #define DEFAULT_RECV_IP "127.0.0.1"

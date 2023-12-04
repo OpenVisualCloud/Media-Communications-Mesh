@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: sample-app-rx
+  namespace: mcm
+  labels:
+    app: sample-app-rx
+spec:
+  ttlSecondsAfterFinished: 1
+  template:
+    metadata:
+      labels:
+        app: sample-app-rx
+    spec:
+      restartPolicy: "Never"
+      nodeSelector:
+        node-role.kubernetes.io/worker: "true"
+        mcm-type: rx
+      containers:
+        - name: sample-app-rx
+          image: mcm/sample-app-dev:latest
+          imagePullPolicy: Never
+          workingDir: /opt/mcm/sdk/out/samples
+          command: ["sleep"]
+          args: ["infinity"]
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: MCM_MEDIA_PROXY_PORT
+              value: "8002"
+            - name: MCM_MEDIA_PROXY_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          volumeMounts:
+            - name: memif-dir  # Using hostPath volume
+              mountPath: /run/mcm  # Mount path in the pod
+      volumes:
+        - name: memif-dir  # Using hostPath volume
+          hostPath:
+            path: /tmp/mcm/memif

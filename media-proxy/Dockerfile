@@ -9,7 +9,7 @@ ENV DEBIAN_FRONTEND noninteractive
 
 # Install package dependencies
 RUN apt-get update --fix-missing \
-    # && apt-get full-upgrade -y \
+    && apt-get full-upgrade -y \
     && apt-get install --no-install-recommends -y apt-utils \
     software-properties-common ca-certificates \
     libtool autoconf automake pkg-config \
@@ -36,16 +36,15 @@ ARG HOME="/home/${USER}"
 
 ENV PATH="${PREFIX_DIR}/bin:$HOME/.local/bin:$HOME/bin:$HOME/usr/bin:$PATH"
 
-ARG MCM_DIR=/opt/mcm/media-communications-mesh
-ARG MTL_DIR=/opt/mcm/3rd_party/mtl
-ARG DPDK_DIR=/opt/mcm/3rd_party/dpdk
+ARG MCM_DIR=/opt/mcm
+ARG MTL_DIR=/opt/mtl
+ARG DPDK_DIR=/opt/dpdk
 
-RUN mkdir -p /opt/mcm/3rd_party/
 RUN adduser ${USER} sudo \
         && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 # Install Conan using pip3 package installer.
-RUN python3 -m pip install --no-cache-dir conan=1.62.0
+RUN python3 -m pip install --no-cache-dir conan==1.62.0
 
 # Build DPDK/IMTL
 ENV DPDK_VER=23.03
@@ -83,16 +82,20 @@ RUN git clone --depth 1 --branch main https://github.com/OpenVisualCloud/Media-C
 WORKDIR $MCM_DIR
 RUN ./build.sh
 
-## Re-build container for optimised runtime environment using clean Ubuntu release
+# Re-build container for optimised runtime environment using clean Ubuntu release
 FROM ubuntu:22.04@sha256:2b7412e6465c3c7fc5bb21d3e6f1917c167358449fecac8176c6e496e5c1f05f
+LABEL maintainer="qiang.han@intel.com"
 
-ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update --fix-missing \
 && apt-get install -y --no-install-recommends libnuma1 libjson-c5 libpcap0.8 libssl3 libatomic1 libbsd0 \
+&& apt-get install -y --no-install-recommends sleepenh net-tools \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/*
+
+ARG USER=docker
+RUN useradd -l -m -s /bin/bash ${USER}
 
 # Copy required files from build container
 COPY --from=builder /usr/local /usr/local
