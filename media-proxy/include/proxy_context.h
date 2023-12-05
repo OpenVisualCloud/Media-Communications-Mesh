@@ -40,6 +40,9 @@ public:
     std::vector<tx_session_context_t*> mTxCtx;
     std::atomic<std::uint32_t> mSessionCount;
     mtl_handle mDevHandle = NULL;
+    /*udp pool*/
+    mtl_sch_handle schs[SCH_CNT];
+    bool schs_ready;
 
     std::string mDevPort;
     std::string mDpAddress;

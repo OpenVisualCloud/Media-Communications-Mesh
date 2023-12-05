@@ -10,6 +10,7 @@
 
 #include "proxy_context.h"
 #include <mcm_dp.h>
+#include <mtl/mtl_sch_api.h>
 
 using std::istringstream;
 using std::string;
@@ -21,6 +22,8 @@ ProxyContext::ProxyContext(void)
     , mSessionCount(0)
 {
     mTcpCtrlPort = 8002;
+    /*udp poll*/
+    schs_ready = false;
 }
 
 ProxyContext::ProxyContext(std::string rpc_addr, std::string tcp_addr)
@@ -187,6 +190,8 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     inet_pton(AF_INET, getDataPlaneAddress().c_str(), st_param->sip_addr[MTL_PORT_P]);
     st_param->num_ports = 1;
     st_param->flags = MTL_FLAG_BIND_NUMA;
+    st_param->flags |= MTL_FLAG_SHARED_RX_QUEUE;
+    st_param->flags |= MTL_FLAG_SHARED_TX_QUEUE;
     // st_param->flags |= MTL_FLAG_TX_VIDEO_MIGRATE;
     // st_param->flags |= MTL_FLAG_RX_VIDEO_MIGRATE;
     st_param->log_level = MTL_LOG_LEVEL_DEBUG;
@@ -732,6 +737,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     struct st20p_rx_ops opts = { 0 };
     mtl_session_context_t* st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
+    int ret;
 
     if (mDevHandle == NULL) {
         struct mtl_init_params st_param = {};
@@ -746,6 +752,34 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
             INFO("%s, Fail to initialize MTL.\n", __func__);
             return -1;
         }
+    }
+
+    /*udp pool*/
+    if (schs_ready == false) {
+        struct mtl_sch_ops sch_ops;
+        memset(&sch_ops, 0x0, sizeof(sch_ops));
+        
+        sch_ops.nb_tasklets = TASKLETS;
+
+        for (int i = 0; i < SCH_CNT; i++) {
+            char sch_name[32];
+            
+            snprintf(sch_name, sizeof(sch_name), "sch_udp_%d", i);
+            sch_ops.name = sch_name;
+            mtl_sch_handle sch = mtl_sch_create(mDevHandle, &sch_ops);
+            if ( sch == NULL) {
+                INFO("%s, error: schduler create fail.", __func__);
+                break;
+            }
+            ret = mtl_sch_start(sch);
+            INFO("%s, start schduler %d.", __func__, i);
+            if (ret < 0) {
+                ret = mtl_sch_free(sch);
+                break;
+            }
+            schs[i] = sch;  
+        }
+        schs_ready = true;
     }
 
     st_ctx = new (mtl_session_context_t);
@@ -798,8 +832,9 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         rx_udp_h264_session_context_t* rx_ctx = NULL;
         // mcm_dp_addr remote_addr = request->remote_addr;
         mcm_dp_addr local_addr = request->local_addr;
-        // rx_ctx = mtl_udp_h264_rx_session_create(mDevHandle, &remote_addr, &memif_ops);
-        rx_ctx = mtl_udp_h264_rx_session_create(mDevHandle, &local_addr, &memif_ops);
+        /*udp poll*/
+        //rx_ctx = mtl_udp_h264_rx_session_create(mDevHandle, &remote_addr, &memif_ops);
+        rx_ctx = mtl_udp_h264_rx_session_create(mDevHandle, &local_addr, &memif_ops, schs);
         if (rx_ctx == NULL) {
             INFO("%s, Fail to create UDP H264 TX session.", __func__);
             return -1;
