@@ -298,7 +298,6 @@ void RunTCPServer(ProxyContext* ctx)
         return;
     }
 
-    // INFO("ready and listening");
     INFO("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
 
     // signal(SIGINT, intHandler);

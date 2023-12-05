@@ -13,7 +13,7 @@
 #include "mcm_dp.h"
 #include "media_proxy_ctrl.h"
 
-static void parse_memIF_param(mcm_conn_param* request, memif_socket_args_t* memif_socket_args, memif_conn_args_t* memif_conn_args)
+static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memif_socket_args, memif_conn_args_t* memif_conn_args)
 {
     char type_str[8] = "";
     char interface_name[32];
@@ -142,7 +142,7 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
         break;
     case PROTO_MEMIF:;
         memif_conn_param memif_param = {};
-        parse_memIF_param(param, &(memif_param.socket_args), &(memif_param.conn_args));
+        parse_memif_param(param, &(memif_param.socket_args), &(memif_param.conn_args));
         /* Connect memif connection. */
         conn_ctx = mcm_create_connection_memif(param, &memif_param);
         conn_ctx->session_id = 0;

@@ -51,8 +51,8 @@ typedef struct {
     struct {
         uint16_t seq_num; /* Sequence number */
         uint32_t timestamp; /* Timestamp */
-    } metadata;
-    size_t len;
+    } metadata; /**< filled by sender side */
+    size_t len; /**< size of data filled in "data" */
     void* data;
 } mcm_buffer;
 
