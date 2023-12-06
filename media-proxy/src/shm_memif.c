@@ -364,7 +364,7 @@ int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     // mtl_st20p_rx_session_destroy(&rx_ctx);
 
     /* stop event polling thread */
-    INFO("RX Stop poll event");
+    INFO("RX Stop poll event\n");
     socket = memif_get_socket_handle(conn);
     if (socket == NULL) {
         INFO("Invalide socket handle.");
