@@ -19,12 +19,10 @@ spec:
         mcm-type: tx
       containers:
         - name: media-proxy-tx
-          image: mcm/media-proxy-dev:latest
+          image: mcm/media-proxy:latest
           imagePullPolicy: Never
-          # command: [ "media_proxy" ]
-          # args: [ "-d", "0000:31:01.5", "-i", "192.168.96.10" ]
-          command: ["sleep"]
-          args: ["infinity"]
+          command: [ "media_proxy" ]
+          args: [ "-d", "0000:31:01.5", "-i", "192.168.96.10" ]
           env:
             - name: NODE_NAME
               valueFrom:
@@ -58,6 +56,10 @@ spec:
               name: hugepage-2mi
             - mountPath: /hugepages-1Gi
               name: hugepage-1gi
+            - mountPath: /dev/shm
+              name: cache-volume
+            - name: imtl-mgr  # Communicate with IMTL manager
+              mountPath: /var/run/imtl  # Mount path in the pod
       volumes:
         - name: memif-dir  # Using hostPath volume
           hostPath:
@@ -71,3 +73,10 @@ spec:
         - name: hugepage-1gi
           emptyDir:
             medium: HugePages-1Gi
+        - name: cache-volume
+          emptyDir:
+            medium: Memory
+            sizeLimit: 4Gi
+        - name: imtl-mgr
+          persistentVolumeClaim:
+            claimName: imtl-pvc

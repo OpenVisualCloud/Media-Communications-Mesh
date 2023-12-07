@@ -18,13 +18,11 @@ spec:
         mcm-type: tx
       containers:
         - name: sample-app-tx
-          image: mcm/sample-app-dev:latest
+          image: mcm/sample-app:latest
           imagePullPolicy: Never
           workingDir: /opt/mcm/sdk/out/samples
-          # command: ["./sender_app"]
-          # args: ["-w", "1920", "-h", "1080", "-f", "30", "-s", "192.168.96.20", "-p", "10000", "-t", "st20", "-n", "3000"]
-          command: ["sleep"]
-          args: ["infinity"]
+          command: ["./sender_app"]
+          args: ["-w", "1920", "-h", "1080", "-f", "30", "-s", "192.168.96.20", "-p", "10000", "-t", "st20", "-n", "3000"]
           env:
             - name: NODE_NAME
               valueFrom:
@@ -39,7 +37,12 @@ spec:
           volumeMounts:
             - name: memif-dir  # Using hostPath volume
               mountPath: /run/mcm  # Mount path in the pod
+            - name: imtl-mgr  # Communicate with IMTL manager
+              mountPath: /var/run/imtl  # Mount path in the pod
       volumes:
         - name: memif-dir  # Using hostPath volume
           hostPath:
             path: /tmp/mcm/memif
+        - name: imtl-mgr
+          persistentVolumeClaim:
+            claimName: imtl-pvc
