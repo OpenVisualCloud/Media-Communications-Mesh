@@ -147,6 +147,8 @@ typedef struct {
 
     bool stop;
 
+    int fb_cnt;
+    uint16_t fb_idx;
     int fb_send;
     pthread_cond_t st22p_wake_cond;
     pthread_mutex_t st22p_wake_mutex;
@@ -161,6 +163,15 @@ typedef struct {
     void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
+
+    void* ext_fb_malloc;
+    uint8_t* ext_fb;
+    mtl_iova_t ext_fb_iova;
+    size_t ext_fb_iova_map_sz;
+    struct st_ext_frame* p_ext_frames;
+    int ext_idx;
+    bool ext_fb_in_use[3]; /* assume 3 framebuffer */
+    mtl_dma_mem_handle dma_mem;
 #endif
 
     /* memif parameters */
@@ -468,10 +479,10 @@ typedef struct {
     };
 } mtl_session_context_t;
 
-/* Initialize Kahawai library */
+/* Initialize IMTL library */
 mtl_handle inst_init(struct mtl_init_params* st_param);
 
-/* Deinitialize Kahawai */
+/* Deinitialize IMTL */
 void mtl_deinit(mtl_handle dev_handle);
 
 /* TX: Create ST20P session */
