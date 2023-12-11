@@ -112,6 +112,7 @@ void ProxyContext::ParseStInitParam(const TxControlRequest* request, struct mtl_
         st_param->sip_addr[MTL_PORT_P][i] = init.primary_sip_addr(i);
     }
 
+    st_param->pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param->port[MTL_PORT_P]);
     st_param->flags = init.flags();
     st_param->log_level = (enum mtl_log_level)init.log_level();
     st_param->priv = NULL;
@@ -154,6 +155,7 @@ void ProxyContext::ParseStInitParam(const RxControlRequest* request, struct mtl_
         st_param->sip_addr[MTL_PORT_P][i] = init.primary_sip_addr(i);
     }
 
+    st_param->pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param->port[MTL_PORT_P]);
     st_param->flags = init.flags();
     st_param->log_level = (enum mtl_log_level)init.log_level();
     st_param->priv = NULL;
@@ -188,6 +190,7 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
 {
     strncpy(st_param->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     inet_pton(AF_INET, getDataPlaneAddress().c_str(), st_param->sip_addr[MTL_PORT_P]);
+    st_param->pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param->port[MTL_PORT_P]);
     st_param->num_ports = 1;
     st_param->flags = MTL_FLAG_BIND_NUMA;
     st_param->flags |= MTL_FLAG_SHARED_RX_QUEUE;
