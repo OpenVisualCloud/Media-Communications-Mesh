@@ -652,13 +652,32 @@ int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
         }
     } while (!frame);
 
-    frame->opaque = conn;
+    /* Send out frame. */
+#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+    struct st_ext_frame ext_frame = { 0 };
+    ext_frame.addr[0] = shm_bufs.data;
+    ext_frame.iova[0] = tx_ctx->source_begin_iova + ((uint8_t*)shm_bufs.data - tx_ctx->source_begin);
+    ext_frame.linesize[0] = st_frame_least_linesize(frame->fmt, frame->width, 0);
+    uint8_t planes = st_frame_fmt_planes(frame->fmt);
+    for (uint8_t plane = 1; plane < planes; plane++) { /* assume planes continous */
+        ext_frame.linesize[plane] = st_frame_least_linesize(frame->fmt, frame->width, plane);
+        ext_frame.addr[plane] = (uint8_t*)ext_frame.addr[plane - 1] + ext_frame.linesize[plane - 1] * frame->height;
+        ext_frame.iova[plane] = ext_frame.iova[plane - 1] + ext_frame.linesize[plane - 1] * frame->height;
+    }
+    ext_frame.size = shm_bufs.len;
+    ext_frame.opaque = conn;
 
+    st22p_tx_put_ext_frame(handle, frame, &ext_frame);
+#else
     /* fill frame data. */
     tx_st22p_build_frame(shm_bufs, frame);
-
     /* Send out frame. */
     st22p_tx_put_frame(handle, frame);
+
+    err = memif_refill_queue(conn, qid, buf_num, 0);
+    if (err != MEMIF_ERR_SUCCESS)
+        INFO("memif_refill_queue: %s", memif_strerror(err));
+#endif
 
     // INFO("%s send frame %d", __func__, tx_ctx->fb_send);
     tx_ctx->fb_send++;

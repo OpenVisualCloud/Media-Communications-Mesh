@@ -27,7 +27,7 @@ typedef struct _control_context {
 void* msg_loop(void* ptr)
 {
     int ret = 0;
-    void* buffer = NULL;
+    char* buffer = NULL;
     int len = 0;
     control_context* ctl_ctx = NULL;
     connection_t* conn = NULL;
@@ -69,22 +69,30 @@ void* msg_loop(void* ptr)
 
         if (msg.command.data_len > 0) {
             /* read parameters */
-            buffer = (char*)malloc((msg.command.data_len));
+            buffer = (char*)malloc(msg.command.data_len);
             if (buffer == NULL) {
-                INFO("Outof Memory.");
-                break;
-            }
-            len = msg.command.data_len;
-            do {
-                ret = read(conn->sock, buffer, len);
-                if (ret <= 0) {
-                    break;
+                INFO("Out of Memory.");
+                continue;
+            } else {
+                int bytesRead = 0;
+                while (bytesRead < msg.command.data_len) {
+                    int ret = read(conn->sock, buffer + bytesRead, msg.command.data_len - bytesRead);
+                    if (ret <= 0) {
+                        INFO("Failed to read command parameters.");
+                        free(buffer);
+                        buffer = NULL; // Reset the pointer to indicate failure
+                        break; // Exit the loop on failure
+                    }
+                    bytesRead += ret;
                 }
-                len -= ret;
-            } while (len > 0);
-            if (len > 0) {
-                INFO("Fail to read command parameters.");
-                break;
+
+                if (bytesRead < msg.command.data_len) {
+                    INFO("Failed to read all command parameters.");
+                    // Clean up on failure
+                    free(buffer);
+                    buffer = NULL;
+                    continue;
+                }
             }
         }
 
@@ -113,23 +121,10 @@ void* msg_loop(void* ptr)
             }
             break;
         case MCM_QUERY_MEMIF_PATH:
-            /*
-            len = strlen("/run/mcm/media_proxy_0.sock");
-            if (write(conn->sock, &len, sizeof(uint32_t)) <= 0) {
-                INFO("Fail to return path length.");
-            }
-            if (write(conn->sock, "/run/mcm/media_proxy_0.sock", strlen("/run/mcm/media_proxy_0.sock")) <= 0) {
-                INFO("Fail to return memif socket path.");
-            }
-            */
+            /* TODO: return memif socket path */
             break;
         case MCM_QUERY_MEMIF_ID:
-            /*
-            intf_id = 0;
-            if (write(conn->sock, &intf_id, sizeof(intf_id)) <= 0) {
-                INFO("Fail to return memif interface id.");
-            }
-            */
+            /* TODO: return memdif ID */
             break;
         case MCM_QUERY_MEMIF_PARAM:
             if (buffer == NULL || msg.command.data_len < 4) {
