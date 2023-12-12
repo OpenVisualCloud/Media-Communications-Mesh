@@ -291,6 +291,7 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     memif_buffer_t* rx_bufs = rx_ctx->shm_bufs;
 
     if (rx_ctx->shm_ready == 0) {
+        ERROR("MemIF connection not ready.");
         return -1;
     }
 
@@ -304,6 +305,62 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     // ext_frame->buf_iova = rx_ctx->frames_begin_iova + ((uint8_t*)rx_bufs->data - (uint8_t*)rx_ctx->frames_begin_addr);
     ext_frame->iova[0] = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
     ext_frame->size = rx_bufs->len;
+
+    /* save your private data here get it from st_frame.opaque */
+    ext_frame->opaque = rx_bufs;
+
+    return 0;
+}
+
+static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
+    struct st22_rx_frame_meta* meta)
+{
+    rx_st22p_session_context_t * rx_ctx = priv;
+    int err = 0;
+
+    /* allocate memory */
+    uint16_t qid = 0;
+    uint16_t buf_num = 1;
+    uint32_t buf_size = rx_ctx->frame_size;
+    uint16_t rx_buf_num = 0;
+    int width = rx_ctx->width, height = rx_ctx->height;
+    memif_buffer_t* rx_bufs = rx_ctx->shm_bufs;
+
+    if (rx_ctx->shm_ready == 0) {
+        return -1;
+    }
+
+    err = memif_buffer_alloc(rx_ctx->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
+        return -1;
+    }
+
+    uint8_t planes = st_frame_fmt_planes(rx_ctx->output_fmt);
+    size_t frame_size = rx_ctx->frame_size;
+    size_t pg_sz = mtl_page_size(rx_ctx->st);
+    rx_ctx->ext_fb_iova_map_sz = mtl_size_page_align(frame_size, pg_sz); /* align */
+    rx_ctx->ext_fb_malloc = rx_bufs->data;
+    rx_ctx->ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)rx_ctx->ext_fb_malloc, pg_sz);
+    // rx_ctx->ext_fb_iova = mtl_dma_map(rx_ctx->st, rx_ctx->ext_fb, rx_ctx->ext_fb_iova_map_sz);
+    rx_ctx->ext_fb_iova = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
+
+    for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
+        ext_frame->linesize[plane] = st_frame_least_linesize(rx_ctx->output_fmt, width, plane);
+        if (plane == 0) {
+            ext_frame->addr[plane] = rx_ctx->ext_fb;
+            ext_frame->iova[plane] = rx_ctx->ext_fb_iova;
+        } else {
+            ext_frame->addr[plane] = (uint8_t*)ext_frame->addr[plane - 1] + ext_frame->linesize[plane - 1] * height;
+            ext_frame->iova[plane] = ext_frame->iova[plane - 1] + ext_frame->linesize[plane - 1] * height;
+        }
+    }
+
+    ext_frame->size = frame_size;
+
+    // ext_frame->addr[0] = rx_bufs->data;
+    // ext_frame->iova[0] = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
+    // ext_frame->size = rx_bufs->len;
 
     /* save your private data here get it from st_frame.opaque */
     ext_frame->opaque = rx_bufs;
@@ -424,7 +481,6 @@ static int tx_st22p_frame_done(void* priv, struct st_frame* frame)
         return -1; /* not ready */
     }
 
-    // conn = tx_ctx->memif_conn;
     conn = (memif_conn_handle_t)frame->opaque;
     if (conn == NULL) {
         return -1;
@@ -442,11 +498,11 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
 {
     int err = 0;
     uint16_t qid = 0;
-    memif_buffer_t* tx_bufs = NULL;
+    memif_buffer_t* rx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
     uint32_t buf_size = s->frame_size;
-    uint16_t tx_buf_num = 0, tx = 0;
+    uint16_t rx_buf_num = 0, rx = 0;
 
     if (s->shm_ready == 0) {
         INFO("%s memif not ready\n", __func__);
@@ -456,39 +512,25 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
     conn = s->memif_conn;
 
 #if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
-    tx_bufs = (memif_buffer_t*)frame->opaque;
-    tx_buf_num = 1;
+    rx_bufs = (memif_buffer_t*)frame->opaque;
+    rx_buf_num = 1;
 #else
     /* allocate memory */
-    tx_bufs = s->shm_bufs;
+    rx_bufs = s->shm_bufs;
 
-    err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
+    err = memif_buffer_alloc(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
     }
 
-    /*
-    printf("RX buf_size: %d request: %d, allocated: %d\n", buf_size, buf_num, tx_buf_num);
-
-    FILE* fp = NULL;
-    fp = fopen("/tmp/tx.dat", "wb+");
-    fwrite(frame->addr, buf_size, tx_buf_num, fp);
-    fclose(fp);
-
-    for (int i = 0; i < tx_buf_num; i++) {
-        printf("TX data [%d]: point to %p, next is: %p (%d)\n",
-            i, tx_bufs->data, tx_bufs->data + buf_size, tx_bufs->flags);
-    }
-    */
-
-    for (int i = 0; i < tx_buf_num; i++) {
-        mtl_memcpy(tx_bufs->data, frame->addr[0], s->frame_size);
+    for (int i = 0; i < rx_buf_num; i++) {
+        mtl_memcpy(rx_bufs->data, frame->addr[0], s->frame_size);
     }
 #endif
 
     /* Send to microservice application. */
-    err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
+    err = memif_tx_burst(s->memif_conn, qid, rx_bufs, rx_buf_num, &rx);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("memif_tx_burst: %s", memif_strerror(err));
     }
@@ -500,11 +542,11 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
 {
     int err = 0;
     uint16_t qid = 0;
-    memif_buffer_t* tx_bufs = NULL;
+    memif_buffer_t* rx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
     uint32_t buf_size = s->frame_size;
-    uint16_t tx_buf_num = 0, tx = 0;
+    uint16_t rx_buf_num = 0, rx = 0;
 
     if (s->shm_ready == 0) {
         INFO("%s memif not ready\n", __func__);
@@ -513,31 +555,36 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
 
     conn = s->memif_conn;
 
+#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+    rx_bufs = (memif_buffer_t*)frame->opaque;
+    rx_buf_num = 1;
+#else
     /* allocate memory */
-    tx_bufs = s->shm_bufs;
+    rx_bufs = s->shm_bufs;
 
-    err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
+    err = memif_buffer_alloc(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
     }
 
     // void* testdata = malloc(s->frame_size);
-    // mtl_memcpy(tx_bufs->data, testdata, s->frame_size);
+    // mtl_memcpy(rx_bufs->data, testdata, s->frame_size);
     // mtl_memcpy(testdata, frame->addr, s->frame_size);
 
     uint8_t planes = st_frame_fmt_planes(frame->fmt);
-    uint8_t* dst = tx_bufs->data;
+    uint8_t* dst = rx_bufs->data;
     for (uint8_t plane = 0; plane < planes; plane++) {
         size_t plane_sz = st_frame_plane_size(frame, plane);
         mtl_memcpy(dst, frame->addr[plane], plane_sz);
         dst += plane_sz;
     }
+#endif
 
-    // mtl_memcpy(tx_bufs->data, frame->addr, s->frame_size);
+    // mtl_memcpy(rx_bufs->data, frame->addr, s->frame_size);
 
     /* Send to microservice application. */
-    err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
+    err = memif_tx_burst(s->memif_conn, qid, rx_bufs, rx_buf_num, &rx);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("memif_tx_burst: %s", memif_strerror(err));
     }
@@ -697,9 +744,6 @@ static void* rx_st20p_frame_thread(void* arg)
         st20p_rx_put_frame(handle, frame);
     }
 
-    // printf("%s(%d), stop\n", __func__, s->idx);
-    s->fb_recv++;
-
     return NULL;
 }
 
@@ -727,9 +771,6 @@ static void* rx_st22p_frame_thread(void* arg)
         }
         st22p_rx_put_frame(handle, frame);
     }
-
-    printf("%s(%d), stop\n", __func__, s->idx);
-    s->fb_recv++;
 
     return NULL;
 }
@@ -1851,6 +1892,8 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     rx_ctx->st = dev_handle;
     rx_ctx->idx = idx;
     rx_ctx->stop = false;
+    rx_ctx->fb_idx = 0;
+
     st_pthread_mutex_init(&rx_ctx->st22p_wake_mutex, NULL);
     st_pthread_cond_init(&rx_ctx->st22p_wake_cond, NULL);
 
@@ -1875,6 +1918,12 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     //     sleep(1);
     // }
 
+#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+    ops_rx.flags |= ST22P_RX_FLAG_EXT_FRAME;
+    ops_rx.flags |= ST22P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
+    ops_rx.query_ext_frame = rx_st22p_query_ext_frame;
+#endif
+
     /* dump out parameters for debugging. */
     st_rx_st22p_debug_dump(ops_rx);
 
@@ -1887,6 +1936,42 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     }
     rx_ctx->handle = rx_handle;
     rx_ctx->frame_size = st22p_rx_frame_size(rx_handle);
+    rx_ctx->fb_cnt = 3;
+    rx_ctx->width = ops_rx.width;
+    rx_ctx->height = ops_rx.height;
+    rx_ctx->output_fmt = ops_rx.output_fmt;
+
+#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+    uint8_t planes = st_frame_fmt_planes(ops_rx.output_fmt);
+    rx_ctx->p_ext_frames = (struct st_ext_frame*)malloc(
+        sizeof(*rx_ctx->p_ext_frames) * rx_ctx->fb_cnt);
+    size_t frame_size = rx_ctx->frame_size;
+    size_t pg_sz = mtl_page_size(dev_handle);
+    size_t fb_size = frame_size * rx_ctx->fb_cnt;
+    rx_ctx->ext_fb_iova_map_sz = mtl_size_page_align(fb_size, pg_sz); /* align */
+    size_t fb_size_malloc = rx_ctx->ext_fb_iova_map_sz + pg_sz;
+    rx_ctx->ext_fb_malloc = calloc(1, fb_size_malloc);
+    assert(rx_ctx->ext_fb_malloc != NULL);
+    rx_ctx->ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)rx_ctx->ext_fb_malloc, pg_sz);
+    rx_ctx->ext_fb_iova = mtl_dma_map(dev_handle, rx_ctx->ext_fb, rx_ctx->ext_fb_iova_map_sz);
+    INFO("%s, session %d ext_fb %p\n", __func__, rx_ctx->idx, rx_ctx->ext_fb);
+    assert(rx_ctx->ext_fb_iova != MTL_BAD_IOVA);
+
+    for (int j = 0; j < rx_ctx->fb_cnt; j++) {
+        for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
+            rx_ctx->p_ext_frames[j].linesize[plane] = st_frame_least_linesize(ops_rx.output_fmt, ops_rx.width, plane);
+            if (plane == 0) {
+                rx_ctx->p_ext_frames[j].addr[plane] = rx_ctx->ext_fb + j * frame_size;
+                rx_ctx->p_ext_frames[j].iova[plane] = rx_ctx->ext_fb_iova + j * frame_size;
+            } else {
+                rx_ctx->p_ext_frames[j].addr[plane] = (uint8_t*)rx_ctx->p_ext_frames[j].addr[plane - 1] + rx_ctx->p_ext_frames[j].linesize[plane - 1] * ops_rx.height;
+                rx_ctx->p_ext_frames[j].iova[plane] = rx_ctx->p_ext_frames[j].iova[plane - 1] + rx_ctx->p_ext_frames[j].linesize[plane - 1] * ops_rx.height;
+            }
+        }
+        rx_ctx->p_ext_frames[j].size = frame_size;
+        rx_ctx->p_ext_frames[j].opaque = NULL;
+    }
+#endif
 
     /* Start MTL session thread. */
     ret = pthread_create(&rx_ctx->frame_thread, NULL, rx_st22p_frame_thread, rx_ctx);
