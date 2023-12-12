@@ -339,7 +339,7 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     uint8_t planes = st_frame_fmt_planes(rx_ctx->output_fmt);
     size_t frame_size = rx_ctx->frame_size;
     size_t pg_sz = mtl_page_size(rx_ctx->st);
-    rx_ctx->ext_fb_iova_map_sz = mtl_size_page_align(frame_size, pg_sz); /* align */
+    // rx_ctx->ext_fb_iova_map_sz = mtl_size_page_align(frame_size, pg_sz); /* align */
     rx_ctx->ext_fb_malloc = rx_bufs->data;
     rx_ctx->ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)rx_ctx->ext_fb_malloc, pg_sz);
     // rx_ctx->ext_fb_iova = mtl_dma_map(rx_ctx->st, rx_ctx->ext_fb, rx_ctx->ext_fb_iova_map_sz);
@@ -348,7 +348,8 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
         ext_frame->linesize[plane] = st_frame_least_linesize(rx_ctx->output_fmt, width, plane);
         if (plane == 0) {
-            ext_frame->addr[plane] = rx_ctx->ext_fb;
+            // ext_frame->addr[plane] = rx_ctx->ext_fb;
+            ext_frame->addr[plane] = rx_bufs->data;
             ext_frame->iova[plane] = rx_ctx->ext_fb_iova;
         } else {
             ext_frame->addr[plane] = (uint8_t*)ext_frame->addr[plane - 1] + ext_frame->linesize[plane - 1] * height;
