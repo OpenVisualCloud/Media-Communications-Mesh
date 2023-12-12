@@ -74,7 +74,7 @@ RUN cmake -DgRPC_INSTALL=ON \
         -DgRPC_BUILD_TESTS=OFF \
         -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} \
         ../.. && \
-    make -j && \
+    make -j `nproc` && \
     make install && \
     rm -rf /tmp/*
 
