@@ -1941,38 +1941,6 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     rx_ctx->height = ops_rx.height;
     rx_ctx->output_fmt = ops_rx.output_fmt;
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
-    uint8_t planes = st_frame_fmt_planes(ops_rx.output_fmt);
-    rx_ctx->p_ext_frames = (struct st_ext_frame*)malloc(
-        sizeof(*rx_ctx->p_ext_frames) * rx_ctx->fb_cnt);
-    size_t frame_size = rx_ctx->frame_size;
-    size_t pg_sz = mtl_page_size(dev_handle);
-    size_t fb_size = frame_size * rx_ctx->fb_cnt;
-    rx_ctx->ext_fb_iova_map_sz = mtl_size_page_align(fb_size, pg_sz); /* align */
-    size_t fb_size_malloc = rx_ctx->ext_fb_iova_map_sz + pg_sz;
-    rx_ctx->ext_fb_malloc = calloc(1, fb_size_malloc);
-    assert(rx_ctx->ext_fb_malloc != NULL);
-    rx_ctx->ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)rx_ctx->ext_fb_malloc, pg_sz);
-    rx_ctx->ext_fb_iova = mtl_dma_map(dev_handle, rx_ctx->ext_fb, rx_ctx->ext_fb_iova_map_sz);
-    INFO("%s, session %d ext_fb %p\n", __func__, rx_ctx->idx, rx_ctx->ext_fb);
-    assert(rx_ctx->ext_fb_iova != MTL_BAD_IOVA);
-
-    for (int j = 0; j < rx_ctx->fb_cnt; j++) {
-        for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
-            rx_ctx->p_ext_frames[j].linesize[plane] = st_frame_least_linesize(ops_rx.output_fmt, ops_rx.width, plane);
-            if (plane == 0) {
-                rx_ctx->p_ext_frames[j].addr[plane] = rx_ctx->ext_fb + j * frame_size;
-                rx_ctx->p_ext_frames[j].iova[plane] = rx_ctx->ext_fb_iova + j * frame_size;
-            } else {
-                rx_ctx->p_ext_frames[j].addr[plane] = (uint8_t*)rx_ctx->p_ext_frames[j].addr[plane - 1] + rx_ctx->p_ext_frames[j].linesize[plane - 1] * ops_rx.height;
-                rx_ctx->p_ext_frames[j].iova[plane] = rx_ctx->p_ext_frames[j].iova[plane - 1] + rx_ctx->p_ext_frames[j].linesize[plane - 1] * ops_rx.height;
-            }
-        }
-        rx_ctx->p_ext_frames[j].size = frame_size;
-        rx_ctx->p_ext_frames[j].opaque = NULL;
-    }
-#endif
-
     /* Start MTL session thread. */
     ret = pthread_create(&rx_ctx->frame_thread, NULL, rx_st22p_frame_thread, rx_ctx);
     if (ret < 0) {
