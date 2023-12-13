@@ -1006,8 +1006,7 @@ int rx_st22p_shm_init(rx_st22p_session_context_t* rx_ctx, memif_ops_t* memif_ops
     rx_ctx->shm_ready = 0;
     rx_ctx->memif_conn_args.socket = rx_ctx->memif_socket;
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
-    // rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->frame_size;
-    rx_ctx->memif_conn_args.buffer_size = 5184000;
+    rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->frame_size;
     rx_ctx->memif_conn_args.log2_ring_size = 2;
     memcpy((char*)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
         sizeof(rx_ctx->memif_conn_args.interface_name));
@@ -1895,22 +1894,6 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     ops_rx.priv = rx_ctx; // app handle register to lib
     ops_rx.notify_frame_available = rx_st22p_frame_available;
 
-    /* initialize share memory */
-    ret = rx_st22p_shm_init(rx_ctx, memif_ops);
-    if (ret < 0) {
-        printf("%s, fail to initialize share memory.\n", __func__);
-        st_pthread_mutex_destroy(&rx_ctx->st22p_wake_mutex);
-        st_pthread_cond_destroy(&rx_ctx->st22p_wake_cond);
-        free(rx_ctx);
-        return NULL;
-    }
-
-    /* Waiting for memif connection created. */
-    // printf("Waiting for consumer service connection.\n");
-    // while (!rx_ctx->shm_ready) {
-    //     sleep(1);
-    // }
-
 #if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
     ops_rx.flags |= ST22P_RX_FLAG_EXT_FRAME;
     ops_rx.flags |= ST22P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
@@ -1933,6 +1916,22 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     rx_ctx->width = ops_rx.width;
     rx_ctx->height = ops_rx.height;
     rx_ctx->output_fmt = ops_rx.output_fmt;
+
+    /* initialize share memory */
+    ret = rx_st22p_shm_init(rx_ctx, memif_ops);
+    if (ret < 0) {
+        printf("%s, fail to initialize share memory.\n", __func__);
+        st_pthread_mutex_destroy(&rx_ctx->st22p_wake_mutex);
+        st_pthread_cond_destroy(&rx_ctx->st22p_wake_cond);
+        free(rx_ctx);
+        return NULL;
+    }
+
+    /* Waiting for memif connection created. */
+    // printf("Waiting for consumer service connection.\n");
+    // while (!rx_ctx->shm_ready) {
+    //     sleep(1);
+    // }
 
     /* Start MTL session thread. */
     ret = pthread_create(&rx_ctx->frame_thread, NULL, rx_st22p_frame_thread, rx_ctx);
