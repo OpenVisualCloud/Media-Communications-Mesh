@@ -42,24 +42,25 @@ typedef struct {
 
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
-int rx_on_connect(memif_conn_handle_t conn, void* priv_data);
+int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
 int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
 int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data);
+int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
 
 int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
+int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
 int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_st30_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
 int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
 int rx_udp_h264_on_connect(memif_conn_handle_t conn, void* priv_data);
 
-int tx_on_connect(memif_conn_handle_t conn, void* priv_data);
+int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
+int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
+int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
 int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
+int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
 int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data);
 int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
 int tx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);

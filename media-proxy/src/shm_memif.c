@@ -93,7 +93,7 @@ void print_memif_details(memif_conn_handle_t conn)
 
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
-int rx_on_connect(memif_conn_handle_t conn, void* priv_data)
+int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
     rx_session_context_t* rx_ctx = (rx_session_context_t*)priv_data;
     int err = 0;
@@ -114,7 +114,12 @@ int rx_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     rx_ctx->fb_count = md.tx_queues[0].ring_size;
     rx_ctx->source_begin = md.regions[1].addr;
+    rx_ctx->source_begin_iova_map_sz = md.regions[1].size;
     rx_ctx->source_begin_iova = mtl_dma_map(rx_ctx->st, rx_ctx->source_begin, md.regions[1].size);
+    if (rx_ctx->source_begin_iova == MTL_BAD_IOVA) {
+        ERROR("Fail to map DMA memory address.");
+        return -1;
+    }
 
     free(buf);
 #else
@@ -159,7 +164,12 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     rx_ctx->fb_count = md.rx_queues[0].ring_size;
     rx_ctx->source_begin = md.regions[1].addr;
+    rx_ctx->source_begin_iova_map_sz = md.regions[1].size;
     rx_ctx->source_begin_iova = mtl_dma_map(rx_ctx->st, rx_ctx->source_begin, md.regions[1].size);
+    if (rx_ctx->source_begin_iova == MTL_BAD_IOVA) {
+        ERROR("Fail to map DMA memory address.");
+        return -1;
+    }
 
     free(buf);
 #else
@@ -222,28 +232,6 @@ int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int rx_st30_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
-{
-    int err = 0;
-    memif_buffer_t shm_bufs;
-    uint16_t buf_num = 0;
-
-    /* receive packets from the shared memory */
-    err = memif_rx_burst(conn, qid, &shm_bufs, 1, &buf_num);
-    if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF) {
-        INFO("memif_rx_burst: %s", memif_strerror(err));
-        return err;
-    }
-
-    /* Process on the received buffer. */
-
-    err = memif_refill_queue(conn, qid, buf_num, 0);
-    if (err != MEMIF_ERR_SUCCESS)
-        INFO("memif_refill_queue: %s", memif_strerror(err));
-
-    return 0;
-}
-
 int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
     rx_st40_session_context_t* rx_ctx = (rx_st40_session_context_t*)priv_data;
@@ -279,28 +267,6 @@ int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
     print_memif_details(conn);
 
     rx_ctx->shm_ready = 1;
-
-    return 0;
-}
-
-int rx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
-{
-    int err = 0;
-    memif_buffer_t shm_bufs;
-    uint16_t buf_num = 0;
-
-    /* receive packets from the shared memory */
-    err = memif_rx_burst(conn, qid, &shm_bufs, 1, &buf_num);
-    if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF) {
-        INFO("memif_rx_burst: %s", memif_strerror(err));
-        return err;
-    }
-
-    /* Process on the received buffer. */
-
-    err = memif_refill_queue(conn, qid, buf_num, 0);
-    if (err != MEMIF_ERR_SUCCESS)
-        INFO("memif_refill_queue: %s", memif_strerror(err));
 
     return 0;
 }
@@ -409,29 +375,95 @@ int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     return 0;
 }
 
-int rx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+/* informs user about disconnected status. private_ctx is used by user to
+ * identify connection */
+int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     int err = 0;
-    memif_buffer_t shm_bufs;
-    uint16_t buf_num = 0;
+    rx_session_context_t* rx_ctx = priv_data;
+    memif_socket_handle_t socket;
 
-    /* receive packets from the shared memory */
-    err = memif_rx_burst(conn, qid, &shm_bufs, 1, &buf_num);
-    if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF) {
-        INFO("memif_rx_burst: %s", memif_strerror(err));
-        return err;
+    if (conn == NULL) {
+        return 0;
     }
 
-    /* Process on the received buffer. */
+    if (conn == NULL || priv_data == NULL) {
+        INFO("Invalid Parameters.");
+        return -1;
+    }
 
-    err = memif_refill_queue(conn, qid, buf_num, 0);
-    if (err != MEMIF_ERR_SUCCESS)
-        INFO("memif_refill_queue: %s", memif_strerror(err));
+    // release session
+    if (rx_ctx->shm_ready == 0) {
+        return 0;
+    }
+    rx_ctx->shm_ready = 0;
+
+    // mtl_st20p_rx_session_destroy(&rx_ctx);
+
+#if defined(ZERO_COPY)
+    if (mtl_dma_unmap(rx_ctx->st, rx_ctx->source_begin, rx_ctx->source_begin_iova, rx_ctx->source_begin_iova_map_sz) < 0) {
+        ERROR("Fail to unmap DMA memory address.");
+    }
+#endif
+
+    /* stop event polling thread */
+    INFO("RX Stop poll event\n");
+    socket = memif_get_socket_handle(conn);
+    if (socket == NULL) {
+        INFO("Invalide socket handle.");
+        return -1;
+    }
+
+    err = memif_cancel_poll_event(socket);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("We are doomed...");
+    }
+
+    // free(priv_data);
 
     return 0;
 }
 
-int tx_on_connect(memif_conn_handle_t conn, void* priv_data)
+int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+{
+    int err = 0;
+    rx_st22p_session_context_t* rx_ctx = priv_data;
+    memif_socket_handle_t socket;
+
+    if (conn == NULL || priv_data == NULL) {
+        INFO("Invalid Parameters.");
+        return -1;
+    }
+
+    // release session
+    if (rx_ctx->shm_ready == 0) {
+        return 0;
+    }
+    rx_ctx->shm_ready = 0;
+
+#if defined(ZERO_COPY)
+    if (mtl_dma_unmap(rx_ctx->st, rx_ctx->source_begin, rx_ctx->source_begin_iova, rx_ctx->source_begin_iova_map_sz) < 0) {
+        ERROR("Fail to unmap DMA memory address.");
+    }
+#endif
+
+    /* stop event polling thread */
+    INFO("RX Stop poll event\n");
+    socket = memif_get_socket_handle(conn);
+    if (socket == NULL) {
+        INFO("Invalide socket handle.");
+        return -1;
+    }
+
+    err = memif_cancel_poll_event(socket);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("We are doomed...");
+    }
+
+    return 0;
+}
+
+int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
     tx_session_context_t* tx_ctx = (tx_session_context_t*)priv_data;
     int err = 0;
@@ -457,7 +489,12 @@ int tx_on_connect(memif_conn_handle_t conn, void* priv_data)
     }
 
     tx_ctx->source_begin = md.regions[1].addr;
+    tx_ctx->source_begin_iova_map_sz = md.regions[1].size;
     tx_ctx->source_begin_iova = mtl_dma_map(tx_ctx->st, tx_ctx->source_begin, md.regions[1].size);
+    if (tx_ctx->source_begin_iova == MTL_BAD_IOVA) {
+        ERROR("Fail to map DMA memory address.");
+        return -1;
+    }
 
     free(buf);
 #endif
@@ -495,7 +532,12 @@ int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
     }
 
     tx_ctx->source_begin = md.regions[1].addr;
+    tx_ctx->source_begin_iova_map_sz = md.regions[1].size;
     tx_ctx->source_begin_iova = mtl_dma_map(tx_ctx->st, tx_ctx->source_begin, md.regions[1].size);
+    if (tx_ctx->source_begin_iova == MTL_BAD_IOVA) {
+        ERROR("Fail to map DMA memory address.");
+        return -1;
+    }
 
     free(buf);
 #endif
@@ -547,6 +589,98 @@ int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
+/* informs user about disconnected status. private_ctx is used by user to
+ * identify connection */
+int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+{
+    static int counter = 0;
+    int err = 0;
+    tx_session_context_t* tx_ctx = priv_data;
+    memif_socket_handle_t socket;
+
+    if (conn == NULL || priv_data == NULL) {
+        INFO("Invalid Parameters.");
+        return -1;
+    }
+
+    // release session
+    if (tx_ctx->shm_ready == 0) {
+        return 0;
+    }
+    tx_ctx->shm_ready = 0;
+
+    // mtl_st20p_tx_session_destroy(&tx_ctx);
+
+#if defined(ZERO_COPY)
+    if (mtl_dma_unmap(tx_ctx->st, tx_ctx->source_begin, tx_ctx->source_begin_iova, tx_ctx->source_begin_iova_map_sz) < 0) {
+        ERROR("Fail to unmap DMA memory address.");
+    }
+#endif
+
+    /* stop event polling thread */
+    INFO("TX Stop poll event");
+    socket = memif_get_socket_handle(conn);
+    if (socket == NULL) {
+        INFO("Invalide socket handle.");
+        return -1;
+    }
+
+    err = memif_cancel_poll_event(socket);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("We are doomed...");
+    }
+
+    // free(priv_data);
+
+    return 0;
+}
+
+/* informs user about disconnected status. private_ctx is used by user to
+ * identify connection */
+int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+{
+    static int counter = 0;
+    int err = 0;
+    tx_st22p_session_context_t* tx_ctx = priv_data;
+    memif_socket_handle_t socket;
+
+    if (conn == NULL || priv_data == NULL) {
+        INFO("Invalid Parameters.");
+        return -1;
+    }
+
+    // release session
+    if (tx_ctx->shm_ready == 0) {
+        return 0;
+    }
+    tx_ctx->shm_ready = 0;
+
+    // mtl_st22p_tx_session_destroy(&tx_ctx);
+
+#if defined(ZERO_COPY)
+    if (mtl_dma_unmap(tx_ctx->st, tx_ctx->source_begin, tx_ctx->source_begin_iova, tx_ctx->source_begin_iova_map_sz) < 0) {
+        ERROR("Fail to unmap DMA memory address.");
+    }
+#endif
+
+    /* stop event polling thread */
+    INFO("TX Stop poll event");
+    socket = memif_get_socket_handle(conn);
+    if (socket == NULL) {
+        INFO("Invalide socket handle.");
+        return -1;
+    }
+
+    err = memif_cancel_poll_event(socket);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("We are doomed...");
+    }
+
+    // free(priv_data);
+
+    return 0;
+}
+
 static void tx_st20p_build_frame(memif_buffer_t shm_bufs, struct st_frame* frame)
 {
     mtl_memcpy(frame->addr[0], shm_bufs.data, shm_bufs.len);
@@ -578,7 +712,7 @@ static void tx_st40_build_frame(memif_buffer_t shm_bufs, struct st40_frame* dst)
     dst->data_size = shm_bufs.len;
 }
 
-int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 {
     int err = 0;
     tx_session_context_t* tx_ctx = (tx_session_context_t*)priv_data;
@@ -630,6 +764,7 @@ int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 #else
     /* fill frame data. */
     tx_st20p_build_frame(shm_bufs, frame);
+    /* Send out frame. */
     st20p_tx_put_frame(handle, frame);
 
     err = memif_refill_queue(conn, qid, buf_num, 0);
