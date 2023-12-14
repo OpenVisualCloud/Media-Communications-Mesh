@@ -327,6 +327,7 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     memif_buffer_t* rx_bufs = rx_ctx->shm_bufs;
 
     if (rx_ctx->shm_ready == 0) {
+        ERROR("MemIF connection not ready.");
         return -1;
     }
 
