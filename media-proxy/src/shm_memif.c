@@ -145,6 +145,7 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     INFO("RX memif connected!");
 
+#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
     memif_details_t md = { 0 };
     ssize_t buflen = 2048;
     char* buf = (char*)calloc(1, buflen);
@@ -157,8 +158,13 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
     }
 
     rx_ctx->fb_count = md.rx_queues[0].ring_size;
+    rx_ctx->source_begin = md.regions[1].addr;
+    rx_ctx->source_begin_iova = mtl_dma_map(rx_ctx->st, rx_ctx->source_begin, md.regions[1].size);
 
     free(buf);
+#else
+    rx_ctx->fb_count = 3;
+#endif
 
     /* rx buffers */
     rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
@@ -475,6 +481,24 @@ int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
         INFO("memif_refill_queue: %s", memif_strerror(err));
         return err;
     }
+
+#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+    memif_details_t md = { 0 };
+    ssize_t buflen = 2048;
+    char* buf = (char*)calloc(1, buflen);
+
+    err = memif_get_details(conn, &md, buf, buflen);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("%s", memif_strerror(err));
+        free(buf);
+        return err;
+    }
+
+    tx_ctx->source_begin = md.regions[1].addr;
+    tx_ctx->source_begin_iova = mtl_dma_map(tx_ctx->st, tx_ctx->source_begin, md.regions[1].size);
+
+    free(buf);
+#endif
 
     tx_ctx->shm_ready = 1;
 
