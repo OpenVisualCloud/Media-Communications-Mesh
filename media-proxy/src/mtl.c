@@ -276,7 +276,7 @@ static int rx_st22p_frame_available(void* priv)
     return 0;
 }
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+#if defined(ZERO_COPY)
 static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     struct st20_rx_frame_meta* meta)
 {
@@ -503,7 +503,7 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
 
     conn = s->memif_conn;
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+#if defined(ZERO_COPY)
     rx_bufs = (memif_buffer_t*)frame->opaque;
     rx_buf_num = 1;
 #else
@@ -547,7 +547,7 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
 
     conn = s->memif_conn;
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+#if defined(ZERO_COPY)
     rx_bufs = (memif_buffer_t*)frame->opaque;
     rx_buf_num = 1;
 #else
@@ -1816,7 +1816,7 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
     // }
     fb_cnt = rx_ctx->fb_count;
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+#if defined(ZERO_COPY)
     rx_ctx->ext_frames = (struct st20_ext_frame*)malloc(sizeof(*rx_ctx->ext_frames) * fb_cnt);
     // for (int i = 0; i < fb_cnt; i++) {
     //     rx_ctx->ext_frames[i].buf_addr = rx_ctx->frames_begin_addr + i * rx_ctx->frame_size;
@@ -1893,7 +1893,7 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     ops_rx.priv = rx_ctx; // app handle register to lib
     ops_rx.notify_frame_available = rx_st22p_frame_available;
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+#if defined(ZERO_COPY)
     ops_rx.flags |= ST22P_RX_FLAG_EXT_FRAME;
     ops_rx.flags |= ST22P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
     ops_rx.query_ext_frame = rx_st22p_query_ext_frame;
@@ -2441,7 +2441,7 @@ tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct 
     ops_tx.notify_frame_available = tx_st20p_frame_available;
     ops_tx.notify_frame_done = tx_st20p_frame_done;
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     ops_tx.flags |= ST20P_TX_FLAG_EXT_FRAME;
 #endif
 
@@ -2510,7 +2510,7 @@ tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, s
     ops_tx.notify_frame_available = tx_st22p_frame_available;
     ops_tx.notify_frame_done = tx_st22p_frame_done;
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     ops_tx.flags |= ST22P_TX_FLAG_EXT_FRAME;
 #endif
 
