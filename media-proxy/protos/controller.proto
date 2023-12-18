@@ -20,7 +20,10 @@ service Configure {
 enum StPmdType {
   ST_PMD_DPDK_USER = 0;
   ST_PMD_DPDK_AF_XDP = 1;
-  ST_PMD_TYPE_MAX = 2;
+  ST_PMD_DPDK_AF_PACKET = 2;
+  ST_PMD_KERNEL_SOCKET = 3;
+  ST_PMD_NATIVE_AF_XDP = 4;
+  ST_PMD_TYPE_MAX = 5;
 };
 
 enum StLogLevel {
