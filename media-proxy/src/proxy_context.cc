@@ -668,7 +668,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 
     ParseMemIFParam(request, memif_ops);
 
-    rx_ctx = mtl_rx_session_create(mDevHandle, &opts, &memif_ops);
+    rx_ctx = mtl_st20p_rx_session_create(mDevHandle, &opts, &memif_ops);
     if (rx_ctx == NULL) {
         INFO("%s, Fail to create RX session.\n", __func__);
         return -1;
@@ -849,7 +849,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         struct st20p_rx_ops opts = {};
 
         ParseSt20RxOps(request, &opts);
-        rx_ctx = mtl_rx_session_create(mDevHandle, &opts, &memif_ops);
+        rx_ctx = mtl_st20p_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
             INFO("%s, Fail to create RX session.\n", __func__);
             return -1;

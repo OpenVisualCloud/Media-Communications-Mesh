@@ -73,7 +73,6 @@ typedef struct {
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
 #endif
@@ -118,7 +117,6 @@ typedef struct {
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
 #endif
@@ -160,7 +158,6 @@ typedef struct {
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
 
@@ -206,7 +203,6 @@ typedef struct {
     size_t frame_size; /* Size (Bytes) of single frame. */
     uint16_t fb_idx;
     uint32_t fb_count; /* Frame buffer count. */
-    int fb_cnt;
 
     uint32_t width;
     uint32_t height;
@@ -217,7 +213,6 @@ typedef struct {
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
 
@@ -504,7 +499,7 @@ void mtl_deinit(mtl_handle dev_handle);
 tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops);
 
 /* RX: Create ST20P session */
-rx_session_context_t* mtl_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
+rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
 
 /* TX: Stop ST20P session */
 void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx);
