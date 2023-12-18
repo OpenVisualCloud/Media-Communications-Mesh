@@ -1,48 +1,33 @@
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: mcm
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: memif-socket-fs
-  namespace: mcm
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 64Mi
----
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: media-proxy
+  name: media-proxy-tx
   namespace: mcm
   labels:
-    app: media-proxy
+    app: media-proxy-tx
 spec:
   selector:
     matchLabels:
-      app: media-proxy
+      app: media-proxy-tx
   template:
     metadata:
       labels:
-        app: media-proxy
+        app: media-proxy-tx
     spec:
       nodeSelector:
         node-role.kubernetes.io/worker: "true"
+        mcm-type: tx
       containers:
-        - name: media-proxy
+        - name: media-proxy-tx
           image: mcm/media-proxy:latest
           imagePullPolicy: Never
           command: [ "media_proxy" ]
+          args: [ "-d", "0000:31:01.5", "-i", "192.168.96.10" ]
           env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           resources:
             limits:
               cpu: 2
@@ -54,17 +39,17 @@ spec:
             runAsUser: 0
             runAsGroup: 0
           ports:
-          - containerPort : 8001
-            hostPort: 8001
-            protocol: TCP
-            name: grpc-port
-          - containerPort : 8002
-            hostPort: 8002
-            protocol: TCP
-            name: sdk-port
+            - containerPort: 8001
+              hostPort: 8001
+              protocol: TCP
+              name: grpc-port
+            - containerPort: 8002
+              hostPort: 8002
+              protocol: TCP
+              name: sdk-port
           volumeMounts:
-            - name: memif-socket
-              mountPath: /run/mcm
+            - name: memif-dir  # Using hostPath volume
+              mountPath: /run/mcm  # Mount path in the pod
             - name: dev-vfio
               mountPath: /dev/vfio
             - mountPath: /hugepages-2Mi
@@ -73,14 +58,14 @@ spec:
               name: hugepage-1gi
             - mountPath: /dev/shm
               name: cache-volume
+            - name: imtl-mgr  # Communicate with IMTL manager
+              mountPath: /var/run/imtl  # Mount path in the pod
       volumes:
-        - name: memif-socket
-          persistentVolumeClaim:
-            claimName: memif-socket-fs
+        - name: memif-dir  # Using hostPath volume
+          hostPath:
+            path: /tmp/mcm/memif
         - name: dev-vfio
           hostPath:
-            # Do not mount the top-level /dev/ directory for security reasons.
-            # Instead mount a sub directory underneath the /dev/ directory, e.g. /dev/vfio/
             path: /dev/vfio
         - name: hugepage-2mi
           emptyDir:
@@ -92,3 +77,6 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 4Gi
+        - name: imtl-mgr
+          persistentVolumeClaim:
+            claimName: imtl-pvc
