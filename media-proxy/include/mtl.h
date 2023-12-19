@@ -68,7 +68,7 @@ typedef struct {
     size_t frame_size; /* Size (Bytes) of single frame. */
     uint32_t fb_count; /* Frame buffer count. */
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;
@@ -112,7 +112,7 @@ typedef struct {
 
     size_t frame_size;
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;
@@ -153,7 +153,7 @@ typedef struct {
 
     size_t frame_size;
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;
@@ -208,7 +208,7 @@ typedef struct {
     uint32_t height;
     enum st_frame_fmt output_fmt;
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;

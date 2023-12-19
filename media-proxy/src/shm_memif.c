@@ -100,7 +100,7 @@ int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     INFO("RX memif connected!");
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+#if defined(ZERO_COPY)
     memif_details_t md = { 0 };
     ssize_t buflen = 2048;
     char* buf = (char*)calloc(1, buflen);
@@ -150,7 +150,7 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     INFO("RX memif connected!");
 
-#if defined(ZERO_COPY) || defined(RX_ZERO_COPY)
+#if defined(ZERO_COPY)
     memif_details_t md = { 0 };
     ssize_t buflen = 2048;
     char* buf = (char*)calloc(1, buflen);
@@ -476,7 +476,7 @@ int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
         return err;
     }
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     memif_details_t md = { 0 };
     ssize_t buflen = 2048;
     char* buf = (char*)calloc(1, buflen);
@@ -519,7 +519,7 @@ int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
         return err;
     }
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     memif_details_t md = { 0 };
     ssize_t buflen = 2048;
     char* buf = (char*)calloc(1, buflen);
@@ -746,7 +746,7 @@ int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     } while (!frame);
 
     /* Send out frame. */
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     struct st_ext_frame ext_frame = { 0 };
     ext_frame.addr[0] = shm_bufs.data;
     ext_frame.iova[0] = tx_ctx->source_begin_iova + ((uint8_t*)shm_bufs.data - tx_ctx->source_begin);
@@ -812,7 +812,7 @@ int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     } while (!frame);
 
     /* Send out frame. */
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     struct st_ext_frame ext_frame = { 0 };
     ext_frame.addr[0] = shm_bufs.data;
     ext_frame.iova[0] = tx_ctx->source_begin_iova + ((uint8_t*)shm_bufs.data - tx_ctx->source_begin);
