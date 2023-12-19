@@ -107,3 +107,7 @@ RUN ldconfig
 USER ${USER}
 
 CMD ["media_proxy"]
+
+# Add a health check command to check if a specific program is running
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD ps aux | grep "media_proxy" || exit 1
