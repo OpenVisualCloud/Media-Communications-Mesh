@@ -10,7 +10,6 @@ package controller;
 
 service Configure {
     rpc TxStart (TxControlRequest) returns (ControlReply) {}
-    rpc CreateTXSession (TxSessionParams) returns (ControlReply) {}
     rpc RxStart (RxControlRequest) returns (ControlReply) {}
     rpc TxStop (StopControlRequest) returns (ControlReply) {}
     rpc RxStop (StopControlRequest) returns (ControlReply) {}
@@ -179,4 +178,80 @@ message StopControlRequest {
 
 message ControlReply {
     string message = 1;
+}
+
+// for MSM Control Plane
+enum StreamOperation {
+	CREATE = 0;
+	UPDATE = 1;
+	DELETE = 2;
+	ADD_EP = 3;
+	DEL_EP = 4;
+	UPD_EP = 5;
+}
+
+enum ProxyProtocol {
+	TCP = 0;
+	UDP = 1;
+	QUIC = 2;
+	RTP = 3;
+}
+
+enum Encap {
+	TCP_IP = 0;
+	UDP_IP = 1;
+	QUIC_IP = 2;
+	RTP_UDP = 3;
+	RTP_UDP_MUX = 4;
+	RTP_TCP = 5;
+	RTP_TCP_MUX = 6;
+	RTP_QUIC_STREAM = 7;
+	RTP_QUIC_DGRAM = 8;
+}
+
+message Endpoint {
+	string ip = 1;
+	uint32 port = 2;
+	uint32 quic_stream = 3;
+	uint32 encap = 4;
+}
+
+message StreamData {
+	uint32 id = 1;
+	StreamOperation operation = 2;
+	ProxyProtocol protocol = 3;
+	Endpoint endpoint = 4;
+	bool enable = 5;
+}
+
+message StreamResult {
+	bool success = 1;
+	string error_message = 2;
+}
+
+service MsmDataPlane {
+	rpc stream_add_del (StreamData) returns (StreamResult) {}
+}
+
+// Health check request to find out the readiness/liveness.
+message HealthCheckRequest {
+  string service = 1;
+}
+
+// Health check response.
+message HealthCheckResponse {
+  enum ServingStatus {
+    UNKNOWN = 0;
+    SERVING = 1;
+    NOT_SERVING = 2;
+    SERVICE_UNKNOWN = 3;  // Used only by the Watch method.
+
+  }
+  ServingStatus status = 1;
+}
+
+// Health check request.
+service Health {
+  rpc Check(HealthCheckRequest) returns (HealthCheckResponse);
+  rpc Watch(HealthCheckRequest) returns (HealthCheckResponse);
 }
