@@ -29,7 +29,8 @@ RUN apt-get update --fix-missing \
     && rm -rf /var/lib/apt/lists/*
 
 ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 ARG PREFIX_DIR="/usr/local"
 ARG HOME="/home/${USER}"
@@ -94,7 +95,8 @@ RUN apt-get update --fix-missing \
 && rm -rf /var/lib/apt/lists/*
 
 ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 # Copy required files from build container
 COPY --from=builder /usr/local /usr/local
