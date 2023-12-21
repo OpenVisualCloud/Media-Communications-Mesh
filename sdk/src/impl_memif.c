@@ -318,7 +318,7 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         return NULL;
     }
 
-    if (conn_ctx->type == is_tx) {
+    if (conn_ctx->type == is_tx) {  /* TX */
         /* trigger the callbacks. */
         err = memif_poll_event(memif_conn->sockfd, 0);
         if (err != MEMIF_ERR_SUCCESS) {
@@ -370,28 +370,30 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
                 *error_code = err;
             }
         }
-    } else {
+    } else {    /* RX */
         /* waiting for the buffer ready from rx_on_receive callback. */
         if (memif_conn->buf_num <= 0) {
             err = memif_poll_event(memif_conn->sockfd, timeout);
-            if (err != MEMIF_ERR_SUCCESS) {
-                log_error("memif_poll_event: %s", memif_strerror(err));
+        }
+
+        if (err != MEMIF_ERR_SUCCESS) {
+            log_error("memif_poll_event: %s", memif_strerror(err));
+        } else {
+            if (memif_conn->buf_num > 0) {
+                buf = calloc(1, sizeof(mcm_buffer));
+                buf->metadata.seq_num = *(uint16_t*)(memif_conn->working_bufs[memif_conn->working_idx].data);
+                buf->metadata.timestamp = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num));
+                buf->len = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp));
+                buf->data = memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len);
+                memif_conn->working_idx++;
+                memif_conn->buf_num--;
+            } else { /* Timeout */
+                log_debug("Timeout to read buffer from memory queue.");
             }
         }
 
-        if (memif_conn->buf_num > 0) {
-            buf = calloc(1, sizeof(mcm_buffer));
-            buf->metadata.seq_num = *(uint16_t*)(memif_conn->working_bufs[memif_conn->working_idx].data);
-            buf->metadata.timestamp = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num));
-            buf->len = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp));
-            buf->data = memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len);
-            memif_conn->working_idx++;
-            memif_conn->buf_num--;
-        } else {
-            log_error("Failed to read buffer from memory queue.");
-            if (error_code) {
-                *error_code = err;
-            }
+        if (error_code) {
+            *error_code = err;
         }
     }
 

@@ -42,33 +42,33 @@ void usage(FILE* fp, const char* path)
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "Usage: %s [OPTION]\n", basename);
-    fprintf(fp, "-h, --help\t\t\t"
-                "Print this help and exit.\n");
-    fprintf(fp, "-w, --width=<frame_width>\t\t"
-                "Width of test video frame (default: %d).\n",
+    fprintf(fp, "-H, --help\t\t\t"
+                "Print this help and exit\n");
+    fprintf(fp, "-w, --width=<frame_width>\t"
+                "Width of test video frame (default: %d)\n",
         DEFAULT_FRAME_WIDTH);
-    fprintf(fp, "-h, --height=<frame_height>\t\t"
-                "Height of test video frame (default: %d).\n",
+    fprintf(fp, "-h, --height=<frame_height>\t"
+                "Height of test video frame (default: %d)\n",
         DEFAULT_FRAME_HEIGHT);
-    fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
-                "Test video FPS (frame per second) (default: %0.2f).\n",
+    fprintf(fp, "-f, --fps=<video_fps>\t\t"
+                "Test video FPS (frame per second) (default: %0.2f)\n",
         DEFAULT_FPS);
-    fprintf(fp, "-r, --ip=ip_address\t\t\t"
-                "Receive data from IP address (default: %s).\n",
+    fprintf(fp, "-r, --ip=ip_address\t\t"
+                "Receive data from IP address (default: %s)\n",
         DEFAULT_RECV_IP);
-    fprintf(fp, "-p, --port=port_number\t\t\t"
-                "Receive data from Port (default: %s).\n",
+    fprintf(fp, "-p, --port=port_number\t\t"
+                "Receive data from Port (default: %s)\n",
         DEFAULT_RECV_PORT);
-    fprintf(fp, "-o, --protocol=protocol_type\t\t"
-                "Set protocol type (default: %s).\n",
+    fprintf(fp, "-o, --protocol=protocol_type\t"
+                "Set protocol type (default: %s)\n",
         DEFAULT_PROTOCOL);
-    fprintf(fp, "-t, --type=payload_type\t\t\t"
-                "Payload type (default: %s).\n",
+    fprintf(fp, "-t, --type=payload_type\t\t"
+                "Payload type (default: %s)\n",
         DEFAULT_PAYLOAD_TYPE);
-    fprintf(fp, "-s, --dumpfile=file_name\t\t\t"
-                "Save stream to local file (example: %s).\n",
+    fprintf(fp, "-s, --dumpfile=file_name\t"
+                "Save stream to local file (example: %s)\n",
         DEFAULT_LOCAL_FILE);
-    fprintf(fp, "-k, --socketpath=socket_path\t\t\t"
+    fprintf(fp, "-k, --socketpath=socket_path\t"
                 "Set memif socket path (default: %s)\n",
         DEFAULT_MEMIF_SOCKET_PATH);
     fprintf(fp, "-m, --master=is_master\t\t"
@@ -77,10 +77,12 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-d, --interfaceid=interface_id\t"
                 "Set memif conn interface id (default: %d)\n",
         DEFAULT_MEMIF_INTERNFACE_ID);
+    fprintf(fp, "\n");
 }
 
 int main(int argc, char** argv)
 {
+    int err = 0;
     char recv_addr[46] = DEFAULT_RECV_IP;
     char recv_port[6] = DEFAULT_RECV_PORT;
     char protocol_type[32] = DEFAULT_PROTOCOL;
@@ -103,7 +105,7 @@ int main(int argc, char** argv)
     int help_flag = 0;
     int opt;
     struct option longopts[] = {
-        { "help", no_argument, &help_flag, 1 },
+        { "help", no_argument, &help_flag, 'H' },
         { "width", required_argument, NULL, 'w' },
         { "height", required_argument, NULL, 'h' },
         { "fps", required_argument, NULL, 'f' },
@@ -245,7 +247,7 @@ int main(int argc, char** argv)
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {
-        printf("Fail to connect to MCM data plane.\n");
+        printf("Fail to connect to MCM data plane\n");
         exit(-1);
     }
     signal(SIGINT, intHandler);
@@ -257,7 +259,7 @@ int main(int argc, char** argv)
     void *ptr = NULL;
     int timeout = -1;
     bool first_frame = true;
-    long latency = 0;
+    float latency = 0;
     struct timespec ts_recv = {}, ts_send = {};
     struct timespec ts_begin = {}, ts_end = {};
     FILE* dump_fp = NULL;
@@ -265,7 +267,7 @@ int main(int argc, char** argv)
     if (strlen(file_name) > 0) {
         dump_fp = fopen(file_name, "wb");
     }
-    clock_gettime(CLOCK_REALTIME, &ts_begin);
+
     while (keepRunning) {
         /* receive frame */
         if (first_frame) {
@@ -276,14 +278,18 @@ int main(int argc, char** argv)
             timeout = 1000;
         }
 
-        buf = mcm_dequeue_buffer(dp_ctx, timeout, NULL);
+        buf = mcm_dequeue_buffer(dp_ctx, timeout, &err);
         if (buf == NULL) {
-            printf("get data from buffer fail\n");
+            if (err == 0) {
+                printf("Read buffer timeout\n");
+            } else {
+                printf("Failed to read buffer\n");
+            }
             break;
         }
-        printf("INFO: buf->metadata.seq_num   = %d\n", buf->metadata.seq_num);
-        printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
-        printf("INFO: buf->len                = %ld\n", buf->len);
+        // printf("INFO: buf->metadata.seq_num   = %d\n", buf->metadata.seq_num);
+        // printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
+        // printf("INFO: buf->len                = %ld\n", buf->len);
 
         clock_gettime(CLOCK_REALTIME, &ts_recv);
         if (first_frame) {
@@ -318,10 +324,10 @@ int main(int argc, char** argv)
                     clock_gettime(CLOCK_REALTIME, &ts_begin);
                 }
 
-                latency = 1000 * (ts_recv.tv_sec - ts_send.tv_sec);
-                latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000;
+                latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
+                latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
 
-                printf("RX frames: [%u], latency: %ld ms, FPS: %0.3f\n", frame_count, latency, fps);
+                printf("RX frames: [%u], latency: %0.1f ms, FPS: %0.3f\n", frame_count, latency, fps);
             }
         } else { //TODO: rtsp receiver side test code
             if (dump_fp) {
@@ -342,7 +348,7 @@ int main(int argc, char** argv)
     if (dump_fp) {
         fclose(dump_fp);
     }
-    printf("Destroy MCM connection.\n");
+    printf("Destroy MCM connection\n");
     mcm_destroy_connection(dp_ctx);
 
     return 0;
