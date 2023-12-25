@@ -18,8 +18,7 @@ jobs:
             egress-policy: audit
         - name: Checkout code
           uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
-
-  scan_fs:
+  scan:
     runs-on: ubuntu-20.04
     needs: checkout_code
     permissions:
@@ -31,33 +30,12 @@ jobs:
         uses: aquasecurity/trivy-action@91713af97dc80187565512baba96e4364e983601 # master
         with:
           scan-type: 'fs'
+          hide-progress: false
           ignore-unfixed: true
           format: 'sarif'
-          output: 'trivy-results-fs.sarif'
+          output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
       - name: Upload Trivy 'fs' scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@012739e5082ff0c22ca6d6ab32e07c36df03c4a4 # v3.22.12
         with:
-          sarif_file: 'trivy-results-fs.sarif'
-
-  scan_config:
-    runs-on: ubuntu-20.04
-    needs: checkout_code
-    permissions:
-      contents: read  # for actions/checkout to fetch code
-      security-events: write  # for github/codeql-action/upload-sarif to upload SARIF results
-    name: Scan Config
-    steps:
-      - name: Run Trivy vulnerability scanner for 'config'
-        uses: aquasecurity/trivy-action@91713af97dc80187565512baba96e4364e983601 # master
-        with:
-          scan-type: 'config'
-          hide-progress: false
-          ignore-unfixed: true
-          format: 'sarif'
-          output: 'trivy-results-config.sarif'
-          severity: 'CRITICAL,HIGH,MEDIUM'
-      - name: Upload Trivy 'config' scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@b374143c1149a9115d881581d29b8390bbcbb59c # v3.22.11
-        with:
-          sarif_file: 'trivy-results-config.sarif'
+          sarif_file: 'trivy-results.sarif'
