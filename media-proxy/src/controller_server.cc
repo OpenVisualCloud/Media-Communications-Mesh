@@ -77,6 +77,31 @@ Status ConfigureServiceImpl::Stop(ServerContext* context, const StopControlReque
     return Status::OK;
 }
 
+MsmDataPlaneServiceImpl::MsmDataPlaneServiceImpl(ProxyContext* ctx)
+    : m_ctx(ctx)
+{
+}
+
+Status MsmDataPlaneServiceImpl::stream_add_del(ServerContext* context, const StreamData* request, StreamResult* reply)
+{
+    return Status::OK;
+}
+
+HealthServiceImpl::HealthServiceImpl(ProxyContext* ctx)
+    : m_ctx(ctx)
+{
+}
+
+Status HealthServiceImpl::Check(ServerContext* context, const HealthCheckRequest* request, HealthCheckResponse* reply)
+{
+    return Status::OK;
+}
+
+Status HealthServiceImpl::Watch(ServerContext* context, const HealthCheckRequest* request, HealthCheckResponse* reply)
+{
+    return Status::OK;
+}
+
 void RunRPCServer(ProxyContext* ctx)
 {
     ConfigureServiceImpl service(ctx);
