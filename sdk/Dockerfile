@@ -19,7 +19,8 @@ RUN apt-get update && apt-get full-upgrade -y && \
 
 # Create a non-root user
 ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 # Set default environment variables for the user
 ARG PREFIX_DIR="/usr/local"
@@ -51,7 +52,8 @@ RUN apt-get update && apt-get full-upgrade -y && \
     rm -rf /var/lib/apt/lists/*
 
 ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 # Set default environment variables for the user
 ARG PREFIX_DIR="/usr/local"

@@ -23,6 +23,9 @@ spec:
           workingDir: /opt/mcm/sdk/out/samples
           command: ["./sender_app"]
           args: ["-w", "1920", "-h", "1080", "-f", "30", "-s", "192.168.96.20", "-p", "10000", "-t", "st20", "-n", "3000"]
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
           env:
             - name: NODE_NAME
               valueFrom:
