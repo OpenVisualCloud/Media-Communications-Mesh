@@ -29,6 +29,9 @@ spec:
                 fieldRef:
                   fieldPath: spec.nodeName
           resources:
+            requests:
+              cpu: 2
+              memory: 4Gi
             limits:
               cpu: 2
               memory: 8Gi

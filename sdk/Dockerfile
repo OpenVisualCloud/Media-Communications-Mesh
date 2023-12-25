@@ -69,6 +69,8 @@ COPY --from=builder ${PREFIX_DIR} ${PREFIX_DIR}
 
 RUN ldconfig
 
+USER ${USER}
+
 # Set the working directory
 WORKDIR /opt/mcm/sdk/out/samples
 
