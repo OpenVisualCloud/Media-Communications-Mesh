@@ -1,41 +1,37 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: media-proxy
+  name: media-proxy-rx
   namespace: mcm
   labels:
-    app: media-proxy
+    app: media-proxy-rx
 spec:
   selector:
     matchLabels:
-      app: media-proxy
+      app: media-proxy-rx
   template:
     metadata:
       labels:
-        app: media-proxy
+        app: media-proxy-rx
     spec:
       nodeSelector:
         node-role.kubernetes.io/worker: "true"
+        mcm-type: rx
       containers:
-        - name: media-proxy
+        - name: media-proxy-rx
           image: mcm/media-proxy:latest
           imagePullPolicy: Never
-          env:
-          - name: NODE_NAME
-            valueFrom:
-              fieldRef:
-                fieldPath: spec.nodeName
-          - name: NODE_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.hostIP
-          - name: POD_IP
-            valueFrom:
-              fieldRef:
-                fieldPath: status.podIP
           command: [ "media_proxy" ]
-          args: [ "-d", "kernel:eth0", "-i", $(POD_IP) ]
+          args: [ "-d", "0000:31:11.5", "-i", "192.168.96.20" ]
+          env:
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
           resources:
+            requests:
+              cpu: 2
+              memory: 4Gi
             limits:
               cpu: 2
               memory: 8Gi
@@ -73,8 +69,6 @@ spec:
             path: /tmp/mcm/memif
         - name: dev-vfio
           hostPath:
-            # Do not mount the top-level /dev/ directory for security reasons.
-            # Instead mount a sub directory underneath the /dev/ directory, e.g. /dev/vfio/
             path: /dev/vfio
         - name: hugepage-2mi
           emptyDir:

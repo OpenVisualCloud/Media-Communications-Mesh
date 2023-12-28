@@ -36,20 +36,10 @@ else()
 endif()
 
 # Enabled by default
-OPTION(ENABLE_ZERO_COPY "Enable zero-copy mode for both RX & TX Pods." ON)
+option(ENABLE_ZERO_COPY "Enable zero-copy mode to avoid memory copying between Media Proxy and IMTL" ON)
 IF(ENABLE_ZERO_COPY)
 	ADD_DEFINITIONS(-DZERO_COPY)
 ENDIF(ENABLE_ZERO_COPY)
-
-OPTION(ENABLE_TX_ZERO_COPY "Enable zero-copy mode for TX Pod." ON)
-IF(ENABLE_TX_ZERO_COPY)
-	ADD_DEFINITIONS(-DTX_ZERO_COPY)
-ENDIF(ENABLE_TX_ZERO_COPY)
-
-OPTION(ENABLE_RX_ZERO_COPY "Enable zero-copy mode for RX Pod." ON)
-IF(ENABLE_RX_ZERO_COPY)
-	ADD_DEFINITIONS(-DRX_ZERO_COPY)
-ENDIF(ENABLE_RX_ZERO_COPY)
 
 set(proto_name controller)
 set(target media_proxy)

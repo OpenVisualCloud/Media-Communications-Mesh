@@ -2,14 +2,14 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:22.04@sha256:8eab65df33a6de2844c9aefd19efe8ddb87b7df5e9185a4ab73af936225685bb as builder
+FROM ubuntu:22.04@sha256:6042500cf4b44023ea1894effe7890666b0c5c7871ed83a97c36c76ae560bb9b as builder
 LABEL maintainer="qiang.han@intel.com"
 
 ENV DEBIAN_FRONTEND noninteractive
 
 # Install package dependencies
 RUN apt-get update --fix-missing \
-    # && apt-get full-upgrade -y \
+    && apt-get full-upgrade -y \
     && apt-get install --no-install-recommends -y apt-utils \
     software-properties-common ca-certificates \
     libtool autoconf automake pkg-config \
@@ -29,23 +29,23 @@ RUN apt-get update --fix-missing \
     && rm -rf /var/lib/apt/lists/*
 
 ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 ARG PREFIX_DIR="/usr/local"
 ARG HOME="/home/${USER}"
 
 ENV PATH="${PREFIX_DIR}/bin:$HOME/.local/bin:$HOME/bin:$HOME/usr/bin:$PATH"
 
-ARG MCM_DIR=/opt/mcm/media-communications-mesh
-ARG MTL_DIR=/opt/mcm/3rd_party/mtl
-ARG DPDK_DIR=/opt/mcm/3rd_party/dpdk
+ARG MCM_DIR=/opt/mcm
+ARG MTL_DIR=/opt/mtl
+ARG DPDK_DIR=/opt/dpdk
 
-RUN mkdir -p /opt/mcm/3rd_party/
 RUN adduser ${USER} sudo \
         && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 # Install Conan using pip3 package installer.
-RUN python3 -m pip install --no-cache-dir conan=1.62.0
+RUN python3 -m pip install --no-cache-dir --require-hashes -r requirements.txt
 
 # Build DPDK/IMTL
 ENV DPDK_VER=23.03
@@ -74,7 +74,7 @@ RUN cmake -DgRPC_INSTALL=ON \
         -DgRPC_BUILD_TESTS=OFF \
         -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} \
         ../.. && \
-    make -j && \
+    make -j `nproc` && \
     make install && \
     rm -rf /tmp/*
 
@@ -83,16 +83,20 @@ RUN git clone --depth 1 --branch main https://github.com/OpenVisualCloud/Media-C
 WORKDIR $MCM_DIR
 RUN ./build.sh
 
-## Re-build container for optimised runtime environment using clean Ubuntu release
-FROM ubuntu:22.04@sha256:8eab65df33a6de2844c9aefd19efe8ddb87b7df5e9185a4ab73af936225685bb
+# Re-build container for optimised runtime environment using clean Ubuntu release
+FROM ubuntu:22.04@sha256:6042500cf4b44023ea1894effe7890666b0c5c7871ed83a97c36c76ae560bb9b
+LABEL maintainer="qiang.han@intel.com"
 
-ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ENV DEBIAN_FRONTEND noninteractive
 
 RUN apt-get update --fix-missing \
 && apt-get install -y --no-install-recommends libnuma1 libjson-c5 libpcap0.8 libssl3 libatomic1 libbsd0 \
 && apt-get clean \
 && rm -rf /var/lib/apt/lists/*
+
+ARG USER=docker
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 # Copy required files from build container
 COPY --from=builder /usr/local /usr/local
@@ -105,3 +109,7 @@ RUN ldconfig
 USER ${USER}
 
 CMD ["media_proxy"]
+
+# Add a health check command to check if a specific program is running
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD ps aux | grep "media_proxy" || exit 1

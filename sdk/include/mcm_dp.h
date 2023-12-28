@@ -17,6 +17,16 @@ extern "C" {
 
 #include "libmemif.h"
 
+typedef enum {
+    MCM_DP_SUCCESS = 0,
+    MCM_DP_ERROR_INVALID_PARAM,
+    MCM_DP_ERROR_CONNECTION_FAILED,
+    MCM_DP_ERROR_TIMEOUT,
+    MCM_DP_ERROR_MEMORY_ALLOCATION,
+    // Add more error codes as needed
+    MCM_DP_ERROR_UNKNOWN = -1
+} mcm_dp_error;
+
 typedef struct {
     memif_socket_args_t socket_args;
     memif_conn_args_t conn_args;
