@@ -43,6 +43,8 @@ public:
     /*udp pool*/
     mtl_sch_handle schs[SCH_CNT];
     bool schs_ready;
+    bool imtl_init_preparing;
+    bool imtl_init_ready;
 
     std::string mDevPort;
     std::string mDpAddress;

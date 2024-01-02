@@ -22,8 +22,6 @@ ProxyContext::ProxyContext(void)
     , mSessionCount(0)
 {
     mTcpCtrlPort = 8002;
-    /*udp poll*/
-    schs_ready = false;
 }
 
 ProxyContext::ProxyContext(std::string rpc_addr, std::string tcp_addr)
@@ -43,6 +41,8 @@ try : mRpcCtrlAddr(rpc_addr), mTcpCtrlAddr(tcp_addr), mSessionCount(0) {
 
     mTcpCtrlPort = std::stoi(sub_str[1]);
     schs_ready = false;
+    imtl_init_preparing = false;
+    imtl_init_ready = false;
 } catch (...) {
 }
 
@@ -744,7 +744,10 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     memif_ops_t memif_ops = { 0 };
     int ret;
 
-    if (mDevHandle == NULL) {
+    if (mDevHandle == NULL && imtl_init_preparing == false) {
+
+ 	    imtl_init_preparing = true;
+
         struct mtl_init_params st_param = {};
 
         ParseStInitParam(request, &st_param);
@@ -756,35 +759,42 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         if (mDevHandle == NULL) {
             INFO("%s, Fail to initialize MTL.\n", __func__);
             return -1;
-        }
+        } else {
+            /*udp pool*/
+            if (schs_ready == false) {
+                struct mtl_sch_ops sch_ops;
+                memset(&sch_ops, 0x0, sizeof(sch_ops));
+
+                sch_ops.nb_tasklets = TASKLETS;
+
+                for (int i = 0; i < SCH_CNT; i++) {
+                    char sch_name[32];
+
+                    snprintf(sch_name, sizeof(sch_name), "sch_udp_%d", i);
+                    sch_ops.name = sch_name;
+                    mtl_sch_handle sch = mtl_sch_create(mDevHandle, &sch_ops);
+                    if ( sch == NULL) {
+                        INFO("%s, error: schduler create fail.", __func__);
+                        break;
+                    }
+                    ret = mtl_sch_start(sch);
+                    INFO("%s, start schduler %d.", __func__, i);
+                    if (ret < 0) {
+                        ret = mtl_sch_free(sch);
+                        break;
+                    }
+                    schs[i] = sch;
+                }
+                schs_ready = true;
+            }
+
+            imtl_init_preparing = false;
+            imtl_init_ready = true;
+	    }
     }
 
-    /*udp pool*/
-    if (schs_ready == false) {
-        struct mtl_sch_ops sch_ops;
-        memset(&sch_ops, 0x0, sizeof(sch_ops));
-        
-        sch_ops.nb_tasklets = TASKLETS;
-
-        for (int i = 0; i < SCH_CNT; i++) {
-            char sch_name[32];
-            
-            snprintf(sch_name, sizeof(sch_name), "sch_udp_%d", i);
-            sch_ops.name = sch_name;
-            mtl_sch_handle sch = mtl_sch_create(mDevHandle, &sch_ops);
-            if ( sch == NULL) {
-                INFO("%s, error: schduler create fail.", __func__);
-                break;
-            }
-            ret = mtl_sch_start(sch);
-            INFO("%s, start schduler %d.", __func__, i);
-            if (ret < 0) {
-                ret = mtl_sch_free(sch);
-                break;
-            }
-            schs[i] = sch;  
-        }
-        schs_ready = true;
+    while (imtl_init_ready == false) {
+        sleep (1);
     }
 
     st_ctx = new (mtl_session_context_t);
