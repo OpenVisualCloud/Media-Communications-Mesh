@@ -7,7 +7,6 @@
 // #include <signal.h>
 
 #include "api_server_tcp.h"
-#include "mp_ctrl_proto.h"
 #include <mcm_dp.h>
 
 static volatile bool keepRunning = true;

@@ -11,7 +11,6 @@
 
 #include "logger.h"
 #include "media_proxy_ctrl.h"
-#include "mp_ctrl_proto.h"
 
 int get_media_proxy_addr(mcm_dp_addr* proxy_addr)
 {
