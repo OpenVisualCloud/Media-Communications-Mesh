@@ -40,6 +40,8 @@ typedef struct {
     uint16_t rx_buf_num;
 } shm_connection_t;
 
+void print_memif_details(memif_conn_handle_t conn);
+
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
 int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
