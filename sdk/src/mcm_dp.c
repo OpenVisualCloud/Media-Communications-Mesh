@@ -7,8 +7,8 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "impl_memif.h"
-#include "impl_udp.h"
+#include "memif_impl.h"
+#include "udp_impl.h"
 #include "logger.h"
 #include "mcm_dp.h"
 #include "media_proxy_ctrl.h"

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "impl_memif.h"
+#include "memif_impl.h"
 #include "libmemif.h"
 #include "logger.h"
 #include <stdlib.h>
