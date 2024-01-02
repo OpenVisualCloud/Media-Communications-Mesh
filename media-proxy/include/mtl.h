@@ -68,12 +68,11 @@ typedef struct {
     size_t frame_size; /* Size (Bytes) of single frame. */
     uint32_t fb_count; /* Frame buffer count. */
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
 #endif
@@ -113,12 +112,11 @@ typedef struct {
 
     size_t frame_size;
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
 #endif
@@ -147,20 +145,30 @@ typedef struct {
 
     bool stop;
 
+    int fb_cnt;
+    uint16_t fb_idx;
     int fb_send;
     pthread_cond_t st22p_wake_cond;
     pthread_mutex_t st22p_wake_mutex;
 
     size_t frame_size;
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
+
+    void* ext_fb_malloc;
+    uint8_t* ext_fb;
+    mtl_iova_t ext_fb_iova;
+    size_t ext_fb_iova_map_sz;
+    struct st_ext_frame* p_ext_frames;
+    int ext_idx;
+    bool ext_fb_in_use[3]; /* assume 3 framebuffer */
+    mtl_dma_mem_handle dma_mem;
 #endif
 
     /* memif parameters */
@@ -193,16 +201,30 @@ typedef struct {
     pthread_mutex_t st22p_wake_mutex;
 
     size_t frame_size; /* Size (Bytes) of single frame. */
+    uint16_t fb_idx;
     uint32_t fb_count; /* Frame buffer count. */
 
-#if defined(ZERO_COPY) || defined(TX_ZERO_COPY)
+    uint32_t width;
+    uint32_t height;
+    enum st_frame_fmt output_fmt;
+
+#if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
     uint8_t* frame_cursor;
 
-    void* source_begin_malloc;
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
+
+    void* ext_fb_malloc;
+    uint8_t* ext_fb;
+    mtl_iova_t ext_fb_iova;
+    size_t ext_fb_iova_map_sz;
+    struct st20_ext_frame* ext_frames;
+    struct st_ext_frame* p_ext_frames;
+    int ext_idx;
+    bool ext_fb_in_use[3]; /* assume 3 framebuffer */
+    mtl_dma_mem_handle dma_mem;
 #endif
 
     /* share memory arguments */
@@ -224,7 +246,6 @@ typedef struct {
     void* frames_begin_addr;
     mtl_iova_t frames_begin_iova;
     size_t frames_iova_map_sz;
-    struct st20_ext_frame* ext_frames;
 } rx_st22p_session_context_t;
 
 typedef struct {
@@ -468,17 +489,17 @@ typedef struct {
     };
 } mtl_session_context_t;
 
-/* Initialize Kahawai library */
+/* Initialize IMTL library */
 mtl_handle inst_init(struct mtl_init_params* st_param);
 
-/* Deinitialize Kahawai */
+/* Deinitialize IMTL */
 void mtl_deinit(mtl_handle dev_handle);
 
 /* TX: Create ST20P session */
 tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops);
 
 /* RX: Create ST20P session */
-rx_session_context_t* mtl_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
+rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
 
 /* TX: Stop ST20P session */
 void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx);
