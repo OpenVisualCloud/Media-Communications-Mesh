@@ -42,6 +42,7 @@ try : mRpcCtrlAddr(rpc_addr), mTcpCtrlAddr(tcp_addr), mSessionCount(0) {
     }
 
     mTcpCtrlPort = std::stoi(sub_str[1]);
+    schs_ready = false;
 } catch (...) {
 }
 
@@ -203,6 +204,7 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->rx_queues_cnt[MTL_PORT_P] = 128;
     st_param->tx_queues_cnt[MTL_PORT_P] = 128;
     st_param->lcores = NULL;
+    st_param->memzone_max = 3000;
 
     INFO("ProxyContext: ParseStInitParam...");
     INFO("num_ports : %d", st_param->num_ports);
