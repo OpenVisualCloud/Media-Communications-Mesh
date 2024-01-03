@@ -28,7 +28,7 @@ jobs:
     name: Scan FS
     steps:
       - name: Run Trivy vulnerability scanner for 'fs'
-        uses: aquasecurity/trivy-action@91713af97dc80187565512baba96e4364e983601 # master
+        uses: aquasecurity/trivy-action@d43c1f16c00cfd3978dde6c07f4bbcf9eb6993ca # master
         with:
           scan-type: 'fs'
           ignore-unfixed: true
@@ -49,7 +49,7 @@ jobs:
     name: Scan Config
     steps:
       - name: Run Trivy vulnerability scanner for 'config'
-        uses: aquasecurity/trivy-action@91713af97dc80187565512baba96e4364e983601 # master
+        uses: aquasecurity/trivy-action@d43c1f16c00cfd3978dde6c07f4bbcf9eb6993ca # master
         with:
           scan-type: 'config'
           hide-progress: false
