@@ -11,7 +11,6 @@
 
 #include "logger.h"
 #include "media_proxy_ctrl.h"
-#include "mp_ctrl_proto.h"
 
 int get_media_proxy_addr(mcm_dp_addr* proxy_addr)
 {
@@ -127,16 +126,10 @@ int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* sess
     return 0;
 }
 
-// #define FRAME_SIZE 5184000          // yuv422p10be (1920*1080*2.5)
-// #define FRAME_SIZE 3110400          // yuv420 (nv12) (1920*1080*3/2)
 int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param* param, memif_conn_param* memif_conn_args)
 {
     ssize_t ret = 0;
     mcm_proxy_ctl_msg msg = {};
-    // size_t len = 0;
-    // char* buf = NULL;
-    // char type_str[8] = {};
-    // static int mSessionCount = 0;
 
     if (sockfd < 0 || memif_conn_args == NULL) {
         log_error("Illegal Parameters.");
@@ -178,89 +171,6 @@ int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param*
         log_error("Receive interface id failed.");
         return -1;
     }
-
-    /* debug code */
-    // memif_conn_args->conn_args.buffer_size = FRAME_SIZE;
-    // memif_conn_args->conn_args.log2_ring_size = 2;
-    // memif_conn_args->conn_args.is_master = 0;
-
-    // msg.command.inst = MCM_QUERY_MEMIF_PATH;
-    // msg.command.data_len = sizeof(session_id);
-    // msg.data = &session_id;
-
-    /* memif path */
-    /* header */
-    // if (write(sockfd, &msg.header, sizeof(msg.header)) <= 0) {
-    //     log_error("Send message header failed.");
-    //     return -1;
-    // }
-
-    // /* command */
-    // if (write(sockfd, &msg.command, sizeof(msg.command)) <= 0) {
-    //     log_error("Send command failed.");
-    //     return -1;
-    // }
-
-    // /* parameters */
-    // if (write(sockfd, msg.data, msg.command.data_len) <= 0) {
-    //     log_error("Send parameters failed.");
-    //     return -1;
-    // }
-
-    // /* get result */
-    // if (read(sockfd, &len, sizeof(len)) <= 0) {
-    //     log_error("Receive memif path failed.");
-    //     return -1;
-    // }
-    // buf = calloc(len, 1);
-    // if (read(sockfd, buf, len) <= 0) {
-    //     log_error("Receive memif path failed.");
-    //     return -1;
-    // }
-
-    // /* interface id */
-    // msg.command.inst = MCM_QUERY_MEMIF_ID;
-    // msg.command.data_len = sizeof(session_id);
-    // msg.data = &session_id;
-
-    // /* header */
-    // if (write(sockfd, &msg.header, sizeof(msg.header)) <= 0) {
-    //     log_error("Send message header failed.");
-    //     return -1;
-    // }
-
-    // /* command */
-    // if (write(sockfd, &msg.command, sizeof(msg.command)) <= 0) {
-    //     log_error("Send command failed.");
-    //     return -1;
-    // }
-
-    // /* parameters */
-    // if (write(sockfd, msg.data, msg.command.data_len) <= 0) {
-    //     log_error("Send parameters failed.");
-    //     return -1;
-    // }
-
-    // /* get result */
-    // if (read(sockfd, &memif_conn_args->conn_args.interface_id, sizeof(memif_conn_args->conn_args.interface_id)) <= 0) {
-    //     log_error("Receive interface id failed.");
-    //     return -1;
-    // }
-
-    // if (param->type == is_tx) {
-    //     strncpy(type_str, "tx", sizeof(type_str));
-    // } else {
-    //     strncpy(type_str, "rx", sizeof(type_str));
-    // }
-
-    // snprintf(memif_conn_args->socket_args.app_name, sizeof(memif_conn_args->socket_args.app_name),
-    //     "memif_%s_%d", type_str, mSessionCount);
-    // snprintf((char*)memif_conn_args->conn_args.interface_name, sizeof(memif_conn_args->conn_args.interface_name),
-    //     "memif_%s_%d", type_str, mSessionCount);
-    // snprintf(memif_conn_args->socket_args.path, sizeof(memif_conn_args->socket_args.path),
-    //     "/run/mcm/media_proxy_%s_%d.sock", type_str, mSessionCount);
-
-    // mSessionCount++;
 
     return 0;
 }

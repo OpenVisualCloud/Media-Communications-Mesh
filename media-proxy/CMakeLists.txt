@@ -57,7 +57,6 @@ set(grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.cc")
 set(grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.h")
 
 aux_source_directory(./src proxy_srcs)
-list(REMOVE_ITEM proxy_srcs "./src/media_proxy.cc")
 
 add_definitions(-DHAVE_MEMFD_CREATE)
 
@@ -79,7 +78,7 @@ ADD_DEFINITIONS(-DIMTL_CONFIG_PATH=\"${CMAKE_INSTALL_PREFIX}/etc/imtl.json\")
 # Include generated *.pb.h files
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include)
 
-add_executable(media_proxy ${proto_srcs} ${grpc_srcs} ${proxy_srcs} ./src/media_proxy.cc)
+add_executable(media_proxy ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
 target_link_libraries(media_proxy PRIVATE m ${MTL_LIB} ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB})
 
 install(TARGETS media_proxy DESTINATION ${CMAKE_INSTALL_PATH} COMPONENT media_proxy)

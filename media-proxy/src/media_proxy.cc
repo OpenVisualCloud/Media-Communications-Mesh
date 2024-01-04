@@ -7,8 +7,8 @@
 #include <getopt.h>
 #include <thread>
 
-#include "controller_server.h"
-#include "tcp_controller.h"
+#include "api_server_grpc.h"
+#include "api_server_tcp.h"
 
 #ifndef IMTL_CONFIG_PATH
 #defne IMTL_CONFIG_PATH "./imtl.json"
