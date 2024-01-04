@@ -37,7 +37,7 @@ extern "C" {
 #define NS_PER_MS (1000 * 1000)
 #endif
 
-#define SCH_CNT 1
+#define SCH_CNT 10
 #define TASKLETS 100
 
 enum direction {
@@ -51,6 +51,7 @@ typedef struct {
     char interface_name[32];
     uint32_t interface_id;
     char socket_path[108];
+    uint32_t msessioncount;
 } memif_ops_t;
 
 typedef struct {
