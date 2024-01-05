@@ -94,6 +94,8 @@ HealthServiceImpl::HealthServiceImpl(ProxyContext* ctx)
 
 Status HealthServiceImpl::Check(ServerContext* context, const HealthCheckRequest* request, HealthCheckResponse* reply)
 {
+    reply->set_status(controller::HealthCheckResponse_ServingStatus_SERVING);
+
     return Status::OK;
 }
 

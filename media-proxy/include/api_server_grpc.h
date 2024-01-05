@@ -36,6 +36,7 @@ using controller::StreamResult;
 using controller::Health;
 using controller::HealthCheckRequest;
 using controller::HealthCheckResponse;
+using controller::HealthCheckResponse_ServingStatus;
 
 class ConfigureServiceImpl final : public Configure::Service {
 public:
