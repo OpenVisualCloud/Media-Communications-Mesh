@@ -95,7 +95,7 @@ int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t width, uint32_t height, v
     }
 
     buf->metadata.seq_num = buf->metadata.timestamp = frm_idx++;
-    buf->len = frame_size;
+    buf->metadata.len = frame_size;
 
     return ret;
 }
