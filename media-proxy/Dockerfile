@@ -29,7 +29,8 @@ RUN apt-get update --fix-missing \
     && rm -rf /var/lib/apt/lists/*
 
 ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 ARG PREFIX_DIR="/usr/local"
 ARG HOME="/home/${USER}"
@@ -44,7 +45,7 @@ RUN adduser ${USER} sudo \
         && echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
 
 # Install Conan using pip3 package installer.
-RUN python3 -m pip install --no-cache-dir conan==1.62.0
+RUN python3 -m pip install --no-cache-dir --require-hashes -r requirements.txt
 
 # Build DPDK/IMTL
 ENV DPDK_VER=23.03
@@ -94,7 +95,8 @@ RUN apt-get update --fix-missing \
 && rm -rf /var/lib/apt/lists/*
 
 ARG USER=docker
-RUN useradd -l -m -s /bin/bash ${USER}
+ARG UID=1000
+RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
 
 # Copy required files from build container
 COPY --from=builder /usr/local /usr/local
@@ -107,3 +109,7 @@ RUN ldconfig
 USER ${USER}
 
 CMD ["media_proxy"]
+
+# Add a health check command to check if a specific program is running
+HEALTHCHECK --interval=30s --timeout=3s \
+  CMD ps aux | grep "media_proxy" || exit 1

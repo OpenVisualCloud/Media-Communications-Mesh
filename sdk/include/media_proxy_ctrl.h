@@ -11,7 +11,7 @@
 extern "C" {
 #endif
 
-#include "impl_memif.h"
+#include "memif_impl.h"
 #include "libmemif.h"
 #include "mcm_dp.h"
 

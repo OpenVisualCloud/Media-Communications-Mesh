@@ -20,10 +20,14 @@
         logmsg("INFO", fmt, ##__VA_ARGS__); \
     } while (0)
 
-#define log_debug(fmt, ...)                  \
-    do {                                     \
-        logmsg("DEBUG", fmt, ##__VA_ARGS__); \
-    } while (0)
+#ifdef DEBUG
+  #define log_debug(fmt, ...)                  \
+      do {                                     \
+          logmsg("DEBUG", fmt, ##__VA_ARGS__); \
+      } while (0)
+#else
+  #define log_debug(fmt, ...)  // Define log_debug as empty in release build
+#endif
 
 #define log_warn(fmt, ...)                  \
     do {                                    \

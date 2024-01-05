@@ -43,32 +43,32 @@ void usage(FILE* fp, const char* path)
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "usage: %s [OPTION]\n", basename);
-    fprintf(fp, "-h, --help\t\t\t"
-                "Print this help and exit.\n");
-    fprintf(fp, "-w, --width=<frame_width>\t\t"
-                "Width of test video frame (default: %d).\n",
+    fprintf(fp, "-H, --help\t\t\t"
+                "Print this help and exit\n");
+    fprintf(fp, "-w, --width=<frame_width>\t"
+                "Width of test video frame (default: %d)\n",
         DEFAULT_FRAME_WIDTH);
-    fprintf(fp, "-h, --height=<frame_height>\t\t"
-                "Height of test video frame (default: %d).\n",
+    fprintf(fp, "-h, --height=<frame_height>\t"
+                "Height of test video frame (default: %d)\n",
         DEFAULT_FRAME_HEIGHT);
-    fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
-                "Test video FPS (frame per second) (default: %0.2f).\n",
+    fprintf(fp, "-f, --fps=<video_fps>\t\t"
+                "Test video FPS (frame per second) (default: %0.2f)\n",
         DEFAULT_FPS);
-    fprintf(fp, "-s, --ip=ip_address\t\t\t"
-                "Send data to IP address (default: %s).\n",
+    fprintf(fp, "-s, --ip=ip_address\t\t"
+                "Send data to IP address (default: %s)\n",
         DEFAULT_SEND_IP);
-    fprintf(fp, "-p, --port=port_number\t\t\t"
-                "Send data to Port (default: %s).\n",
+    fprintf(fp, "-p, --port=port_number\t\t"
+                "Send data to Port (default: %s)\n",
         DEFAULT_SEND_PORT);
-    fprintf(fp, "-o, --protocol=protocol_type\t\t"
-                "Set protocol type (default: %s).\n",
+    fprintf(fp, "-o, --protocol=protocol_type\t"
+                "Set protocol type (default: %s)\n",
         DEFAULT_PROTOCOL);
-    fprintf(fp, "-n, --number=frame_number\t\t"
-                "Total frame number to send (default: %d).\n",
+    fprintf(fp, "-n, --number=frame_number\t"
+                "Total frame number to send (default: %d)\n",
         DEFAULT_TOTAL_NUM);
-    fprintf(fp, "-i, --file=input_file\t\t\t"
-                "Input file name (optional).\n");
-    fprintf(fp, "-s, --socketpath=socket_path\t\t"
+    fprintf(fp, "-i, --file=input_file\t\t"
+                "Input file name (optional)\n");
+    fprintf(fp, "-s, --socketpath=socket_path\t"
                 "Set memif socket path (default: %s)\n",
         DEFAULT_MEMIF_SOCKET_PATH);
     fprintf(fp, "-m, --master=is_master\t\t"
@@ -77,6 +77,7 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-i, --interfaceid=interface_id\t"
                 "Set memif conn interface id (default: %d)\n",
         DEFAULT_MEMIF_INTERNFACE_ID);
+    fprintf(fp, "\n");
 }
 
 int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t width, uint32_t height, video_pixel_format pix_fmt)
@@ -139,7 +140,7 @@ int main(int argc, char** argv)
     int help_flag = 0;
     int opt;
     struct option longopts[] = {
-        { "help", no_argument, &help_flag, 1 },
+        { "help", no_argument, &help_flag, 'H' },
         { "width", required_argument, NULL, 'w' },
         { "height", required_argument, NULL, 'h' },
         { "fps", required_argument, NULL, 'f' },
@@ -282,7 +283,7 @@ int main(int argc, char** argv)
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {
-        printf("Fail to connect to MCM data plane.\n");
+        printf("Fail to connect to MCM data plane\n");
         exit(-1);
     }
     signal(SIGINT, intHandler);
@@ -316,9 +317,9 @@ int main(int argc, char** argv)
         if (buf == NULL) {
             break;
         }
-        printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
-        printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
-        printf("INFO: buf->len = %ld\n", buf->len);
+        // printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
+        // printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
+        // printf("INFO: buf->len = %ld\n", buf->len);
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
@@ -331,7 +332,6 @@ int main(int argc, char** argv)
         if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
             break;
         }
-        frame_count++;
 
         if (frame_count % fps_interval == 0) {
             /* calculate FPS */
@@ -346,6 +346,8 @@ int main(int argc, char** argv)
         }
 
         printf("TX frames: [%d], FPS: %0.2f\n", frame_count, fps);
+
+        frame_count++;
 
         if (frame_count >= total_num) {
             break;

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "controller_server.h"
+#include "api_server_grpc.h"
 
 ConfigureServiceImpl::ConfigureServiceImpl(ProxyContext* ctx)
     : m_ctx(ctx)

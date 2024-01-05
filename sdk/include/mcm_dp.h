@@ -17,6 +17,39 @@ extern "C" {
 
 #include "libmemif.h"
 
+/* Media proxy control commands. */
+#define MCM_CREATE_SESSION 1
+#define MCM_DESTROY_SESSION 2
+#define MCM_QUERY_MEMIF_PATH 3
+#define MCM_QUERY_MEMIF_ID 4
+#define MCM_QUERY_MEMIF_PARAM 5
+
+typedef struct _msg_header {
+    char magic_word[3];
+    uint8_t version;
+} msg_header;
+
+typedef struct _ctl_cmd {
+    uint16_t inst;
+    uint16_t data_len;
+} ctl_cmd;
+
+typedef struct _mcm_proxy_ctrl_msg {
+    msg_header header;
+    ctl_cmd command;
+    void* data;
+} mcm_proxy_ctl_msg;
+
+typedef enum {
+    MCM_DP_SUCCESS = 0,
+    MCM_DP_ERROR_INVALID_PARAM,
+    MCM_DP_ERROR_CONNECTION_FAILED,
+    MCM_DP_ERROR_TIMEOUT,
+    MCM_DP_ERROR_MEMORY_ALLOCATION,
+    // Add more error codes as needed
+    MCM_DP_ERROR_UNKNOWN = -1
+} mcm_dp_error;
+
 typedef struct {
     memif_socket_args_t socket_args;
     memif_conn_args_t conn_args;

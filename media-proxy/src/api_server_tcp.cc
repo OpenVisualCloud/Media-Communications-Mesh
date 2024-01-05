@@ -6,8 +6,7 @@
 
 // #include <signal.h>
 
-#include "tcp_controller.h"
-#include "mp_ctrl_proto.h"
+#include "api_server_tcp.h"
 #include <mcm_dp.h>
 
 static volatile bool keepRunning = true;
@@ -54,16 +53,18 @@ void* msg_loop(void* ptr)
         }
 
         if (strncmp(msg.header.magic_word, "MCM", sizeof(msg.header.magic_word)) != 0) {
+            INFO("Failed to read header MCM.\n");
             continue;
         }
         if (msg.header.version != 0x01) {
+            INFO("Failed to read header version.\n");
             continue;
         }
 
         /* control command */
         ret = read(conn->sock, &msg.command, sizeof(msg.command));
         if (ret <= 0) {
-            INFO("Fail to read control command.");
+            INFO("Failed to read control command.");
             break;
         }
 
@@ -287,8 +288,8 @@ void RunTCPServer(ProxyContext* ctx)
         return;
     }
 
-    /* listen on port */
-    if (listen(sock, 5) < 0) {
+    /* listen on port and set 500 for 1K IPC sessions burst */
+    if (listen(sock, 500) < 0) {
         fprintf(stderr, "error: cannot listen on port\n");
         return;
     }
