@@ -86,7 +86,7 @@ mcm_buffer* mcm_alloc_buffer_udp(void* conn_ctx, size_t len)
         return NULL;
     }
 
-    pbuf->len = len;
+    pbuf->metadata.len = len;
     pbuf->data = calloc(1, len);
     if (pbuf->data == NULL) {
         log_error("Outof Memory.");
@@ -127,7 +127,7 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
     ctx = (udp_context*)conn_ctx;
 
     data = buf->data;
-    len = buf->len;
+    len = buf->metadata.len;
     while (len > 0) {
         n = sendto(ctx->sockfd, data, len, MSG_CONFIRM,
             (const struct sockaddr*)&ctx->rx_addr, sizeof(ctx->rx_addr));
@@ -159,7 +159,7 @@ int mcm_recv_buffer_udp(void* conn_ctx, mcm_buffer* buf)
 
     addrlen = sizeof(ctx->tx_addr);
 
-    ret = recvfrom(ctx->sockfd, buf->data, buf->len, MSG_WAITALL,
+    ret = recvfrom(ctx->sockfd, buf->data, buf->metadata.len, MSG_WAITALL,
         (struct sockaddr*)&ctx->tx_addr, &addrlen);
     if (ret == -1) {
         log_error("Fail to send out data.");

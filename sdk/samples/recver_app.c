@@ -331,9 +331,9 @@ int main(int argc, char** argv)
             }
         } else { //TODO: rtsp receiver side test code
             if (dump_fp) {
-                fwrite(buf->data, buf->len, 1, dump_fp);
+                fwrite(buf->data, buf->metadata.len, 1, dump_fp);
             }
-            printf("RX package number:%d   seq_num: %d, timestamp: %u, RX H264 NALU: %ld\n", frame_count, buf->metadata.seq_num, buf->metadata.timestamp, buf->len);
+            printf("RX package number:%d   seq_num: %d, timestamp: %u, RX H264 NALU: %ld\n", frame_count, buf->metadata.seq_num, buf->metadata.timestamp, buf->metadata.len);
         }
 
         frame_count++;

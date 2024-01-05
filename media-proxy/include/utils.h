@@ -11,13 +11,14 @@
 
 #define INFO(...)                     \
     do {                              \
-        printf("INFO: " __VA_ARGS__); \
-        printf("\n");                 \
+        fprintf(stdout, "INFO: " __VA_ARGS__); \
+        fprintf(stdout, "\n");                 \
     } while (0)
+
 #define ERROR(...)                     \
     do {                               \
-        printf("ERROR: " __VA_ARGS__); \
-        printf("\n");                  \
+        fprintf(stderr, "ERROR: " __VA_ARGS__); \
+        fprintf(stderr, "\n");                  \
     } while (0)
 
 #define DEBUG(...) \
