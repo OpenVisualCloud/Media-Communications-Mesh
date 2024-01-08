@@ -45,6 +45,7 @@ public:
     bool schs_ready;
     bool imtl_init_preparing;
     pthread_mutex_t mutex_lock;
+    pthread_mutex_t sessioncount_mutex_lock;
 
     std::string mDevPort;
     std::string mDpAddress;

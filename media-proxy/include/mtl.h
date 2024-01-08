@@ -37,8 +37,8 @@ extern "C" {
 #define NS_PER_MS (1000 * 1000)
 #endif
 
-#define SCH_CNT 10
-#define TASKLETS 100
+#define SCH_CNT 1
+#define TASKLETS 800
 
 enum direction {
     TX,

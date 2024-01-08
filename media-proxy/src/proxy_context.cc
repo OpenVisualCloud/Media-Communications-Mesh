@@ -379,11 +379,11 @@ void ProxyContext::ParseMemIFParam(const mcm_conn_param* request, memif_ops_t& m
     snprintf(memif_ops.app_name, sizeof(memif_ops.app_name), "memif_%s_%d", type_str.c_str(), int(mSessionCount));
     snprintf(memif_ops.interface_name, sizeof(memif_ops.interface_name), "memif_%s_%d", type_str.c_str(), int(mSessionCount));
     /*add lock to protect mSessionCount to aviod being changed by multi-session simultaneously*/
-    st_pthread_mutex_lock(&mutex_lock);
+    st_pthread_mutex_lock(&sessioncount_mutex_lock);
     snprintf(memif_ops.socket_path, sizeof(memif_ops.socket_path), "/run/mcm/media_proxy_%s_%d.sock", type_str.c_str(), int(mSessionCount));
     mSessionCount++;
     memif_ops.msessioncount = mSessionCount;
-    st_pthread_mutex_unlock(&mutex_lock);
+    st_pthread_mutex_unlock(&sessioncount_mutex_lock);
 }
 
 void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx_ops* ops_tx)
@@ -742,18 +742,16 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 
 int ProxyContext::RxStart(const mcm_conn_param* request)
 {
-    INFO("ProxyContext: RxStart...");
+    INFO("ProxyContext: RxStart...\n");
     struct st20p_rx_ops opts = { 0 };
     mtl_session_context_t* st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
     int ret;
 
     /*add lock to protect IMTL library initialization to aviod being called by multi-session simultaneously*/
-    st_pthread_mutex_lock(&mutex_lock);
     if (mDevHandle == NULL && imtl_init_preparing == false) {
 
- 	    imtl_init_preparing = true;
-
+        imtl_init_preparing = true;
         struct mtl_init_params st_param = {};
 
         ParseStInitParam(request, &st_param);
@@ -779,13 +777,14 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
                     snprintf(sch_name, sizeof(sch_name), "sch_udp_%d", i);
                     sch_ops.name = sch_name;
                     mtl_sch_handle sch = mtl_sch_create(mDevHandle, &sch_ops);
-                    if ( sch == NULL) {
+                    if (sch == NULL) {
                         INFO("%s, error: schduler create fail.", __func__);
                         break;
                     }
                     ret = mtl_sch_start(sch);
                     INFO("%s, start schduler %d.", __func__, i);
                     if (ret < 0) {
+                        INFO("%s, fail to start schduler %d.", __func__, i);
                         ret = mtl_sch_free(sch);
                         break;
                     }
@@ -795,12 +794,12 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
             }
 
             imtl_init_preparing = false;
-	    }
+        }
     }
-    st_pthread_mutex_unlock(&mutex_lock);
 
     while (mDevHandle == NULL) {
-        sleep (1);
+        INFO("%s, Wait to initialize iMTL.\n", __func__);
+        sleep(1);
     }
 
     st_ctx = new (mtl_session_context_t);
@@ -814,7 +813,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         ParseSt22RxOps(request, &opts);
         rx_ctx = mtl_st22p_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
-            INFO("%s, Fail to create TX session.", __func__);
+            INFO("%s, Fail to create RX session.", __func__);
             return -1;
         }
 
@@ -895,7 +894,6 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
     memif_ops_t memif_ops = { 0 };
 
     /*add lock to protect IMTL library initialization to aviod being called by multi-session simultaneously*/
-    st_pthread_mutex_lock(&mutex_lock);
     if (mDevHandle == NULL && imtl_init_preparing == false) {
 
         imtl_init_preparing = true;
@@ -915,10 +913,10 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
             imtl_init_preparing = false;
         }
     }
-    st_pthread_mutex_unlock(&mutex_lock);
 
     while (mDevHandle == NULL) {
-        sleep (1);
+        INFO("%s, Wait to initialize iMTL.\n", __func__);
+        sleep(1);
     }
 
     st_ctx = new (mtl_session_context_t);
@@ -1102,7 +1100,7 @@ void ProxyContext::Stop()
     }
 
     mStCtx.clear();
-
+    st_pthread_mutex_destroy(&sessioncount_mutex_lock);
     // destroy device
     mtl_deinit(mDevHandle);
     mDevHandle = NULL;
