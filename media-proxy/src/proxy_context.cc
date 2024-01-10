@@ -42,6 +42,7 @@ try : mRpcCtrlAddr(rpc_addr), mTcpCtrlAddr(tcp_addr), mSessionCount(0) {
     mTcpCtrlPort = std::stoi(sub_str[1]);
     schs_ready = false;
     imtl_init_preparing = false;
+    st_pthread_mutex_init(&sessioncount_mutex_lock, NULL);
 } catch (...) {
 }
 
