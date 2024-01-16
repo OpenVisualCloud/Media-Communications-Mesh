@@ -270,6 +270,7 @@ static int udp_server_h264(void* arg)
                 s->new_NALU = 1;
                 mtl_memcpy(s->dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
                 err = memif_tx_burst(s->memif_conn, qid, tx_bufs, s->tx_buf_num, &tx);
+
                 if (err != MEMIF_ERR_SUCCESS) {
                     INFO("memif_tx_burst for framgment=0: %s", memif_strerror(err));
                 }
