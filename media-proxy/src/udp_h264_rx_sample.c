@@ -7,12 +7,12 @@
 #include "mtl.h"
 #include "shm_memif.h"
 #include <mcm_dp.h>
+#include <mtl/mtl_sch_api.h>
 #include <mtl/mudp_api.h>
+#include <poll.h>
 #include <pthread.h>
 #include <stdbool.h>
-#include <poll.h>
 #include <sys/stat.h>
-#include <mtl/mtl_sch_api.h>
 
 static void* rx_memif_event_loop(void* arg)
 {
@@ -20,7 +20,7 @@ static void* rx_memif_event_loop(void* arg)
     memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
 
     do {
-         INFO("media-proxy waiting event.");
+        INFO("media-proxy waiting event.");
         err = memif_poll_event(memif_socket, -1);
     } while (err == MEMIF_ERR_SUCCESS);
 
@@ -134,10 +134,7 @@ static int udp_server_h264(void* arg)
 
     mcm_buffer* rtp_header;
 
-    bool direct_transfer = true;
     bool memif_alloc = false;
-    int NALU_bunch = 0;
-
 
     while (s->shm_ready != 1) {
         INFO("%s, wait for share memory is ready\n", __func__);
@@ -148,51 +145,41 @@ static int udp_server_h264(void* arg)
         rtp_header = calloc(1, sizeof(mcm_buffer));
     }
 
-    if ( s->stop != true) {
+    if (s->stop != true) {
         ssize_t recv = mudp_recvfrom(socket, buf, sizeof(buf), 0, NULL, NULL);
         // printf("[%s] : recv = %d\n", __FUNCTION__, (int)recv);
         if (recv < 0) {
             //INFO("%s, mudp_recvfrom fail %d\n", __func__, (int)recv);
             return 0;
         }
-        //} else {
-            // INFO("Receive a UDP RTP package\n");
-            //if (check_first_new_NALU == true) {
-            if (s->check_first_new_NALU == true) { 
-                unsigned char RTP_payload_type = *((unsigned char*)buf + 1);
-                unsigned char mark = RTP_payload_type & 0x80;
-                if (mark > 0) {
-                    s->new_NALU = 1;
-                    // printf("First Mark = %d\n", mark);
-                    s->check_first_new_NALU = false;
-                    //continue;
-                    return 0;
-                } else {
-                    //continue;
-                    return 0;
-                }
+        if (s->check_first_new_NALU == true) {
+            unsigned char RTP_payload_type = *((unsigned char*)buf + 1);
+            unsigned char mark = RTP_payload_type & 0x80;
+            if (mark > 0) {
+                s->new_NALU = 1;
+                // printf("First Mark = %d\n", mark);
+                s->check_first_new_NALU = false;
+                return 0;
+            } else {
+                return 0;
             }
-       // }
+        }
 
-        if (s->fragments_bunch == true)
-        {
+        if (s->fragments_bunch == true) {
             rtp_header = s->rtp_header;
 
             if (s->new_NALU == 1) {
                 s->new_NALU = 0;
                 /* allocate memory */
-                //memif_alloc = false;
                 tx_bufs = s->shm_bufs;
                 while (memif_alloc != true) {
                     err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &s->tx_buf_num, buf_size);
                     if (err != MEMIF_ERR_SUCCESS) {
                         INFO("Failed to alloc memif buffer: %s, err:%d", memif_strerror(err), err);
-                        //continue;
                         return -1;
                     } else {
                         // INFO("Success to alloc memif buffer\n");
                         memif_alloc = true;
-                        //s->tx_buf_num = tx_buf_num;
                     }
                 }
                 s->dst = tx_bufs->data;
@@ -424,22 +411,14 @@ static int udp_server_h264(void* arg)
                 rtp_header = NULL;
             }
         }
-    /*dup poll*/
-    //}
-    //INFO("%s, stop\n", __func__);
-    // fclose(fp);
-        /*
-        if (rtp_header != NULL) {
-            free(rtp_header);
-            rtp_header = NULL;
-        }*/
     } else {
         INFO("%s, has stopped\n", __func__);
     }
     return 0;
 }
 
-static int media_proxy_mudp_poll(void* priv) {
+static int media_proxy_mudp_poll(void* priv)
+{
     int ret;
     rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
 
@@ -454,16 +433,18 @@ static int media_proxy_mudp_poll(void* priv) {
     }
 }
 
-static int udp_poll_tasklet_start(void* priv) {
-  rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
-  ctx->sch_start = true;
-  return 0;
+static int udp_poll_tasklet_start(void* priv)
+{
+    rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
+    ctx->sch_start = true;
+    return 0;
 }
 
-static int udp_poll_tasklet_stop(void* priv) {
-  rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
-  ctx->sch_start = false;
-  return 0;
+static int udp_poll_tasklet_stop(void* priv)
+{
+    rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
+    ctx->sch_start = false;
+    return 0;
 }
 
 rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_handle, mcm_dp_addr* dp_addr, memif_ops_t* memif_ops, mtl_sch_handle schs[])
@@ -496,7 +477,7 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
     ctx->fragments_bunch = true;
     //ctx->fp = fopen("data1.264", "wb");
 
-        if (ctx->fragments_bunch == true) {
+    if (ctx->fragments_bunch == true) {
         ctx->rtp_header = calloc(1, sizeof(mcm_buffer));
     }
 
@@ -530,7 +511,7 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
         INFO("%s, bind fail %d\n", __func__, ret);
         return NULL;
     }
-    
+
     ctx->memif_nalu_size = 5184000;
 
     /*udp poll*/
