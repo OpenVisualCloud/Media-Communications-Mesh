@@ -10,6 +10,7 @@
 #include <mcm_dp.h>
 
 static volatile bool keepRunning = true;
+static volatile int listen_sock = -1;
 
 typedef struct
 {
@@ -252,14 +253,16 @@ void* msg_loop(void* ptr)
     pthread_exit(0);
 }
 
-// void intHandler(int dummy)
-// {
-//     keepRunning = 0;
-// }
+void intHandler(int sig_num)
+{
+    if (sig_num == SIGINT) {
+        keepRunning = 0;
+        close(listen_sock);
+    }
+}
 
 void RunTCPServer(ProxyContext* ctx)
 {
-    int sock = -1;
     struct sockaddr_in address;
     int port = 0;
     connection_t* connection = NULL;
@@ -268,14 +271,14 @@ void RunTCPServer(ProxyContext* ctx)
 
     port = ctx->getTCPListenPort();
     if (port <= 0) {
-        INFO("Illegal TCP listen address");
+        ERROR("Illegal TCP listen address");
         return;
     }
 
     /* create socket */
-    sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock <= 0) {
-        fprintf(stderr, "error: cannot create socket\n");
+    listen_sock = socket(AF_INET, SOCK_STREAM, 0);
+    if (listen_sock <= 0) {
+        ERROR("cannot create socket\n");
         return;
     }
 
@@ -283,25 +286,25 @@ void RunTCPServer(ProxyContext* ctx)
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(port);
-    if (bind(sock, (struct sockaddr*)&address, sizeof(address)) < 0) {
-        fprintf(stderr, "error: cannot bind socket to port %d: %s\n", port, strerror(errno));
+    if (bind(listen_sock, (struct sockaddr*)&address, sizeof(address)) < 0) {
+        ERROR("cannot bind socket to port %d: %s\n", port, strerror(errno));
         return;
     }
 
     /* listen on port and set 500 for 1K IPC sessions burst */
-    if (listen(sock, 500) < 0) {
-        fprintf(stderr, "error: cannot listen on port\n");
+    if (listen(listen_sock, 500) < 0) {
+        ERROR("cannot listen on port\n");
         return;
     }
 
     INFO("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
 
-    // signal(SIGINT, intHandler);
+    signal(SIGINT, intHandler);
 
     while (keepRunning) {
         /* accept incoming connections */
         connection = (connection_t*)malloc(sizeof(connection_t));
-        connection->sock = accept(sock, &connection->address, (socklen_t*)&connection->addr_len);
+        connection->sock = accept(listen_sock, &connection->address, (socklen_t*)&connection->addr_len);
         if (connection->sock <= 0) {
             free(connection);
         } else {
