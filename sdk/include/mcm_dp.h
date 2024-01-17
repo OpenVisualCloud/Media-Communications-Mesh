@@ -80,15 +80,12 @@ typedef struct {
     char port[6];
 } mcm_dp_addr;
 
-/* MCM buffer metadata, filled by sender side */
 typedef struct {
-    uint32_t seq_num;   /* Sequence number */
-    uint32_t timestamp; /* Timestamp */
-    size_t len;         /* size of data filled in "data" */
-} mcm_buffer_metadata;
-
-typedef struct {
-    mcm_buffer_metadata metadata;
+    struct {
+        uint16_t seq_num; /* Sequence number */
+        uint32_t timestamp; /* Timestamp */
+    } metadata; /**< filled by sender side */
+    size_t len; /**< size of data filled in "data" */
     void* data;
 } mcm_buffer;
 
