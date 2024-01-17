@@ -138,6 +138,7 @@ int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 {
     int err = 0;
     uint16_t rx_buf_num = 0;
+    // memif_conn_context* pmemif = (memif_conn_context*)priv_data;
     memif_buffer_t rx_bufs = {};
 
     /* receive packets from the shared memory */
@@ -161,16 +162,37 @@ int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 {
     int err = 0;
+    // uint16_t rx_buf_num = 0;
     memif_conn_context* pmemif = (memif_conn_context*)priv_data;
+    // static int counter = 0;
+    // static memif_buffer_t rx_buf = {};
 
     /* receive packets from the shared memory */
-    pmemif->working_idx = 0;
     err = memif_rx_burst(conn, qid, pmemif->working_bufs, MEMIF_BUFFER_NUM, (uint16_t*)&pmemif->buf_num);
     if (err != MEMIF_ERR_SUCCESS) {
         log_error("memif_rx_burst: %s", memif_strerror(err));
         log_error("received buffer number: %d", pmemif->buf_num);
+        // log_error("buffer flag: %d, len: %d, index: %d\n",
+        //     pmemif->working_bufs.flags, pmemif->working_bufs.len, pmemif->working_bufs.desc_index);
+        // pmemif->buf_num = 0;
         return err;
     }
+
+    pmemif->working_idx = 0;
+
+    // pmemif->buf_num = rx_buf_num;
+
+    /* save the received buffer. */
+    // memcpy(&pmemif->working_bufs, &rx_buf, sizeof(memif_buffer_t));
+
+    // err = memif_refill_queue(conn, qid, rx_buf_num, 0);
+    // if (err != MEMIF_ERR_SUCCESS) {
+    //     log_error("memif_refill_queue: %s", memif_strerror(err));
+    //     return err;
+    // }
+
+    // counter += rx_buf_num;
+    // printf("RX received frames: %u\n", counter);
 
     return 0;
 }
@@ -296,7 +318,7 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         return NULL;
     }
 
-    if (conn_ctx->type == is_tx) { /* TX */
+    if (conn_ctx->type == is_tx) {  /* TX */
         /* trigger the callbacks. */
         err = memif_poll_event(memif_conn->sockfd, 0);
         if (err != MEMIF_ERR_SUCCESS) {
@@ -312,7 +334,7 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
                 break;
             } else {
                 if (err == MEMIF_ERR_NOBUF_RING) {
-                    log_debug("Empty of memif buffer ring.");
+                    // log_error("Empty of memif buffer ring.");
                     if (timeout == 0) {
                         /* no wait */
                         break;
@@ -337,15 +359,18 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
 
         if (err == MEMIF_ERR_SUCCESS) {
             buf = calloc(1, sizeof(mcm_buffer));
-            buf->metadata.len = memif_buf.len - sizeof(buf->metadata.seq_num) - sizeof(buf->metadata.timestamp) - sizeof(buf->metadata.len);
-            buf->data = memif_buf.data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->metadata.len);
+            buf->len = memif_buf.len - sizeof(buf->metadata.seq_num) - sizeof(buf->metadata.timestamp) - sizeof(buf->len);
+            buf->data = memif_buf.data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len);
             memif_conn->working_bufs[0] = memif_buf;
             memif_conn->working_idx = 0;
             memif_conn->buf_num = buf_num;
         } else {
             log_error("Failed to alloc buffer from memory queue.");
+            if (error_code) {
+                *error_code = err;
+            }
         }
-    } else { /* RX */
+    } else {    /* RX */
         /* waiting for the buffer ready from rx_on_receive callback. */
         if (memif_conn->buf_num <= 0) {
             err = memif_poll_event(memif_conn->sockfd, timeout);
@@ -358,18 +383,18 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
                 buf = calloc(1, sizeof(mcm_buffer));
                 buf->metadata.seq_num = *(uint16_t*)(memif_conn->working_bufs[memif_conn->working_idx].data);
                 buf->metadata.timestamp = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num));
-                buf->metadata.len = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp));
-                buf->data = memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->metadata.len);
+                buf->len = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp));
+                buf->data = memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len);
                 memif_conn->working_idx++;
                 memif_conn->buf_num--;
             } else { /* Timeout */
                 log_debug("Timeout to read buffer from memory queue.");
             }
         }
-    }
 
-    if (error_code) {
-        *error_code = err;
+        if (error_code) {
+            *error_code = err;
+        }
     }
 
     return buf;
@@ -380,6 +405,7 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
     int err = 0;
     memif_conn_context* memif_conn = NULL;
     uint16_t buf_num = 0;
+    // static size_t frame_count = 0;
 
     if (!conn_ctx || !conn_ctx->priv || !buf) {
         log_error("Illegal Parameter.");
@@ -394,14 +420,14 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
     }
 
     if (conn_ctx->type == is_tx) {
-        if (buf->data != memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->metadata.len)) {
+        if (buf->data != memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len)) {
             log_error("Unknown buffer address.");
             return -1;
         }
 
         *(uint16_t *)(memif_conn->working_bufs[0].data) = buf->metadata.seq_num;
         *(uint32_t *)(memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num)) = buf->metadata.timestamp;
-        *(size_t *)(memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp)) = buf->metadata.len;
+        *(size_t *)(memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp)) = buf->len;
 
         err = memif_tx_burst(memif_conn->conn, memif_conn->qid, &memif_conn->working_bufs[0], 1, &buf_num);
         if (err != MEMIF_ERR_SUCCESS) {
@@ -409,7 +435,8 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
         }
 
         memif_conn->buf_num--;
-        log_debug("TX sent frames: %lu", frame_count);
+        // frame_count++;
+        // log_info("TX sent frames: %lu", frame_count);
     } else {
         err = memif_refill_queue(memif_conn->conn, memif_conn->qid, 1, 0);
         if (err != MEMIF_ERR_SUCCESS) {
@@ -437,3 +464,27 @@ void mcm_destroy_connection_memif(memif_conn_context* pctx)
 
     return;
 }
+
+// /* Alloc buffer from queue. */
+// void* memif_alloc_buffer(void* conn_ctx, size_t size)
+// {
+//     return NULL;
+// }
+
+// /* Send out video frame on TX side. */
+// int memif_send_buffer(void* conn_ctx, mcm_buffer* buf)
+// {
+//     return 0;
+// }
+
+// /* Receive video frame on RX side. */
+// int memif_recv_buffer(void* conn_ctx, mcm_buffer* buf)
+// {
+//     return 0;
+// }
+
+// /* Return video frame buffer to queue. */
+// void memif_free_buffer(void* conn_ctx, mcm_buffer* buf)
+// {
+//     return;
+// }

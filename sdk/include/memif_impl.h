@@ -13,7 +13,7 @@ extern "C" {
 
 #include "mcm_dp.h"
 
-#define MEMIF_BUFFER_NUM 256
+#define MEMIF_BUFFER_NUM 64
 typedef struct {
     /* connection status */
     _Atomic uint8_t is_connected;

@@ -206,7 +206,7 @@ static int udp_server_h264(void* arg)
         dst += sizeof(rtp_header->metadata.timestamp);
         dst_nalu_size_point = dst;
         dst += sizeof(size_t);
-        rtp_header->metadata.len = 0;
+        rtp_header->len = 0;
 
         if (s->new_NALU == 1) {
             s->new_NALU = 0;
@@ -214,7 +214,7 @@ static int udp_server_h264(void* arg)
             // fwrite(h264_frame_start_str, 1, 1, fp);
             mtl_memcpy(dst, h264_frame_start_str, sizeof(unsigned char));
             dst += sizeof(unsigned char);
-            rtp_header->metadata.len = rtp_header->metadata.len + 1;
+            rtp_header->len = rtp_header->len + 1;
         }
         unsigned char payload_header = *((unsigned char*)(buf + 12));
         unsigned char fragment_header = *((unsigned char*)(buf + 13));
@@ -241,15 +241,15 @@ static int udp_server_h264(void* arg)
                 // fwrite(h264_frame_start_str + 1, 3, 1, fp);//printf("001\n");
                 mtl_memcpy(dst, h264_frame_start_str + 1, sizeof(unsigned char) * 3);
                 dst += sizeof(unsigned char) * 3;
-                rtp_header->metadata.len = rtp_header->metadata.len + 3;
+                rtp_header->len = rtp_header->len + 3;
                 // fwrite(&payload_header_temp, 1, 1, fp);
                 mtl_memcpy(dst, &payload_header_temp, sizeof(unsigned char));
                 dst += sizeof(unsigned char);
-                rtp_header->metadata.len = rtp_header->metadata.len + 1;
+                rtp_header->len = rtp_header->len + 1;
                 // fwrite(buf + 14, (int)recv - 14, 1, fp);
                 mtl_memcpy(dst, buf + 14, (int)recv - 14);
-                rtp_header->metadata.len = rtp_header->metadata.len + (int)recv - 14;
-                mtl_memcpy(dst_nalu_size_point, &rtp_header->metadata.len, sizeof(size_t));
+                rtp_header->len = rtp_header->len + (int)recv - 14;
+                mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
                 /*Send to microservice application.*/
                 // INFO("memif_tx_burst for framgment = start\n");
                 err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
@@ -262,8 +262,8 @@ static int udp_server_h264(void* arg)
                     // fwrite(buf + 14, (int)recv - 14, 1, fp);
                     mtl_memcpy(dst, buf + 14, (int)recv - 14);
                     dst += (int)recv - 14;
-                    rtp_header->metadata.len = rtp_header->metadata.len + (int)recv - 14;
-                    mtl_memcpy(dst_nalu_size_point, &rtp_header->metadata.len, sizeof(size_t));
+                    rtp_header->len = rtp_header->len + (int)recv - 14;
+                    mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
                     /*Send to microservice application.*/
                     // INFO("memif_tx_burst for framgment = end\n");
                     err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
@@ -275,8 +275,8 @@ static int udp_server_h264(void* arg)
                     // fwrite(buf + 14, (int)recv - 14, 1, fp);
                     mtl_memcpy(dst, buf + 14, (int)recv - 14);
                     dst += (int)recv - 14;
-                    rtp_header->metadata.len = rtp_header->metadata.len + (int)recv - 14;
-                    mtl_memcpy(dst_nalu_size_point, &rtp_header->metadata.len, sizeof(size_t));
+                    rtp_header->len = rtp_header->len + (int)recv - 14;
+                    mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
                     /*Send to microservice application.*/
                     // INFO("memif_tx_burst for framgment = middle\n");
                     err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
@@ -290,12 +290,12 @@ static int udp_server_h264(void* arg)
             // fwrite(h264_frame_start_str + 1, 3, 1, fp);//printf("001\n");
             mtl_memcpy(dst, h264_frame_start_str + 1, sizeof(unsigned char) * 3);
             dst += sizeof(unsigned char) * 3;
-            rtp_header->metadata.len = rtp_header->metadata.len + 3;
+            rtp_header->len = rtp_header->len + 3;
             // fwrite(buf + 12, (int)recv - 12, 1, fp);
             mtl_memcpy(dst, buf + 12, sizeof(unsigned char) * ((int)recv - 12));
             dst += sizeof(unsigned char) * ((int)recv - 12);
-            rtp_header->metadata.len = rtp_header->metadata.len + (int)recv - 12;
-            mtl_memcpy(dst_nalu_size_point, &rtp_header->metadata.len, sizeof(size_t));
+            rtp_header->len = rtp_header->len + (int)recv - 12;
+            mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
             /*Send to microservice application.*/
             // INFO("memif_tx_burst for framgment=0\n");
             err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
