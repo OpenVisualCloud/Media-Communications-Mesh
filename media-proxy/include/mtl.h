@@ -37,8 +37,8 @@ extern "C" {
 #define NS_PER_MS (1000 * 1000)
 #endif
 
-#define SCH_CNT 1
-#define TASKLETS 800
+#define SCH_CNT 3
+#define TASKLETS 1000
 
 enum direction {
     TX,
@@ -387,6 +387,11 @@ typedef struct {
     bool sch_start;
     int new_NALU;
     bool check_first_new_NALU;
+    bool fragments_bunch;
+    mcm_buffer* rtp_header;
+    uint16_t tx_buf_num;
+    char* dst;
+    char* dst_nalu_size_point;
     //int sch_idx;
     //int tasklet_idx;
 

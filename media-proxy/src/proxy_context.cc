@@ -204,7 +204,7 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->rx_queues_cnt[MTL_PORT_P] = 128;
     st_param->tx_queues_cnt[MTL_PORT_P] = 128;
     st_param->lcores = NULL;
-    st_param->memzone_max = 3000;
+    st_param->memzone_max = 9000;
 
     INFO("ProxyContext: ParseStInitParam...");
     INFO("num_ports : %d", st_param->num_ports);
