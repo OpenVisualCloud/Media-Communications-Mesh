@@ -8,7 +8,9 @@ project("McmDPSdk" C)
 set(VERSION "0.1.0")
 set(DESCRIPTION "MCM DP SDK Library")
 
-set(CMAKE_C_STANDARD 11)
+#set(CMAKE_C_STANDARD 11)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+set(CMAKE_C_STANDARD 99)
 
 # include modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -29,6 +31,8 @@ set(CMAKE_INSTALL_IPATH ${CMAKE_INSTALL_PREFIX}/include)
 
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
 add_library(mcm_dp SHARED ${sdk_srcs})
+set_target_properties(mcm_dp PROPERTIES VERSION ${VERSION})
+#set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
 
 target_include_directories(mcm_dp PUBLIC
     ${MCMDP_INCLUDE_DIR}
@@ -55,4 +59,16 @@ foreach(file ${SDK_HEADERS})
       )
 endforeach()
 
+
+set(LIB_PKG_CONFIG_EXTRA_CFLAGS "")
+if (BUILD_SHARED_LIBS)
+	target_compile_definitions(mcm_dp
+        PUBLIC DEF_DLL
+        PRIVATE DEF_BUILDING_SHARED_LIBS)
+    set(LIB_PKG_CONFIG_EXTRA_CFLAGS " -DDEF_DLL")
+endif()
+configure_file(mcm.pc.in mcm.pc @ONLY)
+
 install(TARGETS mcm_dp DESTINATION ${CMAKE_INSTALL_RPATH} COMPONENT libmcm_dp)
+install(FILES ${CMAKE_BINARY_DIR}/mcm.pc DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
+
