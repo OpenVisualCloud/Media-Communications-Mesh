@@ -1,0 +1,64 @@
+diff --git a/configure b/configure
+index a89cfa6d95..67e5b6cee3 100755
+--- a/configure
++++ b/configure
+@@ -310,6 +310,7 @@ External library support:
+   --enable-mediacodec      enable Android MediaCodec support [no]
+   --enable-mediafoundation enable encoding via MediaFoundation [auto]
+   --disable-metal          disable Apple Metal framework [autodetect]
++  --enable-mcm             enable Media Communication Mesh library [no]
+   --enable-libmysofa       enable libmysofa, needed for sofalizer filter [no]
+   --enable-openal          enable OpenAL 1.1 capture support [no]
+   --enable-opencl          enable OpenCL processing [no]
+@@ -1908,6 +1909,7 @@ EXTERNAL_LIBRARY_LIST="
+     lv2
+     mediacodec
+     openal
++    mcm
+     opengl
+     openssl
+     pocketsphinx
+@@ -3594,6 +3596,8 @@ lavfi_indev_deps="avfilter"
+ libcdio_indev_deps="libcdio"
+ libdc1394_indev_deps="libdc1394"
+ openal_indev_deps="openal"
++mcm_indev_deps="libmcm_dp"
++mcm_outdev_deps="libmcm_dp"
+ opengl_outdev_deps="opengl"
+ opengl_outdev_suggest="sdl2"
+ oss_indev_deps_any="sys_soundcard_h"
+@@ -6911,6 +6915,8 @@ enabled rkmpp             && { require_pkg_config rkmpp rockchip_mpp  rockchip/r
+                                  die "ERROR: rkmpp requires --enable-libdrm"; }
+                              }
+ enabled vapoursynth       && require_pkg_config vapoursynth "vapoursynth-script >= 42" VSScript.h vsscript_init
++enabled mcm               && { check_pkg_config libmcm_dp "libmcm_dp >= 0.0.1" mcm_dp.h mcm_dequeue_buffer ||
++                               die "ERROR: libmcm_dp must be installed and version must be >= 0.0.1"; }
+ 
+ 
+ if enabled gcrypt; then
+diff --git a/libavdevice/Makefile b/libavdevice/Makefile
+index c30449201d..8a96586b05 100644
+--- a/libavdevice/Makefile
++++ b/libavdevice/Makefile
+@@ -35,6 +35,8 @@ OBJS-$(CONFIG_JACK_INDEV)                += jack.o timefilter.o
+ OBJS-$(CONFIG_KMSGRAB_INDEV)             += kmsgrab.o
+ OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
+ OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
++OBJS-$(CONFIG_MCM_INDEV)                 += mcm_rx.o
++OBJS-$(CONFIG_MCM_OUTDEV)                += mcm_tx.o
+ OBJS-$(CONFIG_OPENGL_OUTDEV)             += opengl_enc.o
+ OBJS-$(CONFIG_OSS_INDEV)                 += oss_dec.o oss.o
+ OBJS-$(CONFIG_OSS_OUTDEV)                += oss_enc.o oss.o
+diff --git a/libavdevice/alldevices.c b/libavdevice/alldevices.c
+index 8a90fcb5d7..a3c29601ac 100644
+--- a/libavdevice/alldevices.c
++++ b/libavdevice/alldevices.c
+@@ -41,6 +41,8 @@ extern const AVInputFormat  ff_jack_demuxer;
+ extern const AVInputFormat  ff_kmsgrab_demuxer;
+ extern const AVInputFormat  ff_lavfi_demuxer;
+ extern const AVInputFormat  ff_openal_demuxer;
++extern const AVInputFormat  ff_mcm_demuxer;
++extern const FFOutputFormat ff_mcm_muxer;
+ extern const FFOutputFormat ff_opengl_muxer;
+ extern const AVInputFormat  ff_oss_demuxer;
+ extern const FFOutputFormat ff_oss_muxer;
