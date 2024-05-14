@@ -67,8 +67,8 @@ if (BUILD_SHARED_LIBS)
         PRIVATE DEF_BUILDING_SHARED_LIBS)
     set(LIB_PKG_CONFIG_EXTRA_CFLAGS " -DDEF_DLL")
 endif()
-configure_file(mcm.pc.in mcm.pc @ONLY)
+configure_file(libmcm_dp.pc.in libmcm_dp.pc @ONLY)
 
 install(TARGETS mcm_dp DESTINATION ${CMAKE_INSTALL_RPATH} COMPONENT libmcm_dp)
-install(FILES ${CMAKE_BINARY_DIR}/mcm.pc DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
+install(FILES ${CMAKE_BINARY_DIR}/sdk/libmcm_dp.pc DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
 
