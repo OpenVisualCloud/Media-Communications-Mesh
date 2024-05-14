@@ -22,6 +22,12 @@ Install dependencies and build MCM as described in the top level README.md, para
    ./build-ffmpeg.sh
    ```
 
-### Run
+## Run
 
-TBD
+### Simple development test
+The current implementation is an empty FFmpeg MCM plugin adding an indev and an outdev capable to send and receive test data.
+
+Run a simple test to demonstrate packets are being sent from the input MCM device and received by the output MCM device as is without any processing.
+```
+./ffmpeg -f mcm -i - -c copy -f mcm -
+```
