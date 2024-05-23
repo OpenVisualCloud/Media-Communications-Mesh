@@ -94,6 +94,8 @@ typedef enum {
     PIX_FMT_NV12,
     /* YUV 4:2:2 */
     PIX_FMT_YUV422P,
+    /* YUV 4:2:2 10bit planar le */
+    PIX_FMT_YUV422P_10BIT_LE,
     /* YUV 4:4:4 */
     PIX_FMT_YUV444M,
     /* RGB */
@@ -217,6 +219,10 @@ typedef struct {
     uint32_t height;
     double fps;
     video_pixel_format pix_fmt;
+
+    uint8_t payload_type_nr;
+    uint64_t payload_mtl_flags_mask;
+    uint8_t payload_mtl_pacing;
 } mcm_conn_param;
 
 typedef struct _mcm_conn_context mcm_conn_context;
