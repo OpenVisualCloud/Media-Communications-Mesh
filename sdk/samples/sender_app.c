@@ -16,7 +16,10 @@
 #include <time.h>
 #include <unistd.h>
 #include "mcm_dp.h"
+#include <st_fmt.h>
 
+#define DEFAULT_RECV_IP "127.0.0.1"
+#define DEFAULT_RECV_PORT "9001"
 #define DEFAULT_SEND_IP "127.0.0.1"
 #define DEFAULT_SEND_PORT "9001"
 #define DEFAULT_TOTAL_NUM 300
@@ -25,10 +28,12 @@
 #define DEFAULT_FPS 30.0
 #define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
 #define DEFAULT_MEMIF_IS_MASTER 1
-#define DEFAULT_MEMIF_INTERNFACE_ID 0
+#define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_PROTOCOL "auto"
+#define DEFAULT_INFINITY_LOOP 0
 
 static volatile bool keepRunning = true;
+static char input_file[128] = "";
 
 void intHandler(int dummy)
 {
@@ -74,24 +79,55 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-m, --master=is_master\t\t"
                 "Set memif conn is master (default: %d)\n",
         DEFAULT_MEMIF_IS_MASTER);
-    fprintf(fp, "-i, --interfaceid=interface_id\t"
+    fprintf(fp, "-d, --interfaceid=interface_id\t"
                 "Set memif conn interface id (default: %d)\n",
-        DEFAULT_MEMIF_INTERNFACE_ID);
+        DEFAULT_MEMIF_INTERFACE_ID);
+    fprintf(fp, "-l, --loop=is_loop\t"
+                "Set infinity loop sending (default: %d)\n",
+        DEFAULT_INFINITY_LOOP);
     fprintf(fp, "\n");
 }
 
-int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t width, uint32_t height, video_pixel_format pix_fmt)
+uint32_t getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height) {
+    if (fmt == PIX_FMT_YUV422P) {
+        return st_frame_size(ST_FRAME_FMT_UYVY, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    } else if (fmt == PIX_FMT_YUV422P_10BIT_LE) {
+        return st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE , width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    } else if (fmt == PIX_FMT_YUV444M) {
+        return st_frame_size(ST_FRAME_FMT_YUV444RFC4175PG4BE10, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    } else if (fmt == PIX_FMT_RGB8) {
+        return st_frame_size(ST_FRAME_FMT_RGB8, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    }
+    return width*height*3/2; // PIX_FMT_NV12
+}
+
+int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size, bool loop)
 {
     int ret = 0;
     static int frm_idx = 0;
-    int frame_size = width * height * 3 / 2; //TODO: assume NV12
 
     assert(fp != NULL && buf != NULL);
     assert(buf->len >= frame_size);
 
     if (fread(buf->data, frame_size, 1, fp) < 1) {
-        perror("Error when read frame file");
-        ret = -1;
+        if(loop) {
+            if (fp != NULL) {
+                fclose(fp);
+                fp = NULL;
+            }
+            fp = fopen(input_file, "rb");
+            if (fp == NULL) {
+                printf("Fail to open input file for infinity loop: %s\n", input_file);
+                exit(-1);
+            }
+            if (fread(buf->data, frame_size, 1, fp) < 1) {
+                perror("Error reading file for frame. EOF in infinity loop");
+                ret = -2;
+            }
+        } else {
+            perror("Error reading file for frame. EOF?");
+            ret = -1;
+        }
     }
 
     buf->metadata.seq_num = buf->metadata.timestamp = frm_idx++;
@@ -110,27 +146,32 @@ int gen_test_data(mcm_buffer* buf, uint32_t frame_count)
     ptr += sizeof(frame_count);
 
     /* timestamp */
-    clock_gettime(CLOCK_REALTIME, (struct timespec*)ptr);
+    clock_gettime( CLOCK_REALTIME , (struct timespec*)ptr);
 
     return 0;
 }
 
 int main(int argc, char** argv)
 {
+    char recv_addr[46] = DEFAULT_RECV_IP;
+    char recv_port[6] = DEFAULT_RECV_PORT;
     char send_addr[46] = DEFAULT_SEND_IP;
     char send_port[6] = DEFAULT_SEND_PORT;
-    char input_file[128] = {0};
+
     char payload_type[32] = "";
     char protocol_type[32] = "";
+    char pix_fmt_string[32] = "";
     char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
     uint8_t is_master = DEFAULT_MEMIF_IS_MASTER;
-    uint32_t interface_id = DEFAULT_MEMIF_INTERNFACE_ID;
+    uint32_t interface_id = DEFAULT_MEMIF_INTERFACE_ID;
+    bool loop = DEFAULT_INFINITY_LOOP;
 
     /* video resolution */
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
     video_pixel_format pix_fmt = PIX_FMT_NV12; //PIX_FMT_YUV444M;
+    uint32_t frame_size = 0;
 
     mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = { 0 };
@@ -144,8 +185,10 @@ int main(int argc, char** argv)
         { "width", required_argument, NULL, 'w' },
         { "height", required_argument, NULL, 'h' },
         { "fps", required_argument, NULL, 'f' },
-        { "ip", required_argument, NULL, 's' },
-        { "port", required_argument, NULL, 'p' },
+        { "rcv_ip", required_argument, NULL, 'r' },
+        { "rcv_port", required_argument, NULL, 'i' },
+        { "send_ip", required_argument, NULL, 's' },
+        { "send_port", required_argument, NULL, 'p' },
         { "protocol", required_argument, NULL, 'o' },
         { "number", required_argument, NULL, 'n' },
         { "file", required_argument, NULL, 'i' },
@@ -153,12 +196,14 @@ int main(int argc, char** argv)
         { "socketpath", required_argument, NULL, 'k' },
         { "master", required_argument, NULL, 'm' },
         { "interfaceid", required_argument, NULL, 'd' },
+        { "loop", required_argument, NULL, 'l' },
+        { "pix_fmt", required_argument, NULL, 'x' },
         { 0 }
     };
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:s:p:o:n:i:t:k:m:d:", longopts, 0);
+        opt = getopt_long(argc, argv, "Hw:h:f:s:p:o:n:i:t:k:m:d:l:x:", longopts, 0);
         if (opt == -1) {
             break;
         }
@@ -176,6 +221,12 @@ int main(int argc, char** argv)
         case 'f':
             vid_fps = atof(optarg);
             break;
+        case 'r':
+            strlcpy(recv_addr, optarg, sizeof(recv_addr));
+            break;
+        case 'i':
+            strlcpy(recv_port, optarg, sizeof(recv_port));
+            break;
         case 's':
             strlcpy(send_addr, optarg, sizeof(send_addr));
             break;
@@ -188,7 +239,7 @@ int main(int argc, char** argv)
         case 'n':
             total_num = atoi(optarg);
             break;
-        case 'i':
+        case 'b':
             strlcpy(input_file, optarg, sizeof(input_file));
             break;
         case 't':
@@ -202,6 +253,23 @@ int main(int argc, char** argv)
             break;
         case 'd':
             interface_id = atoi(optarg);
+            break;
+        case 'l':
+            loop = (atoi(optarg)>0);
+            break;
+        case 'x':
+            strlcpy(pix_fmt_string, optarg, sizeof(pix_fmt_string));
+            if (strncmp(pix_fmt_string, "yuv422p", sizeof(pix_fmt_string)) == 0){
+                pix_fmt = PIX_FMT_YUV422P;
+            } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(pix_fmt_string)) == 0) {
+                pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
+            } else if (strncmp(pix_fmt_string, "yuv444m", sizeof(pix_fmt_string)) == 0){
+                pix_fmt = PIX_FMT_YUV444M;
+            } else if (strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)) == 0){
+                pix_fmt = PIX_FMT_RGB8;
+            } else {
+                pix_fmt = PIX_FMT_NV12;
+            }
             break;
         case '?':
             usage(stderr, argv[0]);
@@ -242,6 +310,7 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
     } else if (strncmp(payload_type, "st22", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
+        param.payload_codec = PAYLOAD_CODEC_JPEGXS;
     } else if (strncmp(payload_type, "st30", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
     } else if (strncmp(payload_type, "st40", sizeof(payload_type)) == 0) {
@@ -280,12 +349,16 @@ int main(int argc, char** argv)
 
     strlcpy(param.remote_addr.ip, send_addr, sizeof(param.remote_addr.ip));
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
+    strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
+    strlcpy(param.local_addr.port, send_port, sizeof(param.local_addr.port));
+    frame_size = getFrameSize(pix_fmt, width, height);
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {
         printf("Fail to connect to MCM data plane\n");
         exit(-1);
     }
+
     signal(SIGINT, intHandler);
 
     FILE* input_fp = NULL;
@@ -293,7 +366,7 @@ int main(int argc, char** argv)
     const uint32_t fps_interval = 30;
     double fps = 0.0;
     struct timespec ts_begin = {}, ts_end = {};
-    // struct timespec ts_frame_begin = {}, ts_frame_end = {};
+    struct timespec ts_frame_begin = {}, ts_frame_end = {};
 
     if (strlen(input_file) > 0) {
         struct stat statbuf = { 0 };
@@ -309,7 +382,7 @@ int main(int argc, char** argv)
         }
     }
 
-    // const useconds_t pacing = 1000000.0 / vid_fps;
+    const __useconds_t pacing = 1000000.0 / vid_fps;
     while (keepRunning) {
         /* Timestamp for frame start. */
 
@@ -317,14 +390,14 @@ int main(int argc, char** argv)
         if (buf == NULL) {
             break;
         }
-        // printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
-        // printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
-        // printf("INFO: buf->len = %ld\n", buf->len);
+        printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
+        printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
+        printf("INFO: buf->len = %ld\n", buf->len);
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
         } else {
-            if (read_test_data(input_fp, buf, width, height, pix_fmt) < 0) {
+            if (read_test_data(input_fp, buf, frame_size, loop) < 0) {
                 break;
             }
         }
@@ -345,7 +418,7 @@ int main(int argc, char** argv)
             clock_gettime(CLOCK_REALTIME, &ts_begin);
         }
 
-        printf("TX frames: [%d], FPS: %0.2f\n", frame_count, fps);
+        printf("TX frames: [%d], FPS: %0.2f [%0.2f]\n", frame_count, fps, vid_fps);
 
         frame_count++;
 
@@ -354,17 +427,12 @@ int main(int argc, char** argv)
         }
 
         /* Timestamp for frame end. */
-        // clock_gettime(CLOCK_REALTIME, &ts_frame_end);
+        clock_gettime(CLOCK_REALTIME, &ts_frame_end);
 
         /* sleep for 1/fps */
-        // useconds_t spend = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
-        // printf("pacing: %d\n", pacing);
-        // printf("spend: %d\n", spend);
-        // if (pacing > spend) {
-        //     // printf("sleep: %d\n", pacing - spend);
-        //     usleep(pacing - spend);
-        // }
-        // usleep(pacing);
+        __useconds_t spend = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        printf("pacing: %d\n", pacing);
+        printf("spend: %d\n", spend);
     }
 
     /* Clean up */
