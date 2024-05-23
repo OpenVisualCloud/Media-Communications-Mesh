@@ -490,6 +490,7 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
 {
     int err = 0;
     uint16_t qid = 0;
+    mcm_buffer* rx_mcm_buff = NULL;
     memif_buffer_t* rx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
@@ -506,6 +507,10 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
 #if defined(ZERO_COPY)
     rx_bufs = (memif_buffer_t*)frame->opaque;
     rx_buf_num = 1;
+    rx_mcm_buff = (mcm_buffer*)rx_bufs->data;
+    if(rx_mcm_buff != NULL) {
+        rx_mcm_buff->metadata.timestamp = (uint32_t)((frame->timestamp/1000) & 0xffffffff);
+    }
 #else
     /* allocate memory */
     rx_bufs = s->shm_bufs;
@@ -534,6 +539,7 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
 {
     int err = 0;
     uint16_t qid = 0;
+    mcm_buffer* rx_mcm_buff = NULL;
     memif_buffer_t* rx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
@@ -550,6 +556,10 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
 #if defined(ZERO_COPY)
     rx_bufs = (memif_buffer_t*)frame->opaque;
     rx_buf_num = 1;
+    rx_mcm_buff = (mcm_buffer*)rx_bufs->data;
+    if(rx_mcm_buff != NULL) {
+        rx_mcm_buff->metadata.timestamp = (uint32_t)((frame->timestamp/1000) & 0xffffffff);
+    }
 #else
     /* allocate memory */
     rx_bufs = s->shm_bufs;
