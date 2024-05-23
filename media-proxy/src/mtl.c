@@ -165,11 +165,11 @@ void st_rx_debug_dump(struct st20p_rx_ops ops)
     INFO("Parse RX Session Ops ...");
     INFO("name          : %s", ops.name);
     INFO("priv          : %p", ops.priv);
-    INFO("sip_addr      : %u, %u, %u, %u",
-        ops.port.sip_addr[MTL_PORT_P][0],
-        ops.port.sip_addr[MTL_PORT_P][1],
-        ops.port.sip_addr[MTL_PORT_P][2],
-        ops.port.sip_addr[MTL_PORT_P][3]);
+    INFO("ip_addr      : %u, %u, %u, %u",
+        ops.port.ip_addr[MTL_PORT_P][0],
+        ops.port.ip_addr[MTL_PORT_P][1],
+        ops.port.ip_addr[MTL_PORT_P][2],
+        ops.port.ip_addr[MTL_PORT_P][3]);
     INFO("num_port      : %u", ops.port.num_port);
     INFO("port          : %s", ops.port.port[MTL_PORT_P]);
     INFO("udp_port      : %u", ops.port.udp_port[MTL_PORT_P]);
@@ -189,11 +189,11 @@ void st_rx_st22p_debug_dump(struct st22p_rx_ops ops)
     INFO("Parse RX Session Ops ...");
     INFO("name          : %s", ops.name);
     INFO("priv          : %p", ops.priv);
-    INFO("sip_addr      : %u, %u, %u, %u",
-        ops.port.sip_addr[MTL_PORT_P][0],
-        ops.port.sip_addr[MTL_PORT_P][1],
-        ops.port.sip_addr[MTL_PORT_P][2],
-        ops.port.sip_addr[MTL_PORT_P][3]);
+    INFO("ip_addr      : %u, %u, %u, %u",
+        ops.port.ip_addr[MTL_PORT_P][0],
+        ops.port.ip_addr[MTL_PORT_P][1],
+        ops.port.ip_addr[MTL_PORT_P][2],
+        ops.port.ip_addr[MTL_PORT_P][3]);
     INFO("num_port      : %u", ops.port.num_port);
     INFO("port          : %s", ops.port.port[MTL_PORT_P]);
     INFO("udp_port      : %u", ops.port.udp_port[MTL_PORT_P]);
@@ -291,13 +291,13 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     memif_buffer_t* rx_bufs = rx_ctx->shm_bufs;
 
     if (rx_ctx->shm_ready == 0) {
-        ERROR("MemIF connection not ready.");
+        ERROR("rx_st20p_query_ext_frame: MemIF connection not ready.");
         return -1;
     }
 
     err = memif_buffer_alloc(rx_ctx->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
+        INFO("rx_st20p_query_ext_frame: Failed to alloc memif buffer: %s", memif_strerror(err));
         return -1;
     }
 
@@ -327,13 +327,13 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     memif_buffer_t* rx_bufs = rx_ctx->shm_bufs;
 
     if (rx_ctx->shm_ready == 0) {
-        ERROR("MemIF connection not ready.");
+        ERROR("rx_st22p_query_ext_frame: MemIF connection not ready.");
         return -1;
     }
 
     err = memif_buffer_alloc(rx_ctx->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
+        INFO("rx_st22p_query_ext_frame: Failed to alloc memif buffer: %s", memif_strerror(err));
         return -1;
     }
 
@@ -512,7 +512,7 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
 
     err = memif_buffer_alloc(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
+        INFO("rx_st20p_consume_frame: Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
     }
 
@@ -524,7 +524,7 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
     /* Send to microservice application. */
     err = memif_tx_burst(s->memif_conn, qid, rx_bufs, rx_buf_num, &rx);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("memif_tx_burst: %s", memif_strerror(err));
+        INFO("rx_st20p_consume_frame memif_tx_burst: %s", memif_strerror(err));
     }
 
     s->fb_recv++;
@@ -556,7 +556,7 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
 
     err = memif_buffer_alloc(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
+        INFO("rx_st22p_consume_frame Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
     }
 
@@ -578,7 +578,7 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
     /* Send to microservice application. */
     err = memif_tx_burst(s->memif_conn, qid, rx_bufs, rx_buf_num, &rx);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("memif_tx_burst: %s", memif_strerror(err));
+        INFO("rx_st22p_consume_frame memif_tx_burst: %s", memif_strerror(err));
     }
 
     s->fb_recv++;
@@ -606,7 +606,7 @@ static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame)
 
     err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
+        INFO("rx_st30_consume_frame Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
     }
 
@@ -645,7 +645,7 @@ static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, ui
 
     err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("Failed to alloc memif buffer: %s", memif_strerror(err));
+        INFO("rx_st40_consume_frame Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
     }
 
@@ -1270,13 +1270,11 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     }
 
     /* Set application name */
-    strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(tx_ctx->memif_socket_args.app_name) - 1);
+    strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name, sizeof(tx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
-    strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(tx_ctx->memif_socket_args.path) - 1);
+    strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path, sizeof(tx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && tx_ctx->memif_socket_args.path[0] != '@') {
@@ -1305,8 +1303,7 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->frame_size;
     tx_ctx->memif_conn_args.log2_ring_size = 2;
-    snprintf((char*)tx_ctx->memif_conn_args.interface_name,
-        sizeof(tx_ctx->memif_conn_args.interface_name), "%s", memif_ops->interface_name);
+    snprintf((char*)tx_ctx->memif_conn_args.interface_name, sizeof(tx_ctx->memif_conn_args.interface_name), "%s", memif_ops->interface_name);
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     /* TX buffers */
@@ -1314,8 +1311,7 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
-    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,
-        tx_st20p_on_connect, tx_st20p_on_disconnect, tx_st20p_on_receive, tx_ctx);
+    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st20p_on_connect, tx_st20p_on_disconnect, tx_st20p_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         free(tx_ctx->shm_bufs);
@@ -1778,7 +1774,7 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
         ops_rx.name = "mcm_rx_session";
         ops_rx.port.num_port = 1;
         // rx src ip like 239.0.0.1
-        memcpy(ops_rx.port.sip_addr[MTL_PORT_P], g_rx_st20_src_ip, MTL_IP_ADDR_LEN);
+        memcpy(ops_rx.port.ip_addr[MTL_PORT_P], g_rx_st20_src_ip, MTL_IP_ADDR_LEN);
         // send port interface like 0000:af:00.0
         strncpy(ops_rx.port.port[MTL_PORT_P], RX_ST20_PORT_BDF, MTL_PORT_MAX_LEN);
         ops_rx.port.payload_type = RX_ST20_PAYLOAD_TYPE;

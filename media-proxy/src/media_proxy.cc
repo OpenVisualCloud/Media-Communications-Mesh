@@ -11,7 +11,7 @@
 #include "api_server_tcp.h"
 
 #ifndef IMTL_CONFIG_PATH
-#defne IMTL_CONFIG_PATH "./imtl.json"
+#define IMTL_CONFIG_PATH "./imtl.json"
 #endif
 
 #define DEFAULT_DEV_PORT "0000:31:00.0"
