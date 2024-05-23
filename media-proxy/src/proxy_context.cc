@@ -197,6 +197,8 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->flags = MTL_FLAG_BIND_NUMA;
     st_param->flags |= MTL_FLAG_SHARED_RX_QUEUE;
     st_param->flags |= MTL_FLAG_SHARED_TX_QUEUE;
+    st_param->flags |= request->payload_mtl_flags_mask;
+    st_param->pacing = (st21_tx_pacing_way) request->payload_mtl_pacing;
     // st_param->flags |= MTL_FLAG_TX_VIDEO_MIGRATE;
     // st_param->flags |= MTL_FLAG_RX_VIDEO_MIGRATE;
     st_param->log_level = MTL_LOG_LEVEL_DEBUG;
@@ -336,11 +338,17 @@ void ProxyContext::ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx
     snprintf(session_name, NAME_MAX, "mcm_rx_st20_%d", session_id++);
 
     inet_pton(AF_INET, request->remote_addr.ip, ops_rx->port.ip_addr[MTL_PORT_P]);
+    inet_pton(AF_INET, request->local_addr.ip, ops_rx->port.mcast_sip_addr[MTL_PORT_P]);
+
     ops_rx->port.udp_port[MTL_PORT_P] = atoi(request->local_addr.port);
     // ops_rx->port.udp_port[MTL_PORT_P] = RX_ST20_UDP_PORT;
     strlcpy(ops_rx->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops_rx->port.num_port = 1;
-    ops_rx->port.payload_type = 112;
+    if(request->payload_type_nr == 0 ) {
+        ops_rx->port.payload_type = 112;
+    } else {
+        ops_rx->port.payload_type = request->payload_type_nr;
+    }
     ops_rx->name = strdup(session_name);
     ops_rx->width = request->width;
     ops_rx->height = request->height;
@@ -411,7 +419,11 @@ void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx
     strlcpy(ops_tx->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops_tx->port.udp_src_port[MTL_PORT_P] = atoi(request->local_addr.port);
     ops_tx->port.num_port = 1;
-    ops_tx->port.payload_type = 112;
+    if(request->payload_type_nr == 0 ) {
+        ops_tx->port.payload_type = 112;
+    } else {
+        ops_tx->port.payload_type = request->payload_type_nr;
+    }
     ops_tx->name = strdup(session_name);
     ops_tx->width = request->width;
     ops_tx->height = request->height;
@@ -432,6 +444,7 @@ void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx
     printf("\n");
     INFO("num_port      : %d", ops_tx->port.num_port);
     INFO("udp_port      : %d", ops_tx->port.udp_port[MTL_PORT_P]);
+    INFO("udp_src_port  : %d", ops_tx->port.udp_src_port[MTL_PORT_P]);
     INFO("payload_type  : %d", ops_tx->port.payload_type);
     INFO("name          : %s", ops_tx->name);
     INFO("width         : %d", ops_tx->width);
@@ -453,8 +466,13 @@ void ProxyContext::ParseSt22TxOps(const mcm_conn_param* request, struct st22p_tx
     inet_pton(AF_INET, request->remote_addr.ip, ops->port.dip_addr[MTL_PORT_P]);
     ops->port.udp_port[MTL_PORT_P] = atoi(request->remote_addr.port);
     strlcpy(ops->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    ops->port.udp_src_port[MTL_PORT_P] = atoi(request->local_addr.port);
     ops->port.num_port = 1;
-    ops->port.payload_type = 114;
+    if(request->payload_type_nr == 0 ) {
+        ops->port.payload_type = 114;
+    } else {
+        ops->port.payload_type = request->payload_type_nr;
+    }
     ops->name = strdup(session_name);
     ops->width = request->width;
     ops->height = request->height;
@@ -496,12 +514,17 @@ void ProxyContext::ParseSt22RxOps(const mcm_conn_param* request, struct st22p_rx
     snprintf(session_name, NAME_MAX, "mcm_rx_st22_%d", session_id++);
 
     inet_pton(AF_INET, request->remote_addr.ip, ops->port.ip_addr[MTL_PORT_P]);
+    inet_pton(AF_INET, request->local_addr.ip, ops->port.mcast_sip_addr[MTL_PORT_P]);
     ops->port.udp_port[MTL_PORT_P] = atoi(request->local_addr.port);
 
     // ops->port.udp_port[MTL_PORT_P] = RX_ST20_UDP_PORT;
     strlcpy(ops->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->port.num_port = 1;
-    ops->port.payload_type = 114;
+    if(request->payload_type_nr == 0 ) {
+        ops->port.payload_type = 114;
+    } else {
+        ops->port.payload_type = request->payload_type_nr;
+    }
     ops->name = strdup(session_name);
     ops->width = request->width;
     ops->height = request->height;
