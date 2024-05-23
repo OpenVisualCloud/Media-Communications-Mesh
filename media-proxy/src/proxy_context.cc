@@ -355,8 +355,8 @@ void ProxyContext::ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx
     ops_rx->fps = st_frame_rate_to_st_fps((double)request->fps);
     // ops_rx->transport_fmt = ST20_FMT_YUV_422_10BIT;
     // ops_rx->output_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
-    ops_rx->transport_fmt = ST20_FMT_YUV_422_8BIT;
-    ops_rx->output_fmt = ST_FRAME_FMT_YUV422CUSTOM8;
+    ops_rx->transport_fmt = ST20_FMT_YUV_422_10BIT;
+    ops_rx->output_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
     ops_rx->device = ST_PLUGIN_DEVICE_AUTO;
     ops_rx->framebuff_cnt = 4;
 
@@ -430,8 +430,8 @@ void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx
     ops_tx->fps = st_frame_rate_to_st_fps((double)request->fps);
     // ops_tx->transport_fmt = ST20_FMT_YUV_422_10BIT;
     // ops_tx->input_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
-    ops_tx->input_fmt = ST_FRAME_FMT_YUV422CUSTOM8;
-    ops_tx->transport_fmt = ST20_FMT_YUV_422_8BIT;
+    ops_tx->input_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
+    ops_tx->transport_fmt = ST20_FMT_YUV_422_10BIT;
     ops_tx->device = ST_PLUGIN_DEVICE_AUTO;
     ops_tx->framebuff_cnt = 4;
 
@@ -477,7 +477,7 @@ void ProxyContext::ParseSt22TxOps(const mcm_conn_param* request, struct st22p_tx
     ops->width = request->width;
     ops->height = request->height;
     ops->fps = st_frame_rate_to_st_fps((double)request->fps);
-    ops->input_fmt = ST_FRAME_FMT_YUV422PLANAR8;
+    ops->input_fmt = ST_FRAME_FMT_YUV422PLANAR10LE; //ST_FRAME_FMT_YUV422PLANAR8;
     ops->device = ST_PLUGIN_DEVICE_AUTO;
     ops->framebuff_cnt = 4;
     ops->pack_type = ST22_PACK_CODESTREAM;
@@ -529,7 +529,7 @@ void ProxyContext::ParseSt22RxOps(const mcm_conn_param* request, struct st22p_rx
     ops->width = request->width;
     ops->height = request->height;
     ops->fps = st_frame_rate_to_st_fps((double)request->fps);
-    ops->output_fmt = ST_FRAME_FMT_YUV422PLANAR8;
+    ops->output_fmt = ST_FRAME_FMT_YUV422PLANAR10LE; //ST_FRAME_FMT_YUV422PLANAR8;
     ops->device = ST_PLUGIN_DEVICE_AUTO;
     ops->framebuff_cnt = 4;
     ops->pack_type = ST22_PACK_CODESTREAM;
