@@ -14,9 +14,13 @@
 #include <time.h>
 #include <unistd.h>
 #include "mcm_dp.h"
+// #include "st_pipeline_api.h"
+#include <st_fmt.h>
 
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
+#define DEFAULT_SEND_IP "127.0.0.1"
+#define DEFAULT_SEND_PORT "9001"
 #define DEFAULT_FRAME_WIDTH 1920
 #define DEFAULT_FRAME_HEIGHT 1080
 #define DEFAULT_FPS 30.0
@@ -24,8 +28,9 @@
 #define DEFAULT_LOCAL_FILE "data-sdk.264"
 #define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
 #define DEFAULT_MEMIF_IS_MASTER 0
-#define DEFAULT_MEMIF_INTERNFACE_ID 0
+#define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_PROTOCOL "auto"
+#define DEFAULT_VIDEO_FMT "yuv422p10le"
 
 static volatile bool keepRunning = true;
 
@@ -76,8 +81,24 @@ void usage(FILE* fp, const char* path)
         DEFAULT_MEMIF_IS_MASTER);
     fprintf(fp, "-d, --interfaceid=interface_id\t"
                 "Set memif conn interface id (default: %d)\n",
-        DEFAULT_MEMIF_INTERNFACE_ID);
+        DEFAULT_MEMIF_INTERFACE_ID);
+    fprintf(fp, "-x, --pix_fmt=mcm_pix_fmt\t"
+                "Set pix_fmt conn color format (default: %s)\n",
+        DEFAULT_VIDEO_FMT);
     fprintf(fp, "\n");
+}
+
+uint32_t getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height) {
+    if (fmt == PIX_FMT_YUV422P) {
+        return st_frame_size(ST_FRAME_FMT_UYVY, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    } else if (fmt == PIX_FMT_YUV422P_10BIT_LE) {
+        return st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE , width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    } else if (fmt == PIX_FMT_YUV444M) {
+        return st_frame_size(ST_FRAME_FMT_YUV444RFC4175PG4BE10, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    } else if (fmt == PIX_FMT_RGB8) {
+        return st_frame_size(ST_FRAME_FMT_RGB8, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+    }
+    return width*height*3/2; // PIX_FMT_NV12
 }
 
 int main(int argc, char** argv)
@@ -85,12 +106,16 @@ int main(int argc, char** argv)
     int err = 0;
     char recv_addr[46] = DEFAULT_RECV_IP;
     char recv_port[6] = DEFAULT_RECV_PORT;
+    char send_addr[46] = DEFAULT_SEND_IP;
+    char send_port[6] = DEFAULT_SEND_PORT;
+
     char protocol_type[32] = DEFAULT_PROTOCOL;
     char payload_type[32] = DEFAULT_PAYLOAD_TYPE;
     char file_name[128] = "";
+    char pix_fmt_string[32] = "";
     char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
     uint8_t is_master = DEFAULT_MEMIF_IS_MASTER;
-    uint32_t interface_id = DEFAULT_MEMIF_INTERNFACE_ID;
+    uint32_t interface_id = DEFAULT_MEMIF_INTERFACE_ID;
 
     /* video resolution */
     uint32_t width = DEFAULT_FRAME_WIDTH;
@@ -109,14 +134,18 @@ int main(int argc, char** argv)
         { "width", required_argument, NULL, 'w' },
         { "height", required_argument, NULL, 'h' },
         { "fps", required_argument, NULL, 'f' },
-        { "ip", required_argument, NULL, 'r' },
-        { "port", required_argument, NULL, 'p' },
+        { "rcv_ip", required_argument, NULL, 'r' },
+        { "rcv_port", required_argument, NULL, 'i' },
+        { "send_ip", required_argument, NULL, 's' },
+        { "send_port", required_argument, NULL, 'p' },
         { "protocol", required_argument, NULL, 'o' },
         { "type", required_argument, NULL, 't' },
         { "socketpath", required_argument, NULL, 'k' },
         { "master", required_argument, NULL, 'm' },
         { "interfaceid", required_argument, NULL, 'd' },
         { "dumpfile", required_argument, NULL, 's' },
+        { "file_input", required_argument, NULL, 'b' },
+        { "pix_fmt", required_argument, NULL, 'x' },
         { 0 }
     };
 
@@ -143,8 +172,14 @@ int main(int argc, char** argv)
         case 'r':
             strlcpy(recv_addr, optarg, sizeof(recv_addr));
             break;
-        case 'p':
+        case 'i':
             strlcpy(recv_port, optarg, sizeof(recv_port));
+            break;
+        case 's':
+            strlcpy(send_addr, optarg, sizeof(send_addr));
+            break;
+        case 'p':
+            strlcpy(send_port, optarg, sizeof(send_port));
             break;
         case 'o':
             strlcpy(protocol_type, optarg, sizeof(protocol_type));
@@ -152,7 +187,7 @@ int main(int argc, char** argv)
         case 't':
             strlcpy(payload_type, optarg, sizeof(payload_type));
             break;
-        case 's':
+        case 'b':
             strlcpy(file_name, optarg, sizeof(file_name));
             break;
         case 'k':
@@ -163,6 +198,20 @@ int main(int argc, char** argv)
             break;
         case 'd':
             interface_id = atoi(optarg);
+            break;
+        case 'x':
+            strlcpy(pix_fmt_string, optarg, sizeof(pix_fmt_string));
+            if (strncmp(pix_fmt_string, "yuv422p", sizeof(pix_fmt_string)) == 0){
+                pix_fmt = PIX_FMT_YUV422P;
+            } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(pix_fmt_string)) == 0) {
+                pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
+            } else if (strncmp(pix_fmt_string, "yuv444m", sizeof(pix_fmt_string)) == 0){
+                pix_fmt = PIX_FMT_YUV444M;
+            } else if (strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)) == 0){
+                pix_fmt = PIX_FMT_RGB8;
+            } else {
+                pix_fmt = PIX_FMT_NV12;
+            }
             break;
         case '?':
             usage(stderr, argv[0]);
@@ -234,7 +283,7 @@ int main(int argc, char** argv)
     case PAYLOAD_TYPE_ST22_VIDEO:
     default:
         /* video format */
-        param.pix_fmt = PIX_FMT_YUV444M;
+        param.pix_fmt = pix_fmt;
         param.payload_args.video_args.width   = param.width = width;
         param.payload_args.video_args.height  = param.height = height;
         param.payload_args.video_args.fps     = param.fps = vid_fps;
@@ -244,6 +293,8 @@ int main(int argc, char** argv)
 
     strlcpy(param.remote_addr.ip, recv_addr, sizeof(param.remote_addr.ip));
     strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
+    strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
+    strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {
@@ -253,7 +304,10 @@ int main(int argc, char** argv)
     signal(SIGINT, intHandler);
 
     uint32_t frame_count = 0;
-    uint32_t frm_size = width * height * 3 / 2; //TODO:assume it's NV12
+    // uint32_t frm_size = width * height * 3 / 2; //TODO:assume it's NV12
+    uint32_t frm_size = getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height);
+    // uint32_t frm_size = dp_ctx->frame_size;
+
     const uint32_t fps_interval = 30;
     double fps = 0.0;
     void *ptr = NULL;
@@ -287,9 +341,9 @@ int main(int argc, char** argv)
             }
             break;
         }
-        // printf("INFO: buf->metadata.seq_num   = %d\n", buf->metadata.seq_num);
-        // printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
-        // printf("INFO: buf->len                = %ld\n", buf->len);
+        printf("INFO: buf->metadata.seq_num   = %u\n", buf->metadata.seq_num);
+        printf("INFO: buf->metadata.timestamp = %u\n", buf->metadata.timestamp);
+        printf("INFO: buf->len                = %ld\n", buf->len);
 
         clock_gettime(CLOCK_REALTIME, &ts_recv);
         if (first_frame) {
@@ -299,13 +353,13 @@ int main(int argc, char** argv)
 
         if (strncmp(payload_type, "rtsp", sizeof(payload_type)) != 0) {
             if (dump_fp) {
-                fwrite(buf->data, frm_size, 1, dump_fp);
+                fwrite(buf->data, buf->len, 1, dump_fp);
             } else {
                 // Following code are mainly for test purpose, it requires the sender side to
                 // pre-set the first several bytes
                 ptr = buf->data;
                 if (*(uint32_t *)ptr != frame_count) {
-                    printf("Wrong data content: expected %d, got %u\n", frame_count, *(uint32_t*)ptr);
+                    printf("Wrong data content: expected %u, got %u\n", frame_count, *(uint32_t*)ptr);
                     /* catch up the sender frame count */
                     frame_count = *(uint32_t*)ptr;
                 }
