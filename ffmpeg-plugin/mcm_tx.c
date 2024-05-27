@@ -1,166 +1,168 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/internal.h"
+#include "libavutil/pixdesc.h"
 #include "libavformat/avformat.h"
 #include "libavformat/mux.h"
 #include <mcm_dp.h>
 #include <bsd/string.h>
 
-#define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
-
 typedef struct McmMuxerContext {
-    const AVClass* class; /**< Class for private options. */
+    const AVClass *class; /**< Class for private options. */
 
-    int idx;
     /* arguments */
-    char* ip_addr;
-    int port;
-    int total_frame_num;
-    char* payload_type;
-    char* protocol_type;
-    char* socket_path;
-    uint8_t is_master;
-    uint32_t interface_id;
-
+    char *ip_addr;
+    char *port;
+    char *payload_type;
+    char *protocol_type;
     int width;
     int height;
     enum AVPixelFormat pixel_format;
-    int fps;
+    AVRational frame_rate;
+    char *socket_name;
+    int interface_id;
 
     mcm_conn_context *tx_handle;
-    uint64_t frame_count;
-
 } McmMuxerContext;
 
-static int mcm_write_header(AVFormatContext* ctx) {
+static int mcm_write_header(AVFormatContext* avctx)
+{
+    McmMuxerContext *s = avctx->priv_data;
+    mcm_conn_param param = { 0 };
 
-    av_log(NULL, AV_LOG_WARNING, "MCM WRITE HEADER %d %d\n", ctx->streams[0]->codecpar->width, ctx->streams[0]->codecpar->height);
+    strlcpy(param.remote_addr.ip, s->ip_addr, sizeof(param.remote_addr.ip));
+    strlcpy(param.remote_addr.port, s->port, sizeof(param.remote_addr.port));
 
-    // McmMuxerContext* s = ctx->priv_data;
-    // mcm_conn_param param = { 0 };
+    /* protocol type */
+    if (strcmp(s->protocol_type, "memif") == 0) {
+        param.protocol = PROTO_MEMIF;
+        param.memif_interface.is_master = 1;
+        snprintf(param.memif_interface.socket_path, sizeof(param.memif_interface.socket_path),
+            "/run/mcm/mcm_memif_%s.sock", s->socket_name ? s->socket_name : "0");
+        param.memif_interface.interface_id = s->interface_id;
+    } else if (strcmp(s->protocol_type, "udp") == 0) {
+        param.protocol = PROTO_UDP;
+    } else if (strcmp(s->protocol_type, "tcp") == 0) {
+        param.protocol = PROTO_TCP;
+    } else if (strcmp(s->protocol_type, "http") == 0) {
+        param.protocol = PROTO_HTTP;
+    } else if (strcmp(s->protocol_type, "grpc") == 0) {
+        param.protocol = PROTO_GRPC;
+    } else {
+        param.protocol = PROTO_AUTO;
+    }
 
-    // char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
+    /* payload type */
+    if (strcmp(s->payload_type, "st20") == 0) {
+        param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
+    } else if (strcmp(s->payload_type, "st22") == 0) {
+        param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
+    } else if (strcmp(s->payload_type, "st30") == 0) {
+        param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
+    } else if (strcmp(s->payload_type, "st40") == 0) {
+        param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
+    } else if (strcmp(s->payload_type, "rtsp") == 0) {
+        param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
+    } else {
+        av_log(NULL, AV_LOG_ERROR, "Unknown payload type\n");
+        return AVERROR(EINVAL);
+    }
 
-    // param.type = is_tx;
-    // param.width = s->width = ctx->streams[0]->codecpar->width;
-    // param.height = s->height = ctx->streams[0]->codecpar->height;
+    switch (param.payload_type) {
+    case PAYLOAD_TYPE_ST30_AUDIO:
+        /* audio format */
+        // param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
+        // param.payload_args.audio_args.channel = 2;
+        // param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
+        // param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
+        // param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
+        av_log(NULL, AV_LOG_ERROR, "Payload type st30 is not yet supported\n");
+        return AVERROR(EINVAL); // not supported yet
 
+    case PAYLOAD_TYPE_ST40_ANCILLARY:
+        /* ancillary format */
+        // param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION;
+        // param.payload_args.anc_args.type = ANC_TYPE_FRAME_LEVEL;
+        // param.payload_args.anc_args.fps = av_q2d(s->frame_rate);
+        av_log(NULL, AV_LOG_ERROR, "Payload type st40 is not yet supported\n");
+        return AVERROR(EINVAL); // not supported yet
 
-    // if (strncmp(s->protocol_type, "memif", sizeof(s->protocol_type)) == 0) {
-    //     param.protocol = PROTO_MEMIF;
-    //     strlcpy(param.memif_interface.socket_path, socket_path, sizeof(param.memif_interface.socket_path));
-    //     param.memif_interface.is_master = s->is_master;
-    //     param.memif_interface.interface_id = s->interface_id;
-    // } else if (strncmp(s->protocol_type, "udp", sizeof(s->protocol_type)) == 0) {
-    //     param.protocol = PROTO_UDP;
-    // } else if (strncmp(s->protocol_type, "tcp", sizeof(s->protocol_type)) == 0) {
-    //     param.protocol = PROTO_TCP;
-    // } else if (strncmp(s->protocol_type, "http", sizeof(s->protocol_type)) == 0) {
-    //     param.protocol = PROTO_HTTP;
-    // } else if (strncmp(s->protocol_type, "grpc", sizeof(s->protocol_type)) == 0) {
-    //     param.protocol = PROTO_GRPC;
-    // } else {
-    //     param.protocol = PROTO_AUTO;
-    // }
+    case PAYLOAD_TYPE_RTSP_VIDEO:
+    case PAYLOAD_TYPE_ST20_VIDEO:
+    case PAYLOAD_TYPE_ST22_VIDEO:
+    default:
+        /* video format */
+        param.payload_args.video_args.width   = param.width = s->width;
+        param.payload_args.video_args.height  = param.height = s->height;
+        param.payload_args.video_args.fps     = param.fps = av_q2d(s->frame_rate);
 
-    // /* payload type */
-    // if (strncmp(s->payload_type, "st20", sizeof(s->payload_type)) == 0) {
-    //     param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
-    // } else if (strncmp(s->payload_type, "st22", sizeof(s->payload_type)) == 0) {
-    //     param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
-    // } else if (strncmp(s->payload_type, "st30", sizeof(s->payload_type)) == 0) {
-    //     param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
-    // } else if (strncmp(s->payload_type, "st40", sizeof(s->payload_type)) == 0) {
-    //     param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
-    // } else if (strncmp(s->payload_type, "rtsp", sizeof(s->payload_type)) == 0) {
-    //     param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
-    // } else {
-    //     param.payload_type = PAYLOAD_TYPE_NONE;
-    // }
+        switch (s->pixel_format) {
+        case AV_PIX_FMT_YUV420P:
+        default:
+            param.pix_fmt = PIX_FMT_NV12;
+        }
 
-    // switch (param.payload_type) {
-    //     case PAYLOAD_TYPE_ST30_AUDIO:
-    //         /* audio format */
-    //         param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-    //         param.payload_args.audio_args.channel = 2;
-    //         param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
-    //         param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
-    //         param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
-    //         break;
-    //     case PAYLOAD_TYPE_ST40_ANCILLARY:
-    //         /* ancillary format */
-    //         param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION;
-    //         param.payload_args.anc_args.type = ANC_TYPE_FRAME_LEVEL;
-    //         param.payload_args.anc_args.fps = s->fps;
-    //         break;
-    //     case PAYLOAD_TYPE_ST20_VIDEO:
-    //     case PAYLOAD_TYPE_ST22_VIDEO:
-    //     default:
-    //         /* video format */
-    //         param.payload_args.video_args.width   = param.width = s->width;
-    //         param.payload_args.video_args.height  = param.height = s->height;
-    //         param.payload_args.video_args.fps     = param.fps = s->fps;
-    //         param.payload_args.video_args.pix_fmt = param.pix_fmt = s->pixel_format;
-    //         break;
-    // }
+        param.payload_args.video_args.pix_fmt = param.pix_fmt;
+        break;
+    }
 
-    // s->tx_handle = mcm_create_connection(&param);
-    // if (!s->tx_handle) {
-    //     //err(ctx, "%s, mcm_create_connection failed\n", __func__);
-    //     return AVERROR(EIO);
-    // }
+    param.type = is_tx;
+
+    s->tx_handle = mcm_create_connection(&param);
+    if (!s->tx_handle) {
+        av_log(avctx, AV_LOG_ERROR, "create connection failed\n");
+        return AVERROR(EIO);
+    }
+
+    av_log(avctx, AV_LOG_INFO,
+           "w:%d h:%d pixfmt:%s fps:%d\n",
+           s->width, s->height, av_get_pix_fmt_name(s->pixel_format),
+           (int)av_q2d(s->frame_rate));
     return 0;
 }
 
-static int mcm_write_packet(AVFormatContext* ctx, AVPacket* pkt) {
+static int mcm_write_packet(AVFormatContext* avctx, AVPacket* pkt)
+{
+    McmMuxerContext *s = avctx->priv_data;
+    mcm_buffer *buf = NULL;
+    int err = 0;
 
-    av_log(NULL, AV_LOG_WARNING, "MCM WRITE PACKET %d [%02X %02X %02X]\n", pkt->size, pkt->data[0], pkt->data[1], pkt->data[2]);
+    buf = mcm_dequeue_buffer(s->tx_handle, -1, &err);
+    if (buf == NULL) {
+        av_log(avctx, AV_LOG_ERROR, "dequeue buffer error %d\n", err);
+        return AVERROR(EIO);
+    }
 
-    // McmMuxerContext* s = ctx->priv_data;
-    // mcm_buffer* buf = NULL;
+    memcpy(buf->data, pkt->data, pkt->size <= buf->len ? pkt->size : buf->len);
 
-    // buf = mcm_dequeue_buffer(s->tx_handle, -1, NULL);
-    // if (buf == NULL) {
-    //     return AVERROR(EIO);
-    // }
+    if ((err = mcm_enqueue_buffer(s->tx_handle, buf)) != 0) {
+        av_log(avctx, AV_LOG_ERROR, "enqueue buffer error %d\n", err);
+        return AVERROR(EIO);
+    }
 
-    // // if (read_test_data(pkt->data, buf, s->width, s->height, s->pixel_format) < 0) {
-    // //     return AVERROR(EIO);
-    // // }
-
-    // if (mcm_enqueue_buffer(s->tx_handle, buf) != 0) {
-    //     return AVERROR(EIO);
-    // }
-
-    // s->frame_count++;
-
-    // if (s->frame_count >= s->total_frame_num) {
-    //     return AVERROR(EIO);
-    // }
     return 0;
 }
 
-static int mcm_write_trailer(AVFormatContext* ctx) {
+static int mcm_write_trailer(AVFormatContext* avctx)
+{
+    McmMuxerContext *s = avctx->priv_data;
 
-    av_log(NULL, AV_LOG_WARNING, "MCM WRITE TRAILER\n");
-
-    // McmMuxerContext* s = ctx->priv_data;
-
-    // mcm_destroy_connection(s->tx_handle);
+    mcm_destroy_connection(s->tx_handle);
     return 0;
 }
 
 #define OFFSET(x) offsetof(McmMuxerContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption mcm_tx_options[] = {
-    {"ip_addr", "IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = ENC},
-    {"port", "port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, -1, INT_MAX, ENC},
-    {"fps", "FPS", OFFSET(fps), AV_OPT_TYPE_INT, {.i64 = 30}, -1, INT_MAX, ENC},
-    {"total_frame_num", "Frame number", OFFSET(total_frame_num), AV_OPT_TYPE_INT, {.i64 = 10000}, -1, INT_MAX, ENC},
-    // {"payload_type", "Payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.str = "st20"}, .flags = ENC},
-    // {"protocol_type", "Protocol type", OFFSET(protocol_type), AV_OPT_TYPE_INT, {.str = "auto"}, .flags = ENC},
-    {"is_master", "Is master", OFFSET(is_master), AV_OPT_TYPE_INT, {.i64 = 1}, -1, INT_MAX, ENC},
-    {"interface_id", "interface ID", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, ENC},
+    { "ip_addr", "set remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.2"}, .flags = ENC },
+    { "port", "set remote port", OFFSET(port), AV_OPT_TYPE_STRING, {.str = "9001"}, .flags = ENC },
+    { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = ENC },
+    { "protocol_type", "set protocol type", OFFSET(protocol_type), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = ENC },
+    { "video_size", "set video frame size given a string such as 640x480 or hd720", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1920x1080"}, 0, 0, ENC },
+    { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_NONE}, -1, INT_MAX, ENC },
+    { "frame_rate", "set video frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, ENC },
+    { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = ENC },
+    { "interface_id", "set interface ID", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, ENC },
     { NULL },
 };
 
@@ -174,13 +176,12 @@ static const AVClass mcm_muxer_class = {
 
 const FFOutputFormat ff_mcm_muxer = {
     .p.name = "mcm",
-    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communication Mesh output device"),
+    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communication Mesh"),
     .priv_data_size = sizeof(McmMuxerContext),
     .write_header = mcm_write_header,
     .write_packet = mcm_write_packet,
     .write_trailer = mcm_write_trailer,
-    .p.video_codec = AV_CODEC_ID_RAWVIDEO, // AV_CODEC_ID_VNULL, // AV_CODEC_ID_NONE, // AV_CODEC_ID_RAWVIDEO,
+    .p.video_codec = AV_CODEC_ID_RAWVIDEO,
     .p.flags = AVFMT_NOFILE,
     .p.priv_class = &mcm_muxer_class,
-    // .p.extensions   = "mcm",
 };
