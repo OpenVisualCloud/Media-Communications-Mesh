@@ -16,7 +16,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "mcm_dp.h"
-#include <st_fmt.h>
+#include <mtl/st_pipeline_api.h>
 
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
