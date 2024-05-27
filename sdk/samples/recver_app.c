@@ -14,8 +14,7 @@
 #include <time.h>
 #include <unistd.h>
 #include "mcm_dp.h"
-// #include "st_pipeline_api.h"
-#include <st_fmt.h>
+#include <mtl/st_pipeline_api.h>
 
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
@@ -306,7 +305,6 @@ int main(int argc, char** argv)
     uint32_t frame_count = 0;
     // uint32_t frm_size = width * height * 3 / 2; //TODO:assume it's NV12
     uint32_t frm_size = getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height);
-    // uint32_t frm_size = dp_ctx->frame_size;
 
     const uint32_t fps_interval = 30;
     double fps = 0.0;
@@ -343,7 +341,7 @@ int main(int argc, char** argv)
         }
         printf("INFO: buf->metadata.seq_num   = %u\n", buf->metadata.seq_num);
         printf("INFO: buf->metadata.timestamp = %u\n", buf->metadata.timestamp);
-        printf("INFO: buf->len                = %ld\n", buf->len);
+        printf("INFO: buf->len = %ld frame size = %u\n", buf->len, frm_size);
 
         clock_gettime(CLOCK_REALTIME, &ts_recv);
         if (first_frame) {
