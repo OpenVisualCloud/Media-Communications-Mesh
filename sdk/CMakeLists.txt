@@ -5,7 +5,7 @@
 cmake_minimum_required(VERSION 3.16)
 
 project("McmDPSdk" C)
-set(VERSION "0.1.0")
+set(VERSION "0.1.1")
 set(DESCRIPTION "MCM DP SDK Library")
 
 set(CMAKE_C_STANDARD 11)
