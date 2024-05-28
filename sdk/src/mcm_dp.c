@@ -145,6 +145,10 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
         parse_memif_param(param, &(memif_param.socket_args), &(memif_param.conn_args));
         /* Connect memif connection. */
         conn_ctx = mcm_create_connection_memif(param, &memif_param);
+        if (!conn_ctx) {
+            log_error("Failed to create memif connection.");
+            return NULL;
+        }
         conn_ctx->session_id = 0;
         break;
     default:
