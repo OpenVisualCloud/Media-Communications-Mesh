@@ -7,6 +7,7 @@
 #include <math.h>
 #include <sstream>
 #include <vector>
+#include <bsd/string.h>
 
 #include "proxy_context.h"
 #include <mcm_dp.h>
@@ -107,7 +108,7 @@ void ProxyContext::ParseStInitParam(const TxControlRequest* request, struct mtl_
     st_param->num_ports = init.number_ports();
 
     std::string port_p = init.primary_port();
-    strncpy(st_param->port[MTL_PORT_P], port_p.c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(st_param->port[MTL_PORT_P], port_p.c_str(), MTL_PORT_MAX_LEN);
 
     for (int i = 0; i < init.primary_sip_addr_size(); ++i) {
         st_param->sip_addr[MTL_PORT_P][i] = init.primary_sip_addr(i);
@@ -150,7 +151,7 @@ void ProxyContext::ParseStInitParam(const RxControlRequest* request, struct mtl_
     st_param->num_ports = init.number_ports();
 
     std::string port_p = init.primary_port();
-    strncpy(st_param->port[MTL_PORT_P], port_p.c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(st_param->port[MTL_PORT_P], port_p.c_str(), MTL_PORT_MAX_LEN);
 
     for (int i = 0; i < init.primary_sip_addr_size(); ++i) {
         st_param->sip_addr[MTL_PORT_P][i] = init.primary_sip_addr(i);
@@ -189,7 +190,7 @@ void ProxyContext::ParseStInitParam(const RxControlRequest* request, struct mtl_
 
 void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_init_params* st_param)
 {
-    strncpy(st_param->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(st_param->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     inet_pton(AF_INET, getDataPlaneAddress().c_str(), st_param->sip_addr[MTL_PORT_P]);
     st_param->pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param->port[MTL_PORT_P]);
     st_param->num_ports = 1;
@@ -223,16 +224,16 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
 
 void ProxyContext::ParseMemIFParam(const TxControlRequest* request, memif_ops_t& memif_ops)
 {
-    strncpy(memif_ops.app_name, request->memif_ops().app_name().c_str(), sizeof(memif_ops.app_name));
-    strncpy(memif_ops.interface_name, request->memif_ops().interface_name().c_str(), sizeof(memif_ops.interface_name));
-    strncpy(memif_ops.socket_path, request->memif_ops().socket_path().c_str(), sizeof(memif_ops.socket_path));
+    strlcpy(memif_ops.app_name, request->memif_ops().app_name().c_str(), sizeof(memif_ops.app_name));
+    strlcpy(memif_ops.interface_name, request->memif_ops().interface_name().c_str(), sizeof(memif_ops.interface_name));
+    strlcpy(memif_ops.socket_path, request->memif_ops().socket_path().c_str(), sizeof(memif_ops.socket_path));
 }
 
 void ProxyContext::ParseMemIFParam(const RxControlRequest* request, memif_ops_t& memif_ops)
 {
-    strncpy(memif_ops.app_name, request->memif_ops().app_name().c_str(), sizeof(memif_ops.app_name));
-    strncpy(memif_ops.interface_name, request->memif_ops().interface_name().c_str(), sizeof(memif_ops.interface_name));
-    strncpy(memif_ops.socket_path, request->memif_ops().socket_path().c_str(), sizeof(memif_ops.socket_path));
+    strlcpy(memif_ops.app_name, request->memif_ops().app_name().c_str(), sizeof(memif_ops.app_name));
+    strlcpy(memif_ops.interface_name, request->memif_ops().interface_name().c_str(), sizeof(memif_ops.interface_name));
+    strlcpy(memif_ops.socket_path, request->memif_ops().socket_path().c_str(), sizeof(memif_ops.socket_path));
 }
 
 void ProxyContext::ParseSt20RxOps(const RxControlRequest* request, struct st20p_rx_ops* ops_rx)
@@ -241,7 +242,7 @@ void ProxyContext::ParseSt20RxOps(const RxControlRequest* request, struct st20p_
     StRxPort rx_port = st20_rx.rx_port();
 
     std::string port = rx_port.port();
-    strncpy(ops_rx->port.port[MTL_PORT_P], port.c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops_rx->port.port[MTL_PORT_P], port.c_str(), MTL_PORT_MAX_LEN);
     for (int i = 0; i < rx_port.sip_addr_size(); ++i) {
         ops_rx->port.sip_addr[MTL_PORT_P][i] = rx_port.sip_addr(i);
     }
@@ -285,7 +286,7 @@ void ProxyContext::ParseSt20TxOps(const TxControlRequest* request, struct st20p_
     StTxPort tx_port = st20_tx.tx_port();
 
     std::string port = tx_port.port();
-    strncpy(ops_tx->port.port[MTL_PORT_P], port.c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops_tx->port.port[MTL_PORT_P], port.c_str(), MTL_PORT_MAX_LEN);
     for (int i = 0; i < tx_port.dip_addr_size(); ++i) {
         ops_tx->port.dip_addr[MTL_PORT_P][i] = tx_port.dip_addr(i);
     }
@@ -331,7 +332,7 @@ void ProxyContext::ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx
     inet_pton(AF_INET, request->remote_addr.ip, ops_rx->port.sip_addr[MTL_PORT_P]);
     ops_rx->port.udp_port[MTL_PORT_P] = atoi(request->local_addr.port);
     // ops_rx->port.udp_port[MTL_PORT_P] = RX_ST20_UDP_PORT;
-    strncpy(ops_rx->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops_rx->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops_rx->port.num_port = 1;
     ops_rx->port.payload_type = 112;
     ops_rx->name = strdup(session_name);
@@ -396,7 +397,7 @@ void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx
 
     inet_pton(AF_INET, request->remote_addr.ip, ops_tx->port.dip_addr[MTL_PORT_P]);
     ops_tx->port.udp_port[MTL_PORT_P] = atoi(request->remote_addr.port);
-    strncpy(ops_tx->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops_tx->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops_tx->port.num_port = 1;
     ops_tx->port.payload_type = 112;
     ops_tx->name = strdup(session_name);
@@ -439,7 +440,7 @@ void ProxyContext::ParseSt22TxOps(const mcm_conn_param* request, struct st22p_tx
 
     inet_pton(AF_INET, request->remote_addr.ip, ops->port.dip_addr[MTL_PORT_P]);
     ops->port.udp_port[MTL_PORT_P] = atoi(request->remote_addr.port);
-    strncpy(ops->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->port.num_port = 1;
     ops->port.payload_type = 114;
     ops->name = strdup(session_name);
@@ -485,7 +486,7 @@ void ProxyContext::ParseSt22RxOps(const mcm_conn_param* request, struct st22p_rx
     ops->port.udp_port[MTL_PORT_P] = atoi(request->local_addr.port);
 
     // ops->port.udp_port[MTL_PORT_P] = RX_ST20_UDP_PORT;
-    strncpy(ops->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->port.num_port = 1;
     ops->port.payload_type = 114;
     ops->name = strdup(session_name);
@@ -528,7 +529,7 @@ void ProxyContext::ParseSt30TxOps(const mcm_conn_param* request, struct st30_tx_
 
     inet_pton(AF_INET, request->remote_addr.ip, ops->dip_addr[MTL_PORT_P]);
     ops->udp_port[MTL_PORT_P] = atoi(request->remote_addr.port);
-    strncpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->num_port = 1;
     ops->payload_type = 111;
     ops->name = strdup(session_name);
@@ -563,7 +564,7 @@ void ProxyContext::ParseSt30RxOps(const mcm_conn_param* request, struct st30_rx_
     inet_pton(AF_INET, request->remote_addr.ip, ops->sip_addr[MTL_PORT_P]);
     ops->udp_port[MTL_PORT_P] = atoi(request->local_addr.port);
 
-    strncpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->num_port = 1;
     ops->payload_type = 111;
     ops->name = strdup(session_name);
@@ -598,7 +599,7 @@ void ProxyContext::ParseSt40TxOps(const mcm_conn_param* request, struct st40_tx_
 
     inet_pton(AF_INET, request->remote_addr.ip, ops->dip_addr[MTL_PORT_P]);
     ops->udp_port[MTL_PORT_P] = atoi(request->remote_addr.port);
-    strncpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->num_port = 1;
     ops->payload_type = 113;
     ops->name = strdup(session_name);
@@ -633,7 +634,7 @@ void ProxyContext::ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_
     inet_pton(AF_INET, request->remote_addr.ip, ops->sip_addr[MTL_PORT_P]);
     ops->udp_port[MTL_PORT_P] = atoi(request->local_addr.port);
 
-    strncpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
+    strlcpy(ops->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->num_port = 1;
     ops->payload_type = 113;
     ops->rtp_ring_size = 1024;
@@ -815,6 +816,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         rx_ctx = mtl_st22p_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
             INFO("%s, Fail to create RX session.", __func__);
+            delete st_ctx;
             return -1;
         }
 
@@ -829,6 +831,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         rx_ctx = mtl_st30_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
             INFO("%s, Fail to create RX session.", __func__);
+            delete st_ctx;
             return -1;
         }
 
@@ -843,6 +846,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         rx_ctx = mtl_st40_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
             INFO("%s, Fail to create RX session.", __func__);
+            delete st_ctx;
             return -1;
         }
 
@@ -856,6 +860,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         rx_ctx = mtl_udp_h264_rx_session_create(mDevHandle, &local_addr, &memif_ops, schs);
         if (rx_ctx == NULL) {
             INFO("%s, Fail to create UDP H264 TX session.", __func__);
+            delete st_ctx;
             return -1;
         }
         st_ctx->rx_udp_h264_session = rx_ctx;
@@ -871,6 +876,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         rx_ctx = mtl_st20p_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
             INFO("%s, Fail to create RX session.\n", __func__);
+            delete st_ctx;
             return -1;
         }
 
@@ -933,6 +939,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
         tx_ctx = mtl_st22p_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
             INFO("%s, Fail to create TX session.", __func__);
+            delete st_ctx;
             return -1;
         }
 
@@ -947,6 +954,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
         tx_ctx = mtl_st30_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
             INFO("%s, Fail to create TX session.", __func__);
+            delete st_ctx;
             return -1;
         }
 
@@ -961,6 +969,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
         tx_ctx = mtl_st40_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
             INFO("%s, Fail to create TX session.", __func__);
+            delete st_ctx;
             return -1;
         }
 
@@ -976,6 +985,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
         tx_ctx = mtl_st20p_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
             INFO("%s, Fail to create TX session.", __func__);
+            delete st_ctx;
             return -1;
         }
 

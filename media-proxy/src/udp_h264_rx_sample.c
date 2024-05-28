@@ -13,6 +13,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 #include <sys/stat.h>
+#include <bsd/string.h>
+#include <errno.h>
 
 static void* rx_memif_event_loop(void* arg)
 {
@@ -61,10 +63,9 @@ int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* mem
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
-        if (stat("/run/mcm", &st) == -1) {
-            if (mkdir("/run/mcm", 0666) != 0) {
-                perror("Fail to create directory (/run/mcm) for MemIF.");
+        if (mkdir("/run/mcm", 0666) != 0) {
+            if(errno != EEXIST) {
+                perror("Fail to access or create directory (/run/mcm) for MemIF.");
                 return -1;
             }
         }
@@ -428,10 +429,12 @@ static int media_proxy_mudp_poll(void* priv)
         if (ret == 0) {
             return MTL_TASKLET_ALL_DONE;
         } else {
-            INFO("udp_server_h264 has memif error.\n");
+            ERROR("media_proxy_mudp_poll: udp_server_h264 has memif error.\n");
             return MTL_TASKLET_ALL_DONE;
         }
     }
+    INFO("media_proxy_mudp_poll: udp_server_h264 sch_start is false.\n");
+    return MTL_TASKLET_ALL_DONE;
 }
 
 static int udp_poll_tasklet_start(void* priv)

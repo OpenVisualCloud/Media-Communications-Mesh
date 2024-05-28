@@ -5,6 +5,7 @@
  */
 
 // #include <signal.h>
+#include <bsd/string.h>
 
 #include "api_server_tcp.h"
 #include <mcm_dp.h>
@@ -265,6 +266,8 @@ void RunTCPServer(ProxyContext* ctx)
     connection_t* connection = NULL;
     control_context* ctl_ctx = NULL;
     pthread_t thread;
+    size_t connection_t_size = sizeof(connection_t);
+    size_t control_context_size = sizeof(control_context);
 
     port = ctx->getTCPListenPort();
     if (port <= 0) {
@@ -274,7 +277,7 @@ void RunTCPServer(ProxyContext* ctx)
 
     /* create socket */
     sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock <= 0) {
+    if (sock == -1) {
         fprintf(stderr, "error: cannot create socket\n");
         return;
     }
@@ -295,22 +298,33 @@ void RunTCPServer(ProxyContext* ctx)
     }
 
     INFO("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
-
     // signal(SIGINT, intHandler);
 
     while (keepRunning) {
         /* accept incoming connections */
-        connection = (connection_t*)malloc(sizeof(connection_t));
+        connection = (connection_t*)malloc(connection_t_size);
+        if (!connection) continue;
+
+        memset(connection, 0x0, connection_t_size);
         connection->sock = accept(sock, &connection->address, (socklen_t*)&connection->addr_len);
         if (connection->sock <= 0) {
             free(connection);
         } else {
             /* start a new thread but do not wait for it */
-            ctl_ctx = (control_context*)malloc(sizeof(control_context));
+            ctl_ctx = (control_context*)malloc(control_context_size);
+            if(!ctl_ctx) {
+                free(connection);
+                continue;
+            }
+            memset(ctl_ctx, 0x0, control_context_size);
             ctl_ctx->proxy_ctx = ctx;
             ctl_ctx->conn = connection;
-            pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx);
-            pthread_detach(thread);
+            if(pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
+                pthread_detach(thread);
+            } else {
+                free(connection);
+                free(ctl_ctx);
+            }
         }
     }
 
