@@ -68,5 +68,5 @@ endif()
 configure_file(libmcm_dp.pc.in libmcm_dp.pc @ONLY)
 
 install(TARGETS mcm_dp DESTINATION ${CMAKE_INSTALL_RPATH} COMPONENT libmcm_dp)
-install(FILES ${CMAKE_BINARY_DIR}/sdk/libmcm_dp.pc DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
+install(FILES ${CMAKE_BINARY_DIR}/libmcm_dp.pc DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
 
