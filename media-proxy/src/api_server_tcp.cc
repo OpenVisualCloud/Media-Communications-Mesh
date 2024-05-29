@@ -5,6 +5,7 @@
  */
 
 // #include <signal.h>
+#include <bsd/string.h>
 
 #include "api_server_tcp.h"
 #include <mcm_dp.h>
@@ -274,7 +275,7 @@ void RunTCPServer(ProxyContext* ctx)
 
     /* create socket */
     sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock <= 0) {
+    if (sock < 0) {
         fprintf(stderr, "error: cannot create socket\n");
         return;
     }
@@ -285,6 +286,7 @@ void RunTCPServer(ProxyContext* ctx)
     address.sin_port = htons(port);
     if (bind(sock, (struct sockaddr*)&address, sizeof(address)) < 0) {
         fprintf(stderr, "error: cannot bind socket to port %d: %s\n", port, strerror(errno));
+        close(sock);
         return;
     }
 
@@ -295,22 +297,33 @@ void RunTCPServer(ProxyContext* ctx)
     }
 
     INFO("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
-
     // signal(SIGINT, intHandler);
 
     while (keepRunning) {
         /* accept incoming connections */
         connection = (connection_t*)malloc(sizeof(connection_t));
+        if (!connection) continue;
+
+        memset(connection, 0x0, sizeof(connection_t));
         connection->sock = accept(sock, &connection->address, (socklen_t*)&connection->addr_len);
         if (connection->sock <= 0) {
             free(connection);
         } else {
             /* start a new thread but do not wait for it */
             ctl_ctx = (control_context*)malloc(sizeof(control_context));
+            if (!ctl_ctx) {
+                free(connection);
+                continue;
+            }
+            memset(ctl_ctx, 0x0, sizeof(control_context));
             ctl_ctx->proxy_ctx = ctx;
             ctl_ctx->conn = connection;
-            pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx);
-            pthread_detach(thread);
+            if (pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
+                pthread_detach(thread);
+            } else {
+                free(connection);
+                free(ctl_ctx);
+            }
         }
     }
 
