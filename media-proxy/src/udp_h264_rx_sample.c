@@ -288,6 +288,7 @@ static int udp_server_h264(void* arg)
                 if (err != MEMIF_ERR_SUCCESS) {
                     INFO("Failed to alloc memif buffer: %s, err:%d", memif_strerror(err), err);
                     //continue;
+                    free(rtp_header);
                     return -1;
                 } else {
                     // INFO("Success to alloc memif buffer\n");
