@@ -266,8 +266,6 @@ void RunTCPServer(ProxyContext* ctx)
     connection_t* connection = NULL;
     control_context* ctl_ctx = NULL;
     pthread_t thread;
-    size_t connection_t_size = sizeof(connection_t);
-    size_t control_context_size = sizeof(control_context);
 
     port = ctx->getTCPListenPort();
     if (port <= 0) {
@@ -303,21 +301,21 @@ void RunTCPServer(ProxyContext* ctx)
 
     while (keepRunning) {
         /* accept incoming connections */
-        connection = (connection_t*)malloc(connection_t_size);
+        connection = (connection_t*)malloc(sizeof(connection_t));
         if (!connection) continue;
 
-        memset(connection, 0x0, connection_t_size);
+        memset(connection, 0x0, sizeof(connection_t));
         connection->sock = accept(sock, &connection->address, (socklen_t*)&connection->addr_len);
         if (connection->sock <= 0) {
             free(connection);
         } else {
             /* start a new thread but do not wait for it */
-            ctl_ctx = (control_context*)malloc(control_context_size);
+            ctl_ctx = (control_context*)malloc(sizeof(control_context));
             if (!ctl_ctx) {
                 free(connection);
                 continue;
             }
-            memset(ctl_ctx, 0x0, control_context_size);
+            memset(ctl_ctx, 0x0, sizeof(control_context));
             ctl_ctx->proxy_ctx = ctx;
             ctl_ctx->conn = connection;
             if (pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
