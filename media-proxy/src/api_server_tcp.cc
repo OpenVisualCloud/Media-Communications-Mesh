@@ -266,6 +266,7 @@ void RunTCPServer(ProxyContext* ctx)
     connection_t* connection = NULL;
     control_context* ctl_ctx = NULL;
     pthread_t thread;
+    const int enable = 1;
 
     port = ctx->getTCPListenPort();
     if (port <= 0) {
@@ -277,6 +278,12 @@ void RunTCPServer(ProxyContext* ctx)
     sock = socket(AF_INET, SOCK_STREAM, 0);
     if (sock < 0) {
         fprintf(stderr, "error: cannot create socket\n");
+        return;
+    }
+
+    /* Workaround to allow media_proxy to listen on the same port after termination and starting again */
+    if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
+        fprintf(stderr, "error: cannot set SO_REUSEADDR");
         return;
     }
 
