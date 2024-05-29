@@ -64,8 +64,8 @@ int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* mem
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
         if (mkdir("/run/mcm", 0666) != 0) {
-            if(errno != EEXIST) {
-                perror("Fail to access or create directory (/run/mcm) for MemIF.");
+            if (errno != EEXIST) {
+                ERROR("Fail to access or create directory (/run/mcm) for MemIF.");
                 return -1;
             }
         }

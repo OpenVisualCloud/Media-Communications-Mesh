@@ -277,7 +277,7 @@ void RunTCPServer(ProxyContext* ctx)
 
     /* create socket */
     sock = socket(AF_INET, SOCK_STREAM, 0);
-    if (sock == -1) {
+    if (sock < 0) {
         fprintf(stderr, "error: cannot create socket\n");
         return;
     }
@@ -312,14 +312,14 @@ void RunTCPServer(ProxyContext* ctx)
         } else {
             /* start a new thread but do not wait for it */
             ctl_ctx = (control_context*)malloc(control_context_size);
-            if(!ctl_ctx) {
+            if (!ctl_ctx) {
                 free(connection);
                 continue;
             }
             memset(ctl_ctx, 0x0, control_context_size);
             ctl_ctx->proxy_ctx = ctx;
             ctl_ctx->conn = connection;
-            if(pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
+            if (pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
                 pthread_detach(thread);
             } else {
                 free(connection);
