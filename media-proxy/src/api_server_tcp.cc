@@ -288,6 +288,7 @@ void RunTCPServer(ProxyContext* ctx)
     address.sin_port = htons(port);
     if (bind(sock, (struct sockaddr*)&address, sizeof(address)) < 0) {
         fprintf(stderr, "error: cannot bind socket to port %d: %s\n", port, strerror(errno));
+        close(sock);
         return;
     }
 

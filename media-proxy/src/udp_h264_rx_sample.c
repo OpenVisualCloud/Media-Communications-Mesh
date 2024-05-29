@@ -150,7 +150,8 @@ static int udp_server_h264(void* arg)
         ssize_t recv = mudp_recvfrom(socket, buf, sizeof(buf), 0, NULL, NULL);
         // printf("[%s] : recv = %d\n", __FUNCTION__, (int)recv);
         if (recv < 0) {
-            //INFO("%s, mudp_recvfrom fail %d\n", __func__, (int)recv);
+            ERROR("%s, mudp_recvfrom fail %d\n", __func__, (int)recv);
+            free(rtp_header);
             return 0;
         }
         if (s->check_first_new_NALU == true) {
@@ -160,10 +161,9 @@ static int udp_server_h264(void* arg)
                 s->new_NALU = 1;
                 // printf("First Mark = %d\n", mark);
                 s->check_first_new_NALU = false;
-                return 0;
-            } else {
-                return 0;
             }
+            free(rtp_header);
+            return 0;
         }
 
         if (s->fragments_bunch == true) {
