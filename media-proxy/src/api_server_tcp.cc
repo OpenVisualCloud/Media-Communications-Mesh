@@ -284,6 +284,7 @@ void RunTCPServer(ProxyContext* ctx)
     /* Workaround to allow media_proxy to listen on the same port after termination and starting again */
     if (setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0) {
         fprintf(stderr, "error: cannot set SO_REUSEADDR");
+        close(sock);
         return;
     }
 
