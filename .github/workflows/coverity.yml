@@ -1,0 +1,48 @@
+name: Coverity Scan
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  coverity:
+    runs-on: ubuntu-22.04
+    steps:
+    - name: Harden Runner
+      uses: step-security/harden-runner@a4aa98b93cab29d9b1101a6143fb8bce00e2eac4 # v2.7.1
+      with:
+        egress-policy: audit
+
+    - name: Checkout repository
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y git gcc meson python3-dev python3-pip pkg-config libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libssl-dev systemtap-sdt-dev llvm clang
+        sudo apt-get install -y cmake build-essential autoconf libtool pkg-config python3-pyelftools ninja-build libsdl2-dev libsdl2-ttf-dev dpdk-dev
+
+    - name: Install IMTL
+      run: |
+        git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
+        pushd imtl
+        ./build.sh
+        popd
+
+    - name: Install gRPC
+      uses: eWaterCycle/setup-grpc@f42b1ed4f95f2c8833e78d85a20cc717b6d9af7f # v5
+      with:
+        grpc-version: 1.58.0
+
+    - name: Run coverity
+      uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
+      with:
+        project: 'Media-Communications-Mesh'
+        email: ${{ secrets.COVERITY_SCAN_EMAIL }}
+        token: ${{ secrets.COVERITY_SCAN_TOKEN }}
+        build_language: 'cxx'
+        command: './build.sh'
