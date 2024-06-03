@@ -111,10 +111,7 @@ int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size, bool loop)
 
     if (fread(buf->data, frame_size, 1, fp) < 1) {
         if(loop) {
-            if (fp != NULL) {
-                fclose(fp);
-                fp = NULL;
-            }
+            fclose(fp);
             fp = fopen(input_file, "rb");
             if (fp == NULL) {
                 printf("Fail to open input file for infinity loop: %s\n", input_file);
