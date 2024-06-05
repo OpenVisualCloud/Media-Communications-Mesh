@@ -20,8 +20,10 @@
         printf("\n");                  \
     } while (0)
 
-#define DEBUG(...) \
-    do {           \
+#define DEBUG(...)                     \
+    do {                               \
+        printf("DEBUG: " __VA_ARGS__); \
+        printf("\n");                  \
     } while (0)
 
 #endif
