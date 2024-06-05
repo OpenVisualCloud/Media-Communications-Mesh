@@ -234,6 +234,19 @@ void* msg_loop(void* ptr)
         (int)((addr)&0xff), (int)((addr >> 8) & 0xff),
         (int)((addr >> 16) & 0xff), (int)((addr >> 24) & 0xff));
 
+    if(session_id > 0) {
+        for (auto it : proxy_ctx->mStCtx) {
+            if (it->id == session_id) {
+                if (it->type == TX) {
+                    proxy_ctx->TxStop(session_id);
+                } else {
+                    proxy_ctx->RxStop(session_id);
+                }
+                break;
+            }
+        }
+    }
+
     /* Clean-up all sessions. */
     // for (auto it : proxy_ctx->mStCtx) {
     //     if (it->type == TX) {

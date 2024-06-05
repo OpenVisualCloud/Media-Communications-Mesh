@@ -143,7 +143,6 @@ function print_logo()
     logo_string="$(cat <<- EOF
 	.-----------------------------------------------------------.
 	|        *          .                    ..        .    *   |
-	|                      .             .     . :  .   .    .  |
 	|       .                         .   .  .  .   .           |
 	|                                    . .  *:. . .           |
 	|                             .  .   . .. .         .       |
@@ -156,10 +155,9 @@ function print_logo()
 	|        .  .  .    . ^                                     |
 	|       .  .. :.    . |             .               .       |
 	|.   ... .            |                                     |
-	| :.  . .   *.        |     .               .               |
-	| *.              We are here.                              |
+	| :.  . .   *.    We are here.              .               |
 	|   .               .             *.                        |
-	.---------------------------------------ascii-author-unknown.
+	.©-Intel-Corporation--------------------ascii-author-unknown.
 	=                                                           =
 	=        88                                  88             =
 	=        ""                ,d                88             =
@@ -169,9 +167,7 @@ function print_logo()
 	=        88  88       88   88    8PP"""""""  88             =
 	=        88  88       88   88,   "8b,   ,aa  88             =
 	=        88  88       88   "Y888  '"Ybbd8"'  88             =
-	=============================================================
-	=    Intel Technology Poland  2024:                         =
-	=            Network & Edge Group Visual Solutions          =
+	=                                                           =
 	=============================================================
 		EOF
     )"
@@ -216,8 +212,8 @@ function print_logo_sequence()
 
 function print_logo_anim()
 {
-    local number_of_sequences="${1:-2}"
-    local wait_between_frames="${2:-0}"
+    local number_of_sequences="${1:-3}"
+    local wait_between_frames="${2:-0.025}"
     clear
     for (( pt=0; pt<${number_of_sequences}; pt++ ))
     do
