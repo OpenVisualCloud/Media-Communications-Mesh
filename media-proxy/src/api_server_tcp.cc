@@ -251,10 +251,17 @@ void* msg_loop(void* ptr)
     pthread_exit(0);
 }
 
-// void intHandler(int dummy)
-// {
-//     keepRunning = 0;
-// }
+void handleSignals(int sig_num)
+{
+    keepRunning = false;
+}
+
+void registerSignals()
+{
+    signal(SIGINT, handleSignals);
+    signal(SIGTERM, handleSignals);
+    signal(SIGKILL, handleSignals);
+}
 
 void RunTCPServer(ProxyContext* ctx)
 {
@@ -303,35 +310,35 @@ void RunTCPServer(ProxyContext* ctx)
     }
 
     INFO("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
-    // signal(SIGINT, intHandler);
+    registerSignals();
 
-    while (keepRunning) {
+    do {
         /* accept incoming connections */
         connection = (connection_t*)malloc(sizeof(connection_t));
-        if (!connection) continue;
-
-        memset(connection, 0x0, sizeof(connection_t));
-        connection->sock = accept(sock, &connection->address, (socklen_t*)&connection->addr_len);
-        if (connection->sock <= 0) {
-            free(connection);
-        } else {
-            /* start a new thread but do not wait for it */
-            ctl_ctx = (control_context*)malloc(sizeof(control_context));
-            if (!ctl_ctx) {
-                free(connection);
-                continue;
-            }
-            memset(ctl_ctx, 0x0, sizeof(control_context));
-            ctl_ctx->proxy_ctx = ctx;
-            ctl_ctx->conn = connection;
-            if (pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
-                pthread_detach(thread);
+        if (connection) {
+            memset(connection, 0x0, sizeof(connection_t));
+            connection->sock = accept(sock, &connection->address, (socklen_t*)&connection->addr_len);
+            if (connection->sock > 0) {
+                /* start a new thread but do not wait for it */
+                ctl_ctx = (control_context*)malloc(sizeof(control_context));
+                if (ctl_ctx) {
+                    memset(ctl_ctx, 0x0, sizeof(control_context));
+                    ctl_ctx->proxy_ctx = ctx;
+                    ctl_ctx->conn = connection;
+                    if (pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
+                        pthread_detach(thread);
+                    } else {
+                        free(connection);
+                        free(ctl_ctx);
+                    }
+                } else {
+                    free(connection);
+                }
             } else {
                 free(connection);
-                free(ctl_ctx);
             }
         }
-    }
+    } while (keepRunning);
 
     INFO("TCP Server Quit: %s", ctx->getTCPListenAddress().c_str());
 
