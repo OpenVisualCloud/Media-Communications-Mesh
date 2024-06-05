@@ -53,12 +53,12 @@ void* msg_loop(void* ptr)
             break;
         }
 
-        if (strncmp(msg.header.magic_word, "MCM", sizeof(msg.header.magic_word)) != 0) {
-            INFO("Failed to read header MCM.\n");
+        if (msg.header.magic_word != *(uint32_t*)HEADER_MAGIC_WORD) {
+            ERROR("Header Data Mismatch: Incorrect magic word.");
             continue;
         }
-        if (msg.header.version != 0x01) {
-            INFO("Failed to read header version.\n");
+        if (msg.header.version != HEADER_VERSION) {
+            ERROR("Header Data Mismatch: Incorrect version of client.");
             continue;
         }
 
