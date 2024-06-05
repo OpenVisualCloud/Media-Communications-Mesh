@@ -5,6 +5,7 @@
 
 set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+. "${SCRIPT_DIR}/common.sh"
 
 # Read proxy variables from env to pass them to the builder
 BUILD_ARGUMENTS=$(compgen -e | sed -nE '/_(proxy|PROXY)$/{s/^/--build-arg /;p}')
