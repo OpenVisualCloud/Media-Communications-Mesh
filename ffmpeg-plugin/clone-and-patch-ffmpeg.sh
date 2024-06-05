@@ -3,20 +3,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
-set -e
+set -eo pipefail
 
-if [ -n "$1" ]; then
-	ffmpeg_ver=$1
-else
-	# default to latest 6.1
-	ffmpeg_ver=6.1
-fi
+SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+. "${SCRIPT_DIR}/../common.sh"
 
-rm FFmpeg -rf
-git clone https://github.com/FFmpeg/FFmpeg.git
-cd FFmpeg
-git checkout release/"$ffmpeg_ver"
-git apply ../"$ffmpeg_ver"/*.patch
-cd ..
+# First parameter or default to latest 6.1
+ffmpeg_ver="${1:-6.1}"
 
-echo "FFmpeg $ffmpeg_ver cloned and patched successfully"
+rm -rf "${SCRIPT_DIR}/FFmpeg"
+git clone https://github.com/FFmpeg/FFmpeg.git "${SCRIPT_DIR}/FFmpeg"
+git -C "${SCRIPT_DIR}/FFmpeg" checkout release/"${ffmpeg_ver}"
+git -C "${SCRIPT_DIR}/FFmpeg" apply "${SCRIPT_DIR}/${ffmpeg_ver}/"*.patch
+
+prompt "FFmpeg ${ffmpeg_ver} cloned and patched successfully."
+prompt "\t${SCRIPT_DIR}/FFmpeg"
