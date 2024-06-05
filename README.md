@@ -6,13 +6,20 @@
 [![BSD 3-Clause][license-img]][license]
 
 ## Table of Contents
-- [Introduction](#introduction)
-- [Media Proxy](#media-proxy)
-- [MCM SDK](#mcm-sdk)
-- [Getting Started](#getting-started)
-- [Usage](#usage)
-- [Known Issues](#known-issues)
-- [Support](#support)
+- [ Media Communications Mesh](#-media-communications-mesh)
+  - [Table of Contents](#table-of-contents)
+  - [Introduction](#introduction)
+  - [Media Proxy](#media-proxy)
+    - [Key Features](#key-features)
+    - [MemIF](#memif)
+  - [MCM SDK](#mcm-sdk)
+  - [Getting Started](#getting-started)
+    - [Prerequisites](#prerequisites)
+    - [Basic Installation](#basic-installation)
+  - [Usage](#usage)
+  - [Known Issues](#known-issues)
+  - [Support](#support)
+  - [Note](#note)
 
 ## Introduction
 
@@ -45,6 +52,7 @@ Detailed information about MCM SDK can be found in [sdk](sdk) directory.
 ## Getting Started
 
 ### Prerequisites
+
 - Linux server (Intel Xeon processor recommended)
 - Network Interface Card (NIC) compatible with DPDK
 - Docker installed
@@ -60,22 +68,22 @@ Detailed information about MCM SDK can be found in [sdk](sdk) directory.
    $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
-2. Navigate to the Media Proxy directory
+2. **Navigate to the Media-Communications-Mesh directory**
     ```sh
     $ cd Media-Communications-Mesh
     ```
 
-3. Build the Media Proxy binary (run on Host)
+3. **Build the Media Proxy binary (run on Host)**
     ```sh
     $ ./build.sh
     ```
 
-4. Build the Media Proxy Docker image (run in Container)
+4. **Build the Media Proxy Docker image (run in Container)**
     ```sh
-    $ docker build -t media-proxy ./media-proxy
+    $ ./build_docker.sh
     ```
 
-By following these instructions, you'll be able to perform the basic installation of the Media Communications Mesh application.
+By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
 
 ## Usage
 
@@ -105,6 +113,7 @@ Usage: media_proxy [OPTION]
 ```
 
 ## Known Issues
+
 - There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
 
 - The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
@@ -122,6 +131,7 @@ Before submitting an issue, please check the existing documentation and discussi
 We are here to help, so don't hesitate to reach out if you need assistance.
 
 ## Note
+
 This project is under development.
 All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
 
