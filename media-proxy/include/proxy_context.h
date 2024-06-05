@@ -1,12 +1,12 @@
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
- *
  * SPDX-License-Identifier: BSD-3-Clause
- */
+*/
 
 #include <atomic>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "controller.grpc.pb.h"
@@ -28,6 +28,7 @@ using controller::TxControlRequest;
 class ProxyContext {
 public:
     std::string mRpcCtrlAddr;
+    int mRpcCtrlPort;
 
     std::string mTcpCtrlAddr;
     int mTcpCtrlPort;
@@ -52,13 +53,13 @@ public:
     std::string mDpPort;
 
     ProxyContext(void);
-    ProxyContext(std::string rpc_addr, std::string tcp_addr);
+    ProxyContext(std::string_view rpc_addr, std::string_view tcp_addr);
 
-    void setRPCListenAddress(std::string addr);
-    void setTCPListenAddress(std::string addr);
-    void setDevicePort(std::string dev);
-    void setDataPlaneAddress(std::string ip);
-    void setDataPlanePort(std::string port);
+    void setRPCListenAddress(std::string_view addr);
+    void setTCPListenAddress(std::string_view addr);
+    void setDevicePort(std::string_view dev);
+    void setDataPlaneAddress(std::string_view ip);
+    void setDataPlanePort(std::string_view port);
 
     std::string getDevicePort(void);
     std::string getDataPlaneAddress(void);

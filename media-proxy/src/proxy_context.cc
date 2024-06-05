@@ -5,17 +5,11 @@
  */
 
 #include <math.h>
-#include <sstream>
-#include <vector>
+#include <charconv>
 #include <bsd/string.h>
 
 #include "proxy_context.h"
-#include <mcm_dp.h>
 #include <mtl/mtl_sch_api.h>
-
-using std::istringstream;
-using std::string;
-using std::vector;
 
 ProxyContext::ProxyContext(void)
     : mRpcCtrlAddr("0.0.0.0:8001")
@@ -25,49 +19,45 @@ ProxyContext::ProxyContext(void)
     mTcpCtrlPort = 8002;
 }
 
-ProxyContext::ProxyContext(std::string rpc_addr, std::string tcp_addr)
-try : mRpcCtrlAddr(rpc_addr), mTcpCtrlAddr(tcp_addr), mSessionCount(0) {
-    vector<string> sub_str;
-    istringstream f(mTcpCtrlAddr);
-    string s;
-
-    while (getline(f, s, ':')) {
-        sub_str.push_back(s);
-    }
-
-    if (sub_str.size() != 2) {
-        INFO("Illegal TCP listen address.");
+ProxyContext::ProxyContext(std::string_view rpc_addr, std::string_view tcp_addr)
+    : mRpcCtrlAddr(rpc_addr)
+    , mTcpCtrlAddr(tcp_addr)
+    , mSessionCount(0)
+{
+    auto colon = tcp_addr.find_first_of(":");
+    if (colon < tcp_addr.size() &&
+        std::from_chars(tcp_addr.data() + colon + 1, tcp_addr.data() + tcp_addr.size(), mTcpCtrlPort).ec != std::errc())
+    {
+        ERROR("ProxyContext::ProxyContext(): Illegal TCP listen address.");
         throw;
     }
 
-    mTcpCtrlPort = std::stoi(sub_str[1]);
     schs_ready = false;
     imtl_init_preparing = false;
     st_pthread_mutex_init(&sessioncount_mutex_lock, NULL);
-} catch (...) {
 }
 
-void ProxyContext::setRPCListenAddress(std::string addr)
+void ProxyContext::setRPCListenAddress(std::string_view addr)
 {
     mRpcCtrlAddr = addr;
 }
 
-void ProxyContext::setTCPListenAddress(std::string addr)
+void ProxyContext::setTCPListenAddress(std::string_view addr)
 {
     mTcpCtrlAddr = addr;
 }
 
-void ProxyContext::setDevicePort(std::string dev)
+void ProxyContext::setDevicePort(std::string_view dev)
 {
     mDevPort = dev;
 }
 
-void ProxyContext::setDataPlaneAddress(std::string ip)
+void ProxyContext::setDataPlaneAddress(std::string_view ip)
 {
     mDpAddress = ip;
 }
 
-void ProxyContext::setDataPlanePort(std::string port)
+void ProxyContext::setDataPlanePort(std::string_view port)
 {
     mDpPort = port;
 }
