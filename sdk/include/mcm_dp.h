@@ -24,8 +24,15 @@ extern "C" {
 #define MCM_QUERY_MEMIF_ID 4
 #define MCM_QUERY_MEMIF_PARAM 5
 
+// Media proxy magic_word and version
+// 4 letters can be casted to numerical value in code:
+#ifndef HEADER_MAGIC_WORD
+    #define HEADER_MAGIC_WORD "mcm"
+    #define HEADER_VERSION 0x10
+#endif
+
 typedef struct _msg_header {
-    char magic_word[3];
+    uint32_t magic_word;
     uint8_t version;
 } msg_header;
 
