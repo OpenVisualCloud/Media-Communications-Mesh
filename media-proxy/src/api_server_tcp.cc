@@ -1,19 +1,15 @@
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
- *
  * SPDX-License-Identifier: BSD-3-Clause
- */
+*/
 
-// #include <signal.h>
 #include <bsd/string.h>
-
 #include "api_server_tcp.h"
 #include <mcm_dp.h>
 
 static volatile bool keepRunning = true;
 
-typedef struct
-{
+typedef struct {
     int sock;
     struct sockaddr address;
     int addr_len;
@@ -27,18 +23,20 @@ typedef struct _control_context {
 void* msg_loop(void* ptr)
 {
     int ret = 0;
-    char* buffer = NULL;
     int len = 0;
+    char* buffer = NULL;
+    bool sessionKeepRunning = true;
     control_context* ctl_ctx = NULL;
     connection_t* conn = NULL;
     ProxyContext* proxy_ctx = NULL;
     long addr = 0;
     mcm_proxy_ctl_msg msg = {};
+    uint32_t session_id = 0;
     uint32_t intf_id = 0;
 
     if (!ptr) {
+        ERROR("msg_loop(void* ptr): Illegal Parameter, ptr==NULL.");
         pthread_exit(0);
-        INFO("Illegal Parameter.");
     }
 
     ctl_ctx = (control_context*)ptr;
@@ -46,8 +44,8 @@ void* msg_loop(void* ptr)
     proxy_ctx = ctl_ctx->proxy_ctx;
 
     /* infinite loop */
-    for (;;) {
-        /* control message header */
+    do {
+        /* read control message header */
         ret = read(conn->sock, &msg.header, sizeof(msg.header));
         if (ret <= 0) {
             break;
@@ -73,24 +71,17 @@ void* msg_loop(void* ptr)
             /* read parameters */
             buffer = (char*)malloc(msg.command.data_len);
             if (buffer == NULL) {
-                INFO("Out of Memory.");
+                ERROR("(char*)malloc(msg.command.data_len) in msg_loop() failed. Out of Memory.");
                 continue;
             } else {
+                ret = 0;
                 int bytesRead = 0;
-                while (bytesRead < msg.command.data_len) {
-                    int ret = read(conn->sock, buffer + bytesRead, msg.command.data_len - bytesRead);
-                    if (ret <= 0) {
-                        INFO("Failed to read command parameters.");
-                        free(buffer);
-                        buffer = NULL; // Reset the pointer to indicate failure
-                        break; // Exit the loop on failure
-                    }
-                    bytesRead += ret;
+                while (bytesRead < msg.command.data_len && ret >= 0) {
+                    ret = read(conn->sock, buffer + bytesRead, msg.command.data_len - bytesRead);
+                    if (ret >= 0) bytesRead += ret;
                 }
-
                 if (bytesRead < msg.command.data_len) {
-                    INFO("Failed to read all command parameters.");
-                    // Clean up on failure
+                    ERROR("Read socket failed: Failed to read all command parameters.");
                     free(buffer);
                     buffer = NULL;
                     continue;
@@ -98,13 +89,14 @@ void* msg_loop(void* ptr)
             }
         }
 
-        uint32_t session_id = 0;
-        mcm_conn_param param = {};
+        mcm_conn_param param = { };
+
         /* operation */
         switch (msg.command.inst) {
         case MCM_CREATE_SESSION:
+            DEBUG("MCM_CREATE_SESSION: Case entry.");
             if (buffer == NULL) {
-                INFO("Invalid parameters.");
+                INFO("MCM_CREATE_SESSION: Invalid parameters, buffer is NULL.");
                 break;
             }
             memcpy(&param, buffer, sizeof(mcm_conn_param));
@@ -115,20 +107,24 @@ void* msg_loop(void* ptr)
             }
 
             if (ret >= 0) {
-                if (write(conn->sock, &ret, sizeof(ret)) <= 0) {
-                    INFO("Fail to return session id.");
+                session_id = (uint32_t)ret;
+                if (write(conn->sock, &session_id, sizeof(session_id)) <= 0) {
+                    ERROR("MCM_CREATE_SESSION: Return session id error, failed to write socket.");
                 }
             } else {
-                INFO("Fail to start MTL session.");
+                ERROR("MCM_CREATE_SESSION: Failed to start MTL session.");
             }
             break;
         case MCM_QUERY_MEMIF_PATH:
+            DEBUG("MCM_QUERY_MEMIF_PATH: Case entry.");
             /* TODO: return memif socket path */
             break;
         case MCM_QUERY_MEMIF_ID:
+            DEBUG("MCM_QUERY_MEMIF_ID: Case entry.");
             /* TODO: return memdif ID */
             break;
         case MCM_QUERY_MEMIF_PARAM:
+            DEBUG("MCM_QUERY_MEMIF_PARAM: Case entry.");
             if (buffer == NULL || msg.command.data_len < 4) {
                 INFO("Invalid parameters.");
                 break;
@@ -137,7 +133,7 @@ void* msg_loop(void* ptr)
             for (auto it : proxy_ctx->mStCtx) {
                 if (it->id == session_id) {
                     /* return memif parameters. */
-                    memif_conn_param param = {};
+                    memif_conn_param param = { };
                     if (it->type == TX) {
                         switch (it->payload_type) {
                         case PAYLOAD_TYPE_ST22_VIDEO:
@@ -204,6 +200,7 @@ void* msg_loop(void* ptr)
             }
             break;
         case MCM_DESTROY_SESSION:
+            DEBUG("MCM_DESTROY_SESSION: Case entry.");
             if (buffer == NULL || msg.command.data_len < 4) {
                 INFO("Invalid parameters.");
                 break;
@@ -216,12 +213,13 @@ void* msg_loop(void* ptr)
                     } else {
                         proxy_ctx->RxStop(session_id);
                     }
-
+                    sessionKeepRunning = false;
                     break;
                 }
             }
             break;
         default:
+            DEBUG("UNKNOWN_CASE: Default case entry.");
             break;
         }
 
@@ -229,7 +227,7 @@ void* msg_loop(void* ptr)
             free(buffer);
             buffer = NULL;
         }
-    }
+    } while (keepRunning && sessionKeepRunning);
 
     addr = (long)((struct sockaddr_in*)&conn->address)->sin_addr.s_addr;
     INFO("Disconnect with %d.%d.%d.%d",

@@ -26,7 +26,8 @@
           logmsg("DEBUG", fmt, ##__VA_ARGS__); \
       } while (0)
 #else
-  #define log_debug(fmt, ...)  // Define log_debug as empty in release build
+  // Define log_debug as empty in release build
+  #define log_debug(fmt, ...)
 #endif
 
 #define log_warn(fmt, ...)                  \

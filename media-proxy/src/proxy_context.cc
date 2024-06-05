@@ -127,7 +127,7 @@ void ProxyContext::ParseStInitParam(const TxControlRequest* request, struct mtl_
         st_param->lcores = (char*)init.logical_cores().c_str();
     }
 
-    INFO("ProxyContext: ParseStInitParam...");
+    INFO("ProxyContext: ParseStInitParam(const TxControlRequest* request, struct mtl_init_params* st_param)");
     INFO("num_ports : %d", st_param->num_ports);
     INFO("port      : %s", st_param->port[MTL_PORT_P]);
     INFO("sip_addr  :");
@@ -170,7 +170,7 @@ void ProxyContext::ParseStInitParam(const RxControlRequest* request, struct mtl_
         st_param->lcores = (char*)init.logical_cores().c_str();
     }
 
-    INFO("ProxyContext: ParseStInitParam...");
+    INFO("ProxyContext: ParseStInitParam(const RxControlRequest* request, struct mtl_init_params* st_param)");
     INFO("num_ports : %d", st_param->num_ports);
     INFO("port      : %s", st_param->port[MTL_PORT_P]);
     INFO("sip_addr  :");
@@ -209,11 +209,11 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->lcores = NULL;
     st_param->memzone_max = 9000;
 
-    INFO("ProxyContext: ParseStInitParam...");
-    INFO("num_ports : %d", st_param->num_ports);
-    INFO("port      : %s", st_param->port[MTL_PORT_P]);
-    INFO("sip_addr  : %s", getDataPlaneAddress().c_str());
-    INFO("\nflags: %ld", st_param->flags);
+    INFO("ProxyContext: ParseStInitParam(const mcm_conn_param* request, struct mtl_init_params* st_param)");
+    INFO("num_ports : '%d'", st_param->num_ports);
+    INFO("port      : '%s'", st_param->port[MTL_PORT_P]);
+    INFO("sip_addr  : '%s'", getDataPlaneAddress().c_str());
+    INFO("flags:    : '%ld'", st_param->flags);
     INFO("log_level : %d", st_param->log_level);
     if (st_param->lcores) {
         INFO("lcores    : %s", st_param->lcores);
@@ -387,7 +387,7 @@ void ProxyContext::ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx
 
 void ProxyContext::ParseMemIFParam(const mcm_conn_param* request, memif_ops_t& memif_ops)
 {
-    string type_str = "";
+    std::string type_str = "";
 
     if (request->type == is_tx) {
         type_str = "tx";
@@ -696,7 +696,7 @@ void ProxyContext::ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_
 
 int ProxyContext::RxStart(const RxControlRequest* request)
 {
-    INFO("ProxyContext: RxStart...");
+    INFO("ProxyContext: RxStart(const RxControlRequest* request)");
     struct st20p_rx_ops opts = { 0 };
     mtl_session_context_t* st_ctx = NULL;
     rx_session_context_t* rx_ctx = NULL;
@@ -740,7 +740,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 
 int ProxyContext::TxStart(const TxControlRequest* request)
 {
-    INFO("ProxyContext: TxStart...");
+    INFO("ProxyContext: TxStart(const TxControlRequest* request)");
     struct st20p_tx_ops opts = { 0 };
     mtl_session_context_t* st_ctx = NULL;
     tx_session_context_t* tx_ctx = NULL;
@@ -785,7 +785,7 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 
 int ProxyContext::RxStart(const mcm_conn_param* request)
 {
-    INFO("ProxyContext: RxStart...\n");
+    INFO("ProxyContext: RxStart(const mcm_conn_param* request)");
     struct st20p_rx_ops opts = { 0 };
     mtl_session_context_t* st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
@@ -795,16 +795,15 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     if (mDevHandle == NULL && imtl_init_preparing == false) {
 
         imtl_init_preparing = true;
-        struct mtl_init_params st_param = {};
-
-        ParseStInitParam(request, &st_param);
+        struct mtl_init_params st_param = { 0 };
 
         /* set default parameters */
-        st_param.flags = MTL_FLAG_BIND_NUMA;
+        // st_param.flags = MTL_FLAG_BIND_NUMA;
+        ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
         if (mDevHandle == NULL) {
-            INFO("%s, Fail to initialize MTL.\n", __func__);
+            ERROR("%s, Fail to initialize MTL.", __func__);
             return -1;
         } else {
             /*udp pool*/
@@ -840,9 +839,9 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         }
     }
 
-    while (mDevHandle == NULL) {
-        INFO("%s, Wait to initialize iMTL.\n", __func__);
-        sleep(1);
+    if (mDevHandle == NULL) {
+        ERROR("%s, Fail to initialize iMTL for RxStart function.\n", __func__);
+        return -1;
     }
 
     st_ctx = new (mtl_session_context_t);
@@ -937,34 +936,33 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
 
 int ProxyContext::TxStart(const mcm_conn_param* request)
 {
-    INFO("ProxyContext: TxStart...");
+    INFO("ProxyContext: TxStart(const mcm_conn_param* request)");
     mtl_session_context_t* st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
 
-    /*add lock to protect IMTL library initialization to aviod being called by multi-session simultaneously*/
+    /* add lock to protect IMTL library initialization to avoid being called by multi-session simultaneously */
     if (mDevHandle == NULL && imtl_init_preparing == false) {
 
         imtl_init_preparing = true;
 
-        struct mtl_init_params st_param = {};
-
-        ParseStInitParam(request, &st_param);
+        struct mtl_init_params st_param = { 0 };
 
         /* set default parameters */
-        st_param.flags = MTL_FLAG_BIND_NUMA;
+        // st_param.flags = MTL_FLAG_BIND_NUMA;
+        ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
         if (mDevHandle == NULL) {
-            INFO("%s, Fail to initialize MTL.", __func__);
+            ERROR("%s, Fail to initialize MTL.", __func__);
             return -1;
         } else {
             imtl_init_preparing = false;
         }
     }
 
-    while (mDevHandle == NULL) {
-        INFO("%s, Wait to initialize iMTL.\n", __func__);
-        sleep(1);
+    if (mDevHandle == NULL) {
+        ERROR("%s, Fail to initialize iMTL for TxStart function.\n", __func__);
+        return -1;
     }
 
     st_ctx = new (mtl_session_context_t);
