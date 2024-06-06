@@ -11,3 +11,4 @@ SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 BUILD_ARGUMENTS=$(compgen -e | sed -nE '/_(proxy|PROXY)$/{s/^/--build-arg /;p}')
 
 docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} -f "${SCRIPT_DIR}/media-proxy/Dockerfile" $@ "${SCRIPT_DIR}"
+docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" $@ "${SCRIPT_DIR}"

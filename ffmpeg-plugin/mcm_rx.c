@@ -36,9 +36,6 @@ static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height,
         case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY) */
             size = pixels * 2;
             break;
-        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
-            size = pixels * 2 * 2;
-            break;
         case PIX_FMT_RGB8:
             size = pixels * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
             break;
@@ -46,8 +43,11 @@ static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height,
 none-RFC4175 formats like I420/NV12. When this input/output format is set, the frame is identical to
 transport frame without conversion. The frame should not have lines padding) */
         case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka ST_FRAME_FMT_YUV420PLANAR8) */
-        default:
             size = pixels * 3 / 2;
+            break;
+        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
+        default:
+            size = pixels * 2 * 2;
             break;
     }
     if (interlaced) size /= 2; /* if all fmt support interlace? */
@@ -127,11 +127,11 @@ static int mcm_read_header(AVFormatContext* avctx)
         param.payload_args.video_args.fps     = param.fps = av_q2d(s->frame_rate);
 
         switch (s->pixel_format) {
-        case AV_PIX_FMT_YUV422P10LE:
-            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
         case AV_PIX_FMT_YUV420P:
-        default:
             param.pix_fmt = PIX_FMT_NV12;
+        case AV_PIX_FMT_YUV422P10LE:
+        default:
+            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
         }
 
         param.payload_args.video_args.pix_fmt = param.pix_fmt;
@@ -223,7 +223,7 @@ static const AVOption mcm_rx_options[] = {
     { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = DEC },
     { "protocol_type", "set protocol type", OFFSET(protocol_type), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = DEC },
     { "video_size", "set video frame size given a string such as 640x480 or hd720", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1920x1080"}, 0, 0, DEC },
-    { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV420P}, AV_PIX_FMT_NONE, INT_MAX, DEC },
+    { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV422P10LE}, AV_PIX_FMT_NONE, INT_MAX, DEC },
     { "frame_rate", "set video frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
     { "interface_id", "set interface ID", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },
