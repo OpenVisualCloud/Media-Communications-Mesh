@@ -25,7 +25,34 @@ typedef struct McmDemuxerContext {
 
     mcm_conn_context *rx_handle;
     bool first_frame;
+    int frame_size;
 } McmDemuxerContext;
+
+static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
+{
+    size_t size = 0;
+    size_t pixels = (size_t)(width*height);
+    switch (fmt) {
+        case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY) */
+            size = pixels * 2;
+            break;
+        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
+            size = pixels * 2 * 2;
+            break;
+        case PIX_FMT_RGB8:
+            size = pixels * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
+            break;
+/* Customized YUV 420 8bit, set transport format as ST20_FMT_YUV_420_8BIT. For direct transport of
+none-RFC4175 formats like I420/NV12. When this input/output format is set, the frame is identical to
+transport frame without conversion. The frame should not have lines padding) */
+        case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka ST_FRAME_FMT_YUV420PLANAR8) */
+        default:
+            size = pixels * 3 / 2;
+            break;
+    }
+    if (interlaced) size /= 2; /* if all fmt support interlace? */
+    return (int)size;
+}
 
 static int mcm_read_header(AVFormatContext* avctx)
 {
@@ -100,6 +127,8 @@ static int mcm_read_header(AVFormatContext* avctx)
         param.payload_args.video_args.fps     = param.fps = av_q2d(s->frame_rate);
 
         switch (s->pixel_format) {
+        case AV_PIX_FMT_YUV422P10LE:
+            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
         case AV_PIX_FMT_YUV420P:
         default:
             param.pix_fmt = PIX_FMT_NV12;
@@ -110,6 +139,12 @@ static int mcm_read_header(AVFormatContext* avctx)
     }
 
     param.type = is_rx;
+
+    s->frame_size = getFrameSize(param.pix_fmt, s->width, s->height, false);
+    if (s->frame_size <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "calculate frame size failed\n");
+        return AVERROR(EIO);
+    }
 
     s->rx_handle = mcm_create_connection(&param);
     if (!s->rx_handle) {
@@ -144,7 +179,6 @@ static int mcm_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     mcm_buffer *buf = NULL;
     int timeout = s->first_frame ? -1 : 1000;
     int err = 0;
-    int frame_size;
     int ret;
 
     s->first_frame = false;
@@ -158,12 +192,10 @@ static int mcm_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         return AVERROR(EIO);
     }
 
-    frame_size = (s->width * s->height * 3)/2;
-
-    if ((ret = av_new_packet(pkt, frame_size)) < 0)
+    if ((ret = av_new_packet(pkt, s->frame_size)) < 0)
         return ret;
 
-    memcpy(pkt->data, buf->data, frame_size);
+    memcpy(pkt->data, buf->data, s->frame_size);
 
     pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
@@ -172,7 +204,7 @@ static int mcm_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         return AVERROR(EIO);
     }
 
-    return frame_size;
+    return s->frame_size;
 }
 
 static int mcm_read_close(AVFormatContext* avctx)

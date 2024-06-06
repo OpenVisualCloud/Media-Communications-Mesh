@@ -7,6 +7,7 @@ out
 
 # for debug dump
 dump_*
+.vscode/
 media-proxy/protos/controller.grpc.pb.cc
 media-proxy/protos/controller.grpc.pb.h
 media-proxy/protos/controller.pb.cc
