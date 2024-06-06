@@ -39,14 +39,13 @@ public:
     std::vector<mtl_session_context_t*> mStCtx;
     std::vector<rx_session_context_t*> mRxCtx;
     std::vector<tx_session_context_t*> mTxCtx;
-    std::atomic<std::uint32_t> mSessionCount;
     mtl_handle mDevHandle = NULL;
+
     /*udp pool*/
     mtl_sch_handle schs[SCH_CNT];
     bool schs_ready;
     bool imtl_init_preparing;
     pthread_mutex_t mutex_lock;
-    pthread_mutex_t sessioncount_mutex_lock;
 
     std::string mDevPort;
     std::string mDpAddress;
@@ -94,4 +93,12 @@ public:
     void TxStop(const int32_t session_id);
     void RxStop(const int32_t session_id);
     void Stop();
+
+private:
+    std::atomic<std::uint32_t> mSessionCount;
+    pthread_mutex_t sessions_count_mutex_lock;
+
+    ProxyContext(const ProxyContext&) = delete;
+    ProxyContext& operator=(const ProxyContext&) = delete;
+    uint32_t incrementMSessionCount(bool postIncrement);
 };

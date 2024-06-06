@@ -14,7 +14,7 @@
 ProxyContext::ProxyContext(void)
     : mRpcCtrlAddr("0.0.0.0:8001")
     , mTcpCtrlAddr("0.0.0.0:8002")
-    , mSessionCount(0)
+    , schs_ready(false), imtl_init_preparing(false), mSessionCount(0)
 {
     mTcpCtrlPort = 8002;
 }
@@ -22,19 +22,17 @@ ProxyContext::ProxyContext(void)
 ProxyContext::ProxyContext(std::string_view rpc_addr, std::string_view tcp_addr)
     : mRpcCtrlAddr(rpc_addr)
     , mTcpCtrlAddr(tcp_addr)
-    , mSessionCount(0)
+    , schs_ready(false), imtl_init_preparing(false), mSessionCount(0)
 {
     auto colon = tcp_addr.find_first_of(":");
-    if (colon < tcp_addr.size() &&
+    if (colon >= tcp_addr.size() ||
         std::from_chars(tcp_addr.data() + colon + 1, tcp_addr.data() + tcp_addr.size(), mTcpCtrlPort).ec != std::errc())
     {
         ERROR("ProxyContext::ProxyContext(): Illegal TCP listen address.");
         throw;
     }
 
-    schs_ready = false;
-    imtl_init_preparing = false;
-    st_pthread_mutex_init(&sessioncount_mutex_lock, NULL);
+    st_pthread_mutex_init(&sessions_count_mutex_lock, NULL);
 }
 
 void ProxyContext::setRPCListenAddress(std::string_view addr)
@@ -90,6 +88,18 @@ std::string ProxyContext::getDataPlaneAddress(void)
 std::string ProxyContext::getDataPlanePort(void)
 {
     return mDpPort;
+}
+
+uint32_t ProxyContext::incrementMSessionCount(bool postIncrement=true)
+{
+    uint32_t retValue;
+    st_pthread_mutex_lock(&this->sessions_count_mutex_lock);  /* lock to protect mSessionCount from change by multi-session simultaneously */
+    if(postIncrement)
+        retValue = (this->mSessionCount)++;
+    else
+        retValue = ++(this->mSessionCount);
+    st_pthread_mutex_unlock(&this->sessions_count_mutex_lock);
+    return retValue;
 }
 
 void ProxyContext::ParseStInitParam(const TxControlRequest* request, struct mtl_init_params* st_param)
@@ -377,6 +387,7 @@ void ProxyContext::ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx
 
 void ProxyContext::ParseMemIFParam(const mcm_conn_param* request, memif_ops_t& memif_ops)
 {
+    uint32_t sessionCount = incrementMSessionCount();
     std::string type_str = "";
 
     if (request->type == is_tx) {
@@ -387,14 +398,10 @@ void ProxyContext::ParseMemIFParam(const mcm_conn_param* request, memif_ops_t& m
 
     memif_ops.is_master = 1;
     memif_ops.interface_id = 0;
-    snprintf(memif_ops.app_name, sizeof(memif_ops.app_name), "memif_%s_%d", type_str.c_str(), int(mSessionCount));
-    snprintf(memif_ops.interface_name, sizeof(memif_ops.interface_name), "memif_%s_%d", type_str.c_str(), int(mSessionCount));
-    /*add lock to protect mSessionCount to aviod being changed by multi-session simultaneously*/
-    st_pthread_mutex_lock(&sessioncount_mutex_lock);
-    snprintf(memif_ops.socket_path, sizeof(memif_ops.socket_path), "/run/mcm/media_proxy_%s_%d.sock", type_str.c_str(), int(mSessionCount));
-    mSessionCount++;
-    memif_ops.msessioncount = mSessionCount;
-    st_pthread_mutex_unlock(&sessioncount_mutex_lock);
+    snprintf(memif_ops.app_name, sizeof(memif_ops.app_name), "memif_%s_%d", type_str.c_str(), int(sessionCount));
+    snprintf(memif_ops.interface_name, sizeof(memif_ops.interface_name), "memif_%s_%d", type_str.c_str(), int(sessionCount));
+    snprintf(memif_ops.socket_path, sizeof(memif_ops.socket_path), "/run/mcm/media_proxy_%s_%d.sock", type_str.c_str(), int(sessionCount));
+    memif_ops.m_session_count = ++sessionCount;
 }
 
 void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx_ops* ops_tx)
@@ -717,7 +724,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
     }
 
     st_ctx = new (mtl_session_context_t);
-    st_ctx->id = mSessionCount++;
+    st_ctx->id = incrementMSessionCount();
     st_ctx->type = RX;
     st_ctx->rx_session = rx_ctx;
     mStCtx.push_back(st_ctx);
@@ -762,7 +769,7 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     }
 
     st_ctx = new (mtl_session_context_t);
-    st_ctx->id = mSessionCount++;
+    st_ctx->id = incrementMSessionCount();
     st_ctx->type = TX;
     st_ctx->tx_session = tx_ctx;
     mStCtx.push_back(st_ctx);
@@ -916,7 +923,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     }
 
     st_ctx->payload_type = request->payload_type;
-    st_ctx->id = memif_ops.msessioncount;
+    st_ctx->id = memif_ops.m_session_count;
     std::cout << "session id: " << st_ctx->id << std::endl;
     st_ctx->type = RX;
     mStCtx.push_back(st_ctx);
@@ -1024,7 +1031,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
     }
 
     st_ctx->payload_type = request->payload_type;
-    st_ctx->id = mSessionCount++;
+    st_ctx->id = incrementMSessionCount();
     st_ctx->type = TX;
     mStCtx.push_back(st_ctx);
 
@@ -1140,7 +1147,7 @@ void ProxyContext::Stop()
     }
 
     mStCtx.clear();
-    st_pthread_mutex_destroy(&sessioncount_mutex_lock);
+    st_pthread_mutex_destroy(&sessions_count_mutex_lock);
     // destroy device
     mtl_deinit(mDevHandle);
     mDevHandle = NULL;
