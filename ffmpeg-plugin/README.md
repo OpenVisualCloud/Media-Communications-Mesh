@@ -58,3 +58,29 @@ On the remote machine start the VLC player and open a network stream from the ne
 udp://@:1234
 ```
 
+## Known Issues
+
+### Shared libraries error:
+FFmpeg build was successful but trying to run `ffmpeg` results in shared libraries error:
+```
+root@my-machine:~# ffmpeg
+
+ffmpeg: error while loading shared libraries: libavfilter.so.9: cannot open shared object file: No such file or directory
+```
+
+**Resolution:**
+Try running ffmpeg or exporting the `LD_LIBRARY_PATH` in your shell session by pointing to the `/usr/local/lib` folder. Examples:
+```
+root@my-machine:~# LD_LIBRARY_PATH=/usr/local/lib ffmpeg
+
+ffmpeg version n6.1.1-152-ge821e6c21d Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 11 (Ubuntu 11.4.0-1ubuntu1~22.04)
+```
+Using export:
+```
+root@my-machine:~# export LD_LIBRARY_PATH=/usr/local/lib
+root@my-machine:~# ffmpeg
+
+ffmpeg version n6.1.1-152-ge821e6c21d Copyright (c) 2000-2023 the FFmpeg developers
+  built with gcc 11 (Ubuntu 11.4.0-1ubuntu1~22.04)
+```

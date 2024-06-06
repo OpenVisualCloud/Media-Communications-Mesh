@@ -97,6 +97,8 @@ static int mcm_write_header(AVFormatContext* avctx)
         param.payload_args.video_args.fps     = param.fps = av_q2d(s->frame_rate);
 
         switch (s->pixel_format) {
+        case AV_PIX_FMT_YUV422P10LE:
+            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
         case AV_PIX_FMT_YUV420P:
         default:
             param.pix_fmt = PIX_FMT_NV12;
