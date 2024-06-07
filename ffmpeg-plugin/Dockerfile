@@ -3,7 +3,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2 as builder
+ARG IMAGE_CACHE_REGISTRY=docker.io
+ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
+
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Warsaw
@@ -12,12 +15,11 @@ ARG MCM_DIR=/opt/mcm
 ARG PREFIX_DIR="/usr/local"
 
 SHELL ["/bin/bash", "-exc"]
-# To be removed after fixes are merged: sudo
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
         sudo \
-        apt-utils build-essential make cmake git ca-certificates pkg-config nasm libbsd-dev && \
+        apt-utils build-essential make cmake git ca-certificates pkg-config nasm libbsd-dev libx264-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -27,10 +29,12 @@ RUN ./build.sh
 
 WORKDIR ${MCM_DIR}/ffmpeg-plugin
 RUN ./clone-and-patch-ffmpeg.sh && \
-    ./configure-ffmpeg.sh && \
+    ./configure-ffmpeg.sh --enable-libx264 --enable-gpl && \
     ./build-ffmpeg.sh
 
-FROM ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
+ARG IMAGE_CACHE_REGISTRY
+ARG IMAGE_NAME
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Intel® MCM FFmpeg" \
@@ -51,7 +55,7 @@ SHELL ["/bin/bash", "-exc"]
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        libbsd0 vim net-tools ca-certificates sudo && \
+        libbsd0 vim net-tools ca-certificates sudo libx264-163 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \
