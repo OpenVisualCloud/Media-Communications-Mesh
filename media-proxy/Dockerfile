@@ -3,7 +3,7 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:22.04@sha256:e6173d4dc55e76b87c4af8db8821b1feae4146dd47341e4d431118c7dd060a74 as builder
+FROM ubuntu:24.04@sha256:e3f92abc0967a6c19d0dfa2d55838833e947b9d74edbcb0113e48535ad4be12a as builder
 LABEL maintainer="qiang.han@intel.com"
 
 ARG USER=ubuntu
@@ -77,7 +77,7 @@ WORKDIR $MCM_DIR
 RUN ./build.sh
 
 # Re-build container for optimised runtime environment using clean Ubuntu release
-FROM ubuntu:22.04@sha256:e6173d4dc55e76b87c4af8db8821b1feae4146dd47341e4d431118c7dd060a74
+FROM ubuntu:24.04@sha256:e3f92abc0967a6c19d0dfa2d55838833e947b9d74edbcb0113e48535ad4be12a
 LABEL maintainer="qiang.han@intel.com"
 
 ENV DEBIAN_FRONTEND=noninteractive
