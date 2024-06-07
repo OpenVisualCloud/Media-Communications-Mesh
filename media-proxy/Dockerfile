@@ -3,7 +3,10 @@
 # SPDX-FileCopyrightText: Copyright (c) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
-FROM ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2 as builder
+ARG IMAGE_CACHE_REGISTRY=docker.io
+ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
+
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as builder
 
 ARG PREFIX_DIR="/usr/local"
 # ARG PREFIX_DIR="/opt/install"
@@ -79,7 +82,9 @@ WORKDIR ${MCM_DIR}
 COPY . ${MCM_DIR}
 RUN CMAKE_PREFIX_PATH="${PREFIX_DIR}" INSTALL_PREFIX="${PREFIX_DIR}" ./build.sh
 
-FROM ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
+ARG IMAGE_CACHE_REGISTRY
+ARG IMAGE_NAME
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Intel® MCM Media Proxy" \
@@ -99,13 +104,19 @@ SHELL ["/bin/bash", "-exc"]
 RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
     apt-get install -y --no-install-recommends \
-       apt-transport-https software-properties-common ca-certificates libbsd0 \
-       libnuma1 libjson-c5 libpcap0.8 libsdl2-2.0-0 libsdl2-ttf-2.0-0 libssl3 \
-       zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap && \
+       apt-transport-https software-properties-common ca-certificates \
+       libbsd0 libnuma1 libjson-c5 libpcap0.8 libsdl2-2.0-0 libsdl2-ttf-2.0-0 libssl3 \
+       zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap \
+       vim net-tools sudo  && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -g 2110 vfio && \
+    useradd -m -s /bin/bash -G vfio -u 1002 mcm && \
+    usermod -aG sudo mcm
 
 COPY --from=builder /usr/local /usr/local
+COPY --from=builder /usr/lib/x86_64-linux-gnu /usr/lib/x86_64-linux-gnu
+COPY --from=builder /usr/lib64 /usr/lib64
 
 RUN ldconfig
 EXPOSE 8001 8002

@@ -14,7 +14,7 @@ PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" pkg-config --exists --print-errors li
 # copy source files to allow the configure tool to find them
 #cp -f ../mcm_* ./libavdevice/
 
-"${SCRIPT_DIR}/FFmpeg/configure" --enable-shared --enable-mcm
+"${SCRIPT_DIR}/FFmpeg/configure" --enable-shared --enable-mcm $@
 cd "${OLDPWD}"
 
 prompt "FFmpeg MCM plugin configuration completed."

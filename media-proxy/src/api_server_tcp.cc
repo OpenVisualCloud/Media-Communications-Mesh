@@ -267,6 +267,7 @@ void* msg_loop(void* ptr)
 void handleSignals(int sig_num)
 {
     keepRunning = false;
+    exit(0);
 }
 
 void registerSignals()

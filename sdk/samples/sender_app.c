@@ -200,7 +200,7 @@ int main(int argc, char** argv)
         { "send_port", required_argument, NULL, 'p' },
         { "protocol", required_argument, NULL, 'o' },
         { "number", required_argument, NULL, 'n' },
-        { "file", required_argument, NULL, 'i' },
+        { "file", required_argument, NULL, 'b' },
         { "type", required_argument, NULL, 't' },
         { "socketpath", required_argument, NULL, 'k' },
         { "master", required_argument, NULL, 'm' },
@@ -212,7 +212,7 @@ int main(int argc, char** argv)
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:s:p:o:n:i:t:k:m:d:l:x:", longopts, 0);
+        opt = getopt_long(argc, argv, "Hw:h:f:s:p:o:n:r:i:t:k:m:d:l:x:b:", longopts, 0);
         if (opt == -1) {
             break;
         }
@@ -402,6 +402,7 @@ int main(int argc, char** argv)
         printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
         printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
         printf("INFO: buf->len = %ld\n", buf->len);
+        buf->len = frame_size;
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);

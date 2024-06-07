@@ -1,78 +1,68 @@
+# syntax=docker/dockerfile:1
+
 # SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
-#
 # SPDX-License-Identifier: BSD-3-Clause
 
-# Use the specific version of ubuntu image
-FROM ubuntu:22.04@sha256:2b7412e6465c3c7fc5bb21d3e6f1917c167358449fecac8176c6e496e5c1f05f as builder
+ARG IMAGE_CACHE_REGISTRY=docker.io
+ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
 
-# Set the maintainer label
-LABEL maintainer="qiang.han@intel.com"
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as builder
 
-# Set environment variables
 ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Warsaw
 
-# Update and install package dependencies in a single RUN command to reduce layer size
-RUN apt-get update && apt-get full-upgrade -y && \
-    apt-get install --no-install-recommends -y apt-utils sudo build-essential cmake git ca-certificates curl libbsd-dev && \
+ARG MCM_DIR=/opt/mcm
+ARG PREFIX_DIR="/usr/local"
+
+SHELL ["/bin/bash", "-exc"]
+RUN apt-get update && \
+    apt-get full-upgrade -y && \
+    apt-get install --no-install-recommends -y \
+        apt-utils build-essential make cmake git ca-certificates pkg-config nasm libbsd-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# Create a non-root user
-ARG USER=docker
-ARG UID=1000
-RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
-
-# Set default environment variables for the user
-ARG PREFIX_DIR="/usr/local"
-ARG HOME="/home/${USER}"
-ENV PATH="${PREFIX_DIR}/bin:$HOME/.local/bin:$HOME/bin:$HOME/usr/bin:$PATH"
-
-# Set the MCM directory
-ARG MCM_DIR=/opt/mcm
-
-# Clone the MCM repository and build the application
-RUN git clone --depth 1 --branch main https://github.com/OpenVisualCloud/Media-Communications-Mesh.git ${MCM_DIR}
-WORKDIR $MCM_DIR/sdk
+COPY . ${MCM_DIR}
+WORKDIR ${MCM_DIR}/sdk
 RUN ./build.sh
 
-## Re-build container for optimised runtime environment using clean Ubuntu release
-FROM ubuntu:22.04@sha256:2b7412e6465c3c7fc5bb21d3e6f1917c167358449fecac8176c6e496e5c1f05f
+ARG IMAGE_CACHE_REGISTRY
+ARG IMAGE_NAME
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
-# Set the maintainer label
-LABEL maintainer="qiang.han@intel.com"
+LABEL maintainer="milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.title="Intel® MCM SDK" \
+      org.opencontainers.image.description="Intel® MCM SDK with recv and sender applications Ubuntu 22.04 Docker Release Image" \
+      org.opencontainers.image.version="1.0.0" \
+      org.opencontainers.image.vendor="Intel"
 
-# Set environment variables
-ENV DEBIAN_FRONTEND=noninteractive
-
-# Update and install package dependencies in a single RUN command to reduce layer size
-RUN apt-get update && apt-get full-upgrade -y && \
-    apt-get install --no-install-recommends -y libbsd0 && \
-    apt-get install --no-install-recommends -y sleepenh net-tools && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-ARG USER=docker
-ARG UID=1000
-RUN useradd -l -m -s /bin/bash -u ${UID} ${USER}
-
-# Set default environment variables for the user
-ARG PREFIX_DIR="/usr/local"
 ARG HOME="/home/${USER}"
-ENV PATH="${PREFIX_DIR}/bin:$HOME/.local/bin:$HOME/bin:$HOME/usr/bin:$PATH"
-
-# Set the MCM directory
 ARG MCM_DIR=/opt/mcm
+ARG PREFIX_DIR="/usr/local"
 
-# Copy the application build from the builder stage
-COPY --from=builder $MCM_DIR/sdk/out/samples /opt/mcm/sdk/out/samples
-COPY --from=builder ${PREFIX_DIR} ${PREFIX_DIR}
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Europe/Warsaw
+ENV PATH="${PREFIX_DIR}/bin:$HOME/.local/bin:$HOME/bin:$HOME/usr/bin:$PATH"
+ENV LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu"
+
+SHELL ["/bin/bash", "-exc"]
+RUN apt-get update && \
+    apt-get full-upgrade -y && \
+    apt-get install --no-install-recommends -y \
+        libbsd0 vim net-tools ca-certificates sudo && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/* && \
+    groupadd -g 2110 vfio && \
+    useradd -m -s /bin/bash -G vfio -u 1002 mcm && \
+    usermod -aG sudo mcm
+
+COPY --chown=mcm --from=builder ${MCM_DIR}/sdk/out/samples /opt/mcm/
+COPY --chown=mcm --from=builder ${PREFIX_DIR} ${PREFIX_DIR}
+COPY --chown=mcm --from=builder ${MCM_DIR}/sdk/out/samples /usr/local/bin/
 
 RUN ldconfig
 
-USER ${USER}
+USER mcm
+WORKDIR /opt/mcm/
 
-# Set the working directory
-WORKDIR /opt/mcm/sdk/out/samples
-
-# Set the default command to run the application
 CMD ["./recver_app"]
