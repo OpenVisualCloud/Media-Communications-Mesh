@@ -27,7 +27,7 @@ jobs:
     name: Scan
     steps:
       - name: Run Trivy vulnerability scanner for 'config'
-        uses: aquasecurity/trivy-action@d43c1f16c00cfd3978dde6c07f4bbcf9eb6993ca # master
+        uses: aquasecurity/trivy-action@595be6a0f6560a0a8fc419ddf630567fc623531d # master
         with:
           scan-type: 'config'
           hide-progress: false
