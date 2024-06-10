@@ -10,13 +10,17 @@ FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as builder
 
 ARG PREFIX_DIR="/usr/local"
 # ARG PREFIX_DIR="/opt/install"
-ARG DPDK_VER="23.11"
-ARG GPRC_VER="v1.58.0"
 ARG MCM_DIR="/opt/mcm"
+ARG MTL_VER="9d87d0da3466bd88cdf3336844643882d272460b"
 ARG MTL_DIR="/opt/mtl"
+ARG DPDK_VER="23.11"
 ARG DPDK_DIR="/opt/dpdk"
 ARG XDP_DIR="/opt/xdp"
+ARG GPRC_VER="v1.58.0"
 ARG GRPC_DIR="/opt/grpc"
+# JPEGXS_VER Release v0.9
+ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"
+ARG JPEGXS_DIR="/opt/jpegxs"
 
 ENV DEBIAN_FRONTEND noninteractive
 ENV TZ="Europe/Warsaw"
@@ -27,7 +31,7 @@ SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        nasm cmake libbsd-dev git build-essential \
+        nasm cmake libbsd-dev git build-essential sudo \
         meson python3 python3-pyelftools pkg-config \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
@@ -41,9 +45,12 @@ WORKDIR ${DPDK_DIR}
 RUN git config --global user.email "you@intel.com" && \
     git config --global user.name "Your Name" && \
     git clone --branch main https://github.com/OpenVisualCloud/Media-Transport-Library ${MTL_DIR} && \
-    git clone --branch v${DPDK_VER} https://github.com/DPDK/dpdk.git ${DPDK_DIR} && \
+    git -C ${MTL_DIR} checkout ${MTL_VER} && \
+    git clone --branch v${DPDK_VER} --depth 1 https://github.com/DPDK/dpdk.git ${DPDK_DIR} && \
     git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git ${XDP_DIR} && \
     git clone --branch ${GPRC_VER} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc ${GRPC_DIR} && \
+    git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS ${JPEGXS_DIR} && \
+    git -C ${JPEGXS_DIR} checkout ${JPEGXS_VER} && \
     git am ${MTL_DIR}/patches/dpdk/${DPDK_VER}/*.patch && \
     meson setup build && \
     meson install -C build && \
@@ -75,7 +82,17 @@ RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON \
     make install && \
     cmake -DgRPC_BUILD_TESTS=ON -DgRPC_INSTALL=ON \
         -DCMAKE_INSTALL_PREFIX="${PREFIX_DIR}" ../.. && \
-    make -j `nproc` grpc_cli
+    make -j `nproc` grpc_cli && \
+    cp grpc_cli ${PREFIX_DIR}/bin/
+
+# Build and install JPEG XS
+WORKDIR ${JPEGXS_DIR}/Build/linux
+RUN ./build.sh release --prefix "${PREFIX_DIR}" install
+
+# Build and install JPEG XS imtl plugin
+WORKDIR ${JPEGXS_DIR}/imtl-plugin
+RUN ./build.sh && \
+    cp ${JPEGXS_DIR}/imtl-plugin/kahawai.json /usr/local/etc/imtl.json
 
 # Build MCM
 WORKDIR ${MCM_DIR}

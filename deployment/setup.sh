@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2024 Intel Corporation
+
+set -eo pipefail
+SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+. "${SCRIPT_DIR}/../common.sh"
+
 # Function to display execution step log
 display_step_info() {
     step_num=$((step_num + 1))

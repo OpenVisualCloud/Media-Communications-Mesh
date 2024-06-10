@@ -69,6 +69,10 @@ typedef struct {
     size_t frame_size; /* Size (Bytes) of single frame. */
     uint32_t fb_count; /* Frame buffer count. */
 
+    uint32_t width;
+    uint32_t height;
+    enum st_frame_fmt output_fmt;
+
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
     uint8_t* source_end;
