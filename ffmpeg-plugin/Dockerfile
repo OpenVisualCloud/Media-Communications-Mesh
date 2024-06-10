@@ -37,10 +37,11 @@ ARG IMAGE_NAME
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
-LABEL org.opencontainers.image.title="Intel® MCM FFmpeg" \
-      org.opencontainers.image.description="Intel® MCM FFmpeg with MCM-Muxer and MCM-Demuxer Ubuntu 22.04 Docker Release Image" \
+LABEL org.opencontainers.image.title="Intel® Media Communication Mesh FFmpeg" \
+      org.opencontainers.image.description="Intel® Media Communication Mesh FFmpeg with MCM-Muxer and MCM-Demuxer plugins. Ubuntu 22.04 Docker Release Image." \
       org.opencontainers.image.version="1.0.0" \
-      org.opencontainers.image.vendor="Intel"
+      org.opencontainers.image.vendor="Intel Corporation" \
+      org.opencontainers.image.licenses="BSD 3-Clause License"
 
 ARG HOME="/home/${USER}"
 ARG MCM_DIR=/opt/mcm

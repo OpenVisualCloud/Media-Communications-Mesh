@@ -88,10 +88,11 @@ ARG IMAGE_NAME
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
-LABEL org.opencontainers.image.title="Intel® MCM Media Proxy" \
-      org.opencontainers.image.description="Intel® Media Communications Mesh Media Proxy Ubuntu 22.04 Docker Container Release Image" \
+LABEL org.opencontainers.image.title="Intel® Media Communication Mesh Media Proxy" \
+      org.opencontainers.image.description="Intel® Media Communications Mesh Media Proxy application. Ubuntu 22.04 Docker Container Release Image" \
       org.opencontainers.image.version="0.5.0" \
-      org.opencontainers.image.vendor="Intel"
+      org.opencontainers.image.vendor="Intel Corporation" \
+      org.opencontainers.image.licenses="BSD 3-Clause License"
 
 ARG MCM_DIR="/opt/mcm"
 ARG GRPC_DIR="/opt/grpc"
