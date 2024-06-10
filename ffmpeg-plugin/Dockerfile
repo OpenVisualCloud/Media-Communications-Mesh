@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-# SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
+# SPDX-FileCopyrightText: Copyright (c) 2023-2024 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 ARG IMAGE_CACHE_REGISTRY=docker.io
@@ -18,7 +18,8 @@ SHELL ["/bin/bash", "-exc"]
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        apt-utils build-essential make cmake git ca-certificates pkg-config nasm libbsd-dev && \
+        sudo \
+        apt-utils build-essential make cmake git ca-certificates pkg-config nasm libbsd-dev libx264-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -26,13 +27,18 @@ COPY . ${MCM_DIR}
 WORKDIR ${MCM_DIR}/sdk
 RUN ./build.sh
 
+WORKDIR ${MCM_DIR}/ffmpeg-plugin
+RUN ./clone-and-patch-ffmpeg.sh && \
+    ./configure-ffmpeg.sh --enable-libx264 --enable-gpl && \
+    ./build-ffmpeg.sh
+
 ARG IMAGE_CACHE_REGISTRY
 ARG IMAGE_NAME
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
-LABEL org.opencontainers.image.title="Intel® Media Communication Mesh SDK" \
-      org.opencontainers.image.description="Intel® Media Communication Mesh SDK sample applications. Ubuntu 22.04 Docker Release Image" \
+LABEL org.opencontainers.image.title="Intel® Media Communication Mesh FFmpeg" \
+      org.opencontainers.image.description="Intel® Media Communication Mesh FFmpeg with MCM-Muxer and MCM-Demuxer plugins. Ubuntu 22.04 Docker Release Image." \
       org.opencontainers.image.version="1.0.0" \
       org.opencontainers.image.vendor="Intel Corporation" \
       org.opencontainers.image.licenses="BSD 3-Clause License"
@@ -50,7 +56,7 @@ SHELL ["/bin/bash", "-exc"]
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        libbsd0 vim net-tools ca-certificates sudo && \
+        libbsd0 vim net-tools ca-certificates sudo libx264-163 && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \
@@ -59,11 +65,10 @@ RUN apt-get update && \
 
 COPY --chown=mcm --from=builder ${MCM_DIR}/sdk/out/samples /opt/mcm/
 COPY --chown=mcm --from=builder ${PREFIX_DIR} ${PREFIX_DIR}
-COPY --chown=mcm --from=builder ${MCM_DIR}/sdk/out/samples /usr/local/bin/
 
 RUN ldconfig
 
 USER mcm
 WORKDIR /opt/mcm/
 
-CMD ["./recver_app"]
+CMD ["ffmpeg"]

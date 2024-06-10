@@ -12,7 +12,7 @@ pkg-config --exists --print-errors libmcm_dp
 # copy source files to allow the configure tool to find them
 #cp -f ../mcm_* ./libavdevice/
 
-./configure --enable-shared --enable-mcm
+./configure --enable-shared --enable-mcm $@
 cd ..
 
 echo "FFmpeg MCM plugin configuration completed"

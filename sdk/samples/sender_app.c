@@ -16,7 +16,6 @@
 #include <time.h>
 #include <unistd.h>
 #include "mcm_dp.h"
-#include <mtl/st_pipeline_api.h>
 
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
@@ -88,17 +87,30 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "\n");
 }
 
-uint32_t getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height) {
-    if (fmt == PIX_FMT_YUV422P) {
-        return st_frame_size(ST_FRAME_FMT_UYVY, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
-    } else if (fmt == PIX_FMT_YUV422P_10BIT_LE) {
-        return st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE , width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
-    } else if (fmt == PIX_FMT_YUV444M) {
-        return st_frame_size(ST_FRAME_FMT_YUV444RFC4175PG4BE10, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
-    } else if (fmt == PIX_FMT_RGB8) {
-        return st_frame_size(ST_FRAME_FMT_RGB8, width, height, false); // yuv422p10be (1920*1080*2.5) ST20_FMT_YUV_422_8BIT
+size_t getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
+{
+    size_t size = 0;
+    size_t pixels = (size_t)(width*height);
+    switch (fmt) {
+        case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY) */
+            size = pixels * 2;
+            break;
+        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
+            size = pixels * 2 * 2;
+            break;
+        case PIX_FMT_RGB8:
+            size = pixels * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
+            break;
+/* Customized YUV 420 8bit, set transport format as ST20_FMT_YUV_420_8BIT. For direct transport of
+none-RFC4175 formats like I420/NV12. When this input/output format is set, the frame is identical to
+transport frame without conversion. The frame should not have lines padding) */
+        case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka ST_FRAME_FMT_YUV420PLANAR8) */
+        default:
+            size = pixels * 3 / 2;
+            break;
     }
-    return width*height*3/2; // PIX_FMT_NV12
+    if (interlaced) size /= 2; /* if all fmt support interlace? */
+    return size;
 }
 
 int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size, bool loop)
@@ -167,7 +179,7 @@ int main(int argc, char** argv)
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
-    video_pixel_format pix_fmt = PIX_FMT_NV12; //PIX_FMT_YUV444M;
+    video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE; //PIX_FMT_YUV444M;
     uint32_t frame_size = 0;
 
     mcm_conn_context* dp_ctx = NULL;
@@ -188,7 +200,7 @@ int main(int argc, char** argv)
         { "send_port", required_argument, NULL, 'p' },
         { "protocol", required_argument, NULL, 'o' },
         { "number", required_argument, NULL, 'n' },
-        { "file", required_argument, NULL, 'i' },
+        { "file", required_argument, NULL, 'b' },
         { "type", required_argument, NULL, 't' },
         { "socketpath", required_argument, NULL, 'k' },
         { "master", required_argument, NULL, 'm' },
@@ -200,7 +212,7 @@ int main(int argc, char** argv)
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:s:p:o:n:i:t:k:m:d:l:x:", longopts, 0);
+        opt = getopt_long(argc, argv, "Hw:h:f:s:p:o:n:r:i:t:k:m:d:l:x:b:", longopts, 0);
         if (opt == -1) {
             break;
         }
@@ -348,7 +360,7 @@ int main(int argc, char** argv)
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
     strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
     strlcpy(param.local_addr.port, send_port, sizeof(param.local_addr.port));
-    frame_size = getFrameSize(pix_fmt, width, height);
+    frame_size = getFrameSize(pix_fmt, width, height, false);
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {
@@ -390,6 +402,7 @@ int main(int argc, char** argv)
         printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
         printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
         printf("INFO: buf->len = %ld\n", buf->len);
+        buf->len = frame_size;
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
