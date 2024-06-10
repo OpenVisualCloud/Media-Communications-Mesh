@@ -96,7 +96,9 @@ jobs:
         key: ${{ steps.grpc-cache-restore.outputs.cache-primary-key }}
 
     - name: 'Install gRPC'
-      run: sudo cmake --install "${GRPC_DIR}/cmake/build"
+      run: |
+        sudo cmake --install "${GRPC_DIR}/cmake/build"  && \
+        rm -rf "${GRPC_DIR}"
 
     - name: 'Build MCM SDK and Media Proxy'
       run: ./build.sh
