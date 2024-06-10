@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
 */
 
@@ -247,15 +247,6 @@ void* msg_loop(void* ptr)
         }
     }
 
-    /* Clean-up all sessions. */
-    // for (auto it : proxy_ctx->mStCtx) {
-    //     if (it->type == TX) {
-    //         proxy_ctx->TxStop(it->id);
-    //     } else {
-    //         proxy_ctx->RxStop(it->id);
-    //     }
-    // }
-
     /* close socket and clean up */
     close(conn->sock);
     free(conn);
@@ -267,6 +258,7 @@ void* msg_loop(void* ptr)
 void handleSignals(int sig_num)
 {
     keepRunning = false;
+    exit(0);
 }
 
 void registerSignals()
