@@ -305,12 +305,10 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     // ext_frame->buf_iova = rx_ctx->frames_begin_iova + ((uint8_t*)rx_bufs->data - (uint8_t*)rx_ctx->frames_begin_addr);
     // ext_frame->iova[0] = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
     ext_frame->size = rx_ctx->frame_size;
-    // INFO("Called rx_st20p_query_ext_frame size:: %d", ext_frame->size);
 
-    // TO-DO: This should be made configurable.
-    uint8_t planes = st_frame_fmt_planes(ST_FRAME_FMT_YUV422PLANAR10LE);
+    uint8_t planes = st_frame_fmt_planes(rx_ctx->output_fmt);
     for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
-        ext_frame->linesize[plane] = st_frame_least_linesize(ST_FRAME_FMT_YUV422PLANAR10LE, meta->width, plane);
+        ext_frame->linesize[plane] = st_frame_least_linesize(rx_ctx->output_fmt, meta->width, plane);
         if (plane == 0) {
             ext_frame->addr[plane] = rx_bufs->data;
             ext_frame->iova[plane] = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
@@ -1788,37 +1786,17 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
     st_pthread_cond_init(&rx_ctx->wake_cond, NULL);
 
     struct st20p_rx_ops ops_rx = { 0 };
-    if (opts == NULL) { /* set parameters to default */
-        const char RX_ST20_PORT_BDF[] = "0000:31:00.1";
-        const uint16_t RX_ST20_UDP_PORT = 20000 + idx;
-        const uint8_t RX_ST20_PAYLOAD_TYPE = 112;
-        /* source ip address for rx session */
-        const static uint8_t g_rx_st20_src_ip[MTL_IP_ADDR_LEN] = { 192, 168, 96, 1 };
-
-        ops_rx.name = "mcm_rx_session";
-        ops_rx.port.num_port = 1;
-        // rx src ip like 239.0.0.1
-        memcpy(ops_rx.port.ip_addr[MTL_PORT_P], g_rx_st20_src_ip, MTL_IP_ADDR_LEN);
-        // send port interface like 0000:af:00.0
-        strncpy(ops_rx.port.port[MTL_PORT_P], RX_ST20_PORT_BDF, MTL_PORT_MAX_LEN);
-        ops_rx.port.payload_type = RX_ST20_PAYLOAD_TYPE;
-        ops_rx.width = 1920;
-        ops_rx.height = 1080;
-        ops_rx.fps = ST_FPS_P60;
-        ops_rx.transport_fmt = ST20_FMT_YUV_422_10BIT;
-        ops_rx.output_fmt = ST_FRAME_FMT_YUV444PLANAR10LE;
-        ops_rx.device = ST_PLUGIN_DEVICE_AUTO;
-        ops_rx.port.udp_port[MTL_PORT_P] = RX_ST20_UDP_PORT;
-        ops_rx.framebuff_cnt = fb_cnt;
-    } else {
+    if (opts) {
         mtl_memcpy(&ops_rx, opts, sizeof(struct st20p_rx_ops));
     }
-
     ops_rx.priv = rx_ctx; // app handle register to lib
     ops_rx.notify_frame_available = rx_st20p_frame_available;
 
     // TO-DO: Frame size probably should be choosen greater one from output and transport
     rx_ctx->frame_size = st_frame_size(ops_rx.output_fmt, ops_rx.width, ops_rx.height, false);
+    rx_ctx->width = ops_rx.width;
+    rx_ctx->height = ops_rx.height;
+    rx_ctx->output_fmt = ops_rx.output_fmt;
 
     /* initialize share memory */
     ret = rx_st20p_shm_init(rx_ctx, memif_ops);

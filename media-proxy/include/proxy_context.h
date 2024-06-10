@@ -101,4 +101,5 @@ private:
     ProxyContext(const ProxyContext&) = delete;
     ProxyContext& operator=(const ProxyContext&) = delete;
     uint32_t incrementMSessionCount(bool postIncrement);
+    st_frame_fmt getStFrameFmt(video_pixel_format fmt);
 };
