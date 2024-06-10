@@ -1,12 +1,12 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
- *
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
- */
+*/
 
 #include <atomic>
 #include <iostream>
 #include <string>
+#include <string_view>
 #include <vector>
 
 #include "controller.grpc.pb.h"
@@ -28,6 +28,7 @@ using controller::TxControlRequest;
 class ProxyContext {
 public:
     std::string mRpcCtrlAddr;
+    int mRpcCtrlPort;
 
     std::string mTcpCtrlAddr;
     int mTcpCtrlPort;
@@ -38,27 +39,26 @@ public:
     std::vector<mtl_session_context_t*> mStCtx;
     std::vector<rx_session_context_t*> mRxCtx;
     std::vector<tx_session_context_t*> mTxCtx;
-    std::atomic<std::uint32_t> mSessionCount;
     mtl_handle mDevHandle = NULL;
+
     /*udp pool*/
     mtl_sch_handle schs[SCH_CNT];
     bool schs_ready;
     bool imtl_init_preparing;
     pthread_mutex_t mutex_lock;
-    pthread_mutex_t sessioncount_mutex_lock;
 
     std::string mDevPort;
     std::string mDpAddress;
     std::string mDpPort;
 
     ProxyContext(void);
-    ProxyContext(std::string rpc_addr, std::string tcp_addr);
+    ProxyContext(std::string_view rpc_addr, std::string_view tcp_addr);
 
-    void setRPCListenAddress(std::string addr);
-    void setTCPListenAddress(std::string addr);
-    void setDevicePort(std::string dev);
-    void setDataPlaneAddress(std::string ip);
-    void setDataPlanePort(std::string port);
+    void setRPCListenAddress(std::string_view addr);
+    void setTCPListenAddress(std::string_view addr);
+    void setDevicePort(std::string_view dev);
+    void setDataPlaneAddress(std::string_view ip);
+    void setDataPlanePort(std::string_view port);
 
     std::string getDevicePort(void);
     std::string getDataPlaneAddress(void);
@@ -93,4 +93,12 @@ public:
     void TxStop(const int32_t session_id);
     void RxStop(const int32_t session_id);
     void Stop();
+
+private:
+    std::atomic<std::uint32_t> mSessionCount;
+    pthread_mutex_t sessions_count_mutex_lock;
+
+    ProxyContext(const ProxyContext&) = delete;
+    ProxyContext& operator=(const ProxyContext&) = delete;
+    uint32_t incrementMSessionCount(bool postIncrement);
 };

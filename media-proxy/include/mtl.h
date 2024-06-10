@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -51,7 +51,7 @@ typedef struct {
     char interface_name[32];
     uint32_t interface_id;
     char socket_path[108];
-    uint32_t msessioncount;
+    uint32_t m_session_count;
 } memif_ops_t;
 
 typedef struct {

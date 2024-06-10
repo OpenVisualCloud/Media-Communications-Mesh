@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -87,10 +87,8 @@ int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* sess
     }
 
     /* intialize message header. */
-    msg.header.magic_word[0] = 'M';
-    msg.header.magic_word[1] = 'C';
-    msg.header.magic_word[2] = 'M';
-    msg.header.version = 0x01;
+    msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
+    msg.header.version = HEADER_VERSION;
 
     msg.command.inst = MCM_CREATE_SESSION;
     msg.command.data_len = sizeof(mcm_conn_param);
@@ -137,10 +135,8 @@ int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param*
     }
 
     /* intialize message header. */
-    msg.header.magic_word[0] = 'M';
-    msg.header.magic_word[1] = 'C';
-    msg.header.magic_word[2] = 'M';
-    msg.header.version = 0x01;
+    msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
+    msg.header.version = HEADER_VERSION;
 
     /* memif parameters */
     msg.command.inst = MCM_QUERY_MEMIF_PARAM;
@@ -190,10 +186,8 @@ void media_proxy_destroy_session(mcm_conn_context* pctx)
     session_id = pctx->session_id;
 
     /* intialize message header. */
-    msg.header.magic_word[0] = 'M';
-    msg.header.magic_word[1] = 'C';
-    msg.header.magic_word[2] = 'M';
-    msg.header.version = 0x01;
+    msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
+    msg.header.version = HEADER_VERSION;
 
     msg.command.inst = MCM_DESTROY_SESSION;
     msg.command.data_len = sizeof(session_id);

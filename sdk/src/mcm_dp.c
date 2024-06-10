@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -140,7 +140,7 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
         conn_ctx->proto = PROTO_UDP;
         conn_ctx->priv = (void*)p_ctx;
         break;
-    case PROTO_MEMIF:;
+    case PROTO_MEMIF:
         memif_conn_param memif_param = {};
         parse_memif_param(param, &(memif_param.socket_args), &(memif_param.conn_args));
         /* Connect memif connection. */

@@ -1,8 +1,7 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
-#
-# SPDX-License-Identifier: BSD-3-Clause
-
 #!/bin/bash -x
+
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
 
 # compile tests
 # -DMEMIF_DBG_SHM

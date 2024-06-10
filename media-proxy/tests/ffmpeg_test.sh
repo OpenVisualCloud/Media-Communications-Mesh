@@ -1,5 +1,6 @@
-# SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
-#
+#!/bin/bash -x
+
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
 # SPDX-License-Identifier: BSD-3-Clause
 
 # generate test source

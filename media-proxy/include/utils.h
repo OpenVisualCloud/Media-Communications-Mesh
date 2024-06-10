@@ -1,5 +1,5 @@
 /*
- * SPDX-FileCopyrightText: Copyright (c) 2023 Intel Corporation
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
@@ -20,8 +20,10 @@
         printf("\n");                  \
     } while (0)
 
-#define DEBUG(...) \
-    do {           \
+#define DEBUG(...)                     \
+    do {                               \
+        printf("DEBUG: " __VA_ARGS__); \
+        printf("\n");                  \
     } while (0)
 
 #endif

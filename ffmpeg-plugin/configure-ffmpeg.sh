@@ -3,16 +3,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
-set -e
+set -eo pipefail
 
-cd FFmpeg
-export PKG_CONFIG_PATH=/usr/local/lib/pkgconfig
-pkg-config --exists --print-errors libmcm_dp
+SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+. "${SCRIPT_DIR}/../common.sh"
+
+cd "${SCRIPT_DIR}/FFmpeg"
+PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" pkg-config --exists --print-errors libmcm_dp
 
 # copy source files to allow the configure tool to find them
 #cp -f ../mcm_* ./libavdevice/
 
-./configure --enable-shared --enable-mcm $@
-cd ..
+"${SCRIPT_DIR}/FFmpeg/configure" --enable-shared --enable-mcm $@
+cd "${OLDPWD}"
 
-echo "FFmpeg MCM plugin configuration completed"
+prompt "FFmpeg MCM plugin configuration completed."
+prompt "\t${SCRIPT_DIR}/FFmpeg"

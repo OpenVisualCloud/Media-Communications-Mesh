@@ -3,13 +3,15 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
-set -e
+set -eo pipefail
 
-cd FFmpeg
-cp -f ../mcm_* ./libavdevice/
+SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+. "${SCRIPT_DIR}/../common.sh"
 
-make -j "$(nproc)"
-sudo make install
-cd ..
+cp -f "${SCRIPT_DIR}/mcm_"* "${SCRIPT_DIR}/FFmpeg/libavdevice/"
 
-echo "FFmpeg MCM plugin build completed"
+make -C "${SCRIPT_DIR}/FFmpeg" -j "$(nproc)"
+run_as_root_user make -C "${SCRIPT_DIR}/FFmpeg" install
+
+prompt "FFmpeg MCM plugin build completed."
+prompt "\t${SCRIPT_DIR}/FFmpeg"
