@@ -1,22 +1,12 @@
-# For most projects, this workflow file will not need changing; you simply need
-# to commit it to your repository.
-#
-# You may wish to alter this file to override the set of languages analyzed,
-# or to provide custom queries or build logic.
-#
-# ******** NOTE ********
-# We have attempted to detect the languages in your repository. Please check
-# the `language` matrix defined below to confirm you have the correct set of
-# supported CodeQL languages.
-#
+
 name: "CodeQL"
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
     # The branches below must be a subset of the branches above
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   schedule:
     - cron: '42 8 * * 1'
 
@@ -24,7 +14,8 @@ env:
   # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
   MTL_BUILD_DISABLE_PCAPNG: true
-  # GPRC_VERSION: v1.58.0
+  GRPC_VERSION: v1.58.0
+  GRPC_DIR: /tmp/grpc
   PREFIX_DIR: /usr/local
   DEBIAN_FRONTEND: noninteractive
 
@@ -34,89 +25,90 @@ permissions:
 jobs:
   analyze:
     name: Analyze
-    # Runner size impacts CodeQL analysis time. To learn more, please see:
-    #   - https://gh.io/recommended-hardware-resources-for-running-codeql
-    #   - https://gh.io/supported-runners-and-hardware-resources
-    #   - https://gh.io/using-larger-runners
-    # Consider using larger runners for possible analysis time improvements.
-    runs-on: ${{ (matrix.language == 'swift' && 'macos-latest') || 'ubuntu-22.04' }}
-    timeout-minutes: ${{ (matrix.language == 'swift' && 120) || 360 }}
+    runs-on: ${{ matrix.runner-os }}
+    timeout-minutes: 90
+    strategy:
+      fail-fast: false
+      matrix:
+        runner-os: [ 'ubuntu-22.04' ]
     permissions:
       actions: read
       contents: read
       security-events: write
-
-    strategy:
-      fail-fast: false
-      matrix:
-        language: [ 'c-cpp' ]
-        # CodeQL supports [ 'c-cpp', 'csharp', 'go', 'java-kotlin', 'javascript-typescript', 'python', 'ruby', 'swift' ]
-        # Use only 'java-kotlin' to analyze code written in Java, Kotlin or both
-        # Use only 'javascript-typescript' to analyze code written in JavaScript, TypeScript or both
-        # Learn more about CodeQL language support at https://aka.ms/codeql-docs/language-support
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - name: Harden Runner
-      uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+    - name: 'Harden Runner'
+      uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
       with:
         egress-policy: audit
 
-    - name: Checkout repository
-      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - name: 'Checkout repository'
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-    # Initializes the CodeQL tools for scanning.
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@e5f05b81d5b6ff8cfa111c80c22c5fd02a384118 # v3.23.0
+    - name: 'Initialize CodeQL'
+      uses: github/codeql-action/init@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
       with:
-        languages: ${{ matrix.language }}
-        config-file: ${{github.workspace}}/.github/codeql/codeql-config.yml
-        # If you wish to specify custom queries, you can do so here or in a config file.
-        # By default, queries listed here will override any specified in a config file.
-        # Prefix the list here with "+" to use these queries and those in the config file.
+        languages: 'c-cpp'
+        config-file: ${{ github.workspace }}/.github/codeql/codeql-config.yml
 
-        # For more details on CodeQL's query packs, refer to: https://docs.github.com/en/code-security/code-scanning/automatically-scanning-your-code-for-vulnerabilities-and-errors/configuring-code-scanning#using-queries-in-ql-packs
-        # queries: security-extended,security-and-quality
-
-    - name: Setup
+    - name: 'Install dependencies'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y git gcc meson python3-dev python3-pip pkg-config libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libssl-dev systemtap-sdt-dev llvm clang
-        sudo apt-get install -y cmake build-essential autoconf libtool pkg-config python3-pyelftools ninja-build libsdl2-dev libsdl2-ttf-dev dpdk-dev
+        sudo apt-get update -y && \
+        sudo apt-get install -y --no-install-recommends \
+            git build-essential meson python3 python3-pyelftools pkg-config \
+            libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev \
+            libsdl2-ttf-dev libssl-dev ca-certificates m4 clang llvm zlib1g-dev \
+            libelf-dev libcap-ng-dev libcap2-bin gcc-multilib systemtap-sdt-dev ninja-build \
+            nasm dpdk-dev librdmacm-dev && \
+        sudo apt-get clean && \
+        sudo rm -rf /var/lib/apt/lists/*
 
-    - name: Install IMTL
+    - name: 'Install iMTL'
       run: |
         git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
-        pushd imtl
-        ./build.sh
-        popd
-
-    - uses: eWaterCycle/setup-grpc@f42b1ed4f95f2c8833e78d85a20cc717b6d9af7f # v5
-      with:
-        grpc-version: 1.58.0
-
-    # - name: Install gRPC
-    #   run: |
-    #     git clone --recurse-submodules -b ${GPRC_VERSION} --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc
-    #     cmake -B /tmp/grpc/cmake/build -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} /tmp/grpc/
-    #     cmake --build /tmp/grpc/cmake/build -j 4
-    #     sudo cmake --install /tmp/grpc/cmake/build
-
-    # Autobuild attempts to build any compiled languages (C/C++, C#, Go, Java, or Swift).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    # - name: Autobuild
-    #   uses: github/codeql-action/autobuild@v2
-
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
-
-    #   If the Autobuild fails above, remove it and uncomment the following three lines.
-    #   modify them (or add more) to build your code if your project, please refer to the EXAMPLE below for guidance.
-
-    - run: |
-        echo "Run, Build Application using script"
+        cd imtl
         ./build.sh
 
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@e5f05b81d5b6ff8cfa111c80c22c5fd02a384118 # v3.23.0
+    - name: 'Restore cached for gRPC build'
+      id: grpc-cache-restore
+      uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
       with:
-        category: "/language:${{matrix.language}}"
+        path: ${{ env.GRPC_DIR }}
+        key: ${{ runner.os }}-grpc${{ env.GRPC_VERSION }}
+
+    - name: 'Build gRPC'
+      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
+      run: |
+          git clone --branch ${GRPC_VERSION} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc "${GRPC_DIR}" && \
+          cmake -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} \
+            -B "${GRPC_DIR}/cmake/build" -S "${GRPC_DIR}" && \
+          cmake --build "${GRPC_DIR}/cmake/build" -j `nproc`
+
+    - name: 'Save cache for gRPC build'
+      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
+      id: grpc-cache-save
+      uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      with:
+        path: ${{ env.GRPC_DIR }}
+        key: ${{ steps.grpc-cache-restore.outputs.cache-primary-key }}
+
+    - name: 'Install gRPC'
+      run: sudo cmake --install "${GRPC_DIR}/cmake/build"
+
+    - name: 'Build MCM SDK and Media Proxy'
+      run: ./build.sh
+
+    - name: 'Build MCM FFmpeg plugin'
+      working-directory: ${{ github.workspace }}/ffmpeg-plugin
+      run: |
+        ./clone-and-patch-ffmpeg.sh && \
+        ./configure-ffmpeg.sh && \
+        ./build-ffmpeg.sh
+
+    - name: 'Perform CodeQL Analysis'
+      uses: github/codeql-action/analyze@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+      with:
+        category: "/language:c-cpp"

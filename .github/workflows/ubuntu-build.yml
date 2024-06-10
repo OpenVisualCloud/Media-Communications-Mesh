@@ -2,15 +2,15 @@ name: Ubuntu Build
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "main", "dev" ]
 
 env:
-  # Customize the CMake build type here (Release, Debug, RelWithDebInfo, etc.)
   BUILD_TYPE: Release
   MTL_BUILD_DISABLE_PCAPNG: true
-  # GPRC_VERSION: v1.58.0
+  GRPC_VERSION: v1.58.0
+  GRPC_DIR: /tmp/grpc
   PREFIX_DIR: /usr/local
   DEBIAN_FRONTEND: noninteractive
 
@@ -19,51 +19,72 @@ permissions:
 
 jobs:
   build:
-    timeout-minutes: 60
-
-    # The CMake configure and build commands are platform agnostic and should work equally well on Windows or Mac.
-    # You can convert this to a matrix build if you need cross-platform coverage.
-    # See: https://docs.github.com/en/free-pro-team@latest/actions/learn-github-actions/managing-complex-workflows#using-a-build-matrix
-    runs-on: ubuntu-22.04
+    runs-on: 'ubuntu-22.04'
+    timeout-minutes: 90
+    defaults:
+      run:
+        shell: bash
 
     steps:
-    - name: Harden Runner
-      uses: step-security/harden-runner@eb238b55efaa70779f274895e782ed17c84f2895 # v2.6.1
+    - name: 'Harden Runner'
+      uses: step-security/harden-runner@f086349bfa2bd1361f7909c78558e816508cdc10 # v2.8.0
       with:
         egress-policy: audit
 
-    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
+    - name: 'Checkout repository'
+      uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
 
-    - name: Setup
+    - name: 'Install dependencies'
       run: |
-        sudo apt-get update
-        sudo apt-get install -y git gcc meson python3-dev python3-pip pkg-config libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libssl-dev systemtap-sdt-dev llvm clang
-        sudo apt-get install -y cmake build-essential autoconf libtool pkg-config python3-pyelftools ninja-build libsdl2-dev libsdl2-ttf-dev dpdk-dev
+        sudo apt-get update -y && \
+        sudo apt-get install -y --no-install-recommends \
+            git build-essential meson python3 python3-pyelftools pkg-config \
+            libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev \
+            libsdl2-ttf-dev libssl-dev ca-certificates m4 clang llvm zlib1g-dev \
+            libelf-dev libcap-ng-dev libcap2-bin gcc-multilib systemtap-sdt-dev ninja-build \
+            nasm dpdk-dev librdmacm-dev && \
+        sudo apt-get clean && \
+        sudo rm -rf /var/lib/apt/lists/*
 
-    - name: Install IMTL
+    - name: 'Install IMTL'
       run: |
         git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
         pushd imtl
         ./build.sh
         popd
 
-    - uses: eWaterCycle/setup-grpc@f42b1ed4f95f2c8833e78d85a20cc717b6d9af7f # v5
+    - name: 'Restore cached for gRPC build'
+      id: grpc-cache-restore
+      uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
       with:
-        grpc-version: 1.58.0
+        path: ${{ env.GRPC_DIR }}
+        key: Linux-grpc${{ env.GRPC_VERSION }}
 
-    # - name: Install gRPC
-    #   run: |
-    #     git clone --recurse-submodules -b ${GPRC_VERSION} --depth 1 --shallow-submodules https://github.com/grpc/grpc /tmp/grpc
-    #     cmake -B /tmp/grpc/cmake/build -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} /tmp/grpc/
-    #     cmake --build /tmp/grpc/cmake/build -j 4
-    #     sudo cmake --install /tmp/grpc/cmake/build
+    - name: 'Build gRPC'
+      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
+      run: |
+        git clone --branch ${GRPC_VERSION} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc "${GRPC_DIR}" && \
+        cmake -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} \
+          -B "${GRPC_DIR}/cmake/build" -S "${GRPC_DIR}" && \
+        cmake --build "${GRPC_DIR}/cmake/build" -j `nproc`
 
-    - name: Configure MCM
-      # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
-      # See https://cmake.org/cmake/help/latest/variable/CMAKE_BUILD_TYPE.html?highlight=cmake_build_type
-      run: cmake -B ${{github.workspace}}/build -DCMAKE_BUILD_TYPE=${{env.BUILD_TYPE}}
+    - name: 'Save cache for gRPC build'
+      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
+      id: grpc-cache-save
+      uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
+      with:
+        path: ${{ env.GRPC_DIR }}
+        key: ${{ steps.grpc-cache-restore.outputs.cache-primary-key }}
 
-    - name: Build MCM
-      # Build your program with the given configuration
-      run: cmake --build ${{github.workspace}}/build --config ${{env.BUILD_TYPE}}
+    - name: 'Install gRPC'
+      run: sudo cmake --install "${GRPC_DIR}/cmake/build"
 
+    - name: 'Build MCM SDK and Media Proxy'
+      run: ./build.sh
+
+    - name: 'Build MCM FFmpeg plugin'
+      working-directory: ${{ github.workspace }}/ffmpeg-plugin
+      run: |
+        ./clone-and-patch-ffmpeg.sh && \
+        ./configure-ffmpeg.sh && \
+        ./build-ffmpeg.sh
