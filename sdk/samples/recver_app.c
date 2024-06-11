@@ -109,7 +109,6 @@ transport frame without conversion. The frame should not have lines padding) */
         case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
         default:
             size = pixels * 2 * 2;
-            break;
     }
     if (interlaced) size /= 2; /* if all fmt support interlace? */
     return (int)size;

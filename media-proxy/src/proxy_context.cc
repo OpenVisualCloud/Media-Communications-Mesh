@@ -121,7 +121,6 @@ st_frame_fmt ProxyContext::getStFrameFmt(video_pixel_format mcm_frame_fmt)
         case PIX_FMT_YUV422P_10BIT_LE:
         default:
             mtl_frame_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
-            break;
     }
     return mtl_frame_fmt;
 }

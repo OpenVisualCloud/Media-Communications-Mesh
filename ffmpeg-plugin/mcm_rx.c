@@ -146,7 +146,6 @@ static int mcm_read_header(AVFormatContext* avctx)
         case AV_PIX_FMT_YUV422P10LE:
         default:
             param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            break;
         }
 
         param.payload_args.video_args.pix_fmt = param.pix_fmt;
