@@ -106,9 +106,11 @@ jobs:
     - name: 'Build MCM FFmpeg plugin'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
-        ./clone-and-patch-ffmpeg.sh && \
-        ./configure-ffmpeg.sh && \
-        ./build-ffmpeg.sh
+          git config --global user.email "you@intel.com"
+          git config --global user.name "Your Name"
+          ./clone-and-patch-ffmpeg.sh && \
+          ./configure-ffmpeg.sh && \
+          ./build-ffmpeg.sh
 
     - name: 'Perform CodeQL Analysis'
       uses: github/codeql-action/analyze@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8

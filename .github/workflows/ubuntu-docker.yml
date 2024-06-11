@@ -1,0 +1,55 @@
+name: Docker Build
+
+on:
+    push:
+      branches: [ "main", "dev" ]
+    pull_request:
+      branches: [ "main", "dev" ]
+
+permissions:
+  contents: read
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - name: Harden Runner
+        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@68827325e0b33c7199eb31dd4e31fbe9023e06e3 # v3.0.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@d70bba72b1f3fd22344832f00baa16ece964efeb # v3.3.0
+        with:
+          buildkitd-flags: --debug
+
+      - name: Build and push SDK sample apps
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          file: sdk/Dockerfile
+          context: .
+          push: false
+          tags: "mcm/sdk:${{ github.sha }}"
+
+      - name: Build and push ffmpeg and plugins
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          file: ffmpeg-plugin/Dockerfile
+          context: .
+          push: false
+          tags: "mcm/ffmpeg:${{ github.sha }}"
+
+      - name: Build and push media proxy application
+        uses: docker/build-push-action@ca052bb54ab0790a636c9b5f226502c73d547a25 # v5.4.0
+        with:
+          file: media-proxy/Dockerfile
+          context: .
+          push: false
+          tags: "mcm/media-proxy:${{ github.sha }}"
