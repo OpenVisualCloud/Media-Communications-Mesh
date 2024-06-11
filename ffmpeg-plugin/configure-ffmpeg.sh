@@ -6,16 +6,28 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build}"
 . "${SCRIPT_DIR}/../common.sh"
 
-cd "${SCRIPT_DIR}/FFmpeg"
+JPEGXS_FLAGS=( )
+JPEGXS_ENABLED="${JPEGXS_ENABLED:-1}"
+
+if [ "$JPEGXS_ENABLED" == "1" ]
+then
+    pushd "${BUILD_DIR}/jpegxs/Build/linux"
+    run_as_root_user ./build.sh release install
+    JPEGXS_FLAGS+=( "--enable-libsvtjpegxs" )
+    popd
+fi
+
+pushd "${BUILD_DIR}/FFmpeg"
 PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" pkg-config --exists --print-errors libmcm_dp
 
 # copy source files to allow the configure tool to find them
 #cp -f ../mcm_* ./libavdevice/
 
-"${SCRIPT_DIR}/FFmpeg/configure" --enable-shared --enable-mcm $@
-cd "${OLDPWD}"
+"${BUILD_DIR}/FFmpeg/configure" --enable-shared --enable-mcm ${JPEGXS_FLAGS[@]} $@
+popd
 
 prompt "FFmpeg MCM plugin configuration completed."
-prompt "\t${SCRIPT_DIR}/FFmpeg"
+prompt "\t${BUILD_DIR}/FFmpeg"

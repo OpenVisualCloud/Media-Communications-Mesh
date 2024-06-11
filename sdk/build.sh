@@ -11,11 +11,11 @@ SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
 
-cmake -B "${SCRIPT_DIR}/out" \
+cmake -B "${SCRIPT_DIR}/build" \
     -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
     -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
     "${SCRIPT_DIR}"
-cmake --build "${SCRIPT_DIR}/out" -j
+cmake --build "${SCRIPT_DIR}/build" -j
 
 # Install
-run_as_root_user cmake --install "${SCRIPT_DIR}/out"
+run_as_root_user cmake --install "${SCRIPT_DIR}/build"

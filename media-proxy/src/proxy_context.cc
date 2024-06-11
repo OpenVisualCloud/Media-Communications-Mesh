@@ -219,12 +219,10 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param->port[MTL_PORT_P]);
     st_param->num_ports = 1;
     st_param->flags = MTL_FLAG_BIND_NUMA;
-    st_param->flags |= MTL_FLAG_SHARED_RX_QUEUE;
-    st_param->flags |= MTL_FLAG_SHARED_TX_QUEUE;
+    st_param->flags |= MTL_FLAG_TX_VIDEO_MIGRATE;
+    st_param->flags |= MTL_FLAG_RX_VIDEO_MIGRATE;
     st_param->flags |= request->payload_mtl_flags_mask;
     st_param->pacing = (st21_tx_pacing_way) request->payload_mtl_pacing;
-    // st_param->flags |= MTL_FLAG_TX_VIDEO_MIGRATE;
-    // st_param->flags |= MTL_FLAG_RX_VIDEO_MIGRATE;
     st_param->log_level = MTL_LOG_LEVEL_DEBUG;
     st_param->priv = NULL;
     st_param->ptp_get_time_fn = NULL;
@@ -721,10 +719,9 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 
     if (mDevHandle == NULL) {
         struct mtl_init_params st_param = {};
-        ParseStInitParam(request, &st_param);
-
         /* set default parameters */
-        st_param.flags = MTL_FLAG_BIND_NUMA;
+        st_param.flags |= MTL_FLAG_BIND_NUMA;
+        ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
         if (mDevHandle == NULL) {
@@ -765,11 +762,9 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 
     if (mDevHandle == NULL) {
         struct mtl_init_params st_param = {};
-
-        ParseStInitParam(request, &st_param);
-
         /* set default parameters */
         st_param.flags = MTL_FLAG_BIND_NUMA;
+        ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
         if (mDevHandle == NULL) {
@@ -815,7 +810,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         struct mtl_init_params st_param = { 0 };
 
         /* set default parameters */
-        // st_param.flags = MTL_FLAG_BIND_NUMA;
+        st_param.flags = MTL_FLAG_BIND_NUMA;
         ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
@@ -965,7 +960,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
         struct mtl_init_params st_param = { 0 };
 
         /* set default parameters */
-        // st_param.flags = MTL_FLAG_BIND_NUMA;
+        st_param.flags = MTL_FLAG_BIND_NUMA;
         ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
