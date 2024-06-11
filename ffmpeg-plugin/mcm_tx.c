@@ -57,6 +57,7 @@ static int mcm_write_header(AVFormatContext* avctx)
         param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
     } else if (strcmp(s->payload_type, "st22") == 0) {
         param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
+        param.payload_codec = PAYLOAD_CODEC_JPEGXS;
     } else if (strcmp(s->payload_type, "st30") == 0) {
         param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
     } else if (strcmp(s->payload_type, "st40") == 0) {
@@ -97,11 +98,22 @@ static int mcm_write_header(AVFormatContext* avctx)
         param.payload_args.video_args.fps     = param.fps = av_q2d(s->frame_rate);
 
         switch (s->pixel_format) {
-        case AV_PIX_FMT_YUV422P10LE:
-            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-        case AV_PIX_FMT_YUV420P:
-        default:
+        case AV_PIX_FMT_NV12:
             param.pix_fmt = PIX_FMT_NV12;
+            break;
+        case AV_PIX_FMT_YUV422P:
+            param.pix_fmt = PIX_FMT_YUV422P;
+            break;
+        case AV_PIX_FMT_YUV444P10LE:
+            param.pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
+            break;
+        case AV_PIX_FMT_RGB24:
+            param.pix_fmt = PIX_FMT_RGB8;
+            break;
+        case AV_PIX_FMT_YUV422P10LE:
+        default:
+            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
+            break;
         }
 
         param.payload_args.video_args.pix_fmt = param.pix_fmt;
@@ -178,7 +190,7 @@ static const AVClass mcm_muxer_class = {
 
 const FFOutputFormat ff_mcm_muxer = {
     .p.name = "mcm",
-    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communication Mesh"),
+    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh"),
     .priv_data_size = sizeof(McmMuxerContext),
     .write_header = mcm_write_header,
     .write_packet = mcm_write_packet,

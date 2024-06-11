@@ -1,7 +1,5 @@
-# for Python
-__pycache__/
+# .dockerignore
 
-# for compilation
 build
 out/*
 build/*
@@ -10,18 +8,10 @@ ffmpeg-plugin/build/*
 ffmpeg-plugin/out/*
 ffmpeg-plugin/FFmpeg/*
 
-# for debug dump
-dump_*
+.git/*
 
 # for gRPC protos
 media-proxy/protos/controller.grpc.pb.cc
 media-proxy/protos/controller.grpc.pb.h
 media-proxy/protos/controller.pb.cc
 media-proxy/protos/controller.pb.h
-
-# for VS Code settings
-.vscode/c_cpp_properties.json
-.vscode/settings.json
-
-# For FFmpeg plugin
-ffmpeg-plugin/FFmpeg/
