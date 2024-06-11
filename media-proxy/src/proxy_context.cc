@@ -367,7 +367,7 @@ void ProxyContext::ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx
     strlcpy(ops_rx->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops_rx->port.num_port = 1;
     if(request->payload_type_nr == 0 ) {
-        ops_rx->port.payload_type = 96;
+        ops_rx->port.payload_type = ST_APP_PAYLOAD_TYPE_VIDEO;
     } else {
         ops_rx->port.payload_type = request->payload_type_nr;
     }
@@ -437,7 +437,7 @@ void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx
     ops_tx->port.udp_src_port[MTL_PORT_P] = atoi(request->local_addr.port);
     ops_tx->port.num_port = 1;
     if(request->payload_type_nr == 0 ) {
-        ops_tx->port.payload_type = 96;
+        ops_tx->port.payload_type = ST_APP_PAYLOAD_TYPE_VIDEO;
     } else {
         ops_tx->port.payload_type = request->payload_type_nr;
     }
@@ -484,7 +484,7 @@ void ProxyContext::ParseSt22TxOps(const mcm_conn_param* request, struct st22p_tx
     ops->port.udp_src_port[MTL_PORT_P] = atoi(request->local_addr.port);
     ops->port.num_port = 1;
     if(request->payload_type_nr == 0 ) {
-        ops->port.payload_type = 99;
+        ops->port.payload_type = ST_APP_PAYLOAD_TYPE_ST22;
     } else {
         ops->port.payload_type = request->payload_type_nr;
     }
@@ -536,7 +536,7 @@ void ProxyContext::ParseSt22RxOps(const mcm_conn_param* request, struct st22p_rx
     strlcpy(ops->port.port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     ops->port.num_port = 1;
     if(request->payload_type_nr == 0 ) {
-        ops->port.payload_type = 99;
+        ops->port.payload_type = ST_APP_PAYLOAD_TYPE_ST22;
     } else {
         ops->port.payload_type = request->payload_type_nr;
     }
@@ -720,7 +720,6 @@ int ProxyContext::RxStart(const RxControlRequest* request)
     if (mDevHandle == NULL) {
         struct mtl_init_params st_param = {};
         /* set default parameters */
-        st_param.flags |= MTL_FLAG_BIND_NUMA;
         ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
@@ -763,7 +762,6 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     if (mDevHandle == NULL) {
         struct mtl_init_params st_param = {};
         /* set default parameters */
-        st_param.flags = MTL_FLAG_BIND_NUMA;
         ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
@@ -810,7 +808,6 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         struct mtl_init_params st_param = { 0 };
 
         /* set default parameters */
-        st_param.flags = MTL_FLAG_BIND_NUMA;
         ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
@@ -960,7 +957,6 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
         struct mtl_init_params st_param = { 0 };
 
         /* set default parameters */
-        st_param.flags = MTL_FLAG_BIND_NUMA;
         ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);

@@ -106,8 +106,8 @@ jobs:
     - name: 'Build MCM FFmpeg plugin'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
-          git config --global user.email "you@intel.com"
-          git config --global user.name "Your Name"
+          git config --global user.email "milosz.linkiewicz@intel.com"
+          git config --global user.name "Milosz Linkiewicz"
           ./clone-and-patch-ffmpeg.sh && \
           ./configure-ffmpeg.sh && \
           ./build-ffmpeg.sh
