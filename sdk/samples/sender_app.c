@@ -87,30 +87,31 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "\n");
 }
 
-size_t getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
+static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
 {
-    size_t size = 0;
-    size_t pixels = (size_t)(width*height);
+    size_t size = (size_t)(width*height);
     switch (fmt) {
         case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY) */
-            size = pixels * 2;
-            break;
-        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
-            size = pixels * 2 * 2;
+            size = size * 2;
             break;
         case PIX_FMT_RGB8:
-            size = pixels * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
+            size = size * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
             break;
 /* Customized YUV 420 8bit, set transport format as ST20_FMT_YUV_420_8BIT. For direct transport of
 none-RFC4175 formats like I420/NV12. When this input/output format is set, the frame is identical to
 transport frame without conversion. The frame should not have lines padding) */
         case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka ST_FRAME_FMT_YUV420PLANAR8) */
-        default:
-            size = pixels * 3 / 2;
+            size = size * 3 / 2;
             break;
+        case PIX_FMT_YUV444P_10BIT_LE:
+            size = size * 2 * 3;
+            break;
+        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
+        default:
+            size = size * 2 * 2;
     }
     if (interlaced) size /= 2; /* if all fmt support interlace? */
-    return size;
+    return (int)size;
 }
 
 int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size, bool loop)
@@ -179,7 +180,7 @@ int main(int argc, char** argv)
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
-    video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE; //PIX_FMT_YUV444M;
+    video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
     uint32_t frame_size = 0;
 
     mcm_conn_context* dp_ctx = NULL;
@@ -272,8 +273,8 @@ int main(int argc, char** argv)
                 pix_fmt = PIX_FMT_YUV422P;
             } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(pix_fmt_string)) == 0) {
                 pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            } else if (strncmp(pix_fmt_string, "yuv444m", sizeof(pix_fmt_string)) == 0){
-                pix_fmt = PIX_FMT_YUV444M;
+            } else if (strncmp(pix_fmt_string, "yuv444p10le", sizeof(pix_fmt_string)) == 0){
+                pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
             } else if (strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)) == 0){
                 pix_fmt = PIX_FMT_RGB8;
             } else {

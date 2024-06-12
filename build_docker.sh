@@ -14,6 +14,10 @@ IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
-docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/ffmpeg:${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" $@ "${SCRIPT_DIR}"
 docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/sdk:${IMAGE_TAG}" -f "${SCRIPT_DIR}/sdk/Dockerfile" $@ "${SCRIPT_DIR}"
 docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/media-proxy:${IMAGE_TAG}" -f "${SCRIPT_DIR}/media-proxy/Dockerfile" $@ "${SCRIPT_DIR}"
+docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/ffmpeg:${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" $@ "${SCRIPT_DIR}"
+
+docker tag "${IMAGE_REGISTRY}/sdk:${IMAGE_TAG}" "mcm/sample-app:${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/media-proxy:${IMAGE_TAG}" "mcm/media-proxy:${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/ffmpeg:${IMAGE_TAG}" "mcm/ffmpeg:${IMAGE_TAG}"

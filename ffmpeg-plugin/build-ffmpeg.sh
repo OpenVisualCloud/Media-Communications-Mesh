@@ -6,12 +6,13 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build}"
 . "${SCRIPT_DIR}/../common.sh"
 
-cp -f "${SCRIPT_DIR}/mcm_"* "${SCRIPT_DIR}/FFmpeg/libavdevice/"
+cp -f "${SCRIPT_DIR}/mcm_"* "${BUILD_DIR}/FFmpeg/libavdevice/"
 
-make -C "${SCRIPT_DIR}/FFmpeg" -j "$(nproc)"
-run_as_root_user make -C "${SCRIPT_DIR}/FFmpeg" install
+make -C "${BUILD_DIR}/FFmpeg/" -j "$(nproc)"
+run_as_root_user make -C "${BUILD_DIR}/FFmpeg/" install
 
 prompt "FFmpeg MCM plugin build completed."
-prompt "\t${SCRIPT_DIR}/FFmpeg"
+prompt "\t${BUILD_DIR}/FFmpeg"

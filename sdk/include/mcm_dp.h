@@ -103,9 +103,9 @@ typedef enum {
     PIX_FMT_YUV422P,
     /* YUV 4:2:2 10bit planar le */
     PIX_FMT_YUV422P_10BIT_LE,
-    /* YUV 4:4:4 */
-    PIX_FMT_YUV444M,
-    /* RGB */
+    /* YUV 4:4:4 10bit planar le */
+    PIX_FMT_YUV444P_10BIT_LE,
+    /* RGB 8bit packed RGB,RGB,...*/
     PIX_FMT_RGB8,
 } video_pixel_format;
 

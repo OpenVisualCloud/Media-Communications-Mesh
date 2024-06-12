@@ -3,6 +3,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
 */
 
+#ifndef __PROXY_CONTEXT_H
+#define __PROXY_CONTEXT_H
+
 #include <atomic>
 #include <iostream>
 #include <string>
@@ -12,6 +15,12 @@
 #include "controller.grpc.pb.h"
 #include "mtl.h"
 #include <mcm_dp.h>
+
+// Based on mtl/app/src/fmt.h
+#ifndef ST_APP_PAYLOAD_TYPE_VIDEO
+#define ST_APP_PAYLOAD_TYPE_VIDEO (112)
+#define ST_APP_PAYLOAD_TYPE_ST22 (114)
+#endif
 
 using controller::MemIFOps;
 using controller::RxControlRequest;
@@ -101,4 +110,7 @@ private:
     ProxyContext(const ProxyContext&) = delete;
     ProxyContext& operator=(const ProxyContext&) = delete;
     uint32_t incrementMSessionCount(bool postIncrement);
+    st_frame_fmt getStFrameFmt(video_pixel_format fmt);
 };
+
+#endif // __PROXY_CONTEXT_H
