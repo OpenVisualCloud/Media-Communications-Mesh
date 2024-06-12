@@ -36,7 +36,7 @@ else()
 endif()
 
 # Enabled by default
-option(ENABLE_ZERO_COPY "Enable zero-copy mode to avoid memory copying between Media Proxy and IMTL" ON)
+option(ENABLE_ZERO_COPY "Enable zero-copy mode to avoid memory copying between Media Proxy and MTL" ON)
 IF(ENABLE_ZERO_COPY)
 	ADD_DEFINITIONS(-DZERO_COPY)
 ENDIF(ENABLE_ZERO_COPY)

@@ -40,7 +40,7 @@ spec:
           volumeMounts:
             - name: memif-dir  # Using hostPath volume
               mountPath: /run/mcm  # Mount path in the pod
-            - name: imtl-mgr  # Communicate with IMTL manager
+            - name: imtl-mgr  # Communicate with MTL manager
               mountPath: /var/run/imtl  # Mount path in the pod
       volumes:
         - name: memif-dir  # Using hostPath volume

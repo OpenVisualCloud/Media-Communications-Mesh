@@ -31,8 +31,8 @@ ARG IMAGE_NAME
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
-LABEL org.opencontainers.image.title="Intel® Media Communications Mesh SDK"
-LABEL org.opencontainers.image.description="Intel® Media Communications Mesh SDK sample applications. Ubuntu 22.04 Docker Release Image"
+LABEL org.opencontainers.image.title="Media Communications Mesh SDK"
+LABEL org.opencontainers.image.description="Media Communications Mesh SDK sample applications. Ubuntu 22.04 Docker Release Image"
 LABEL org.opencontainers.image.version="1.0.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"

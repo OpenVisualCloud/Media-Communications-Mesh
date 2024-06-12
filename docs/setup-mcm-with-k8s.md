@@ -21,21 +21,21 @@ cd <mcm>/sdk
 docker build -t mcm/sample-app:latest .
 ```
 
-IMTL Manager:
+MTL Manager:
 ```bash
-git clone https://github.com/OpenVisualCloud/Media-Transport-Library.git <imtl-dir>
-cd <imtl-dir>/mananger
+git clone https://github.com/OpenVisualCloud/Media-Transport-Library.git <mtl-dir>
+cd <mtl-dir>/mananger
 docker build -t mtl-manager:latest .
 ```
 
-- PS: Detail information about the IMTL Manager could refer to the [IMTL document](https://github.com/OpenVisualCloud/Media-Transport-Library/tree/main/manager).
+- PS: Detail information about the MTL Manager could refer to the [MTL document](https://github.com/OpenVisualCloud/Media-Transport-Library/tree/main/manager).
 
 Once these prerequisites are in place, you can proceed with setting up your Minikube cluster and deploying resources. If you encounter any issues during the process, feel free to ask for assistance.
 
 ## Setup Steps
 
-### 1. Launch IMTL Manager on the host server.
-The IMTL Manager is needed to manage the lcore for MTL instances. It needs to be run on each physical host server of the MCM cluster.
+### 1. Launch MTL Manager on the host server.
+The MTL Manager is needed to manage the lcore for MTL instances. It needs to be run on each physical host server of the MCM cluster.
 ```bash
 docker run -d \
   --name mtl-manager \
