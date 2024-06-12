@@ -76,6 +76,8 @@ jobs:
     - name: 'Patch and configure MCM FFmpeg plugin'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
+        git config --global user.email "milosz.linkiewicz@intel.com"
+        git config --global user.name "Milosz Linkiewicz"
         ./clone-and-patch-ffmpeg.sh
 
     - name: 'Run coverity'
