@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: imtl-pv
+  name: mtl-pv
   namespace: mcm
 spec:
   capacity:
