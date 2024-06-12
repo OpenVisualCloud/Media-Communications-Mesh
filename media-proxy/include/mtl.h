@@ -499,10 +499,10 @@ typedef struct {
     };
 } mtl_session_context_t;
 
-/* Initialize IMTL library */
+/* Initialize MTL library */
 mtl_handle inst_init(struct mtl_init_params* st_param);
 
-/* Deinitialize IMTL */
+/* Deinitialize MTL */
 void mtl_deinit(mtl_handle dev_handle);
 
 /* TX: Create ST20P session */

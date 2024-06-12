@@ -37,7 +37,7 @@ Usage: media_proxy [OPTION]
 
 ### Docker
 The Media Proxy can be run as a docker container.
-Since Media Proxy depends on the IMTL library, so you need to [setup IMTL](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md) on the host first.
+Since Media Proxy depends on the MTL library, so you need to [setup MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md) on the host first.
 
 1. Build Docker Image
 

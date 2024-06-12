@@ -65,7 +65,7 @@ spec:
               name: hugepage-1gi
             - mountPath: /dev/shm
               name: cache-volume
-            - name: imtl-mgr  # Communicate with IMTL manager
+            - name: mtl-mgr  # Communicate with MTL manager
               mountPath: /var/run/imtl  # Mount path in the pod
       volumes:
         - name: memif-dir  # Using hostPath volume
@@ -86,6 +86,6 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 4Gi
-        - name: imtl-mgr
+        - name: mtl-mgr
           persistentVolumeClaim:
-            claimName: imtl-pvc
+            claimName: mtl-pvc

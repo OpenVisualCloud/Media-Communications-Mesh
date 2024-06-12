@@ -46,7 +46,7 @@ jobs:
         sudo apt-get clean && \
         sudo rm -rf /var/lib/apt/lists/*
 
-    - name: 'Install IMTL'
+    - name: 'Install MTL'
       run: |
         git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
         pushd imtl

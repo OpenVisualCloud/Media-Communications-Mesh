@@ -818,7 +818,7 @@ static void* rx_st40_frame_thread(void* arg)
     return NULL;
 }
 
-/* Initiliaze IMTL library */
+/* Initiliaze MTL library */
 mtl_handle inst_init(struct mtl_init_params* st_param)
 {
     mtl_handle dev_handle = NULL;
@@ -2371,7 +2371,7 @@ void mtl_st22p_rx_session_destroy(rx_st22p_session_context_t** p_rx_ctx)
     free(rx_ctx);
 }
 
-/* Deinitialize IMTL */
+/* Deinitialize MTL */
 void mtl_deinit(mtl_handle dev_handle)
 {
     if (dev_handle) {

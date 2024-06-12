@@ -53,7 +53,7 @@ The memif socket and connection are created by fixed connection params and the r
 
 ## 4. Media Proxy receives rtp H264 payload
 
-Media Proxy will call mudp socket API of iMTL to receive rtp H264 payload. Media Proxy removes RTP header of every RTP payload to get single NAL unit, adds H264 NALU header and calls memif tx burst API to burst the H264 NALU to memif buffer.
+Media Proxy will call mudp socket API of MTL to receive rtp H264 payload. Media Proxy removes RTP header of every RTP payload to get single NAL unit, adds H264 NALU header and calls memif tx burst API to burst the H264 NALU to memif buffer.
 
 ## 5. The micro-service gets H264 NALU from shared memif buf.
 

@@ -800,7 +800,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     memif_ops_t memif_ops = { 0 };
     int ret;
 
-    /*add lock to protect IMTL library initialization to aviod being called by multi-session simultaneously*/
+    /*add lock to protect MTL library initialization to aviod being called by multi-session simultaneously*/
     if (mDevHandle == NULL && imtl_init_preparing == false) {
 
         imtl_init_preparing = true;
@@ -848,7 +848,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     }
 
     if (mDevHandle == NULL) {
-        ERROR("%s, Fail to initialize iMTL for RxStart function.\n", __func__);
+        ERROR("%s, Fail to initialize MTL for RxStart function.\n", __func__);
         return -1;
     }
 
@@ -948,7 +948,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
     mtl_session_context_t* st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
 
-    /* add lock to protect IMTL library initialization to avoid being called by multi-session simultaneously */
+    /* add lock to protect MTL library initialization to avoid being called by multi-session simultaneously */
     if (mDevHandle == NULL && imtl_init_preparing == false) {
 
         imtl_init_preparing = true;
@@ -968,7 +968,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
     }
 
     if (mDevHandle == NULL) {
-        ERROR("%s, Fail to initialize iMTL for TxStart function.\n", __func__);
+        ERROR("%s, Fail to initialize MTL for TxStart function.\n", __func__);
         return -1;
     }
 
