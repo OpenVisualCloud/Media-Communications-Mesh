@@ -97,20 +97,17 @@ jobs:
 
     - name: 'Install gRPC'
       run: |
-        sudo cmake --install "${GRPC_DIR}/cmake/build"  && \
+        sudo cmake --install "${GRPC_DIR}/cmake/build"
         rm -rf "${GRPC_DIR}"
+        sudo git config --global user.email "milosz.linkiewicz@intel.com"
+        sudo git config --global user.name "Milosz Linkiewicz"
 
-    - name: 'Build MCM SDK and Media Proxy'
-      run: ./build.sh
-
-    - name: 'Build MCM FFmpeg plugin'
-      working-directory: ${{ github.workspace }}/ffmpeg-plugin
+    - name: 'Build all components'
       run: |
-          git config --global user.email "milosz.linkiewicz@intel.com"
-          git config --global user.name "Milosz Linkiewicz"
-          ./clone-and-patch-ffmpeg.sh && \
-          ./configure-ffmpeg.sh && \
-          ./build-ffmpeg.sh
+        sudo ./build.sh
+        sudo ./ffmpeg-plugin/clone-and-patch-ffmpeg.sh
+        sudo ./ffmpeg-plugin/configure-ffmpeg.sh
+        sudo ./ffmpeg-plugin/build-ffmpeg.sh
 
     - name: 'Perform CodeQL Analysis'
       uses: github/codeql-action/analyze@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8

@@ -110,7 +110,6 @@ int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* mem
 
 static int udp_server_h264(void* arg)
 {
-
     rx_udp_h264_session_context_t* s = arg;
     mudp_handle socket = s->socket;
     ssize_t udp_len = MUDP_MAX_BYTES;
@@ -336,7 +335,7 @@ static int udp_server_h264(void* arg)
             if (flagFragment == 1) {
                 // printf("fragment true!\n");
                 if (fragment_start == 0x80) {
-                    // printf("fragment start!\n");
+                    DEBUG("udp_server_h264: Fragment start.\n");
                     // fwrite(h264_frame_start_str + 1, 3, 1, fp);//printf("001\n");
                     mtl_memcpy(dst, h264_frame_start_str + 1, sizeof(unsigned char) * 3);
                     dst += sizeof(unsigned char) * 3;
@@ -346,44 +345,19 @@ static int udp_server_h264(void* arg)
                     dst += sizeof(unsigned char);
                     rtp_header->len = rtp_header->len + 1;
                     // fwrite(buf + 14, (int)recv - 14, 1, fp);
-                    mtl_memcpy(dst, buf + 14, (int)recv - 14);
-                    rtp_header->len = rtp_header->len + (int)recv - 14;
-                    mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
                     /*Send to microservice application.*/
                     // INFO("memif_tx_burst for framgment = start\n");
-                    err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
-                    if (err != MEMIF_ERR_SUCCESS) {
-                        INFO("memif_tx_burst for framgment=0: %s", memif_strerror(err));
-                    }
-                } else {
-                    if (fragment_end == 0x40) {
-                        // printf("fragment end!\n");
-                        // fwrite(buf + 14, (int)recv - 14, 1, fp);
-                        mtl_memcpy(dst, buf + 14, (int)recv - 14);
-                        dst += (int)recv - 14;
-                        rtp_header->len = rtp_header->len + (int)recv - 14;
-                        mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
-                        /*Send to microservice application.*/
-                        // INFO("memif_tx_burst for framgment = end\n");
-                        err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
-                        if (err != MEMIF_ERR_SUCCESS) {
-                            INFO("memif_tx_burst for framgment=1: %s", memif_strerror(err));
-                        }
-                    } else {
-                        // printf("fragment middle!\n");
-                        // fwrite(buf + 14, (int)recv - 14, 1, fp);
-                        mtl_memcpy(dst, buf + 14, (int)recv - 14);
-                        dst += (int)recv - 14;
-                        rtp_header->len = rtp_header->len + (int)recv - 14;
-                        mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
-                        /*Send to microservice application.*/
-                        // INFO("memif_tx_burst for framgment = middle\n");
-                        err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
-                        if (err != MEMIF_ERR_SUCCESS) {
-                            INFO("memif_tx_burst for framgment=1: %s", memif_strerror(err));
-                        }
-                    }
                 }
+                mtl_memcpy(dst, buf + 14, (int)recv - 14);
+                if (fragment_start != 0x80) {
+                    if (fragment_end == 0x40) {
+                        DEBUG("udp_server_h264: Fragment end.\n");
+                    } else {
+                        DEBUG("udp_server_h264: Fragment middle.\n");
+                    }
+                    dst += (int)recv - 14;
+                }
+                rtp_header->len = rtp_header->len + (int)recv - 14;
             } else {
                 // printf("fragment false!\n");
                 // fwrite(h264_frame_start_str + 1, 3, 1, fp);//printf("001\n");
@@ -394,13 +368,13 @@ static int udp_server_h264(void* arg)
                 mtl_memcpy(dst, buf + 12, sizeof(unsigned char) * ((int)recv - 12));
                 dst += sizeof(unsigned char) * ((int)recv - 12);
                 rtp_header->len = rtp_header->len + (int)recv - 12;
-                mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
+
                 /*Send to microservice application.*/
-                // INFO("memif_tx_burst for framgment=0\n");
-                err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
-                if (err != MEMIF_ERR_SUCCESS) {
-                    INFO("memif_tx_burst for framgment=0: %s", memif_strerror(err));
-                }
+            }
+            mtl_memcpy(dst_nalu_size_point, &rtp_header->len, sizeof(size_t));
+            err = memif_tx_burst(s->memif_conn, qid, tx_bufs, tx_buf_num, &tx);
+            if (err != MEMIF_ERR_SUCCESS) {
+                INFO("memif_tx_burst for fragment=%d: %s", flagFragment, memif_strerror(err));
             }
 
             unsigned char RTP_payload_type = *((unsigned char*)buf + 1);
@@ -409,13 +383,13 @@ static int udp_server_h264(void* arg)
             if (mark > 0) {
                 s->new_NALU = 1;
             }
-            if (rtp_header != NULL) {
-                free(rtp_header);
-                rtp_header = NULL;
-            }
         }
     } else {
         INFO("%s, has stopped\n", __func__);
+    }
+    if(rtp_header != NULL) {
+        free(rtp_header);
+        rtp_header = NULL;
     }
     return 0;
 }
