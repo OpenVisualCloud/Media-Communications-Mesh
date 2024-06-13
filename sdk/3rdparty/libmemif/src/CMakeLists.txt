@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 set(HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -34,6 +34,7 @@ include_directories(${HEADERS_DIR})
 
 add_library(memif SHARED ${MEMIF_SOURCES})
 target_link_libraries(memif ${CMAKE_THREAD_LIBS_INIT})
+target_compile_definitions(memif PUBLIC MEMIF_CACHELINE_SIZE=${LIBMEMIF_CACHELINE_SIZE})
 
 find_library(LIB_BSD bsd)
 if(LIB_BSD)

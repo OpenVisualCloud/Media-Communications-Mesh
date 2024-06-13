@@ -125,7 +125,7 @@ responder_zero_copy (memif_conn_handle_t conn, void *private_ctx, uint16_t qid)
       /* suppress full ring error MEMIF_ERR_NOBUF_RING */
       if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF_RING)
 	{
-	  INFO ("memif_buffer_enq_tx: %s", memif_strerror (err));
+	  INFO ("memif_buffer_alloc: %s", memif_strerror (err));
 	  goto error;
 	}
 

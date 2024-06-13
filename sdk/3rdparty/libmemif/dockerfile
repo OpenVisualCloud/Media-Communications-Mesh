@@ -1,0 +1,18 @@
+# syntax=docker/dockerfile:1
+
+FROM docker.io/library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
+
+WORKDIR /libmemif/build
+RUN apt-get update && \
+	apt-get install -y \
+		git make cmake build-essential autoconf pkg-config libtool sudo libbsd-dev && \
+	rm -rf /var/lib/apt/lists/* && \
+	mkdir -p /run/vpp
+
+ADD . /libmemif
+
+RUN cmake .. && \
+    make && \
+	ulimit -c unlimited
+
+CMD [ "./examples/icmp_responder" ]

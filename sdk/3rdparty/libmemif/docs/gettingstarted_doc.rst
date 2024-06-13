@@ -175,7 +175,7 @@ rx buffer with a free tx buffer).
    /* Enqueue processed buffers to tx queue */
    err = memif_buffer_enq_tx(conn, qid, buffers, num_buffers, &num_enqueued);
    if (err != MEMIF_ERR_SUCCESS) {
-       INFO("memif_buffer_enq_tx: %s", memif_strerror(err));
+       INFO("memif_buffer_alloc: %s", memif_strerror(err));
        goto error;
    }
 

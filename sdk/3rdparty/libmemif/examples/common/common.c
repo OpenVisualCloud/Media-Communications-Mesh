@@ -28,68 +28,37 @@ print_version ()
 int
 parse_ip4 (const char *input, uint8_t out[4])
 {
+  int i = 0;
   char *ui, *end;
   char *tmp = strdup (input);
 
   ui = strtok (tmp, ".");
-  if (ui == NULL)
-    return -1;
-  out[0] = strtol (ui, &end, 10);
-
-  ui = strtok (NULL, ".");
-  if (ui == NULL)
-    return -1;
-  out[1] = strtol (ui, &end, 10);
-
-  ui = strtok (NULL, ".");
-  if (ui == NULL)
-    return -1;
-  out[2] = strtol (ui, &end, 10);
-
-  ui = strtok (NULL, ".");
-  if (ui == NULL)
-    return -1;
-  out[3] = strtol (ui, &end, 10);
+  while (ui != NULL && i < 4) {
+    out[i++] = strtol (ui, &end, 10);
+    ui = strtok (NULL, ".");
+  }
 
   free (tmp);
 
-  return 0;
+  return (i==4) ? 0 : -1;
 }
 
 int
 parse_mac (const char *input, uint8_t out[6])
 {
+  int i = 0;
   char *ui, *end;
   char *tmp = strdup (input);
 
   ui = strtok (tmp, ":");
-  if (ui == NULL)
-    return -1;
-  out[0] = strtol (ui, &end, 16);
-  ui = strtok (NULL, ":");
-  if (ui == NULL)
-    return -1;
-  out[1] = strtol (ui, &end, 16);
-  ui = strtok (NULL, ":");
-  if (ui == NULL)
-    return -1;
-  out[2] = strtol (ui, &end, 16);
-  ui = strtok (NULL, ":");
-  if (ui == NULL)
-    return -1;
-  out[3] = strtol (ui, &end, 16);
-  ui = strtok (NULL, ":");
-  if (ui == NULL)
-    return -1;
-  out[4] = strtol (ui, &end, 16);
-  ui = strtok (NULL, ":");
-  if (ui == NULL)
-    return -1;
-  out[5] = strtol (ui, &end, 16);
+  while (ui != NULL && i < 6) {
+    out[i++] = strtol (ui, &end, 16);
+    ui = strtok (NULL, ":");
+  }
 
   free (tmp);
 
-  return 0;
+  return (i==6) ? 0 : -1;
 }
 
 void
