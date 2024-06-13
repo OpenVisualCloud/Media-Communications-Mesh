@@ -71,11 +71,14 @@ jobs:
         key: ${{ steps.grpc-cache-restore.outputs.cache-primary-key }}
 
     - name: 'Install gRPC'
+      run: sudo cmake --install "${GRPC_DIR}/cmake/build"
+
+    - name: 'Patch and configure MCM FFmpeg plugin'
+      working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
-        sudo cmake --install "${GRPC_DIR}/cmake/build"
-        rm -rf "${GRPC_DIR}"
-        sudo git config --global user.email "milosz.linkiewicz@intel.com"
-        sudo git config --global user.name "Milosz Linkiewicz"
+          git config --global user.email "milosz.linkiewicz@intel.com"
+          git config --global user.name "Milosz Linkiewicz"
+          ./clone-and-patch-ffmpeg.sh
 
     - name: 'Run coverity'
       uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
@@ -86,7 +89,6 @@ jobs:
         build_language: 'cxx'
         build_platform: 'linux64'
         command: |
-          sudo ./build.sh
-          sudo ./ffmpeg-plugin/clone-and-patch-ffmpeg.sh
-          sudo ./ffmpeg-plugin/configure-ffmpeg.sh
-          sudo ./ffmpeg-plugin/build-ffmpeg.sh
+            ${{ github.workspace }}/build.sh && \
+            ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh && \
+            ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh
