@@ -114,7 +114,7 @@ transport frame without conversion. The frame should not have lines padding) */
     return (int)size;
 }
 
-int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size, bool loop)
+int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size)
 {
     int ret = 0;
     static int frm_idx = 0;
@@ -123,26 +123,12 @@ int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size, bool loop)
     assert(buf->len >= frame_size);
 
     if (fread(buf->data, frame_size, 1, fp) < 1) {
-        if(loop) {
-            fclose(fp);
-            fp = fopen(input_file, "rb");
-            if (fp == NULL) {
-                printf("Fail to open input file for infinity loop: %s\n", input_file);
-                exit(-1);
-            }
-            if (fread(buf->data, frame_size, 1, fp) < 1) {
-                perror("Error reading file for frame. EOF in infinity loop");
-                ret = -2;
-            }
-        } else {
-            perror("Error reading file for frame. EOF?");
-            ret = -1;
-        }
+        ret = -1;
     }
-
-    buf->metadata.seq_num = buf->metadata.timestamp = frm_idx++;
-    buf->len = frame_size;
-
+    if(ret >= 0 ) {
+        buf->metadata.seq_num = buf->metadata.timestamp = frm_idx++;
+        buf->len = frame_size;
+    }
     return ret;
 }
 
@@ -408,8 +394,23 @@ int main(int argc, char** argv)
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
         } else {
-            if (read_test_data(input_fp, buf, frame_size, loop) < 0) {
-                break;
+            if (read_test_data(input_fp, buf, frame_size) < 0) {
+                if (input_fp != NULL) {
+                    fclose(input_fp);
+                    input_fp = NULL;
+                }
+                if (loop) {
+                    input_fp = fopen(input_file, "rb");
+                    if (input_fp == NULL) {
+                        printf("Fail to open input file for infinity loop: %s\n", input_file);
+                        break;
+                    }
+                    if (read_test_data(input_fp, buf, frame_size) < 0) {
+                        break;
+                    }
+                } else {
+                    break;
+                }
             }
         }
 

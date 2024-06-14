@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 set(COMMON_HEADERS ${CMAKE_CURRENT_SOURCE_DIR}/common)
 
@@ -24,7 +24,6 @@ set(COMMON_SOURCE_FILES
 )
 
 list(APPEND EXAMPLES_LIST
-  loopback/main.c
   icmp_responder/main.c
 )
 

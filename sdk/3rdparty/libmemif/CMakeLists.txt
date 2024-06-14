@@ -11,7 +11,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cmake_minimum_required(VERSION 3.5 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
 project(memif C)
 set(CMAKE_C_STANDARD 11)
@@ -32,6 +32,17 @@ set(CMAKE_INSTALL_MESSAGE NEVER)
 find_package(Threads REQUIRED)
 include_directories(${CMAKE_THREADS_INCLUDE_DIRS})
 
+if(DEFINED LIBMEMIF_CACHELINE_SIZE)
+  # Cache line size assigned via cmake args
+elseif(CMAKE_SYSTEM_PROCESSOR MATCHES "^(aarch64.*|AARCH64.*)")
+  set(LIBMEMIF_CACHELINE_SIZE 128)
+else()
+  set(LIBMEMIF_CACHELINE_SIZE 64)
+endif()
+
+message(STATUS "System Architecture: ${CMAKE_SYSTEM_PROCESSOR}")
+message(STATUS "Libmemif Cacheline Size: ${LIBMEMIF_CACHELINE_SIZE}")
+
 check_function_exists(memfd_create HAVE_MEMFD_CREATE)
 if(${HAVE_MEMFD_CREATE})
   add_definitions(-DHAVE_MEMFD_CREATE)
@@ -40,8 +51,7 @@ endif()
 include_directories(src)
 
 add_subdirectory(src)
-# add_subdirectory(examples)
-
+add_subdirectory(examples)
 ##############################################################################
 # Packaging
 ##############################################################################
@@ -63,8 +73,7 @@ endforeach()
 #   OUTPUT_VARIABLE VER
 #   OUTPUT_STRIP_TRAILING_WHITESPACE
 # )
-# set version
-set(VER "v23.06-rc0-256-g4141ded3e")
+set(VER "v24.06-rc2stable-256-g55457075d")
 string(REGEX REPLACE "v(.*)-([0-9]+)-(g[0-9a-f]+)" "\\1;\\2;\\3" VER ${VER})
 list(GET VER 0 tag)
 list(GET VER 1 commit_num)
