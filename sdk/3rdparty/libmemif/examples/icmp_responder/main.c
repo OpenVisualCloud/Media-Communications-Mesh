@@ -24,6 +24,7 @@
 #include <errno.h>
 #include <unistd.h>
 #include <getopt.h>
+#include <bsd/string.h>
 
 #include <libmemif.h>
 #include <common.h>
@@ -211,7 +212,7 @@ main (int argc, char *argv[])
 
   /** Create memif interfaces
    *
-   * Both interaces are assigned the same socket and same id to create a
+   * Both interfaces are assigned the same socket and same id to create a
    * loopback.
    */
   if (intf.buffer_size)

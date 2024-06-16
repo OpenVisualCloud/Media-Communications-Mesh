@@ -27,31 +27,32 @@ responder (memif_conn_handle_t conn, void *private_ctx, uint16_t qid)
 	  goto error;
 	}
 
-      /* Process the packets */
-      if (c->packet_handler == NULL)
+  /* Process the packets */
+  if (c->packet_handler == NULL)
 	{
 	  INFO ("Missing packet handler");
 	  goto error;
 	}
-      err = c->packet_handler (c);
-      if (err != 0)
+
+  err = c->packet_handler (c);
+  if (err != 0)
 	{
 	  INFO ("packet handler error: %d", err);
 	  goto error;
 	}
-      /* Done processing packets */
+  /* Done processing packets */
 
-      /* refill the queue */
-      err = memif_refill_queue (conn, qid, c->tx_buf_num, c->headroom_size);
-      if (err != MEMIF_ERR_SUCCESS)
+  /* refill the queue */
+  err = memif_refill_queue (conn, qid, c->tx_buf_num, c->headroom_size);
+  if (err != MEMIF_ERR_SUCCESS)
 	{
 	  INFO ("memif_refill_queue: %s", memif_strerror (err));
 	  goto error;
 	}
-      c->rx_buf_num -= c->tx_buf_num;
+  c->rx_buf_num -= c->tx_buf_num;
 
-      err = memif_tx_burst (conn, qid, c->tx_bufs, c->tx_buf_num, &tx);
-      if (err != MEMIF_ERR_SUCCESS)
+  err = memif_tx_burst (conn, qid, c->tx_bufs, c->tx_buf_num, &tx);
+  if (err != MEMIF_ERR_SUCCESS)
 	{
 	  INFO ("memif_tx_burst: %s", memif_strerror (err));
 	  goto error;
@@ -96,26 +97,27 @@ responder_zero_copy (memif_conn_handle_t conn, void *private_ctx, uint16_t qid)
       return err;
     }
 
-  do
-    {
-      /* Note that in zero copy memif_buffer_alloc is not part of respond
-      process,
-       * instead rx buffers are used directly using memif_buffer_enq_tx.
-       * /
+  do {
 
-      /* Process the packets */
-      if (c->packet_handler == NULL)
+/* Note that in zero copy memif_buffer_alloc is not part of respond process,
+*  instead rx buffers are used directly using memif_buffer_enq_tx.
+*
+*      Process the packets
+*/
+
+  if (c->packet_handler == NULL)
 	{
 	  INFO ("Missing packet handler");
 	  goto error;
 	}
-      err = c->packet_handler (c);
-      if (err != 0)
+
+  err = c->packet_handler (c);
+  if (err != 0)
 	{
 	  INFO ("packet handler error: %d", err);
 	  goto error;
 	}
-      /* Done processing packets */
+    /* Done processing packets */
 
       /* Swap rx and tx buffers, swapped tx buffers are considered allocated
        * and are ready to be transmitted. Notice that the buffers are swapped
