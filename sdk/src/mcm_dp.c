@@ -30,7 +30,7 @@ static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memi
     snprintf(memif_socket_args->app_name, sizeof(memif_socket_args->app_name), "memif_%s_%d", type_str, atoi(request->local_addr.port));
     snprintf(interface_name, sizeof(interface_name), "memif_%s_%d", type_str, atoi(request->local_addr.port));
     strlcpy((char*)memif_conn_args->interface_name, interface_name, sizeof(memif_conn_args->interface_name));
-    if (request->memif_interface.socket_path == NULL) {
+    if (strlen(request->memif_interface.socket_path) <= 1) {
         strlcpy(memif_socket_args->path, "/run/mcm/mcm_rx_memif.sock", sizeof(memif_socket_args->path));
     } else {
         strlcpy(memif_socket_args->path, request->memif_interface.socket_path, sizeof(memif_socket_args->path));

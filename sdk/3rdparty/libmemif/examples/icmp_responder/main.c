@@ -124,69 +124,66 @@ main (int argc, char *argv[])
   int opt, err, ret = 0;
   uint8_t is_master = 0;
   char socket_path[108];
+  char role_string[16];
   int id = IF_ID;
 
-  strncpy (socket_path, SOCKET_PATH, strlen (SOCKET_PATH));
+  strlcpy (socket_path, SOCKET_PATH, sizeof (SOCKET_PATH));
 
   /* prepare the private data */
   memset (&intf, 0, sizeof (intf));
   intf.packet_handler = icmp_packet_handler;
   memcpy (intf.ip_addr, IP_ADDR, 4);
   memcpy (intf.hw_addr, HW_ADDR, 6);
-
   while ((opt = getopt (argc, argv, "r:s:b:h:i:a:m:?v")) != -1)
-    {
-      switch (opt)
-	{
-	case 'r':
-	  if (strncmp (optarg, "master", sizeof (optarg)) == 0)
-	    {
-	      is_master = 1;
-	    }
-	  else if (strncmp (optarg, "slave", sizeof (optarg)) == 0)
-	    {
-	      is_master = 0;
-	    }
-	  else
-	    {
-	      INFO ("Invalid role value: '%s'", optarg);
-	      return -1;
-	    }
-	  break;
-	case 's':
-	  sprintf (socket_path, "%s", optarg);
-	  break;
-	case 'b':
-	  intf.buffer_size = atoi (optarg);
-	  break;
-	case 'h':
-	  intf.headroom_size = atoi (optarg);
-	  break;
-	case 'i':
-	  id = atoi (optarg);
-	  break;
-	case 'a':
-	  if (parse_ip4 (optarg, intf.ip_addr) != 0)
-	    {
-	      INFO ("Invalid ipv4 address: %s", optarg);
-	      return -1;
-	    }
-	  break;
-	case 'm':
-	  if (parse_mac (optarg, intf.hw_addr) != 0)
-	    {
-	      INFO ("Invalid mac address: %s", optarg);
-	      return -1;
-	    }
-	  break;
-	case '?':
-	  print_help ();
-	  return 0;
-	case 'v':
-	  print_version ();
-	  return 0;
-	}
-    }
+  {
+    switch (opt)
+	  {
+	    case 'r':
+        strlcpy(role_string, optarg, sizeof(role_string));
+	      if (strncmp (role_string, "master", sizeof (role_string)) == 0) {
+	          is_master = 1;
+	      } else if (strncmp (role_string, "slave", sizeof (role_string)) == 0) {
+	          is_master = 0;
+	      }
+	      else {
+	          INFO ("Invalid role value: '%s'", role_string);
+	          return -1;
+	      }
+	      break;
+	    case 's':
+	      sprintf (socket_path, "%s", optarg);
+	      break;
+	    case 'b':
+	      intf.buffer_size = atoi (optarg);
+	      break;
+	    case 'h':
+	      intf.headroom_size = atoi (optarg);
+	      break;
+	    case 'i':
+	      id = atoi (optarg);
+	      break;
+	    case 'a':
+	      if (parse_ip4 (optarg, intf.ip_addr) != 0)
+	        {
+	          INFO ("Invalid ipv4 address: %s", optarg);
+	          return -1;
+	        }
+	      break;
+	    case 'm':
+	      if (parse_mac (optarg, intf.hw_addr) != 0)
+	        {
+	          INFO ("Invalid mac address: %s", optarg);
+	          return -1;
+	        }
+	      break;
+	    case '?':
+	      print_help ();
+	      return 0;
+	    case 'v':
+	      print_version ();
+	      return 0;
+	  }
+  }
 
   /** Create memif socket
    *
@@ -194,7 +191,7 @@ main (int argc, char *argv[])
    */
   sprintf (memif_socket_args.path, "%s", socket_path);
   /* Set application name */
-  strncpy (memif_socket_args.app_name, APP_NAME, strlen (APP_NAME));
+  strlcpy (memif_socket_args.app_name, APP_NAME, sizeof (APP_NAME));
 
   /* configure autoconnect timer */
   if (is_master == 0)
@@ -222,7 +219,7 @@ main (int argc, char *argv[])
 
   memif_conn_args.socket = memif_socket;
   memif_conn_args.interface_id = id;
-  strncpy (memif_conn_args.interface_name, IF_NAME,
+  strlcpy (memif_conn_args.interface_name, IF_NAME,
 	   sizeof (memif_conn_args.interface_name));
   memif_conn_args.is_master = is_master;
 
