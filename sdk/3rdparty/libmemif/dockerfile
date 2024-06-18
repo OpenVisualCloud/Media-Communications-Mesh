@@ -14,5 +14,9 @@ ADD . /libmemif
 RUN cmake .. && \
     make && \
 	ulimit -c unlimited
+WORKDIR /libmemif/examples/build
+RUN cmake .. && \
+    make && \
+	ulimit -c unlimited
 
 CMD [ "./examples/icmp_responder" ]
