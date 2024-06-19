@@ -163,7 +163,7 @@ int main(int argc, char** argv)
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:r:i:s:p:o:t:s:k:m:d:b:", longopts, 0);
+        opt = getopt_long(argc, argv, "Hw:h:f:r:i:s:p:o:t:s:k:m:d:x:b:", longopts, 0);
         if (opt == -1) {
             break;
         }
@@ -365,7 +365,7 @@ int main(int argc, char** argv)
 
         if (strncmp(payload_type, "rtsp", sizeof(payload_type)) != 0) {
             if (dump_fp) {
-                fwrite(buf->data, frm_size, 1, dump_fp);
+                fwrite(buf->data, buf->len, 1, dump_fp);
             } else {
                 // Following code are mainly for test purpose, it requires the sender side to
                 // pre-set the first several bytes

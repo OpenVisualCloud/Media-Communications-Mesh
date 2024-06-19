@@ -389,12 +389,13 @@ int main(int argc, char** argv)
         printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
         printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
         printf("INFO: buf->len = %ld\n", buf->len);
-        buf->len = frame_size;
+        printf("INFO: frame_size = %u\n", frame_size);
+        // buf->len = frame_size;   // the len field MUST NOT be altered!
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
         } else {
-            if (read_test_data(input_fp, buf, frame_size) < 0) {
+            if (read_test_data(input_fp, buf, buf->len) < 0) {
                 if (input_fp != NULL) {
                     fclose(input_fp);
                     input_fp = NULL;
@@ -405,7 +406,7 @@ int main(int argc, char** argv)
                         printf("Fail to open input file for infinity loop: %s\n", input_file);
                         break;
                     }
-                    if (read_test_data(input_fp, buf, frame_size) < 0) {
+                    if (read_test_data(input_fp, buf, buf->len) < 0) {
                         break;
                     }
                 } else {
@@ -446,6 +447,8 @@ int main(int argc, char** argv)
         printf("pacing: %d\n", pacing);
         printf("spend: %d\n", spend);
     }
+
+    sleep(2);
 
     /* Clean up */
     mcm_destroy_connection(dp_ctx);
