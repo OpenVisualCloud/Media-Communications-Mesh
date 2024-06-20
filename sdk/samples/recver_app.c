@@ -125,7 +125,7 @@ int main(int argc, char** argv)
     char protocol_type[32] = DEFAULT_PROTOCOL;
     char payload_type[32] = DEFAULT_PAYLOAD_TYPE;
     char file_name[128] = "";
-    char pix_fmt_string[32] = "";
+    char pix_fmt_string[32] = DEFAULT_VIDEO_FMT;
     char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
     uint8_t is_master = DEFAULT_MEMIF_IS_MASTER;
     uint32_t interface_id = DEFAULT_MEMIF_INTERFACE_ID;
@@ -134,7 +134,7 @@ int main(int argc, char** argv)
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
-    video_pixel_format pix_fmt = PIX_FMT_NV12;
+    video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
 
     mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = {};
