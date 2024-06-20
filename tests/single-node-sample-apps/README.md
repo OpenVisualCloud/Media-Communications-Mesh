@@ -2,23 +2,7 @@
 
 ## Prerequisites
 1. The platform should have an MTL-compatible NIC installed (e.g. E810-C).
-2. The MTL repository is expected to be present in the directory structure as shown below
-   ```
-   |
-   |– Media-Communications-Mesh/
-   |  |–– tests/
-   |  |   |–– single-node-sampple-apps/
-   |  |       |–– test.sh
-   |  |       |–– README.md
-   |  ...
-   |
-   |– Media-Transport-Library/
-   |  |–– script/
-   |  |   |–– nicctl.sh
-   |  |   ...
-   |  ...
-   |
-   ```
+2. Clone the [MTL repository](https://github.com/OpenVisualCloud/Media-Transport-Library).
 
 ## How it works
 1. Initial cleanup.
