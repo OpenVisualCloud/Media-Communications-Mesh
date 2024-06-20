@@ -6,7 +6,7 @@
    ```
    |
    |– Media-Communications-Mesh/
-   |  |–– test/
+   |  |–– tests/
    |  |   |–– single-node-sampple-apps/
    |  |       |–– test.sh
    |  |       |–– README.md
@@ -35,7 +35,7 @@
 12. Extract throughput data from Tx and Rx media_proxy logs.
 13. Cleanup.
 14. In case of success, repeat 3 times from Step 3.
-15. Deinitizlize NIC PF.
+15. Deinitialize NIC PF.
 
 ## Usage
 
