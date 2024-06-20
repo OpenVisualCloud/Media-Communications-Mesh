@@ -30,6 +30,7 @@
 #define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_PROTOCOL "auto"
 #define DEFAULT_INFINITY_LOOP 0
+#define DEFAULT_VIDEO_FMT "yuv422p10le"
 
 static volatile bool keepRunning = true;
 static char input_file[128] = "";
@@ -156,7 +157,7 @@ int main(int argc, char** argv)
 
     char payload_type[32] = "";
     char protocol_type[32] = "";
-    char pix_fmt_string[32] = "";
+    char pix_fmt_string[32] = DEFAULT_VIDEO_FMT;
     char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
     uint8_t is_master = DEFAULT_MEMIF_IS_MASTER;
     uint32_t interface_id = DEFAULT_MEMIF_INTERFACE_ID;
