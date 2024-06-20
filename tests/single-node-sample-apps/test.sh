@@ -7,7 +7,6 @@
 script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 bin_dir="$script_dir/../../out/bin"
 out_dir="$script_dir/out"
-mtl_dir="$script_dir/../../../Media-Transport-Library"
 
 # Test configuration
 test_option="$1"
@@ -166,14 +165,14 @@ function initialize_nic() {
 
     # Disable VFs
     info "Disabling VFs on $pf"
-    $mtl_dir/script/nicctl.sh disable_vf "$pf" 1>/dev/null
+    $nicctl disable_vf "$pf" 1>/dev/null
     [ $? -ne 0 ] && error "VF disabling failed" && return 1
 
     sleep 1
 
     # Create VFs
     info "Creating VFs on $pf"
-    $mtl_dir/script/nicctl.sh create_vf "$pf" 1>/dev/null
+    $nicctl create_vf "$pf" 1>/dev/null
     [ $? -ne 0 ] && error "VF creation failed" && return 1
 
     # Discover VFs
@@ -202,7 +201,7 @@ function deinitialize_nic() {
 
     # Disable VFs
     info "Disabling VFs on $pf"
-    $mtl_dir/script/nicctl.sh disable_vf "$pf" 1>/dev/null
+    $nicctl disable_vf "$pf" 1>/dev/null
     [ $? -ne 0 ] && error "VF disabling failed" && return 1
 
     return 0
@@ -358,6 +357,9 @@ info "  NIC PF: $nic_pf"
 
 info "Initial cleanup"
 cleanup
+
+nicctl=$(find / -name "nicctl.sh" -print -quit | grep .)
+[ $? -ne 0 ] && error "The nicctl.sh script not found on the disk. Make sure you cloned the MTL repository." && exit 1
 
 initialize_nic "$nic_pf" "$tx_vf_number" "$rx_vf_number"
 [ $? -ne 0 ] && error "NIC initialization failed" && exit 1
