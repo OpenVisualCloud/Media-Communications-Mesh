@@ -209,7 +209,7 @@ static int mcm_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     if ((ret = av_new_packet(pkt, s->frame_size)) < 0)
         return ret;
 
-    memcpy(pkt->data, buf->data, s->frame_size);
+    memcpy(pkt->data, buf->data, FFMIN(s->frame_size, buf->len));
 
     pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
