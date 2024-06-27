@@ -6,7 +6,7 @@
 ARG IMAGE_CACHE_REGISTRY=docker.io
 ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
 
-FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as builder
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
 ARG PREFIX_DIR="/install"
 ARG MCM_DIR="/opt/mcm"
@@ -21,9 +21,9 @@ ARG GRPC_DIR="/opt/grpc"
 ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"
 ARG JPEGXS_DIR="/opt/jpegxs"
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ="Europe/Warsaw"
-ENV PATH="${PREFIX_DIR}/bin:$HOME/.local/bin:$HOME/bin:$HOME/usr/bin:$PATH"
+ENV PATH="${PREFIX_DIR}/bin:/root/.local/bin:/root/bin:/root/usr/bin:$PATH"
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install package dependencies

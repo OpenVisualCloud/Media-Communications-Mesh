@@ -8,8 +8,8 @@ if(NOT CMAKE_BUILD_TYPE)
   set(CMAKE_BUILD_TYPE Release)
 endif()
 
-set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Werror -Wall")
-set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s -Werror -Wall")
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -Wall -static -lmemif")
+set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -static -s -Werror -Wall -lmemif")
 
 # Compiler flags
 # add_compile_options(-fPIE -fPIC)
@@ -23,11 +23,11 @@ set(CMAKE_C_FLAGS_RELEASE "${CMAKE_C_FLAGS_RELEASE} -s -Werror -Wall")
 # include_directories(${LIBBSD_INCLUDE_DIRS})
 # link_directories(${LIBBSD_LIBRARY_DIRS})
 
-# find_library(LIB_BSD bsd)
-# if(LIB_BSD)
-#   link_directories(${LIB_BSD})
-#   # target_link_libraries(memif ${LIB_BSD})
-# endif()
+find_library(LIB_BSD bsd)
+if(LIB_BSD)
+  link_directories(${LIB_BSD})
+  # target_link_libraries(memif ${LIB_BSD})
+endif()
 
 # link options
 set(CMAKE_SKIP_BUILD_RPATH  TRUE)
