@@ -6,7 +6,7 @@
 ARG IMAGE_CACHE_REGISTRY=docker.io
 ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
 
-FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as builder
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Warsaw
@@ -44,7 +44,7 @@ ARG PREFIX_DIR="/install"
 ENV HOME="${MCM_DIR}"
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Warsaw
-ENV PATH="/usr/local/bin:$HOME/.local/bin:$PATH"
+ENV PATH="/usr/local/bin:/home/mcm/.local/bin:/root/.local/bin:$PATH"
 ENV LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu"
 
 SHELL ["/bin/bash", "-exc"]
@@ -61,10 +61,15 @@ RUN apt-get update && \
     usermod -aG sudo mcm
 
 COPY --chown=1002 --from=builder "${PREFIX_DIR}" /
-COPY --chown=1002 --from=builder "${MCM_DIR}/sdk/build/samples" "${MCM_DIR}"
+COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/recver_app" "${MCM_DIR}/recver_app"
+COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/sender_app" "${MCM_DIR}/sender_app"
 
 RUN ldconfig
+WORKDIR /opt/mcm/
+EXPOSE 8001/tcp 8002/tcp
 
-# USER mcm
+USER mcm
 
-CMD ["./recver_app"]
+CMD ["--help"]
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["${MCM_DIR}/recver_app"]

@@ -6,7 +6,7 @@
 ARG IMAGE_CACHE_REGISTRY=docker.io
 ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d0e57fd7aec21dd0d1b0761bbfb2
 
-FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as builder
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
 ARG PREFIX_DIR="/install"
 ARG MCM_DIR="/opt/mcm"
@@ -21,9 +21,9 @@ ARG GRPC_DIR="/opt/grpc"
 ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"
 ARG JPEGXS_DIR="/opt/jpegxs"
 
-ENV DEBIAN_FRONTEND noninteractive
+ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ="Europe/Warsaw"
-ENV PATH="${PREFIX_DIR}/bin:$HOME/.local/bin:$HOME/bin:$HOME/usr/bin:$PATH"
+ENV PATH="${PREFIX_DIR}/bin:/root/.local/bin:/root/bin:/root/usr/bin:$PATH"
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install package dependencies
@@ -35,7 +35,7 @@ RUN apt-get update --fix-missing && \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
         m4 clang llvm zlib1g-dev libelf-dev libcap-ng-dev \
-        libcap2-bin gcc-multilib systemtap-sdt-dev librdmacm-dev && \
+        gcc-multilib systemtap-sdt-dev librdmacm-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -96,8 +96,6 @@ RUN ./build.sh build-only && \
 WORKDIR ${MCM_DIR}
 COPY . ${MCM_DIR}
 RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh && \
-    setcap 'cap_ipc_lock+ep cap_ipc_owner+ep' /install/usr/local/bin/media_proxy && \
-    setcap 'cap_net_bind_service+ep cap_net_broadcast+ep cap_net_raw+ep' /install/usr/local/bin/media_proxy && \
     rm -rf "${PREFIX_DIR}/usr/local/lib/lib"*.a && \
     rm -rf "${PREFIX_DIR}/usr/local/bin/dpdk-test"* && \
     rm -rf "${PREFIX_DIR}/usr/local/bin/"*_plugin && \
@@ -139,8 +137,13 @@ RUN apt-get update --fix-missing && \
 COPY --chown=mcm --from=builder /install /
 
 RUN ldconfig
+USER mcm
+WORKDIR /opt/mcm/
 
-EXPOSE 8001 8002
-CMD ["media_proxy"]
+EXPOSE 8001/tcp 8002/tcp
+
+CMD ["--help"]
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/media_proxy"]
 
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "media_proxy" || exit 1
