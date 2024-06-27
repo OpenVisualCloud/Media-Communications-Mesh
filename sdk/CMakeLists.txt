@@ -28,14 +28,17 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 set(CMAKE_INSTALL_IPATH ${CMAKE_INSTALL_PREFIX}/include)
 
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
-add_library(mcm_dp SHARED ${sdk_srcs})
+find_library(LIB_BSD bsd REQUIRED)
+add_compile_definitions(HAS_LIB_BSD)
+
+add_library(mcm_dp STATIC ${sdk_srcs})
 set_target_properties(mcm_dp PROPERTIES VERSION ${VERSION})
 #set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
 
 target_include_directories(mcm_dp PUBLIC
     ${MCMDP_INCLUDE_DIR}
     ${MEMIF_DIR}/src)
-target_link_libraries(mcm_dp PUBLIC memif)
+target_link_libraries(mcm_dp PUBLIC memif ${LIB_BSD})
 
 add_subdirectory(${MCMDP_SAMPLE_DIR})
 
