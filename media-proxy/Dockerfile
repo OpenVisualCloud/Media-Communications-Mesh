@@ -35,7 +35,7 @@ RUN apt-get update --fix-missing && \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
         m4 clang llvm zlib1g-dev libelf-dev libcap-ng-dev \
-        libcap2-bin gcc-multilib systemtap-sdt-dev librdmacm-dev && \
+        gcc-multilib systemtap-sdt-dev librdmacm-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -96,8 +96,6 @@ RUN ./build.sh build-only && \
 WORKDIR ${MCM_DIR}
 COPY . ${MCM_DIR}
 RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh && \
-    setcap 'cap_ipc_lock+ep cap_ipc_owner+ep' /install/usr/local/bin/media_proxy && \
-    setcap 'cap_net_bind_service+ep cap_net_broadcast+ep cap_net_raw+ep' /install/usr/local/bin/media_proxy && \
     rm -rf "${PREFIX_DIR}/usr/local/lib/lib"*.a && \
     rm -rf "${PREFIX_DIR}/usr/local/bin/dpdk-test"* && \
     rm -rf "${PREFIX_DIR}/usr/local/bin/"*_plugin && \
@@ -139,8 +137,13 @@ RUN apt-get update --fix-missing && \
 COPY --chown=mcm --from=builder /install /
 
 RUN ldconfig
+USER mcm
+WORKDIR /opt/mcm/
 
-EXPOSE 8001 8002
-CMD ["media_proxy"]
+EXPOSE 8001/tcp 8002/tcp
+
+CMD ["--help"]
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/media_proxy"]
 
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "media_proxy" || exit 1

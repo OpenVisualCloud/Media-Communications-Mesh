@@ -68,12 +68,18 @@ RUN apt-get update && \
     useradd -m -s /bin/bash -G vfio,imtl -u 1002 mcm && \
     usermod -aG sudo mcm
 
-COPY --chown=1002 --from=builder "${PREFIX_DIR}" /
-COPY --chown=1002 --from=builder "${MCM_DIR}/sdk/build/samples" "${MCM_DIR}"
+COPY --chown=mcm --from=builder "${PREFIX_DIR}" /
+COPY --chown=mcm --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/recver_app" "${MCM_DIR}/recver_app"
+COPY --chown=mcm --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/sender_app" "${MCM_DIR}/sender_app"
 
 RUN ldconfig
 
-# USER 1002
+USER mcm
 WORKDIR /opt/mcm/
+EXPOSE 8001/tcp 8002/tcp
 
-CMD ["ffmpeg"]
+CMD ["--help"]
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/ffmpeg"]
+
+HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "ffmpeg" || exit 1

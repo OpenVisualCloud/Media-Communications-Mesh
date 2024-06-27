@@ -61,10 +61,15 @@ RUN apt-get update && \
     usermod -aG sudo mcm
 
 COPY --chown=1002 --from=builder "${PREFIX_DIR}" /
-COPY --chown=1002 --from=builder "${MCM_DIR}/sdk/build/samples" "${MCM_DIR}"
+COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/recver_app" "${MCM_DIR}/recver_app"
+COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/sender_app" "${MCM_DIR}/sender_app"
 
 RUN ldconfig
+WORKDIR /opt/mcm/
+EXPOSE 8001/tcp 8002/tcp
 
-# USER mcm
+USER mcm
 
-CMD ["./recver_app"]
+CMD ["--help"]
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["${MCM_DIR}/recver_app"]
