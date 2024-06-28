@@ -10,5 +10,5 @@ Version: @VERSION@
 Requires: @pc_req_public@
 Requires.private: @pc_req_private@
 Cflags: -I"${includedir}"
-Libs: -L"${libdir}" -lmcm_dp
-Libs.private: -L"${libdir}" -lmcm_dp
+Libs: -L"${libdir}" -lmcm_dp -lmemif -lbsd
+Libs.private: -L"${libdir}" -lmcm_dp -lmemif -lbsd
