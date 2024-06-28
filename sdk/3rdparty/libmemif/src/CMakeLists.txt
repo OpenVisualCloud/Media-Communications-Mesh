@@ -34,6 +34,8 @@ include_directories(${HEADERS_DIR})
 
 add_library(memif SHARED ${MEMIF_SOURCES})
 target_link_libraries(memif ${CMAKE_THREAD_LIBS_INIT})
+
+set_target_properties(memif PROPERTIES POSITION_INDEPENDENT_CODE ON)
 target_compile_definitions(memif PUBLIC MEMIF_CACHELINE_SIZE=${LIBMEMIF_CACHELINE_SIZE})
 
 find_library(LIB_BSD bsd)
@@ -45,9 +47,9 @@ endif()
 foreach(file ${MEMIF_HEADERS})
   get_filename_component(dir ${file} DIRECTORY)
      install(
-	FILES ${file}
-	DESTINATION include/${lib}/${dir}
-	COMPONENT libmemif-dev
+	    FILES ${file}
+	    DESTINATION include/${lib}/${dir}
+	    COMPONENT libmemif-dev
       )
 endforeach()
 

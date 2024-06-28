@@ -1,3 +1,14 @@
+From 07fac1a4532e1d10660e8e138360b0e3673aac9e Mon Sep 17 00:00:00 2001
+From: Ilichev, Konstantin <konstantin.ilichev@intel.com>
+Date: Tu, 14 May 2024 05:48:00 +0100
+Subject: [PATCH 1] Enable FFmpeg support in MCM
+
+---
+ configure                | 6 ++++++
+ libavdevice/Makefile     | 2 ++
+ libavdevice/alldevices.c | 2 ++
+ 3 files changed, 10 insertions(+)
+
 diff --git a/configure b/configure
 index 96b181fd21..e5320f8751 100755
 --- a/configure
@@ -31,8 +42,8 @@ index 96b181fd21..e5320f8751 100755
  enabled libaribcaption    && require_pkg_config libaribcaption "libaribcaption >= 1.1.1" "aribcaption/aribcaption.h" aribcc_context_alloc
  enabled lv2               && require_pkg_config lv2 lilv-0 "lilv/lilv.h" lilv_world_new
  enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
-+enabled mcm               && { check_pkg_config libmcm_dp "libmcm_dp >= 0.0.1" mcm_dp.h mcm_dequeue_buffer ||
-+                               die "ERROR: libmcm_dp must be installed and version must be >= 0.0.1"; }
++enabled mcm               && { check_pkg_config libmcm_dp "libmcm_dp >= 24.00" mcm_dp.h mcm_dequeue_buffer ||
++                               die "ERROR: libmcm_dp must be installed and version must be >= 24.00"; }
  enabled libass            && require_pkg_config libass "libass >= 0.11.0" ass/ass.h ass_library_init
  enabled libbluray         && require_pkg_config libbluray libbluray libbluray/bluray.h bd_open
  enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
@@ -62,3 +73,5 @@ index 8a90fcb5d7..4dd6194b02 100644
  extern const AVInputFormat  ff_android_camera_demuxer;
  extern const FFOutputFormat ff_audiotoolbox_muxer;
  extern const AVInputFormat  ff_avfoundation_demuxer;
+-- 
+
