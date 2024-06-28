@@ -5,10 +5,31 @@
 cmake_minimum_required(VERSION 3.16)
 
 project("McmDPSdk" C)
-set(VERSION "0.1.1")
+set(MCM_TARGET "libmcm_dp")
 set(DESCRIPTION "MCM DP SDK Library")
 
 set(CMAKE_C_STANDARD 11)
+# extract version from git
+execute_process(
+  COMMAND git describe --long --tags
+  WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+  RESULT_VARIABLE VER_RESULT
+  OUTPUT_VARIABLE VER_VALUE
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+# Check if succeeded if not use default one
+if (${VER_RESULT} EQUAL 0)
+    string(PREPEND VER_VALUE "v")
+else ()
+    set(VER_VALUE "v24.06-c660e83")
+endif ()
+message(STATUS "MCM library version: ${VER_VALUE}")
+
+string(REGEX REPLACE "^v+([0-9]+)[-.]([0-9]+)[-.](.+)" "\\1;\\2;\\3" VER_VALUE ${VER_VALUE})
+list(GET VER_VALUE 0 MCM_VER_MAJOR)
+list(GET VER_VALUE 1 MCM_VER_MINOR)
+list(GET VER_VALUE 2 MCM_VER_PATCH)
+set(VERSION "${MCM_VER_MAJOR}.${MCM_VER_MINOR}.${MCM_VER_PATCH}")
 
 # include modules
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -30,7 +51,8 @@ set(CMAKE_INSTALL_IPATH ${CMAKE_INSTALL_PREFIX}/include)
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
 add_library(mcm_dp SHARED ${sdk_srcs})
 set_target_properties(mcm_dp PROPERTIES VERSION ${VERSION})
-#set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
+set_target_properties(mcm_dp PROPERTIES POSITION_INDEPENDENT_CODE ON)
+# set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
 
 target_include_directories(mcm_dp PUBLIC
     ${MCMDP_INCLUDE_DIR}
@@ -50,13 +72,12 @@ list(APPEND SDK_HEADERS
 
 foreach(file ${SDK_HEADERS})
   get_filename_component(dir ${file} DIRECTORY)
-     install(
-	FILES ${file}
-	DESTINATION ${CMAKE_INSTALL_IPATH}
-	COMPONENT libmcm_dp-dev
-      )
+    install(
+	  FILES ${file}
+	  DESTINATION ${CMAKE_INSTALL_IPATH}
+	  COMPONENT ${MCM_TARGET}-dev
+    )
 endforeach()
-
 
 set(LIB_PKG_CONFIG_EXTRA_CFLAGS "")
 if (BUILD_SHARED_LIBS)
@@ -65,8 +86,9 @@ if (BUILD_SHARED_LIBS)
         PRIVATE DEF_BUILDING_SHARED_LIBS)
     set(LIB_PKG_CONFIG_EXTRA_CFLAGS " -DDEF_DLL")
 endif()
-configure_file(libmcm_dp.pc.in ${CMAKE_BINARY_DIR}/libmcm_dp.pc @ONLY)
 
-install(TARGETS mcm_dp DESTINATION ${CMAKE_INSTALL_RPATH} COMPONENT libmcm_dp)
-install(FILES ${CMAKE_BINARY_DIR}/libmcm_dp.pc DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
+configure_file(${MCM_TARGET}.pc.in ${CMAKE_BINARY_DIR}/${MCM_TARGET}.pc @ONLY)
 
+# include(CMakePackageConfigHelpers)
+install(TARGETS mcm_dp DESTINATION ${CMAKE_INSTALL_RPATH} COMPONENT ${MCM_TARGET})
+install(FILES "${CMAKE_BINARY_DIR}/${MCM_TARGET}.pc" DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
