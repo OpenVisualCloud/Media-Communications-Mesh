@@ -31,7 +31,7 @@ if [ "$JPEGXS_ENABLED" == "1" ]; then
     git -C "${BUILD_DIR}/FFmpeg" am --whitespace=fix ${BUILD_DIR}/jpegxs/ffmpeg-plugin/0004-svt-jpegxs-decoder-support.patch
 fi
 
-git -C "${BUILD_DIR}/FFmpeg" apply "${SCRIPT_DIR}/${FFMPEG_VER}/"*.patch
+git -C "${BUILD_DIR}/FFmpeg" am --whitespace=fix "${SCRIPT_DIR}/${FFMPEG_VER}/"*.patch
 
 prompt "FFmpeg ${FFMPEG_VER} cloned and patched successfully."
 prompt "\t${BUILD_DIR}/FFmpeg"

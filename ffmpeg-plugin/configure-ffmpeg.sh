@@ -20,13 +20,16 @@ then
     popd
 fi
 
-pushd "${BUILD_DIR}/FFmpeg"
 PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" pkg-config --exists --print-errors libmcm_dp
 
 # copy source files to allow the configure tool to find them
 #cp -f ../mcm_* ./libavdevice/
 
-"${BUILD_DIR}/FFmpeg/configure" --enable-shared --enable-mcm ${JPEGXS_FLAGS[@]} $@
+pushd "${BUILD_DIR}/FFmpeg"
+"${BUILD_DIR}/FFmpeg/configure" \
+    --disable-shared \
+    --enable-static \
+    --enable-mcm ${JPEGXS_FLAGS[@]} $@
 popd
 
 prompt "FFmpeg MCM plugin configuration completed."
