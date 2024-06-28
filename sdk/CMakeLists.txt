@@ -26,6 +26,8 @@ include(compile_options)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 set(CMAKE_INSTALL_IPATH ${CMAKE_INSTALL_PREFIX}/include)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+
 
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
 add_library(mcm_dp SHARED ${sdk_srcs})
