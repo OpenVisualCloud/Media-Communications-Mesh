@@ -74,6 +74,7 @@ endforeach()
 #   OUTPUT_STRIP_TRAILING_WHITESPACE
 # )
 set(VER "v24.06-rc2stable-256-g55457075d")
+message(STATUS "Memif library version: ${VER}")
 string(REGEX REPLACE "v(.*)-([0-9]+)-(g[0-9a-f]+)" "\\1;\\2;\\3" VER ${VER})
 list(GET VER 0 tag)
 list(GET VER 1 commit_num)
