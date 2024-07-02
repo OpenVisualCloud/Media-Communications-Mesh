@@ -118,46 +118,32 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
     udp_context* ctx = NULL;
     char* data = NULL; // Changed to char* for pointer arithmetic
     ssize_t n = 0;
-    size_t len = 0; // Changed to size_t to match sendto's expected type
+    size_t len = 0;
 
     if (conn_ctx == NULL || buf == NULL) {
         log_error("Illegal Parameter.");
         return -1;
     }
-    ctx = (udp_context*)conn_ctx;
-    data = buf->data;
-    len = (size_t)buf->len; // Cast to size_t, ensure that buf->len is validated before casting
 
-    if (buf->len < 0) {
-        log_error("Fail to send buffer of len < 0.");
+    ctx = (udp_context*)conn_ctx;
+
+    data = buf->data;
+    len = (size_t)buf->len;
+    if (len < 0 || len > SIZE_MAX) {
+        log_error("Fail to send buffer of SIZE_MAX < len < 0.");
         return -1;
     }
-    // Ensure len does not exceed the maximum value for ssize_t to prevent overflow
-    if (len > SSIZE_MAX) {
-        log_error("Buffer length exceeds maximum allowable size.");
-        return -1;
-    }
-    while (len > 0)
-    {
-        // Ensure that the length passed to sendto does not exceed the maximum value for size_t
+    while (len > 0) {
         size_t send_length = len > SIZE_MAX ? SIZE_MAX : len;
-        
         n = sendto(ctx->sockfd, data, send_length, MSG_CONFIRM,
             (const struct sockaddr*)&ctx->rx_addr, sizeof(ctx->rx_addr));
-        if (n < 0) {
+        if (n < 0 || len < (size_t)n) {
             log_error("Fail to send out data.");
             ret = -1;
             break;
         }
-        // Cast n to size_t for comparison and subtraction since len is of type size_t
-        size_t sent = (size_t)n;
-        if (len < sent) {
-            log_error("Sent length is greater than remaining buffer length.");
-            ret = -1;
-            break;
-        }
-        len -= sent;
-        data += sent;
+        len -= (size_t)n;
+        data += (size_t)n;
     }
     return ret;
 }
