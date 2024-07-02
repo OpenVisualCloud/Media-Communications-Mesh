@@ -116,8 +116,9 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
 {
     int ret = 0;
     udp_context* ctx = NULL;
-    void* data = NULL;
-    ssize_t n = 0, len = 0;
+    char* data = NULL; // Changed to char* for pointer arithmetic
+    ssize_t n = 0;
+    size_t len = 0;
 
     if (conn_ctx == NULL || buf == NULL) {
         log_error("Illegal Parameter.");
@@ -127,23 +128,22 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
     ctx = (udp_context*)conn_ctx;
 
     data = buf->data;
-    len = buf->len;
-    if(len < 0) {
-        log_error("Fail to send buffer of len < 0.");
-        ret = -1;
+    len = (size_t)buf->len;
+    if (len < 0 || len > SIZE_MAX) {
+        log_error("Fail to send buffer of SIZE_MAX < len < 0.");
+        return -1;
     }
-    
-    while (len > 0)
-    {
-        n = sendto(ctx->sockfd, data, len, MSG_CONFIRM,
+    while (len > 0) {
+        size_t send_length = len > SIZE_MAX ? SIZE_MAX : len;
+        n = sendto(ctx->sockfd, data, send_length, MSG_CONFIRM,
             (const struct sockaddr*)&ctx->rx_addr, sizeof(ctx->rx_addr));
-        if (n < 0 || len < 0 || len < n) {
+        if (n < 0 || len < (size_t)n) {
             log_error("Fail to send out data.");
             ret = -1;
             break;
         }
-        len -= n;
-        data += n;
+        len -= (size_t)n;
+        data += (size_t)n;
     }
     return ret;
 }
