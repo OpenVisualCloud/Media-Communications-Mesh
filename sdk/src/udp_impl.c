@@ -128,21 +128,23 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
 
     data = buf->data;
     len = buf->len;
-    while (len > 0) {
+    if(len < 0) {
+        log_error("Fail to send buffer of len < 0.");
+        ret = -1;
+    }
+    
+    while (len > 0)
+    {
         n = sendto(ctx->sockfd, data, len, MSG_CONFIRM,
             (const struct sockaddr*)&ctx->rx_addr, sizeof(ctx->rx_addr));
-
-        if (n < 0) {
+        if (n < 0 || len < 0 || len < n) {
             log_error("Fail to send out data.");
             ret = -1;
             break;
-        } else if (len < n) {
-            n = len;
         }
         len -= n;
         data += n;
     }
-
     return ret;
 }
 
