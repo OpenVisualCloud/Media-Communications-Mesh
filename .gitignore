@@ -25,3 +25,5 @@ media-proxy/protos/controller.pb.h
 
 # For FFmpeg plugin
 ffmpeg-plugin/FFmpeg/
+
+docs/_build

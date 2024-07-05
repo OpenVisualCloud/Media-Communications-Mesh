@@ -1,5 +1,6 @@
 # .dockerignore
 
+docs/_build/*
 build
 out/*
 build/*
