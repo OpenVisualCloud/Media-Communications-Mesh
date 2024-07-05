@@ -1,11 +1,25 @@
 version: 2
 updates:
   - package-ecosystem: github-actions
-    directory: /
+    directory: /.github
     schedule:
-      interval: daily
+      interval: "weekly"
+      day: "sunday"
 
   - package-ecosystem: docker
     directory: /media-proxy
     schedule:
-      interval: daily
+      interval: "weekly"
+      day: "sunday"
+
+  - package-ecosystem: docker
+    directory: /sdk
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+
+  - package-ecosystem: docker
+    directory: /ffmpeg-plugin
+    schedule:
+      interval: "weekly"
+      day: "sunday"
