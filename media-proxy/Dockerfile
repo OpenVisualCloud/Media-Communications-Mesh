@@ -96,10 +96,16 @@ RUN ./build.sh build-only && \
 WORKDIR ${MCM_DIR}
 COPY . ${MCM_DIR}
 RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh && \
+    cp "${MTL_DIR}/build/manager/MtlManager" "${PREFIX_DIR}/usr/local/bin/" && \
+    rm -rf "${PREFIX_DIR}/usr/lib64/"*.a && \
+    rm -rf "${PREFIX_DIR}/usr/include" && \
+    rm -rf "${PREFIX_DIR}/usr/local/share" && \
+    rm -rf "${PREFIX_DIR}/usr/local/lib/bpf" && \
     rm -rf "${PREFIX_DIR}/usr/local/lib/lib"*.a && \
-    rm -rf "${PREFIX_DIR}/usr/local/bin/dpdk-test"* && \
-    rm -rf "${PREFIX_DIR}/usr/local/bin/"*_plugin && \
-    rm -rf "${PREFIX_DIR}/usr/local/share"
+    rm -rf "${PREFIX_DIR}/usr/local/lib/x86_64-linux-gnu/"*.a && \
+    rm -rf "${PREFIX_DIR}/usr/local/bin/dpdk-"* && \
+    rm -rf "${PREFIX_DIR}/usr/local/bin/grpc_cli" && \
+    rm -rf "${PREFIX_DIR}/usr/local/bin/"*_plugin
 
 ARG IMAGE_CACHE_REGISTRY
 ARG IMAGE_NAME
@@ -125,8 +131,8 @@ RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
     apt-get install -y --no-install-recommends \
        ca-certificates libbsd0 libnuma1 libjson-c5 libpcap0.8 libsdl2-2.0-0 libsdl2-ttf-2.0-0 \
-       libssl3 zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap vim sudo \
-       pciutils librte-net-mlx4-22 librte-net-mlx5-22 && \
+       libssl3 zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap sudo \
+       librte-net-mlx4-22 librte-net-mlx5-22 ethtool && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \
@@ -136,7 +142,10 @@ RUN apt-get update --fix-missing && \
 
 COPY --chown=mcm --from=builder /install /
 
-RUN ldconfig
+RUN ldconfig && \
+    apt-get purge -y *sound* *systemtap* *libdrm* *vorbis* *wayland* *x11* *python* *readline* *avahi* '^libx[a-w,y-z].*' make media-types libopus0 \
+        libexpat1 libflac8 libfreetype6 libsndfile1 libgbm1 libglib2.0-0 libgraphite2-3 libharfbuzz0b libogg0 libpulse0 libmpdec3 libnspr4 libpng16-16 \
+        xkb-data distro-info-data libdw1 libbrotli1 libdecor-0-0 libxxf86vm1 libapparmor1 libasyncns0 libnss3 libsqlite3-0 lsb-release
 USER mcm
 WORKDIR /opt/mcm/
 
