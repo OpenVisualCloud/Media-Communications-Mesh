@@ -825,38 +825,29 @@ mtl_handle inst_init(struct mtl_init_params* st_param)
     struct mtl_init_params param = { 0 };
 
     if (st_param == NULL) {
-        int session_num = 1;
-        const char port_bdf[] = "0000:31:00.0";
-        const uint8_t local_ip[MTL_IP_ADDR_LEN] = { 192, 168, 96, 1 };
-
-        /* set default parameters */
-        param.num_ports = 1;
-        strncpy(param.port[MTL_PORT_P], port_bdf, MTL_PORT_MAX_LEN);
-        memcpy(param.sip_addr[MTL_PORT_P], local_ip, MTL_IP_ADDR_LEN);
-        param.flags = MTL_FLAG_TASKLET_THREAD;
-        param.log_level = MTL_LOG_LEVEL_INFO; // log level. ERROR, INFO, WARNING
-        param.priv = NULL; // usr crx pointer
-        param.ptp_get_time_fn = NULL;
-        param.rx_queues_cnt[MTL_PORT_P] = session_num;
-        param.tx_queues_cnt[MTL_PORT_P] = session_num;
-        param.lcores = NULL;
-    } else {
-        mtl_memcpy(&param, st_param, sizeof(struct mtl_init_params));
-        param.flags |= MTL_FLAG_RX_UDP_PORT_ONLY;
+        ERROR("%s, Failed to inst_init MTL device, mtl_init_params is null.", __func__);
+        return NULL;
     }
+
+    mtl_memcpy(&param, st_param, sizeof(struct mtl_init_params));
+    param.flags |= MTL_FLAG_RX_UDP_PORT_ONLY;
 
     // create device
     dev_handle = mtl_init(&param);
     if (!dev_handle) {
-        printf("%s, st_init fail\n", __func__);
+        printf("%s, mtl_init fail\n", __func__);
         return NULL;
     }
 
     // start MTL device
+    // if ((st_param->flags & MTL_FLAG_DEV_AUTO_START_STOP) != MTL_FLAG_DEV_AUTO_START_STOP)
+    // {
+    DEBUG("%s, mtl_start by inst_init starting. Using normal mtl_start().", __func__);
     if (mtl_start(dev_handle) != 0) {
-        INFO("%s, Fail to start MTL device.", __func__);
+        ERROR("%s, Fail to start MTL device.", __func__);
         return NULL;
     }
+    // }
 
     return dev_handle;
 }
@@ -1311,10 +1302,10 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
         unlink(tx_ctx->memif_socket_args.path);
     }
 
-    INFO("Create memif socket.");
+    DEBUG("tx_st20p_shm_init: Create memif socket.");
     ret = memif_create_socket(&tx_ctx->memif_socket, &tx_ctx->memif_socket_args, NULL);
     if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create_socket: %s", memif_strerror(ret));
+        ERROR("tx_st20p_shm_init memif_create_socket: %s", memif_strerror(ret));
         return -1;
     }
 
@@ -1332,15 +1323,16 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
     tx_ctx->shm_buf_num = FRAME_COUNT;
 
-    INFO("Create memif interface.");
+    DEBUG("tx_st20p_shm_init: Create memif interface.");
     ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st20p_on_connect, tx_st20p_on_disconnect, tx_st20p_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create: %s", memif_strerror(ret));
+        ERROR("tx_st20p_shm_init memif_create: %s", memif_strerror(ret));
         free(tx_ctx->shm_bufs);
         return -1;
     }
 
     /* Start the MemIF event loop. */
+    DEBUG("tx_st20p_shm_init: Thread pthread_create called.");
     ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
@@ -1395,10 +1387,10 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
         unlink(tx_ctx->memif_socket_args.path);
     }
 
-    INFO("Create memif socket.");
+    DEBUG("tx_st22p_shm_init: Create memif socket.");
     ret = memif_create_socket(&tx_ctx->memif_socket, &tx_ctx->memif_socket_args, NULL);
     if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create_socket: %s", memif_strerror(ret));
+        ERROR("tx_st22p_shm_init memif_create_socket: %s", memif_strerror(ret));
         return -1;
     }
 
@@ -1417,16 +1409,17 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
     tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
     tx_ctx->shm_buf_num = FRAME_COUNT;
 
-    INFO("Create memif interface.");
+    DEBUG("tx_st22p_shm_init: Create memif interface.");
     ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,
         tx_st22p_on_connect, tx_st22p_on_disconnect, tx_st22p_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create: %s", memif_strerror(ret));
+        ERROR("tx_st22p_shm_init memif_create: %s", memif_strerror(ret));
         free(tx_ctx->shm_bufs);
         return -1;
     }
 
     /* Start the MemIF event loop. */
+    DEBUG("tx_st22p_shm_init: Thread pthread_create called.");
     ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);

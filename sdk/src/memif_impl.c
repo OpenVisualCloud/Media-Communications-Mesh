@@ -317,6 +317,7 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         log_error("Data connection stopped.");
         return NULL;
     }
+    size_t real_frame_size = conn_ctx->frame_size + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len);
 
     if (conn_ctx->type == is_tx) {  /* TX */
         /* trigger the callbacks. */
@@ -329,7 +330,7 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         do {
             const size_t sleep_interval = 10; /* 0.01 s */
             err = memif_buffer_alloc(memif_conn->conn, memif_conn->qid, &memif_buf, 1,
-                &buf_num, conn_ctx->frame_size);
+                &buf_num, real_frame_size);
             if (err == MEMIF_ERR_SUCCESS) {
                 break;
             } else {

@@ -10,7 +10,7 @@ FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
 ARG PREFIX_DIR="/install"
 ARG MCM_DIR="/opt/mcm"
-ARG MTL_VER="9d87d0da3466bd88cdf3336844643882d272460b"
+ARG MTL_VER="MTL_enabling_for_Intel_Tiber_Broadcast_Suite"
 ARG MTL_DIR="/opt/mtl"
 ARG DPDK_VER="23.11"
 ARG DPDK_DIR="/opt/dpdk"
@@ -18,7 +18,7 @@ ARG XDP_DIR="/opt/xdp"
 ARG GPRC_VER="v1.58.0"
 ARG GRPC_DIR="/opt/grpc"
 # JPEGXS_VER Release v0.9
-ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"
+ARG JPEGXS_VER="v0.9.0"
 ARG JPEGXS_DIR="/opt/jpegxs"
 
 ENV DEBIAN_FRONTEND=noninteractive
