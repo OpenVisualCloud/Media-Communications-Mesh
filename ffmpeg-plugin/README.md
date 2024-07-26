@@ -40,23 +40,28 @@ TBD
 ### Receiver side setup
 
 1. Start media_proxy
-   ```
+   ```bash
    sudo media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8002
    ```
 2. Start FFmpeg to receive frames from MCM and stream to a remote machine via UDP
-   ```
-   sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm -frame_rate 24 -video_size nhd -pixel_format yuv422p10le -protocol_type auto -payload_type st20 -ip_addr 192.168.96.1 -port 9001 -i - -vcodec mpeg4 -f mpegts udp://<remote-ip>:<remote-port>
+   ```bash
+   sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm \
+      -frame_rate 24 -video_size nhd -pixel_format yuv422p10le -protocol_type auto \
+      -payload_type st20 -ip_addr 192.168.96.1 -port 9001 \
+      -i - -vcodec mpeg4 -f mpegts udp://<remote-ip>:<remote-port>
    ```
 
 ### Sender side setup
 
 1. Start media_proxy
-   ```
+   ```bash
    sudo media_proxy -d 0000:32:11.0 -i 192.168.96.1 -t 8001
    ```
 2. Start FFmpeg to stream a video file to the receiver via MCM
-   ```
-   sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <video-file-path> -f mcm -frame_rate 24 -video_size nhd -pixel_format yuv422p10le -protocol_type auto -payload_type st20 -ip_addr 192.168.96.2 -port 9001 -
+   ```bash
+   sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <video-file-path> -f mcm \
+      -frame_rate 24 -video_size nhd -pixel_format yuv422p10le -protocol_type auto \
+      -payload_type st20 -ip_addr 192.168.96.2 -port 9001 -
    ```
 
 ### VLC player setup
