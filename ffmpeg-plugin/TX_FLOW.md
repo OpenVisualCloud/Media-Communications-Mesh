@@ -32,8 +32,9 @@ sequenceDiagram
    mux ->> +sdk: Create Tx connection
    sdk ->> +proxy: Open TCP connection to Proxy
    proxy ->> +mtl: Start Tx session
-   mtl ->> proxy: Session started
-   mtl ->> -network: Update ARP table
+   mtl ->> +network: Connect to remote host
+   network ->> -mtl: Connection established
+   mtl ->> -proxy: Session started
    proxy ->> +memif: Create Memif Rx connection
    memif ->> -proxy: Connection created
    proxy ->> -sdk: Connection established
