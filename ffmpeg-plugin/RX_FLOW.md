@@ -1,23 +1,23 @@
-# Tx flow
+# Rx flow
 
-Diagrams in this document show interaction between FFmpeg and the MCM plugin when FFmpeg is streaming a video file over MCM.
+Diagrams in this document show interaction between FFmpeg and the MCM plugin when FFmpeg is receiving a video stream over MCM.
 
-### Simplified FFmpeg Tx flow
+### Simplified FFmpeg Rx flow
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
    participant mux as MCM Plugin
 
-   ffmpeg ->> ffmpeg: Open video file
-   ffmpeg ->> mux: Write header
+   ffmpeg ->> mux: Read header
    loop N video frames
-   ffmpeg ->> mux: Write packet
+   ffmpeg ->>+ mux: Read packet
+   mux ->> ffmpeg: Packet received
+   mux -->>- ffmpeg: EOF
    end
-   ffmpeg ->> mux: Write trailer
-   ffmpeg ->> ffmpeg: Close video file
+   ffmpeg ->> mux: Read close
 ```
 
-### FFmpeg Write Header flow
+### FFmpeg Read Header flow
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -28,27 +28,26 @@ sequenceDiagram
    participant mtl as MTL
    participant network as Network
 
-   ffmpeg ->>+ mux: Write header
-   mux ->>+ sdk: Create Tx connection
+   ffmpeg ->>+ mux: Read header
+   mux ->>+ sdk: Create Rx connection
    sdk ->>+ proxy: Open TCP connection to Proxy
-   proxy ->>+ mtl: Start Tx session
-   mtl ->>+ network: Connect to remote host
-   network ->>- mtl: Connection established
+   proxy ->>+ mtl: Start Rx session
+   mtl ->>+ network: Update ARP table
    mtl ->>- proxy: Session started
-   proxy ->>+ memif: Create Memif Rx connection
+   proxy ->>+ memif: Create Memif Tx connection
    memif ->>- proxy: Connection created
    proxy ->>- sdk: Connection established
 
    sdk ->>+ proxy: Query Memif info
    proxy ->>- sdk: Memif info
 
-   sdk ->>+ memif: Create Memif Tx connection
+   sdk ->>+ memif: Create Memif Rx connection
    memif ->>- sdk: Connection created
    sdk ->>- mux: Connection created
    mux ->>- ffmpeg: Success
 ```
 
-### FFmpeg Write Packet flow
+### FFmpeg Read Packet flow
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -59,26 +58,28 @@ sequenceDiagram
    participant mtl as MTL
    participant network as Network
 
-   ffmpeg ->>+ mux: Write packet
-   mux ->>+ sdk: Allocate buffer
-   sdk ->>+ memif: Dequeue buffer
-   memif ->>- sdk: Buffer dequeued
-   sdk ->>- mux: Buffer allocated
-   mux ->> mux: Write frame into buffer
-   mux ->>+ sdk: Send buffer
-   sdk ->>+ memif: Enqueue buffer
-   memif ->>- sdk: Buffer enqueued
-   sdk ->>- mux: Buffer sent
-   mux ->>- ffmpeg: Success
-
+   network ->>+ mtl: Data received
+   mtl ->> mtl: Decode ST2110-xx
+   mtl ->>- proxy: Frame received
    proxy ->>+ memif: Dequeue buffer
    memif ->>- proxy: Buffer dequeued
-   proxy ->>+ mtl: Send frame
-   mtl ->> mtl: Encode ST2110-xx
-   mtl ->>- network: Transmit data
+   proxy ->> proxy: Write data to buffer
+   proxy ->> memif: Enqueue buffer
+
+   ffmpeg ->>+ mux: Read packet
+   mux ->>+ sdk: Receive buffer
+   sdk ->>+ memif: Dequeue buffer
+   memif ->>- sdk: Buffer dequeued
+   sdk ->>- mux: Buffer received
+   mux ->> mux: Read frame from buffer
+   mux ->>+ sdk: Release buffer
+   sdk ->>+ memif: Enqueue buffer
+   memif ->>- sdk: Buffer enqueued
+   sdk ->>- mux: Buffer released
+   mux ->>- ffmpeg: Success
 ```
 
-### FFmpeg Write Trailer flow
+### FFmpeg Read Close flow
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -89,12 +90,12 @@ sequenceDiagram
    participant mtl as MTL
    participant network as Network
 
-   ffmpeg ->>+ mux: Write trailer
-   mux ->>+ sdk: Close Tx connection
+   ffmpeg ->>+ mux: Read close
+   mux ->>+ sdk: Close Rx connection
    sdk ->>+ proxy: Close TCP connection to Proxy
-   proxy ->> mtl: Stop Tx session
-   proxy ->>- memif: Close Memif Rx connection
-   sdk ->> memif: Close Memif Tx connection
+   proxy ->> mtl: Stop Rx session
+   proxy ->>- memif: Close Memif Tx connection
+   sdk ->> memif: Close Memif Rx connection
    sdk ->>- mux: Connection closed
    mux ->>- ffmpeg: Return
 ```
