@@ -301,23 +301,23 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
         return -1;
     }
 
-    // ext_frame->linesize[0] = st_frame_least_linesize(ST_FRAME_FMT_YUV422PLANAR10LE, meta->width ,0);
-    // ext_frame->buf_iova = rx_ctx->frames_begin_iova + ((uint8_t*)rx_bufs->data - (uint8_t*)rx_ctx->frames_begin_addr);
-    // ext_frame->iova[0] = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
-    ext_frame->size = rx_ctx->frame_size;
+    size_t pg_sz = mtl_page_size(rx_ctx->st);
+    void* ext_fb_malloc = rx_bufs->data;
+    uint8_t* ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)ext_fb_malloc, pg_sz);
+    mtl_iova_t ext_fb_iova = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
 
     uint8_t planes = st_frame_fmt_planes(rx_ctx->output_fmt);
     for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
         ext_frame->linesize[plane] = st_frame_least_linesize(rx_ctx->output_fmt, meta->width, plane);
         if (plane == 0) {
             ext_frame->addr[plane] = rx_bufs->data;
-            ext_frame->iova[plane] = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
+            ext_frame->iova[plane] = ext_fb_iova;
         } else {
             ext_frame->addr[plane] = (uint8_t*)ext_frame->addr[plane - 1] + ext_frame->linesize[plane - 1] * meta->height;
             ext_frame->iova[plane] = ext_frame->iova[plane - 1] + ext_frame->linesize[plane - 1] * meta->height;
         }
     }
-
+    ext_frame->size = rx_ctx->frame_size;
     /* save your private data here get it from st_frame.opaque */
     ext_frame->opaque = rx_bufs;
 
@@ -520,9 +520,6 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
     rx_bufs = (memif_buffer_t*)frame->opaque;
     rx_buf_num = 1;
     rx_mcm_buff = (mcm_buffer*)rx_bufs->data;
-    if(rx_mcm_buff != NULL) {
-        rx_mcm_buff->metadata.timestamp = (uint32_t)((frame->timestamp/1000) & 0xffffffff);
-    }
 #else
     /* allocate memory */
     rx_bufs = s->shm_bufs;
@@ -569,9 +566,6 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
     rx_bufs = (memif_buffer_t*)frame->opaque;
     rx_buf_num = 1;
     rx_mcm_buff = (mcm_buffer*)rx_bufs->data;
-    if(rx_mcm_buff != NULL) {
-        rx_mcm_buff->metadata.timestamp = (uint32_t)((frame->timestamp/1000) & 0xffffffff);
-    }
 #else
     /* allocate memory */
     rx_bufs = s->shm_bufs;
@@ -1793,7 +1787,7 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
     ops_rx.notify_frame_available = rx_st20p_frame_available;
 
     // TO-DO: Frame size probably should be choosen greater one from output and transport
-    rx_ctx->frame_size = st_frame_size(ops_rx.output_fmt, ops_rx.width, ops_rx.height, false);
+    rx_ctx->frame_size = st20_frame_size(ops_rx.transport_fmt, ops_rx.width, ops_rx.height);
     rx_ctx->width = ops_rx.width;
     rx_ctx->height = ops_rx.height;
     rx_ctx->output_fmt = ops_rx.output_fmt;
@@ -1816,18 +1810,25 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
     fb_cnt = rx_ctx->fb_count;
 
 #if defined(ZERO_COPY)
-    rx_ctx->ext_frames = (struct st20_ext_frame*)malloc(sizeof(*rx_ctx->ext_frames) * fb_cnt);
-    // for (int i = 0; i < fb_cnt; i++) {
-    //     rx_ctx->ext_frames[i].buf_addr = rx_ctx->frames_begin_addr + i * rx_ctx->frame_size;
-    //     rx_ctx->ext_frames[i].buf_iova = rx_ctx->frames_begin_iova + i * rx_ctx->frame_size;
-    //     rx_ctx->ext_frames[i].buf_len = rx_ctx->frame_size;
-    // }
-    // rx_ctx->ext_idx = 0;
-
-    ops_rx.flags |= ST20P_RX_FLAG_EXT_FRAME;
-    // ops_rx.ext_frames = rx_ctx->ext_frames;
-    ops_rx.query_ext_frame = rx_st20p_query_ext_frame;
-    ops_rx.flags |= ST20P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
+    bool equal = st_frame_fmt_equal_transport(ops_rx.output_fmt, ops_rx.transport_fmt);
+    INFO("st_frame_fmt_equal_transport: %s", equal ? "true" : "false");
+    if(equal) {
+        rx_ctx->ext_frames = (struct st20_ext_frame*)malloc(sizeof(*rx_ctx->ext_frames) * fb_cnt);
+        // TODO: Move allocation from query_ext_frame here.
+        // for (int i = 0; i < fb_cnt; i++) {
+        //     rx_ctx->ext_frames[i].buf_addr = rx_ctx->frames_begin_addr + i * rx_ctx->frame_size;
+        //     rx_ctx->ext_frames[i].buf_iova = rx_ctx->frames_begin_iova + i * rx_ctx->frame_size;
+        //     rx_ctx->ext_frames[i].buf_len = rx_ctx->frame_size;
+        // }
+        // rx_ctx->ext_idx = 0;
+        ops_rx.flags |= ST20P_RX_FLAG_EXT_FRAME;
+        // ops_rx.ext_frames = rx_ctx->ext_frames;
+        ops_rx.query_ext_frame = rx_st20p_query_ext_frame;
+        ops_rx.flags |= ST20P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
+    } else {
+        ERROR("st_frame_fmt_equal_transport: %s. Currently not supported.", equal ? "true" : "false");
+        return NULL;
+    }
 #endif
 
     /* dump out parameters for debugging. */

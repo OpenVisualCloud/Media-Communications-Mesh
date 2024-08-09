@@ -154,13 +154,13 @@ function initialize_nic() {
     [ $? -ne 0 ] && error "PF not found" && return 1
 
     # Get network interface name of PF
-    local description=$(lshw -c network -businfo -quiet | grep "$pf")
-    local regex="pci@$pf[[:space:]]+([a-zA-Z0-9]+)"
+    local description="$(lshw -c network -businfo -quiet | grep "$pf")"
+    local regex="pci@$pf[[:space:]]+([a-zA-Z0-9\-]+)"
     [[ ! $description =~ $regex ]] && error "Cannot get network interface name" && return 1
 
     # Check if network interface is up
     local iface="${BASH_REMATCH[1]}"
-    [[ ! $(ip link show $iface) =~ "state UP" ]] && error "Network interface $iface link is down" && return 1
+    [[ ! $(ip link show "$iface") =~ "state UP" ]] && error "Network interface $iface link is down" && return 1
     info "Network interface $iface link is up"
 
     # Disable VFs
@@ -358,7 +358,7 @@ info "  NIC PF: $nic_pf"
 info "Initial cleanup"
 cleanup
 
-nicctl=$(find / -name "nicctl.sh" -print -quit | grep .)
+nicctl="$(find / -name "nicctl.sh" -print -quit | grep .)"
 [ $? -ne 0 ] && error "The nicctl.sh script not found on the disk. Make sure you cloned the MTL repository." && exit 1
 
 initialize_nic "$nic_pf" "$tx_vf_number" "$rx_vf_number"
