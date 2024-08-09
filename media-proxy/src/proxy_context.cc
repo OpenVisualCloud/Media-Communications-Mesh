@@ -374,7 +374,7 @@ void ProxyContext::ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx
     ops_rx->width = request->width;
     ops_rx->height = request->height;
     ops_rx->fps = st_frame_rate_to_st_fps((double)request->fps);
-    ops_rx->transport_fmt = ST20_FMT_YUV_422_10BIT;
+    ops_rx->transport_fmt = ST20_FMT_YUV_422_PLANAR10LE;
     ops_rx->output_fmt = getStFrameFmt(request->pix_fmt);
     ops_rx->device = ST_PLUGIN_DEVICE_AUTO;
     ops_rx->framebuff_cnt = 4;
@@ -445,7 +445,7 @@ void ProxyContext::ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx
     ops_tx->height = request->height;
     ops_tx->fps = st_frame_rate_to_st_fps((double)request->fps);
     ops_tx->input_fmt = getStFrameFmt(request->pix_fmt);
-    ops_tx->transport_fmt = ST20_FMT_YUV_422_10BIT;
+    ops_tx->transport_fmt = ST20_FMT_YUV_422_PLANAR10LE;
     ops_tx->device = ST_PLUGIN_DEVICE_AUTO;
     ops_tx->framebuff_cnt = 4;
 
