@@ -17,9 +17,9 @@ Documentation for FFmpeg Media Communications Mesh (further: Mesh) plugin.
 | `ip_addr`      | Set the remote IP address to which the media data will be sent. | String           | `"192.168.96.2"`      |                                                  |
 | `port`         | Set the remote port to which the media data will be sent. | String           | `"9001"`              |                                                  |
 | `payload_type` | Set the payload type for the media data.                 | String           | `"st20"`              | `"st20"`, `"st22"`, ~~`"st30"`~~, ~~`"st40"`~~, ~~`"rtsp"`~~ |
-| `protocol_type`| Set the protocol type for the media data transmission.   | String           | `"auto"`              | `"memif"`, `"udp"`, `"tcp"`, ~~`"http"`~~, ~~`"grpc"`~~, `"auto"` |
+| `protocol_type`| Set the protocol type for the media data transmission.   | String           | `"auto"`              | `"memif"`, ~~`"udp"`~~, `"tcp"`, ~~`"http"`~~, ~~`"grpc"`~~, `"auto"` |
 | `video_size`   | Set the video frame size.                                | Image size (String) | `"1920x1080"`       |                                                  |
-| `pixel_format` | Set the video pixel format.                              | Pixel format (Enum) | `AV_PIX_FMT_YUV422P10LE` | ~~`AV_PIX_FMT_NV12`~~, `AV_PIX_FMT_YUV422P`, `AV_PIX_FMT_YUV444P10LE`, `AV_PIX_FMT_RGB24`, `AV_PIX_FMT_YUV422P10LE` |
+| `pixel_format` | Set the video pixel format.                              | Pixel format (Enum) | `AV_PIX_FMT_YUV422P10LE` | ~~`AV_PIX_FMT_NV12`~~, ~~`AV_PIX_FMT_YUV422P`~~, ~~`AV_PIX_FMT_YUV444P10LE`~~, ~~`AV_PIX_FMT_RGB24`~~, `AV_PIX_FMT_YUV422P10LE` |
 | `frame_rate`   | Set the video frame rate.                                | Video rate (String or Rational) | `"25"` |                                                  |
 | `socket_name`  | Set the memif socket name for the media data transmission. | String           | `NULL`                |                                                  |
 | `interface_id` | Set the interface ID for the media data transmission.    | Integer          | `0`                   | `-1` to `INT_MAX` |
@@ -31,9 +31,9 @@ Documentation for FFmpeg Media Communications Mesh (further: Mesh) plugin.
 | `ip_addr`      | Set the remote IP address from which the media data will be received. | String           | `"192.168.96.1"`      |                                                  |
 | `port`         | Set the local port on which the media data will be received. | String           | `"9001"`              |                                                  |
 | `payload_type` | Set the payload type for the media data.                 | String           | `"st20"`              | `"st20"`, `"st22"`, ~~`"st30"`~~, ~~`"st40"`~~, ~~`"rtsp"`~~ |
-| `protocol_type`| Set the protocol type for the media data reception.      | String           | `"auto"`              | `"memif"`, `"udp"`, `"tcp"`, `"http"`, `"grpc"`, `"auto"` |
+| `protocol_type`| Set the protocol type for the media data reception.      | String           | `"auto"`              | `"memif"`, ~~`"udp"`~~, `"tcp"`, ~~`"http"`~~, ~~`"grpc"`~~, `"auto"` |
 | `video_size`   | Set the video frame size.                                | Image size (String) | `"1920x1080"`       |                                                  |
-| `pixel_format` | Set the video pixel format.                              | Pixel format (Enum) | `AV_PIX_FMT_YUV422P10LE` | ~~`AV_PIX_FMT_NV12`~~, `AV_PIX_FMT_YUV422P`, `AV_PIX_FMT_YUV444P10LE`, `AV_PIX_FMT_RGB24`, `AV_PIX_FMT_YUV422P10LE` |
+| `pixel_format` | Set the video pixel format.                              | Pixel format (Enum) | `AV_PIX_FMT_YUV422P10LE` | ~~`AV_PIX_FMT_NV12`~~, ~~`AV_PIX_FMT_YUV422P`~~, ~~`AV_PIX_FMT_YUV444P10LE`~~, ~~`AV_PIX_FMT_RGB24`~~, `AV_PIX_FMT_YUV422P10LE` |
 | `frame_rate`   | Set the video frame rate.                                | Video rate (String or Rational) | `"25"` |                                                  |
 | `socket_name`  | Set the memif socket name for the media data reception.  | String           | `NULL`                |                                                  |
 | `interface_id` | Set the interface ID for the media data reception.       | Integer          | `0`                   |                                                  |
@@ -68,7 +68,7 @@ The Mesh's Muxer plugin for FFmpeg is designed to handle the transmission of med
 - **Type**: String
 - **Default**: `"auto"`
 - **Flags**: Encoding parameter
-- **Possible Values**: `"memif"`, `"udp"`, `"tcp"`, ~~`"http"`~~, ~~`"grpc"`~~, `"auto"`
+- **Possible Values**: `"memif"`, ~~`"udp"`~~, `"tcp"`, ~~`"http"`~~, ~~`"grpc"`~~, `"auto"`
 
 #### `video_size`
 - **Description**: Set the video frame size using a string such as `"640x480"` or `"hd720"`.
@@ -81,7 +81,7 @@ The Mesh's Muxer plugin for FFmpeg is designed to handle the transmission of med
 - **Type**: Pixel format (Enum)
 - **Default**: `AV_PIX_FMT_YUV422P10LE`
 - **Flags**: Encoding parameter
-- **Possible Values**: ~~`AV_PIX_FMT_NV12`~~, `AV_PIX_FMT_YUV422P`, `AV_PIX_FMT_YUV444P10LE`, `AV_PIX_FMT_RGB24`, `AV_PIX_FMT_YUV422P10LE`
+- **Possible Values**: ~~`AV_PIX_FMT_NV12`~~, ~~`AV_PIX_FMT_YUV422P`~~, ~~`AV_PIX_FMT_YUV444P10LE`~~, ~~`AV_PIX_FMT_RGB24`~~, `AV_PIX_FMT_YUV422P10LE`
 
 #### `frame_rate`
 - **Description**: Set the video frame rate.
@@ -107,10 +107,10 @@ The Mesh's Muxer plugin for FFmpeg is designed to handle the transmission of med
 To use the Mesh's Muxer plugin with FFmpeg, pass the `-f mcm` flag and parameters. Here is an example command that sets some of the parameters:
 
 ```bash
-ffmpeg -i input.mp4 -c:v rawvideo -f mcm -ip_addr 192.168.1.100 -port 8000 -payload_type st20 -pixel_format yuv422p10le -protocol_type auto -video_size hd720 -frame_rate 30 -socket_name my_socket -interface_id 2 output.mcm
+ffmpeg -i input.mp4 -c:v rawvideo -f mcm -ip_addr 192.168.1.100 -port 8000 -payload_type st20 -pixel_format yuv422p10le -protocol_type auto -video_size hd720 -frame_rate 30 -socket_name my_socket -interface_id 2
 ```
 
-This command takes an `input.mp4` input file, processes the video as `rawvideo`, uses the Mesh's Muxer to send the data to `192.168.1.100` IP address on port `8000` with `st20` payload type, protocol type `auto`, `hd720` video size, `30` frames per second (frame rate), onto socket name `my_socket` with socket's interface ID set to `2`. Output is saved to `output.mcm` file.
+This command takes an `input.mp4` input file, processes the video as `rawvideo`, uses the Mesh's Muxer to send the data to `192.168.1.100` IP address on port `8000` with `st20` payload type, protocol type `auto`, `hd720` video size, `30` frames per second (frame rate), onto socket name `my_socket` with socket's interface ID set to `2`.
 
 ## FFmpeg Media Communications Mesh Demuxer Plugin
 
@@ -155,7 +155,7 @@ The Mesh's Demuxer plugin for FFmpeg is designed to handle the reception of medi
 - **Type**: Pixel format (Enum)
 - **Default**: `AV_PIX_FMT_YUV422P10LE`
 - **Flags**: Decoding parameter
-- **Possible Values**: ~~`AV_PIX_FMT_NV12`~~, `AV_PIX_FMT_YUV422P`, `AV_PIX_FMT_YUV444P10LE`, `AV_PIX_FMT_RGB24`, `AV_PIX_FMT_YUV422P10LE`
+- **Possible Values**: ~~`AV_PIX_FMT_NV12`~~, ~~`AV_PIX_FMT_YUV422P`~~, ~~`AV_PIX_FMT_YUV444P10LE`~~, ~~`AV_PIX_FMT_RGB24`~~, `AV_PIX_FMT_YUV422P10LE`
 
 #### `frame_rate`
 - **Description**: Set the video frame rate.
@@ -181,7 +181,7 @@ The Mesh's Demuxer plugin for FFmpeg is designed to handle the reception of medi
 To use the Mesh's Demuxer plugin with FFmpeg, pass the `-f mcm` flag and parameters. Here is an example command that sets some of the parameters:
 
 ```bash
-ffmpeg -f mcm -ip_addr 192.168.1.100 -port 8000 -payload_type st22 -protocol_type udp -pixel_format yuv422p10le -video_size hd720 -frame_rate 30 -socket_name my_socket -interface_id 2 -i input.mcm -c:v copy output.mp4
+ffmpeg -f mcm -ip_addr 192.168.1.100 -port 8000 -payload_type st22 -protocol_type udp -pixel_format yuv422p10le -video_size hd720 -frame_rate 30 -socket_name my_socket -interface_id 2 -i "0" -map 0:v output.mp4
 ```
 
 This command receives media data from IP address `192.168.1.100` on port `8000` with `st22` payload type, using `udp` protocol, `hd720` video size, `30` frames per second (frame rate), onto socket named `my_socket` that has `2` set as an interface ID; and then copies the video stream to an output file `output.mp4`.
