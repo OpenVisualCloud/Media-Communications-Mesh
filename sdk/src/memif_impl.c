@@ -359,8 +359,8 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
 
         if (err == MEMIF_ERR_SUCCESS) {
             buf = calloc(1, sizeof(mcm_buffer));
-            buf->len = memif_buf.len - sizeof(buf->metadata.seq_num) - sizeof(buf->metadata.timestamp) - sizeof(buf->len);
-            buf->data = memif_buf.data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len);
+            buf->len = conn_ctx->frame_size;
+            buf->data = memif_buf.data;
             memif_conn->working_bufs[0] = memif_buf;
             memif_conn->working_idx = 0;
             memif_conn->buf_num = buf_num;
@@ -381,10 +381,8 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         } else {
             if (memif_conn->buf_num > 0) {
                 buf = calloc(1, sizeof(mcm_buffer));
-                buf->metadata.seq_num = *(uint16_t*)(memif_conn->working_bufs[memif_conn->working_idx].data);
-                buf->metadata.timestamp = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num));
-                buf->len = *(uint32_t*)(memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp));
-                buf->data = memif_conn->working_bufs[memif_conn->working_idx].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len);
+                buf->len = conn_ctx->frame_size;
+                buf->data = memif_conn->working_bufs[memif_conn->working_idx].data;
                 memif_conn->working_idx++;
                 memif_conn->buf_num--;
             } else { /* Timeout */
@@ -420,14 +418,11 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
     }
 
     if (conn_ctx->type == is_tx) {
-        if (buf->data != memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp) + sizeof(buf->len)) {
+        if (buf->data != memif_conn->working_bufs[0].data) {
             log_error("Unknown buffer address.");
             return -1;
         }
 
-        *(uint16_t *)(memif_conn->working_bufs[0].data) = buf->metadata.seq_num;
-        *(uint32_t *)(memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num)) = buf->metadata.timestamp;
-        *(size_t *)(memif_conn->working_bufs[0].data + sizeof(buf->metadata.seq_num) + sizeof(buf->metadata.timestamp)) = buf->len;
 
         err = memif_tx_burst(memif_conn->conn, memif_conn->qid, &memif_conn->working_bufs[0], 1, &buf_num);
         if (err != MEMIF_ERR_SUCCESS) {

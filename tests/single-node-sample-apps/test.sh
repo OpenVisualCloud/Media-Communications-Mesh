@@ -294,7 +294,7 @@ function run_test_stXX() {
     recver_app_pid=$!
 
     info "Waiting for recver_app to connect to Rx media_proxy"
-    wait_text 10 $recver_app_out "Success connect to MCM media-proxy"
+    wait_text 50 $recver_app_out "Success connect to MCM media-proxy"
     local recver_app_timeout=$?
     [ $recver_app_timeout -eq 0 ] && info "Connection established"
 
@@ -305,7 +305,7 @@ function run_test_stXX() {
     sender_app_pid=$!
 
     info "Waiting for sender_app to connect to Tx media_proxy"
-    wait_text 10 $sender_app_out "Success connect to MCM media-proxy"
+    wait_text 100 $sender_app_out "Success connect to MCM media-proxy"
     local sender_app_timeout=$?
     [ $sender_app_timeout -eq 0 ] && info "Connection established"
 

@@ -353,8 +353,6 @@ int main(int argc, char** argv)
             }
             break;
         }
-        printf("INFO: buf->metadata.seq_num   = %u\n", buf->metadata.seq_num);
-        printf("INFO: buf->metadata.timestamp = %u\n", buf->metadata.timestamp);
         printf("INFO: buf->len = %ld frame size = %u\n", buf->len, frm_size);
 
         clock_gettime(CLOCK_REALTIME, &ts_recv);

@@ -118,7 +118,6 @@ transport frame without conversion. The frame should not have lines padding) */
 int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size)
 {
     int ret = 0;
-    static int frm_idx = 0;
 
     assert(fp != NULL && buf != NULL);
     assert(buf->len >= frame_size);
@@ -127,7 +126,6 @@ int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size)
         ret = -1;
     }
     if(ret >= 0 ) {
-        buf->metadata.seq_num = buf->metadata.timestamp = frm_idx++;
         buf->len = frame_size;
     }
     return ret;
@@ -382,21 +380,19 @@ int main(int argc, char** argv)
     const __useconds_t pacing = 1000000.0 / vid_fps;
     while (keepRunning) {
         /* Timestamp for frame start. */
+        clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
 
         buf = mcm_dequeue_buffer(dp_ctx, -1, NULL);
         if (buf == NULL) {
             break;
         }
-        printf("INFO: buf->metadata.seq_num = %d\n", buf->metadata.seq_num);
-        printf("INFO: buf->metadata.timestamp = %d\n", buf->metadata.timestamp);
-        printf("INFO: buf->len = %ld\n", buf->len);
         printf("INFO: frame_size = %u\n", frame_size);
         // buf->len = frame_size;   // the len field MUST NOT be altered!
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
         } else {
-            if (read_test_data(input_fp, buf, buf->len) < 0) {
+            if (read_test_data(input_fp, buf, frame_size) < 0) {
                 if (input_fp != NULL) {
                     fclose(input_fp);
                     input_fp = NULL;
@@ -407,7 +403,7 @@ int main(int argc, char** argv)
                         printf("Fail to open input file for infinity loop: %s\n", input_file);
                         break;
                     }
-                    if (read_test_data(input_fp, buf, buf->len) < 0) {
+                    if (read_test_data(input_fp, buf, frame_size) < 0) {
                         break;
                     }
                 } else {
