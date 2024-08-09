@@ -78,8 +78,12 @@ ADD_DEFINITIONS(-DIMTL_CONFIG_PATH=\"${CMAKE_INSTALL_PREFIX}/etc/imtl.json\")
 # Include generated *.pb.h files
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include)
 
-add_executable(media_proxy ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
-target_link_libraries(media_proxy PRIVATE m ${MTL_LIB} ${_REFLECTION} ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB})
+add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
+target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${_REFLECTION}
+    ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB})
+
+add_executable(media_proxy ${proxy_srcs})
+target_link_libraries(media_proxy PRIVATE media_proxy_lib)
 
 install(TARGETS media_proxy DESTINATION ${CMAKE_INSTALL_PATH} COMPONENT media_proxy)
 install(FILES imtl.json DESTINATION ${CMAKE_CONFIG_PATH} COMPONENT config)
