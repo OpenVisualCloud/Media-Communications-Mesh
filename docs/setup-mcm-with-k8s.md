@@ -9,19 +9,34 @@ To set up your Minikube cluster and deploy resources, please ensure that the fol
 - **Docker**: Ensure that Docker is installed on your machine. You can install Docker from the [official website](https://docs.docker.com/get-docker/).
 - **Images**: MCM cluster running depends on server docker images. Please follow below steps to create them.
 
-Media Proxy:
+### Scripted build
+
+To build Media-Proxy, FFmpeg and SDK use `./build_docker.sh`. Sample applications, can be found in SDK Dockerimage at [/opt/mcm/recver_app](../sdk/samples/recver_app.c) and [/opt/mcm/sender_app](../sdk/samples/sender_app.c), but we encourage you to use the FFmpeg based workflow, either minimalistic version from this repository or full-capabilities one, the [Intel® Tiber™ Broadcast Suite](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite).
+
 ```bash
-cd <mcm>/media-proxy
-docker build -t mcm/media-proxy:latest .
+# Bellow script accept all docker build parameters, for example fresh rebuild:
+# ./build_docker.sh --no-cache
+./build_docker.sh
 ```
 
-Sample Applications:
+### Manual build
+
+Manual build should be done with build context pointing to the root directory of MCM repository, you should prefer using `./build_docker.sh` instead, as the script guarantee a path independent execution of build process.
+
+Example of manual build:
+
 ```bash
-cd <mcm>/sdk
-docker build -t mcm/sample-app:latest .
+cd <mcm-dir>
+docker build --build-arg=http_proxy --build-arg=https_proxy --build-arg=no_proxy \
+      -t mcm/media-proxy:custom-build" \
+      -f <mcm-dir>/media-proxy/Dockerfile \
+      "<mcm-dir>"
 ```
 
-MTL Manager:
+### MTL Manager build:
+
+To build MTL Manager you need to fetch and build MTL Library from the source, this can be done by following bellow commands:
+
 ```bash
 git clone https://github.com/OpenVisualCloud/Media-Transport-Library.git <mtl-dir>
 cd <mtl-dir>/mananger

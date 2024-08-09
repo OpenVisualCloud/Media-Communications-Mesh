@@ -1,0 +1,44 @@
+
+name: Publish Github Pages Template
+on:
+  workflow_call:
+  workflow_dispatch:
+    branches: [main]
+
+jobs:
+  publishGitHubPages:
+    name: Publish GitHub Pages
+    permissions:
+      contents: read
+      id-token: write
+      pages: write
+    environment:
+          name: github-pages
+          url: ${{ steps.deployment.outputs.page_url }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Secure the runner
+        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+        with:
+          egress-policy: audit
+
+      - name: Checkout
+        uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4.1.6
+
+      - name: Prepare environment for documentation build
+        run:  |
+          apt install make python3 python3-pip python3-sphinx
+          python3 -m pip install sphinx_book_theme myst_parser sphinxcontrib.mermaid
+
+      - name: Build documentation
+        run:  make -C docs/sphinx html
+
+      - name: Upload GitHub Pages artifact
+        uses: actions/upload-pages-artifact@v3.0.1
+        with:
+          path: ./docs/_build/html
+
+      - name: Publish to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
