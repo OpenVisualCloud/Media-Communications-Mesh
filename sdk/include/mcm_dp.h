@@ -144,6 +144,7 @@ typedef enum {
     PAYLOAD_TYPE_ST30_AUDIO,
     PAYLOAD_TYPE_ST40_ANCILLARY,
     PAYLOAD_TYPE_RTSP_VIDEO,
+    PAYLOAD_TYPE_RDMA_VIDEO,
 } mcm_payload_type;
 
 typedef enum {

@@ -20,7 +20,7 @@
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
 #define DEFAULT_SEND_IP "127.0.0.1"
-#define DEFAULT_SEND_PORT "9001"
+#define DEFAULT_SEND_PORT "9002"
 #define DEFAULT_TOTAL_NUM 300
 #define DEFAULT_FRAME_WIDTH 1920
 #define DEFAULT_FRAME_HEIGHT 1080
@@ -312,6 +312,8 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
     } else if (strncmp(payload_type, "rtsp", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
+    } else if (strncmp(payload_type, "rdma", sizeof(payload_type)) == 0) {
+        param.payload_type = PAYLOAD_TYPE_RDMA_VIDEO;
     } else {
         param.payload_type = PAYLOAD_TYPE_NONE;
     }
@@ -344,8 +346,8 @@ int main(int argc, char** argv)
 
     strlcpy(param.remote_addr.ip, send_addr, sizeof(param.remote_addr.ip));
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
-    strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
-    strlcpy(param.local_addr.port, send_port, sizeof(param.local_addr.port));
+    strlcpy(param.local_addr.ip, recv_addr, sizeof(param.local_addr.ip));
+    strlcpy(param.local_addr.port,  recv_port, sizeof(param.local_addr.port));
     frame_size = getFrameSize(pix_fmt, width, height, false);
 
     dp_ctx = mcm_create_connection(&param);
@@ -443,6 +445,11 @@ int main(int argc, char** argv)
         __useconds_t spend = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
         printf("pacing: %d\n", pacing);
         printf("spend: %d\n", spend);
+
+        // TODO: This should not need to be here. BUT RDMA fails without it.
+        if (param.payload_type == PAYLOAD_TYPE_RDMA_VIDEO && pacing > spend) {
+            usleep(pacing - spend);
+        }
     }
 
     sleep(2);

@@ -719,7 +719,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 {
     INFO("ProxyContext: RxStart(const RxControlRequest* request)");
     struct st20p_rx_ops opts = { 0 };
-    mtl_session_context_t* st_ctx = NULL;
+    dp_session_context_t* st_ctx = NULL;
     rx_session_context_t* rx_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
 
@@ -745,11 +745,11 @@ int ProxyContext::RxStart(const RxControlRequest* request)
         return -1;
     }
 
-    st_ctx = new (mtl_session_context_t);
+    st_ctx = new (dp_session_context_t);
     st_ctx->id = incrementMSessionCount();
     st_ctx->type = RX;
     st_ctx->rx_session = rx_ctx;
-    mStCtx.push_back(st_ctx);
+    mDpCtx.push_back(st_ctx);
 
     /* TODO: to be removed later. */
     mRxCtx.push_back(rx_ctx);
@@ -761,7 +761,7 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 {
     INFO("ProxyContext: TxStart(const TxControlRequest* request)");
     struct st20p_tx_ops opts = { 0 };
-    mtl_session_context_t* st_ctx = NULL;
+    dp_session_context_t* st_ctx = NULL;
     tx_session_context_t* tx_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
 
@@ -787,11 +787,11 @@ int ProxyContext::TxStart(const TxControlRequest* request)
         return -1;
     }
 
-    st_ctx = new (mtl_session_context_t);
+    st_ctx = new (dp_session_context_t);
     st_ctx->id = incrementMSessionCount();
     st_ctx->type = TX;
     st_ctx->tx_session = tx_ctx;
-    mStCtx.push_back(st_ctx);
+    mDpCtx.push_back(st_ctx);
 
     /* TODO: to be removed later. */
     mTxCtx.push_back(tx_ctx);
@@ -799,11 +799,47 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     return (st_ctx->id);
 }
 
-int ProxyContext::RxStart(const mcm_conn_param* request)
+int ProxyContext::RxStart_rdma(const mcm_conn_param* request) {
+    rdma_s_ops_t opts = { 0 };
+    dp_session_context_t* dp_ctx = NULL;
+    memif_ops_t memif_ops = { 0 };
+    rx_rdma_session_context_t* rx_ctx = NULL;
+    int ret;
+    if (mDevHandle_rdma == NULL) {
+        ret = rdma_init(&mDevHandle_rdma);
+        if (ret) {
+            INFO("%s, Fail to initialize libfabric.\n", __func__);
+            return -1;
+        }
+    }
+    dp_ctx = new (dp_session_context_t);
+    ParseMemIFParam(request, memif_ops);
+    // TODO: Hardcoded size. fix.
+    opts.transfer_size = request->width * request->height *4;
+    opts.dir = direction::RX;
+    memcpy(&opts.remote_addr, &request->remote_addr, sizeof(request->remote_addr));
+    memcpy(&opts.local_addr, &request->local_addr, sizeof(request->local_addr));
+    rx_ctx = rdma_rx_session_create(mDevHandle_rdma, &opts, &memif_ops);
+    if (rx_ctx == NULL) {
+        INFO("%s, Fail to create RDMA session.", __func__);
+        delete dp_ctx;
+        return -1;
+    }
+    dp_ctx->payload_type = request->payload_type;
+    dp_ctx->rx_rdma_session = rx_ctx;
+    dp_ctx->id = memif_ops.m_session_count;
+    std::cout << "session id: " << dp_ctx->id << std::endl;
+    dp_ctx->type = RX;
+    mDpCtx.push_back(dp_ctx);
+
+    return (dp_ctx->id);
+}
+
+int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
 {
     INFO("ProxyContext: RxStart(const mcm_conn_param* request)");
     struct st20p_rx_ops opts = { 0 };
-    mtl_session_context_t* st_ctx = NULL;
+    dp_session_context_t* st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
     int ret;
 
@@ -859,7 +895,7 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
         return -1;
     }
 
-    st_ctx = new (mtl_session_context_t);
+    st_ctx = new (dp_session_context_t);
 
     ParseMemIFParam(request, memif_ops);
     switch (request->payload_type) {
@@ -944,15 +980,60 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     st_ctx->id = memif_ops.m_session_count;
     std::cout << "session id: " << st_ctx->id << std::endl;
     st_ctx->type = RX;
-    mStCtx.push_back(st_ctx);
+    mDpCtx.push_back(st_ctx);
 
     return (st_ctx->id);
 }
 
-int ProxyContext::TxStart(const mcm_conn_param* request)
+int ProxyContext::RxStart(const mcm_conn_param* request)
+{
+    if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO) {
+        return RxStart_rdma(request);
+    } else {
+        return RxStart_mtl(request);
+    }
+}
+
+int ProxyContext::TxStart_rdma(const mcm_conn_param* request) {
+    rdma_s_ops_t opts = { 0 };
+    dp_session_context_t* dp_ctx = NULL;
+    memif_ops_t memif_ops = { 0 };
+    tx_rdma_session_context_t* tx_ctx = NULL;
+    int ret;
+    if (mDevHandle_rdma == NULL) {
+        ret = rdma_init(&mDevHandle_rdma);
+        if (ret) {
+            INFO("%s, Fail to initialize libfabric.\n", __func__);
+            return -1;
+        }
+    }
+    dp_ctx = new (dp_session_context_t);
+    ParseMemIFParam(request, memif_ops);
+    opts.dir = direction::TX;
+    // TODO: Hardcoded size. fix.
+    opts.transfer_size = request->width * request->height * 4;
+    memcpy(&opts.remote_addr, &request->remote_addr, sizeof(request->remote_addr));
+    memcpy(&opts.local_addr, &request->local_addr, sizeof(request->local_addr));
+    tx_ctx = rdma_tx_session_create(mDevHandle_rdma, &opts, &memif_ops);
+    if (tx_ctx == NULL) {
+        INFO("%s, Fail to create RDMA session.", __func__);
+        delete dp_ctx;
+        return -1;
+    }
+    dp_ctx->payload_type = request->payload_type;
+    dp_ctx->tx_rdma_session = tx_ctx;
+    dp_ctx->id = memif_ops.m_session_count;
+    std::cout << "session id: " << dp_ctx->id << std::endl;
+    dp_ctx->type = TX;
+    mDpCtx.push_back(dp_ctx);
+
+    return (dp_ctx->id);
+}
+
+int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
 {
     INFO("ProxyContext: TxStart(const mcm_conn_param* request)");
-    mtl_session_context_t* st_ctx = NULL;
+    dp_session_context_t* st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
 
     /* add lock to protect MTL library initialization to avoid being called by multi-session simultaneously */
@@ -979,7 +1060,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
         return -1;
     }
 
-    st_ctx = new (mtl_session_context_t);
+    st_ctx = new (dp_session_context_t);
 
     ParseMemIFParam(request, memif_ops);
 
@@ -1050,25 +1131,37 @@ int ProxyContext::TxStart(const mcm_conn_param* request)
     st_ctx->payload_type = request->payload_type;
     st_ctx->id = incrementMSessionCount();
     st_ctx->type = TX;
-    mStCtx.push_back(st_ctx);
+    mDpCtx.push_back(st_ctx);
 
     return (st_ctx->id);
 }
 
+int ProxyContext::TxStart(const mcm_conn_param* request) {
+    if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO) {
+        return TxStart_rdma(request);
+    } else {
+        return TxStart_mtl(request);
+    }
+}
+
 void ProxyContext::TxStop(const int32_t session_id)
 {
-    auto ctx = std::find_if(mStCtx.begin(), mStCtx.end(),
+    auto ctx = std::find_if(mDpCtx.begin(), mDpCtx.end(),
         [session_id](auto it) {
             return it->id == session_id;
         });
 
-    if (ctx != mStCtx.end()) {
+    if (ctx != mDpCtx.end()) {
         INFO("%s, Stop TX session ID: %d", __func__, session_id);
 
         switch ((*ctx)->payload_type) {
         case PAYLOAD_TYPE_ST22_VIDEO:
             mtl_st22p_tx_session_stop((*ctx)->tx_st22p_session);
             mtl_st22p_tx_session_destroy(&(*ctx)->tx_st22p_session);
+            break;
+        case PAYLOAD_TYPE_RDMA_VIDEO:
+            rdma_tx_session_stop((*ctx)->tx_rdma_session);
+            rdma_tx_session_destroy(&(*ctx)->tx_rdma_session);
             break;
         case PAYLOAD_TYPE_ST30_AUDIO:
             mtl_st30_tx_session_stop((*ctx)->tx_st30_session);
@@ -1085,11 +1178,11 @@ void ProxyContext::TxStop(const int32_t session_id)
             break;
         }
 
-        mStCtx.erase(ctx);
+        mDpCtx.erase(ctx);
         delete (*ctx);
 
         /* Destroy device if all sessions stoped. */
-        // if (mStCtx.size() == 0) {
+        // if (mDpCtx.size() == 0) {
         //     mtl_deinit(mDevHandle);
         //     mDevHandle = NULL;
         // }
@@ -1102,13 +1195,13 @@ void ProxyContext::TxStop(const int32_t session_id)
 
 void ProxyContext::RxStop(const int32_t session_id)
 {
-    auto it = std::find_if(mStCtx.begin(), mStCtx.end(),
+    auto it = std::find_if(mDpCtx.begin(), mDpCtx.end(),
         [session_id](auto it) {
             return it->id == session_id;
         });
-    mtl_session_context_t* ctx = *it;
+    dp_session_context_t* ctx = *it;
 
-    if (it != mStCtx.end()) {
+    if (it != mDpCtx.end()) {
         INFO("%s, Stop RX session ID: %d", __func__, session_id);
 
         switch ((*it)->payload_type) {
@@ -1128,17 +1221,21 @@ void ProxyContext::RxStop(const int32_t session_id)
             mtl_rtsp_rx_session_stop((*it)->rx_udp_h264_session);
             mtl_rtsp_rx_session_destroy(&(*it)->rx_udp_h264_session);
             break;
+        case PAYLOAD_TYPE_RDMA_VIDEO:
+            rdma_rx_session_stop((*it)->rx_rdma_session);
+            rdma_rx_session_destroy(&(*it)->rx_rdma_session);
+            break;
         case PAYLOAD_TYPE_ST20_VIDEO:
         default:
             mtl_st20p_rx_session_stop((*it)->rx_session);
             mtl_st20p_rx_session_destroy(&(*it)->rx_session);
             break;
         }
-        mStCtx.erase(it);
+        mDpCtx.erase(it);
         delete (ctx);
 
         /* Destroy device if all sessions stoped. */
-        // if (mStCtx.size() == 0) {
+        // if (mDpCtx.size() == 0) {
         //     mtl_deinit(mDevHandle);
         //     mDevHandle = NULL;
         // }
@@ -1151,7 +1248,7 @@ void ProxyContext::RxStop(const int32_t session_id)
 
 void ProxyContext::Stop()
 {
-    for (auto it : mStCtx) {
+    for (auto it : mDpCtx) {
         if (it->type == TX) {
             mtl_st20p_tx_session_stop(it->tx_session);
             mtl_st20p_tx_session_destroy(&it->tx_session);
@@ -1163,7 +1260,7 @@ void ProxyContext::Stop()
         delete (it);
     }
 
-    mStCtx.clear();
+    mDpCtx.clear();
     st_pthread_mutex_destroy(&sessions_count_mutex_lock);
     // destroy device
     mtl_deinit(mDevHandle);

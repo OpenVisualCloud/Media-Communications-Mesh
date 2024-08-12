@@ -16,7 +16,7 @@
 #include "mcm_dp.h"
 
 #define DEFAULT_RECV_IP "127.0.0.1"
-#define DEFAULT_RECV_PORT "9001"
+#define DEFAULT_RECV_PORT "9002"
 #define DEFAULT_SEND_IP "127.0.0.1"
 #define DEFAULT_SEND_PORT "9001"
 #define DEFAULT_FRAME_WIDTH 1920
@@ -272,6 +272,8 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
     } else if (strncmp(payload_type, "rtsp", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
+    } else if (strncmp(payload_type, "rdma", sizeof(payload_type)) == 0) {
+        param.payload_type = PAYLOAD_TYPE_RDMA_VIDEO;
     } else {
         param.payload_type = PAYLOAD_TYPE_NONE;
     }
@@ -304,10 +306,10 @@ int main(int argc, char** argv)
         break;
     }
 
-    strlcpy(param.remote_addr.ip, recv_addr, sizeof(param.remote_addr.ip));
-    strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
+    strlcpy(param.remote_addr.ip, send_addr, sizeof(param.remote_addr.ip));
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
-    strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
+    strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
+    strlcpy(param.local_addr.ip, recv_addr, sizeof(param.local_addr.ip));
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {

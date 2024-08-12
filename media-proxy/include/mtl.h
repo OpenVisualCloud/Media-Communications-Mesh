@@ -40,20 +40,6 @@ extern "C" {
 #define SCH_CNT 3
 #define TASKLETS 1000
 
-enum direction {
-    TX,
-    RX
-};
-
-typedef struct {
-    uint8_t is_master;
-    char app_name[32];
-    char interface_name[32];
-    uint32_t interface_id;
-    char socket_path[108];
-    uint32_t m_session_count;
-} memif_ops_t;
-
 typedef struct {
     mtl_handle st;
     int idx;
@@ -481,23 +467,6 @@ typedef struct {
     uint64_t stat_frame_first_rx_time;
     double expect_fps;
 } rx_st40_session_context_t;
-
-typedef struct {
-    uint32_t id;
-    enum direction type;
-    mcm_payload_type payload_type;
-    union {
-        tx_session_context_t* tx_session;
-        rx_session_context_t* rx_session;
-        tx_st22p_session_context_t* tx_st22p_session;
-        rx_st22p_session_context_t* rx_st22p_session;
-        tx_st30_session_context_t* tx_st30_session;
-        rx_st30_session_context_t* rx_st30_session;
-        rx_udp_h264_session_context_t* rx_udp_h264_session;
-        tx_st40_session_context_t* tx_st40_session;
-        rx_st40_session_context_t* rx_st40_session;
-    };
-} mtl_session_context_t;
 
 /* Initialize MTL library */
 mtl_handle inst_init(struct mtl_init_params* st_param);

@@ -71,16 +71,23 @@ add_custom_command(
     DEPENDS "${proto}"
 )
 
+# Find the libfabric library
+find_library(LIBFABRIC NAMES fabric)
+
+# Find the libfabric header files
+find_path(LIBFABRIC_INCLUDE_DIR NAMES rdma/fabric.h)
+
 set(CMAKE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin)
 set(CMAKE_CONFIG_PATH ${CMAKE_INSTALL_PREFIX}/etc)
 ADD_DEFINITIONS(-DIMTL_CONFIG_PATH=\"${CMAKE_INSTALL_PREFIX}/etc/imtl.json\")
+ADD_DEFINITIONS(-D_GNU_SOURCE)
 
 # Include generated *.pb.h files
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include)
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ${LIBFABRIC_INCLUDE_DIR})
 
 add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
 target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${_REFLECTION}
-    ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB})
+    ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB} ${LIBFABRIC})
 
 add_executable(media_proxy ${proxy_srcs})
 target_link_libraries(media_proxy PRIVATE media_proxy_lib)
