@@ -30,12 +30,14 @@ set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
-enable_testing()
-
 add_subdirectory(${SDK_DIR})
 add_subdirectory(${MP_DIR})
-add_subdirectory(${TESTS_DIR})
+
+option(BUILD_UNIT_TESTS "Build and enable unit tests" ON)
+if (BUILD_UNIT_TESTS)
+    enable_testing()
+    add_subdirectory(${TESTS_DIR})
+endif()
 
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
 target_link_libraries(media_proxy_lib PUBLIC mcm_dp)
-
