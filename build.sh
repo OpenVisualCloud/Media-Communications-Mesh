@@ -9,11 +9,14 @@ SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 
 # Set build type. ("Debug" or "Release")
 BUILD_TYPE="${BUILD_TYPE:-Release}"
+# To disable the building of unit tests, set the value to "OFF".
+BUILD_UNIT_TESTS="${BUILD_UNIT_TESTS:-ON}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
 
 cmake -B "${SCRIPT_DIR}/out" \
     -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
     -DCMAKE_INSTALL_PREFIX="${INSTALL_PREFIX}" \
+    -DBUILD_UNIT_TESTS="${BUILD_UNIT_TESTS}" \
     "${SCRIPT_DIR}"
 cmake --build "${SCRIPT_DIR}/out" -j
 

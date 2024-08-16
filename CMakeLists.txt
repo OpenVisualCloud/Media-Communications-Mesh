@@ -22,6 +22,7 @@ set(CMAKE_SKIP_RPATH TRUE)
 set(MCM_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 set(MP_DIR ${CMAKE_CURRENT_SOURCE_DIR}/media-proxy)
 set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
+set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
 
 # Setup output folder
@@ -32,5 +33,11 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(${SDK_DIR})
 add_subdirectory(${MP_DIR})
 
-target_include_directories(media_proxy PUBLIC ${SDK_INCLUDE_DIR})
-target_link_libraries(media_proxy PUBLIC mcm_dp)
+option(BUILD_UNIT_TESTS "Build and enable unit tests" ON)
+if (BUILD_UNIT_TESTS)
+    enable_testing()
+    add_subdirectory(${TESTS_DIR})
+endif()
+
+target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
+target_link_libraries(media_proxy_lib PUBLIC mcm_dp)
