@@ -5,6 +5,7 @@
 
 # Directories
 script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+. "${script_dir}/test_memif.sh"
 bin_dir="$script_dir/../../out/bin"
 out_dir="$script_dir/out"
 
@@ -373,6 +374,8 @@ do
     case $test_option in
         memif)
             run_test_memif
+            run_test_memif_tx
+            run_test_memif_rx
             ;;
         st20)
             run_test_stXX st20

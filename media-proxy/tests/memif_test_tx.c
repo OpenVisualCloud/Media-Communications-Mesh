@@ -18,8 +18,8 @@ typedef struct {
     FILE* video_fd;
 
     size_t frame_idx;
-    uint16_t vid_width;
-    uint16_t vid_height;
+    uint16_t width;
+    uint16_t height;
     size_t frame_size;
 
     bool loop_mode;
@@ -44,7 +44,7 @@ int build_frames(app_context_t* p_app_ctx, memif_buffer_t* tx_bufs, uint32_t buf
                 rewind(p_app_ctx->video_fd);
                 ret = 0;
             } else {
-                perror("Error when read frame file");
+                perror("End of file. Read frame resulted in ");
                 ret = -1;
             }
             break;
@@ -60,7 +60,7 @@ int try_send_msg(app_context_t* p_app_ctx)
 
     /* allocate memory */
     uint16_t qid = 0;
-    uint32_t buf_size = FRAME_SIZE;
+    uint32_t buf_size = p_app_ctx->frame_size;
     uint16_t tx_buf_num = 0, tx = 0;
     memif_buffer_t* tx_bufs = NULL;
     shm_connection_t* pmemif = &p_app_ctx->memif_intf;
@@ -214,9 +214,17 @@ int main(int argc, char** argv)
     app_ctx.memif_if_name = IF_NAME;
     app_ctx.memif_if_id = IF_ID;
     app_ctx.memif_socket_path = SOCKET_PATH;
+    app_ctx.width = 1920;
+    app_ctx.height = 1080;
 
-    while ((opt = getopt(argc, argv, "n:i:d:f:s:ml")) != -1) {
+    while ((opt = getopt(argc, argv, "w:h:n:i:d:f:s:ml")) != -1) {
         switch (opt) {
+        case 'w':
+            app_ctx.width = atoi(optarg);
+            break;
+        case 'h':
+            app_ctx.height = atoi(optarg);
+            break;
         case 'n':
             app_ctx.memif_app_name = optarg;
             break;
@@ -239,10 +247,11 @@ int main(int argc, char** argv)
             app_ctx.loop_mode = true;
             break;
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-n app_name] [-i interface_name] [-d interface_id] [-f file] [-s socket] [-m] [-l] \n", argv[0]);
+            fprintf(stderr, "Usage: %s [-w width] [-h height] [-n app_name] [-i interface_name] [-d interface_id] [-f file] [-s socket] [-m] [-l] \n", argv[0]);
             exit(EXIT_FAILURE);
         }
     }
+    app_ctx.frame_size = (size_t)(app_ctx.width) * (size_t)(app_ctx.height) * 4;
 
     printf("Input File  : %s\n", app_ctx.video_fn);
     printf("MemIF Mode  : %s\n", is_master ? "Master" : "Slave");
@@ -273,7 +282,7 @@ int main(int argc, char** argv)
     /* Create memif interfaces
      * Both interaces are assigned the same socket and same id to create a loopback. */
     memif_conn_args.socket = memif_socket;
-    memif_conn_args.buffer_size = FRAME_SIZE;
+    memif_conn_args.buffer_size = app_ctx.frame_size;
     memif_conn_args.log2_ring_size = 2;
     strncpy(memif_conn_args.interface_name, app_ctx.memif_if_name,
         sizeof(memif_conn_args.interface_name));
