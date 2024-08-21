@@ -381,7 +381,7 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         } else {
             if (memif_conn->buf_num > 0) {
                 buf = calloc(1, sizeof(mcm_buffer));
-                buf->len = conn_ctx->frame_size;
+                buf->len = memif_conn->working_bufs[memif_conn->working_idx].len;
                 buf->data = memif_conn->working_bufs[memif_conn->working_idx].data;
                 memif_conn->working_idx++;
                 memif_conn->buf_num--;
@@ -423,6 +423,9 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
             return -1;
         }
 
+        /* set the actual size of data in the buffer */
+        if (buf->len < memif_conn->working_bufs[0].len)
+            memif_conn->working_bufs[0].len = buf->len;
 
         err = memif_tx_burst(memif_conn->conn, memif_conn->qid, &memif_conn->working_bufs[0], 1, &buf_num);
         if (err != MEMIF_ERR_SUCCESS) {
