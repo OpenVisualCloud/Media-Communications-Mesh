@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/internal.h"
@@ -5,28 +11,29 @@
 #include "libavformat/avformat.h"
 #include "libavformat/mux.h"
 #include "libavformat/internal.h"
+#include "libavdevice/mcm_common.h"
 #include <mcm_dp.h>
-#include <bsd/string.h>
 
-typedef struct McmDemuxerContext {
+typedef struct McmVideoDemuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
     char *ip_addr;
     char *port;
-    char *payload_type;
     char *protocol_type;
+    char *payload_type;
+    char *socket_name;
+    int interface_id;
+
     int width;
     int height;
     enum AVPixelFormat pixel_format;
     AVRational frame_rate;
-    char *socket_name;
-    int interface_id;
 
     mcm_conn_context *rx_handle;
     bool first_frame;
     int frame_size;
-} McmDemuxerContext;
+} McmVideoDemuxerContext;
 
 static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
 {
@@ -57,74 +64,22 @@ transport frame without conversion. The frame should not have lines padding) */
     return (int)size;
 }
 
-static int mcm_read_header(AVFormatContext* avctx)
+static int mcm_video_read_header(AVFormatContext* avctx)
 {
-    McmDemuxerContext *s = avctx->priv_data;
+    McmVideoDemuxerContext *s = avctx->priv_data;
     mcm_conn_param param = { 0 };
     AVStream *st;
+    int err;
 
-    strlcpy(param.remote_addr.ip, s->ip_addr, sizeof(param.remote_addr.ip));
-    strlcpy(param.local_addr.port, s->port, sizeof(param.local_addr.port));
-
-    /* protocol type */
-    if (strcmp(s->protocol_type, "memif") == 0) {
-        param.protocol = PROTO_MEMIF;
-        param.memif_interface.is_master = 0;
-        snprintf(param.memif_interface.socket_path, sizeof(param.memif_interface.socket_path),
-            "/run/mcm/mcm_memif_%s.sock", s->socket_name ? s->socket_name : "0");
-        param.memif_interface.interface_id = s->interface_id;
-    } else if (strcmp(s->protocol_type, "udp") == 0) {
-        param.protocol = PROTO_UDP;
-    } else if (strcmp(s->protocol_type, "tcp") == 0) {
-        param.protocol = PROTO_TCP;
-    } else if (strcmp(s->protocol_type, "http") == 0) {
-        param.protocol = PROTO_HTTP;
-    } else if (strcmp(s->protocol_type, "grpc") == 0) {
-        param.protocol = PROTO_GRPC;
-    } else {
-        param.protocol = PROTO_AUTO;
-    }
-
-    /* payload type */
-    if (strcmp(s->payload_type, "st20") == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
-    } else if (strcmp(s->payload_type, "st22") == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
-        param.payload_codec = PAYLOAD_CODEC_JPEGXS;
-    } else if (strcmp(s->payload_type, "st30") == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
-    } else if (strcmp(s->payload_type, "st40") == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
-    } else if (strcmp(s->payload_type, "rtsp") == 0) {
-        param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "unknown payload type\n");
-        return AVERROR(EINVAL);
-    }
+    err = mcm_parse_conn_param(&param, is_rx, s->ip_addr, s->port, s->protocol_type,
+                               s->payload_type, s->socket_name, s->interface_id);
+    if (err)
+        return err;
 
     switch (param.payload_type) {
-    case PAYLOAD_TYPE_ST30_AUDIO:
-        /* audio format */
-        // param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-        // param.payload_args.audio_args.channel = 2;
-        // param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
-        // param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
-        // param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
-        av_log(avctx, AV_LOG_ERROR, "payload type st30 is not yet supported\n");
-        return AVERROR(EINVAL); // not supported yet
-
-    case PAYLOAD_TYPE_ST40_ANCILLARY:
-        /* ancillary format */
-        // param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION;
-        // param.payload_args.anc_args.type = ANC_TYPE_FRAME_LEVEL;
-        // param.payload_args.anc_args.fps = av_q2d(s->frame_rate);
-        av_log(avctx, AV_LOG_ERROR, "payload type st40 is not yet supported\n");
-        return AVERROR(EINVAL); // not supported yet
-
     case PAYLOAD_TYPE_RTSP_VIDEO:
     case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_ST22_VIDEO:
-    default:
         /* video format */
         param.payload_args.video_args.width   = param.width = s->width;
         param.payload_args.video_args.height  = param.height = s->height;
@@ -150,9 +105,11 @@ static int mcm_read_header(AVFormatContext* avctx)
 
         param.payload_args.video_args.pix_fmt = param.pix_fmt;
         break;
-    }
 
-    param.type = is_rx;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unknown payload type\n");
+        return AVERROR(EINVAL);
+    }
 
     s->frame_size = getFrameSize(param.pix_fmt, s->width, s->height, false);
     if (s->frame_size <= 0) {
@@ -187,9 +144,9 @@ static int mcm_read_header(AVFormatContext* avctx)
     return 0;
 }
 
-static int mcm_read_packet(AVFormatContext* avctx, AVPacket* pkt)
+static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
 {
-    McmDemuxerContext *s = avctx->priv_data;
+    McmVideoDemuxerContext *s = avctx->priv_data;
     mcm_buffer *buf = NULL;
     int timeout = s->first_frame ? -1 : 1000;
     int err = 0;
@@ -221,17 +178,17 @@ static int mcm_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     return s->frame_size;
 }
 
-static int mcm_read_close(AVFormatContext* avctx)
+static int mcm_video_read_close(AVFormatContext* avctx)
 {
-    McmDemuxerContext* s = avctx->priv_data;
+    McmVideoDemuxerContext* s = avctx->priv_data;
 
     mcm_destroy_connection(s->rx_handle);
     return 0;
 }
 
-#define OFFSET(x) offsetof(McmDemuxerContext, x)
+#define OFFSET(x) offsetof(McmVideoDemuxerContext, x)
 #define DEC (AV_OPT_FLAG_DECODING_PARAM)
-static const AVOption mcm_rx_options[] = {
+static const AVOption mcm_video_rx_options[] = {
     { "ip_addr", "set remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
     { "port", "set local port", OFFSET(port), AV_OPT_TYPE_STRING, {.str = "9001"}, .flags = DEC },
     { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = DEC },
@@ -244,23 +201,23 @@ static const AVOption mcm_rx_options[] = {
     { NULL },
 };
 
-static const AVClass mcm_demuxer_class = {
-    .class_name = "mcm demuxer",
+static const AVClass mcm_video_demuxer_class = {
+    .class_name = "mcm video demuxer",
     .item_name = av_default_item_name,
-    .option = mcm_rx_options,
+    .option = mcm_video_rx_options,
     .version = LIBAVUTIL_VERSION_INT,
     .category = AV_CLASS_CATEGORY_DEVICE_INPUT,
 };
 
 AVInputFormat ff_mcm_demuxer = {
         .name = "mcm",
-        .long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh"),
-        .priv_data_size = sizeof(McmDemuxerContext),
-        .read_header = mcm_read_header,
-        .read_packet = mcm_read_packet,
-        .read_close = mcm_read_close,
+        .long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh video"),
+        .priv_data_size = sizeof(McmVideoDemuxerContext),
+        .read_header = mcm_video_read_header,
+        .read_packet = mcm_video_read_packet,
+        .read_close = mcm_video_read_close,
         .flags = AVFMT_NOFILE,
         .extensions = "mcm",
         .raw_codec_id = AV_CODEC_ID_RAWVIDEO,
-        .priv_class = &mcm_demuxer_class,
+        .priv_class = &mcm_video_demuxer_class,
 };

@@ -10,8 +10,8 @@
 #include "libavformat/avformat.h"
 #include "libavformat/mux.h"
 #include "libavformat/internal.h"
+#include "libavdevice/mcm_common.h"
 #include <mcm_dp.h>
-#include <bsd/string.h>
 
 typedef struct McmAudioDemuxerContext {
     const AVClass *class; /**< Class for private options. */
@@ -19,8 +19,8 @@ typedef struct McmAudioDemuxerContext {
     /* arguments */
     char *ip_addr;
     char *port;
-    char *payload_type;
     char *protocol_type;
+    char *payload_type;
     char *socket_name;
     int interface_id;
 
@@ -33,34 +33,16 @@ static int mcm_audio_read_header(AVFormatContext* avctx)
     McmAudioDemuxerContext *s = avctx->priv_data;
     mcm_conn_param param = { 0 };
     AVStream *st;
+    int err;
 
-    strlcpy(param.remote_addr.ip, s->ip_addr, sizeof(param.remote_addr.ip));
-    strlcpy(param.local_addr.port, s->port, sizeof(param.local_addr.port));
-
-    /* protocol type */
-    if (strcmp(s->protocol_type, "memif") == 0) {
-        param.protocol = PROTO_MEMIF;
-        param.memif_interface.is_master = 0;
-        snprintf(param.memif_interface.socket_path, sizeof(param.memif_interface.socket_path),
-            "/run/mcm/mcm_memif_%s.sock", s->socket_name ? s->socket_name : "0");
-        param.memif_interface.interface_id = s->interface_id;
-    } else if (strcmp(s->protocol_type, "udp") == 0) {
-        param.protocol = PROTO_UDP;
-    } else if (strcmp(s->protocol_type, "tcp") == 0) {
-        param.protocol = PROTO_TCP;
-    } else if (strcmp(s->protocol_type, "http") == 0) {
-        param.protocol = PROTO_HTTP;
-    } else if (strcmp(s->protocol_type, "grpc") == 0) {
-        param.protocol = PROTO_GRPC;
-    } else {
-        param.protocol = PROTO_AUTO;
-    }
+    err = mcm_parse_conn_param(&param, is_rx, s->ip_addr, s->port, s->protocol_type,
+                               s->payload_type, s->socket_name, s->interface_id);
+    if (err)
+        return err;
 
     /* payload type */
-    if (strcmp(s->payload_type, "st30") == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
-    } else {
-        av_log(avctx, AV_LOG_ERROR, "unknown payload type\n");
+    if (param.payload_type != PAYLOAD_TYPE_ST30_AUDIO) {
+        av_log(avctx, AV_LOG_ERROR, "Unknown payload type\n");
         return AVERROR(EINVAL);
     }
 
@@ -72,11 +54,9 @@ static int mcm_audio_read_header(AVFormatContext* avctx)
     param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
     param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
 
-    param.type = is_rx;
-
     s->rx_handle = mcm_create_connection(&param);
     if (!s->rx_handle) {
-        av_log(avctx, AV_LOG_ERROR, "create connection failed\n");
+        av_log(avctx, AV_LOG_ERROR, "Create connection failed\n");
         return AVERROR(EIO);
     }
 
@@ -116,7 +96,7 @@ static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         if (!err)
             return AVERROR_EOF;
 
-        av_log(avctx, AV_LOG_ERROR, "dequeue buffer error %d\n", err);
+        av_log(avctx, AV_LOG_ERROR, "Dequeue buffer error %d\n", err);
         return AVERROR(EIO);
     }
 
@@ -129,7 +109,7 @@ static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
     if ((err = mcm_enqueue_buffer(s->rx_handle, buf)) != 0) {
-        av_log(avctx, AV_LOG_ERROR, "enqueue buffer error %d\n", err);
+        av_log(avctx, AV_LOG_ERROR, "Enqueue buffer error %d\n", err);
         return AVERROR(EIO);
     }
 
@@ -149,8 +129,8 @@ static int mcm_audio_read_close(AVFormatContext* avctx)
 static const AVOption mcm_audio_rx_options[] = {
     { "ip_addr", "set remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
     { "port", "set local port", OFFSET(port), AV_OPT_TYPE_STRING, {.str = "9001"}, .flags = DEC },
-    { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = DEC },
     { "protocol_type", "set protocol type", OFFSET(protocol_type), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = DEC },
+    { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
     { "interface_id", "set interface ID", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },
     { NULL },
