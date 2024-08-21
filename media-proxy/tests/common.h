@@ -14,7 +14,7 @@
 #include "libmemif.h"
 #include "shm_memif.h"
 
-#define FRAME_SIZE 5184000 // yuv422p10be (1920*1080*2.5)
+#define FRAME_SIZE 8294400 // yuv422p10le (1920*1080*4)
 #define FRAME_COUNT 1
 
 /* maximum tx/rx memif buffers */

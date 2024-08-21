@@ -18,8 +18,8 @@ typedef struct {
     FILE* video_fd;
 
     size_t frame_idx;
-    uint16_t vid_width;
-    uint16_t vid_height;
+    uint16_t width;
+    uint16_t height;
     size_t frame_size;
     uint32_t frame_cnt;
 
@@ -148,9 +148,17 @@ int main(int argc, char** argv)
     app_ctx.memif_app_name = APP_NAME;
     app_ctx.memif_if_name = IF_NAME;
     app_ctx.memif_socket_path = SOCKET_PATH;
+    app_ctx.width = 1920;
+    app_ctx.height = 1080;
 
-    while ((opt = getopt(argc, argv, "n:i:f:s:m")) != -1) {
+    while ((opt = getopt(argc, argv, "w:h:n:i:f:s:m")) != -1) {
         switch (opt) {
+        case 'w':
+            app_ctx.width = atoi(optarg);
+            break;
+        case 'h':
+            app_ctx.height = atoi(optarg);
+            break;
         case 'n':
             app_ctx.memif_app_name = optarg;
             break;
@@ -171,6 +179,7 @@ int main(int argc, char** argv)
             exit(EXIT_FAILURE);
         }
     }
+    app_ctx.frame_size = (size_t)(app_ctx.width) * (size_t)(app_ctx.height) * 4;
 
     printf("MemIF Mode  : %s\n", is_master ? "Master" : "Slave");
     printf("MemIF App Name: %s\n", app_ctx.memif_app_name);
@@ -203,7 +212,7 @@ int main(int argc, char** argv)
     app_ctx.memif_if_id = IF_ID;
     memif_conn_args.socket = memif_socket;
     memif_conn_args.interface_id = app_ctx.memif_if_id;
-    memif_conn_args.buffer_size = FRAME_SIZE;
+    memif_conn_args.buffer_size = app_ctx.frame_size;
     memif_conn_args.log2_ring_size = 2;
     strncpy(memif_conn_args.interface_name, app_ctx.memif_if_name,
         sizeof(memif_conn_args.interface_name));
@@ -219,23 +228,6 @@ int main(int argc, char** argv)
         INFO("memif_create_socket: %s", memif_strerror(ret));
         exit(-1);
     }
-
-    /* Create memif interfaces
-     * Both interaces are assigned the same socket and same id to create a loopback. */
-    /*
-    memcpy(&app_ctx_1, &app_ctx, sizeof(app_context_t));
-    app_ctx_1.video_fn = "./output1.yuv";
-    app_ctx_1.memif_if_id = IF_ID + 1;
-    memif_conn_args.interface_id = app_ctx_1.memif_if_id;
-
-    INFO("Create memif interface.");
-    ret = memif_create(&memif_conn_1, &memif_conn_args,
-        on_connect, on_disconnect, on_receive, &app_ctx_1);
-    if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create_socket: %s", memif_strerror(ret));
-        exit(-1);
-    }
-    */
 
     do {
         // INFO("RX waiting event.");

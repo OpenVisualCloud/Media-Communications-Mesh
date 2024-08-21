@@ -27,3 +27,6 @@ media-proxy/protos/controller.pb.h
 ffmpeg-plugin/FFmpeg/
 
 docs/_build
+media-proxy/tests/test.yuv
+media-proxy/tests/memif_test_rx
+media-proxy/tests/memif_test_tx
