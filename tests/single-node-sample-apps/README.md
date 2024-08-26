@@ -31,6 +31,7 @@ sudo ./test.sh <test-option> <pf-bdf> <input-file> <duration> <frames_number> <w
    * `memif` – use a memif direct connection
    * `st20` – use an ST20 connection via media proxy
    * `st22` – use an ST22 connection via media proxy
+   * `af_xdp` - use native_af_xdp connection for media proxy. MtlManager required.
 
 * `pf-bdf` – NIC PF bus device function, default `0000:32:00.1`. VFs will be created on top of this PF.
 * `input-file` – input video file path

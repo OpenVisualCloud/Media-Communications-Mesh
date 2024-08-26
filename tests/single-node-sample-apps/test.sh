@@ -6,6 +6,7 @@
 # Directories
 script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 . "${script_dir}/test_memif.sh"
+. "${script_dir}/test_af_xdp.sh"
 bin_dir="$script_dir/../../out/bin"
 out_dir="$script_dir/out"
 
@@ -31,6 +32,7 @@ pixel_format="${9:-yuv422p10le}"
 wait_interval=$((duration + 5))
 
 # Stdout/stderr forwarded output file names
+mtl_manager_out="$out_dir/out_mtl_manager.txt"
 tx_media_proxy_out="$out_dir/out_tx_media_proxy.txt"
 rx_media_proxy_out="$out_dir/out_rx_media_proxy.txt"
 sender_app_out="$out_dir/out_sender_app.txt"
@@ -372,6 +374,14 @@ do
     mkdir -p "$out_dir"
 
     case $test_option in
+        af_xdp)
+            if [ -n "$debug" ]; then
+                error "Work in progress."
+                exit 0
+            fi
+            run_test_af_xdp_rx
+            run_test_af_xdp_tx
+            ;;
         memif)
             run_test_memif
             run_test_memif_tx
