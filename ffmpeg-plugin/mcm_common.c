@@ -5,13 +5,13 @@
  */
 
 #include "mcm_common.h"
-#include "libavutil/opt.h"
 #include <bsd/string.h>
 
 /* Parse MCM connection parameters and fill the structure */
-int mcm_parse_conn_param(mcm_conn_param *param, transfer_type type,
-                         char *ip_addr, char *port, char *protocol_type,
-                         char *payload_type, char *socket_name, int interface_id)
+int mcm_parse_conn_param(AVFormatContext* avctx, mcm_conn_param *param,
+                         transfer_type type, char *ip_addr, char *port,
+                         char *protocol_type, char *payload_type,
+                         char *socket_name, int interface_id)
 {
     param->type = type;
 
@@ -54,9 +54,65 @@ int mcm_parse_conn_param(mcm_conn_param *param, transfer_type type,
     } else if (!strcmp(payload_type, "rtsp")) {
         param->payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
     } else {
-        av_log(NULL, AV_LOG_ERROR, "Unknown payload type\n");
+        av_log(avctx, AV_LOG_ERROR, "Unknown payload type\n");
         return AVERROR(EINVAL);
     }
 
     return 0;
+}
+
+/* Parse MCM audio sampling rate */
+int mcm_parse_audio_sample_rate(AVFormatContext* avctx, mcm_audio_sampling *sample_rate,
+                                int value)
+{
+    switch (value) {
+    case 44100:
+        *sample_rate = AUDIO_SAMPLING_44K;
+        return 0;
+    case 48000:
+        *sample_rate = AUDIO_SAMPLING_48K;
+        return 0;
+    case 96000:
+        *sample_rate = AUDIO_SAMPLING_96K;
+        return 0;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Audio sample rate not supported\n");
+        return AVERROR(EINVAL);
+    }
+}
+
+/* Parse MCM audio packet time */
+int mcm_parse_audio_packet_time(AVFormatContext* avctx, mcm_audio_ptime *ptime,
+                                char *str)
+{
+    if (!str || !strcmp(str, "1ms")) {
+        *ptime = AUDIO_PTIME_1MS;
+        return 0;
+    }
+    if (!strcmp(str, "125us")) {
+        *ptime = AUDIO_PTIME_125US;
+        return 0;
+    }
+
+    av_log(avctx, AV_LOG_ERROR, "Audio packet time not supported\n");
+    return AVERROR(EINVAL);
+}
+
+/* Parse MCM audio PCM format and codec id */
+int mcm_parse_audio_pcm_format(AVFormatContext* avctx, mcm_audio_format *fmt,
+                               enum AVCodecID *codec_id, char *str)
+{
+    if (!str || !strcmp(str, "pcm24")) {
+        *fmt = AUDIO_FMT_PCM24;
+        *codec_id = AV_CODEC_ID_PCM_S24BE;
+        return 0;
+    }
+    if (!strcmp(str, "pcm16")) {
+        *fmt = AUDIO_FMT_PCM16;
+        *codec_id = AV_CODEC_ID_PCM_S16BE;
+        return 0;
+    }
+
+    av_log(avctx, AV_LOG_ERROR, "Audio PCM format not supported\n");
+    return AVERROR(EINVAL);
 }

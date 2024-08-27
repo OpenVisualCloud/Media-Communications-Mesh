@@ -38,8 +38,9 @@ static int mcm_video_write_header(AVFormatContext* avctx)
     mcm_conn_param param = { 0 };
     int err;
 
-    err = mcm_parse_conn_param(&param, is_tx, s->ip_addr, s->port, s->protocol_type,
-                               s->payload_type, s->socket_name, s->interface_id);
+    err = mcm_parse_conn_param(avctx, &param, is_tx, s->ip_addr, s->port,
+                               s->protocol_type, s->payload_type, s->socket_name,
+                               s->interface_id);
     if (err)
         return err;
 
@@ -129,7 +130,7 @@ static const AVOption mcm_video_tx_options[] = {
     { "protocol_type", "set protocol type", OFFSET(protocol_type), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = ENC },
     { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = ENC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = ENC },
-    { "interface_id", "set interface ID", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, ENC },
+    { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, ENC },
     { "video_size", "set video frame size given a string such as 640x480 or hd720", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1920x1080"}, 0, 0, ENC },
     { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV422P10LE}, AV_PIX_FMT_NONE, INT_MAX, ENC },
     { "frame_rate", "set video frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, ENC },

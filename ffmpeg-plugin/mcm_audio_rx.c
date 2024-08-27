@@ -24,6 +24,11 @@ typedef struct McmAudioDemuxerContext {
     char *socket_name;
     int interface_id;
 
+    int channels;
+    int sample_rate;
+    char* ptime;
+    char* pcm_format;
+
     mcm_conn_context *rx_handle;
     bool first_frame;
 } McmAudioDemuxerContext;
@@ -31,12 +36,17 @@ typedef struct McmAudioDemuxerContext {
 static int mcm_audio_read_header(AVFormatContext* avctx)
 {
     McmAudioDemuxerContext *s = avctx->priv_data;
+    mcm_audio_sampling mcm_sample_rate;
     mcm_conn_param param = { 0 };
+    mcm_audio_ptime mcm_ptime;
+    mcm_audio_format mcm_fmt;
+    enum AVCodecID codec_id;
     AVStream *st;
     int err;
 
-    err = mcm_parse_conn_param(&param, is_rx, s->ip_addr, s->port, s->protocol_type,
-                               s->payload_type, s->socket_name, s->interface_id);
+    err = mcm_parse_conn_param(avctx, &param, is_rx, s->ip_addr, s->port,
+                               s->protocol_type, s->payload_type, s->socket_name,
+                               s->interface_id);
     if (err)
         return err;
 
@@ -46,13 +56,24 @@ static int mcm_audio_read_header(AVFormatContext* avctx)
         return AVERROR(EINVAL);
     }
 
+    err = mcm_parse_audio_sample_rate(avctx, &mcm_sample_rate, s->sample_rate);
+    if (err)
+        return err;
+
+    err = mcm_parse_audio_packet_time(avctx, &mcm_ptime, s->ptime);
+    if (err)
+        return err;
+
+    err = mcm_parse_audio_pcm_format(avctx, &mcm_fmt, &codec_id, s->pcm_format);
+    if (err)
+        return err;
+
     /* audio format */
-    /* TODO: replace with parameters received from context */
     param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-    param.payload_args.audio_args.channel = 2;
-    param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
-    param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
-    param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
+    param.payload_args.audio_args.channel = s->channels;
+    param.payload_args.audio_args.sampling = mcm_sample_rate;
+    param.payload_args.audio_args.ptime = mcm_ptime;
+    param.payload_args.audio_args.format = mcm_fmt;
 
     s->rx_handle = mcm_create_connection(&param);
     if (!s->rx_handle) {
@@ -67,16 +88,15 @@ static int mcm_audio_read_header(AVFormatContext* avctx)
     avpriv_set_pts_info(st, 64, 1, 1000000);
 
     st->codecpar->codec_type = AVMEDIA_TYPE_AUDIO;
-    st->codecpar->codec_id   = AV_NE(AV_CODEC_ID_PCM_S16BE, AV_CODEC_ID_PCM_S16LE);
-    st->codecpar->sample_rate = 22050;
-    st->codecpar->ch_layout.nb_channels = 2;
+    st->codecpar->codec_id = codec_id;
+    st->codecpar->ch_layout.nb_channels = s->channels;
+    st->codecpar->sample_rate = s->sample_rate;
 
     s->first_frame = true;
 
-    /* TODO: replace with parameters received from context */
     av_log(avctx, AV_LOG_INFO,
-           "codec:%s sampling:%u ch:%u ptime:1ms\n",
-           "pcm16", 20050, 2);
+           "codec:%s sampling:%d ch:%d ptime:%s\n",
+           avcodec_get_name(codec_id), s->sample_rate, s->channels, s->ptime);
     return 0;
 }
 
@@ -85,9 +105,7 @@ static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     McmAudioDemuxerContext *s = avctx->priv_data;
     mcm_buffer *buf = NULL;
     int timeout = s->first_frame ? -1 : 1000;
-    int err = 0;
-    int ret;
-    size_t len;
+    int ret, len, err = 0;
 
     s->first_frame = false;
 
@@ -132,7 +150,11 @@ static const AVOption mcm_audio_rx_options[] = {
     { "protocol_type", "set protocol type", OFFSET(protocol_type), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = DEC },
     { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
-    { "interface_id", "set interface ID", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },
+    { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },
+    { "channels", "number of audio channels", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, DEC },
+    { "sample_rate", "audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 48000}, 1, INT_MAX, DEC },
+    { "ptime", "audio packet time", OFFSET(ptime), AV_OPT_TYPE_STRING, {.str = "1ms"}, .flags = DEC },
+    { "pcm_fmt", "audio PCM format", OFFSET(pcm_format), AV_OPT_TYPE_STRING, {.str = "pcm24"}, .flags = DEC },
     { NULL },
 };
 
