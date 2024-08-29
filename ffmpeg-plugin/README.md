@@ -45,7 +45,7 @@ The next arguments are supported to configure a video transmission
 
 | Argument       | Type   | Description                                     | Default         |
 | -------------- | :----: | ----------------------------------------------- | :-------------: |
-| `video_size`   | String | Video frame size (`"640x480"`, `"hd720"`, etc.) | `1920x1080`     |
+| `video_size`   | String | Video frame size (`"640x480"`, `"hd720"`, etc.) | `"1920x1080"`   |
 | `pixel_format` | String | Video pixel format                              | `"yuv422p10le"` |
 | `frame_rate`   | String | Video frame rate (`25`, `50`, `60`, etc.)       | `25`            |
 
@@ -150,7 +150,7 @@ TBD
       -payload_type st30 \
       -ip_addr 192.168.96.1 \
       -port 9001 \
-      -i output.wav
+      -i - output.wav
    ```
 
    **Option B – PCM 16-bit audio**
@@ -164,7 +164,7 @@ TBD
       -payload_type st30 \
       -ip_addr 192.168.96.1 \
       -port 9001 \
-      -i output.wav
+      -i - output.wav
    ```
 
 ### Sender side setup
