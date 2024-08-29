@@ -37,12 +37,12 @@ Usage: media_proxy [OPTION]
 
 #### Run media-proxy using `native_af_xdp`
 
-To use media-proxy with native `af_xdp/ebpf` device name should be provided with prefix `native_af_xdp:`, for example `media-proxy --dev native_af_xdp:ens259f0np0`.
+To use media-proxy with the native `af_xdp/ebpf` device a device name should be provided with the `native_af_xdp:` prefix, for example `media-proxy --dev native_af_xdp:ens259f0np0`.
 Notice that device must have a preassigned IP address and `--ip` parameter will not work.
 
 > [!CAUTION]
-> `MtlManager`, from Media-Transport-Library `manager` subdirectory, must be running
-> Only device physical function with preconfigured IP address can be used for `native_af_xdp` mode.
+> `MtlManager` from the Media-Transport-Library `manager` subdirectory must be running.
+> Only a device physical function with a preconfigured IP address can be used for the `native_af_xdp` mode.
 
 ### Docker
 The Media Proxy can be run as a docker container.

@@ -5,8 +5,6 @@
 
 function run_test_af_xdp_rx()
 {
-    return 0
-
     iface_name="$($nicctl list all | grep $nic_pf | cut -f6)"
     iface_ip="$(ip -json a show $iface_name | jq '.[0].addr_info[0].local' -r)"
     ip_last_octet="$(echo $iface_ip | cut -d'.' -f4)"

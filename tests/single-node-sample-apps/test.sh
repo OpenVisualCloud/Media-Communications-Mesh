@@ -375,10 +375,6 @@ do
 
     case $test_option in
         af_xdp)
-            if [ -n "$debug" ]; then
-                error "Work in progress."
-                exit 0
-            fi
             run_test_af_xdp_rx
             run_test_af_xdp_tx
             ;;

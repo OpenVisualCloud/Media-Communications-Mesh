@@ -136,7 +136,7 @@ RUN apt-get update --fix-missing && \
     apt-get install -y --no-install-recommends \
        ca-certificates libbsd0 libnuma1 libjson-c5 libpcap0.8 libsdl2-2.0-0 libsdl2-ttf-2.0-0 \
        libssl3 zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap sudo \
-       librte-net-mlx4-22 librte-net-mlx5-22 ethtool && \
+       librte-net-mlx4-22 librte-net-mlx5-22 libfdt1 ethtool && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \
