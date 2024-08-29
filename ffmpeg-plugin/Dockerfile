@@ -24,8 +24,8 @@ RUN apt-get update && \
 
 COPY . ${MCM_DIR}
 WORKDIR ${MCM_DIR}
-RUN git config --global user.email "milosz.linkiewicz@intel.com" && \
-    git config --global user.name "Milosz Linkiewicz" && \
+RUN git config --global user.email "intel@intel.com" && \
+    git config --global user.name "Intel" && \
     ./sdk/build.sh && \
     INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./sdk/build.sh && \
     ./ffmpeg-plugin/clone-and-patch-ffmpeg.sh && \
