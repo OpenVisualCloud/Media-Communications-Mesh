@@ -13,6 +13,9 @@
 #include "libavformat/internal.h"
 #include "libavdevice/mcm_common.h"
 #include <mcm_dp.h>
+#ifdef MCM_FFMPEG_7_0
+#include "libavformat/demux.h"
+#endif /* MCM_FFMPEG_7_0 */
 
 typedef struct McmVideoDemuxerContext {
     const AVClass *class; /**< Class for private options. */
@@ -210,6 +213,20 @@ static const AVClass mcm_video_demuxer_class = {
     .category = AV_CLASS_CATEGORY_DEVICE_INPUT,
 };
 
+#ifdef MCM_FFMPEG_7_0
+FFInputFormat ff_mcm_demuxer = {
+        .p.name = "mcm",
+        .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh video"),
+        .priv_data_size = sizeof(McmVideoDemuxerContext),
+        .read_header = mcm_video_read_header,
+        .read_packet = mcm_video_read_packet,
+        .read_close = mcm_video_read_close,
+        .p.flags = AVFMT_NOFILE,
+        .p.extensions = "mcm",
+        .raw_codec_id = AV_CODEC_ID_RAWVIDEO,
+        .p.priv_class = &mcm_video_demuxer_class,
+};
+#else /* MCM_FFMPEG_7_0 */
 AVInputFormat ff_mcm_demuxer = {
         .name = "mcm",
         .long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh video"),
@@ -222,3 +239,4 @@ AVInputFormat ff_mcm_demuxer = {
         .raw_codec_id = AV_CODEC_ID_RAWVIDEO,
         .priv_class = &mcm_video_demuxer_class,
 };
+#endif /* MCM_FFMPEG_7_0 */

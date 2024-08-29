@@ -13,6 +13,12 @@ extern "C" {
 
 #include "libavformat/avformat.h"
 #include <mcm_dp.h>
+#include "libavdevice/version.h"
+#if LIBAVDEVICE_VERSION_MAJOR <= 60
+#define MCM_FFMPEG_6_1
+#else /* LIBAVDEVICE_VERSION_MAJOR <= 60 */
+#define MCM_FFMPEG_7_0
+#endif /* LIBAVDEVICE_VERSION_MAJOR <= 60 */
 
 int mcm_parse_conn_param(AVFormatContext* avctx, mcm_conn_param *param,
                          transfer_type type, char *ip_addr, char *port,
