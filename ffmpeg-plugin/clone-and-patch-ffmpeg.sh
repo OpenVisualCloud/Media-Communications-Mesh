@@ -9,8 +9,8 @@ SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build}"
 . "${SCRIPT_DIR}/../common.sh"
 
-# Default to latest 6.1
-FFMPEG_VER="${FFMPEG_VER:-6.1}"
+# Default to latest 7.0
+FFMPEG_VER="${FFMPEG_VER:-7.0}"
 
 rm -rf "${BUILD_DIR}"
 mkdir -p "${BUILD_DIR}"

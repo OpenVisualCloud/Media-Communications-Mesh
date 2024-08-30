@@ -8,11 +8,12 @@ Install dependencies and build MCM as described in the top level README.md, para
 
 ### Build flow
 
-1. Clone the FFmpeg repository and apply MCM patches
+1. Clone the FFmpeg repository (Release 7.0 by default) and apply MCM patches
 
    ```bash
    ./clone-and-patch-ffmpeg.sh
    ```
+**Note:** For FFmpeg Release 6.1, replace `7.0` with `6.1` in the above cloning script
 
 2. Run the FFmpeg configuration tool
 
