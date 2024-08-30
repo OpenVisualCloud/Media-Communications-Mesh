@@ -31,10 +31,6 @@ RUN git config --global user.email "intel@intel.com" && \
     ./ffmpeg-plugin/clone-and-patch-ffmpeg.sh && \
     ./ffmpeg-plugin/configure-ffmpeg.sh --enable-libx264 --enable-gpl --prefix="${PREFIX_DIR}/usr/local"
 
-# Build and install JPEG XS
-WORKDIR ${MCM_DIR}/ffmpeg-plugin/build/jpegxs/Build/linux
-RUN ./build.sh release --prefix "${PREFIX_DIR}/usr/local" install
-
 WORKDIR ${MCM_DIR}/ffmpeg-plugin
 RUN ./build-ffmpeg.sh
 
