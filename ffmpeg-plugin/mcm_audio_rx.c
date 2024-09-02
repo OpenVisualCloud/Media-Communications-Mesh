@@ -12,6 +12,9 @@
 #include "libavformat/internal.h"
 #include "libavdevice/mcm_common.h"
 #include <mcm_dp.h>
+#ifdef MCM_FFMPEG_7_0
+#include "libavformat/demux.h"
+#endif /* MCM_FFMPEG_7_0 */
 
 typedef struct McmAudioDemuxerContext {
     const AVClass *class; /**< Class for private options. */
@@ -166,6 +169,18 @@ static const AVClass mcm_audio_demuxer_class = {
     .category = AV_CLASS_CATEGORY_DEVICE_AUDIO_INPUT,
 };
 
+#ifdef MCM_FFMPEG_7_0
+FFInputFormat ff_mcm_audio_demuxer = {
+        .p.name = "mcm_audio",
+        .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio"),
+        .priv_data_size = sizeof(McmAudioDemuxerContext),
+        .read_header = mcm_audio_read_header,
+        .read_packet = mcm_audio_read_packet,
+        .read_close = mcm_audio_read_close,
+        .p.flags = AVFMT_NOFILE,
+        .p.priv_class = &mcm_audio_demuxer_class,
+};
+#else /* MCM_FFMPEG_7_0 */
 AVInputFormat ff_mcm_audio_demuxer = {
         .name = "mcm_audio",
         .long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio"),
@@ -176,3 +191,4 @@ AVInputFormat ff_mcm_audio_demuxer = {
         .flags = AVFMT_NOFILE,
         .priv_class = &mcm_audio_demuxer_class,
 };
+#endif /* MCM_FFMPEG_7_0 */
