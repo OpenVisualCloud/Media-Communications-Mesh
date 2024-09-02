@@ -17,21 +17,21 @@
 #include <unistd.h>
 #include "mcm_dp.h"
 
+#define DEFAULT_FRAME_WIDTH 1920
+#define DEFAULT_FRAME_HEIGHT 1080
+#define DEFAULT_FPS 30.0
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
 #define DEFAULT_SEND_IP "127.0.0.1"
 #define DEFAULT_SEND_PORT "9001"
-#define DEFAULT_TOTAL_NUM 300
-#define DEFAULT_FRAME_WIDTH 1920
-#define DEFAULT_FRAME_HEIGHT 1080
-#define DEFAULT_FPS 30.0
+#define DEFAULT_PROTOCOL "auto"
+#define DEFAULT_PAYLOAD_TYPE "st20"
+#define DEFAULT_TOTAL_NUM 300 // sender only
 #define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
 #define DEFAULT_MEMIF_IS_MASTER 1
 #define DEFAULT_MEMIF_INTERFACE_ID 0
-#define DEFAULT_PROTOCOL "auto"
-#define DEFAULT_INFINITY_LOOP 0
+#define DEFAULT_INFINITY_LOOP 0 // sender only
 #define DEFAULT_VIDEO_FMT "yuv422p10le"
-#define DEFAULT_PAYLOAD_TYPE "st20"
 
 static volatile bool keepRunning = true;
 static char input_file[128] = "";
@@ -75,14 +75,14 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-o, --protocol=<protocol_type>\t\t"
                 "Set protocol type (default: %s)\n",
         DEFAULT_PROTOCOL);
+    fprintf(fp, "-t, --type=<payload_type>\t\t"
+                "Payload type (default: %s)\n",
+        DEFAULT_PAYLOAD_TYPE);
     fprintf(fp, "-n, --number=<frame_number>\t\t"
                 "Total frame number to send (default: %d)\n",
         DEFAULT_TOTAL_NUM);
     fprintf(fp, "-b, --file=<input_file>\t\t\t"
                 "Input file name (optional)\n");
-    fprintf(fp, "-t, --type=<payload_type>\t\t"
-                "Payload type (default: %s)\n",
-        DEFAULT_PAYLOAD_TYPE);
     fprintf(fp, "-k, --socketpath=<socket_path>\t\t"
                 "Set memif socket path (default: %s)\n",
         DEFAULT_MEMIF_SOCKET_PATH);
@@ -198,9 +198,9 @@ int main(int argc, char** argv)
         { "send_ip", required_argument, NULL, 's' },
         { "send_port", required_argument, NULL, 'p' },
         { "protocol", required_argument, NULL, 'o' },
+        { "type", required_argument, NULL, 't' },
         { "number", required_argument, NULL, 'n' },
         { "file", required_argument, NULL, 'b' },
-        { "type", required_argument, NULL, 't' },
         { "socketpath", required_argument, NULL, 'k' },
         { "master", required_argument, NULL, 'm' },
         { "interfaceid", required_argument, NULL, 'd' },
@@ -211,7 +211,7 @@ int main(int argc, char** argv)
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:s:p:o:n:r:i:t:k:m:d:l:x:b:", longopts, 0);
+        opt = getopt_long(argc, argv, "Hw:h:f:r:i:s:p:o:t:n:b:k:m:d:l:x:", longopts, 0);
         if (opt == -1) {
             break;
         }

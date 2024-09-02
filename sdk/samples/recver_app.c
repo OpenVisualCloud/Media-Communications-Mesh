@@ -15,19 +15,19 @@
 #include <unistd.h>
 #include "mcm_dp.h"
 
+#define DEFAULT_FRAME_WIDTH 1920
+#define DEFAULT_FRAME_HEIGHT 1080
+#define DEFAULT_FPS 30.0
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
 #define DEFAULT_SEND_IP "127.0.0.1"
 #define DEFAULT_SEND_PORT "9001"
-#define DEFAULT_FRAME_WIDTH 1920
-#define DEFAULT_FRAME_HEIGHT 1080
-#define DEFAULT_FPS 30.0
+#define DEFAULT_PROTOCOL "auto"
 #define DEFAULT_PAYLOAD_TYPE "st20"
-#define DEFAULT_LOCAL_FILE "data-sdk.264"
 #define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
 #define DEFAULT_MEMIF_IS_MASTER 0
 #define DEFAULT_MEMIF_INTERFACE_ID 0
-#define DEFAULT_PROTOCOL "auto"
+#define DEFAULT_LOCAL_FILE "data-sdk.264" // recver only
 #define DEFAULT_VIDEO_FMT "yuv422p10le"
 
 static volatile bool keepRunning = true;
@@ -169,7 +169,7 @@ int main(int argc, char** argv)
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:r:i:s:p:o:t:s:k:m:d:x:b:", longopts, 0);
+        opt = getopt_long(argc, argv, "Hw:h:f:r:i:s:p:o:t:k:m:d:b:x:", longopts, 0);
         if (opt == -1) {
             break;
         }
