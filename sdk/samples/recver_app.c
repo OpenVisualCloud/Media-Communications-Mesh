@@ -45,42 +45,48 @@ void usage(FILE* fp, const char* path)
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "Usage: %s [OPTION]\n", basename);
-    fprintf(fp, "-H, --help\t\t\t"
+    fprintf(fp, "-H, --help\t\t\t\t"
                 "Print this help and exit\n");
-    fprintf(fp, "-w, --width=<frame_width>\t"
+    fprintf(fp, "-w, --width=<frame_width>\t\t"
                 "Width of test video frame (default: %d)\n",
         DEFAULT_FRAME_WIDTH);
-    fprintf(fp, "-h, --height=<frame_height>\t"
+    fprintf(fp, "-h, --height=<frame_height>\t\t"
                 "Height of test video frame (default: %d)\n",
         DEFAULT_FRAME_HEIGHT);
-    fprintf(fp, "-f, --fps=<video_fps>\t\t"
+    fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
                 "Test video FPS (frame per second) (default: %0.2f)\n",
         DEFAULT_FPS);
-    fprintf(fp, "-r, --ip=ip_address\t\t"
+    fprintf(fp, "-r, --rcv_ip=<ip_address>\t\t"
                 "Receive data from IP address (default: %s)\n",
         DEFAULT_RECV_IP);
-    fprintf(fp, "-p, --port=port_number\t\t"
+    fprintf(fp, "-i, --rcv_port=<port_number>\t\t"
                 "Receive data from Port (default: %s)\n",
         DEFAULT_RECV_PORT);
-    fprintf(fp, "-o, --protocol=protocol_type\t"
+    fprintf(fp, "-s, --send_ip=<ip_address>\t\t"
+                "Send data to IP address (default: %s)\n",
+        DEFAULT_SEND_IP);
+    fprintf(fp, "-p, --send_port=<port_number>\t\t"
+                "Send data to Port (default: %s)\n",
+        DEFAULT_SEND_PORT);
+    fprintf(fp, "-o, --protocol=<protocol_type>\t\t"
                 "Set protocol type (default: %s)\n",
         DEFAULT_PROTOCOL);
-    fprintf(fp, "-t, --type=payload_type\t\t"
+    fprintf(fp, "-t, --type=<payload_type>\t\t"
                 "Payload type (default: %s)\n",
         DEFAULT_PAYLOAD_TYPE);
-    fprintf(fp, "-s, --dumpfile=file_name\t"
-                "Save stream to local file (example: %s)\n",
-        DEFAULT_LOCAL_FILE);
-    fprintf(fp, "-k, --socketpath=socket_path\t"
+    fprintf(fp, "-k, --socketpath=<socket_path>\t\t"
                 "Set memif socket path (default: %s)\n",
         DEFAULT_MEMIF_SOCKET_PATH);
-    fprintf(fp, "-m, --master=is_master\t\t"
+    fprintf(fp, "-m, --master=<is_master>\t\t"
                 "Set memif conn is master (default: %d)\n",
         DEFAULT_MEMIF_IS_MASTER);
-    fprintf(fp, "-d, --interfaceid=interface_id\t"
+    fprintf(fp, "-d, --interfaceid=<interface_id>\t"
                 "Set memif conn interface id (default: %d)\n",
         DEFAULT_MEMIF_INTERFACE_ID);
-    fprintf(fp, "-x, --pix_fmt=mcm_pix_fmt\t"
+    fprintf(fp, "-b, --dumpfile=<file_name>\t\t"
+                "Save stream to local file (example: %s)\n",
+        DEFAULT_LOCAL_FILE);
+    fprintf(fp, "-x, --pix_fmt=<mcm_pix_fmt>\t\t"
                 "Set pix_fmt conn color format (default: %s)\n",
         DEFAULT_VIDEO_FMT);
     fprintf(fp, "\n");

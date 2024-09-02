@@ -49,53 +49,53 @@ void usage(FILE* fp, const char* path)
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "usage: %s [OPTION]\n", basename);
-    fprintf(fp, "-H, --help\t\t\t"
+    fprintf(fp, "-H, --help\t\t\t\t"
                 "Print this help and exit\n");
-    fprintf(fp, "-w, --width=<frame_width>\t"
+    fprintf(fp, "-w, --width=<frame_width>\t\t"
                 "Width of test video frame (default: %d)\n",
         DEFAULT_FRAME_WIDTH);
-    fprintf(fp, "-h, --height=<frame_height>\t"
+    fprintf(fp, "-h, --height=<frame_height>\t\t"
                 "Height of test video frame (default: %d)\n",
         DEFAULT_FRAME_HEIGHT);
-    fprintf(fp, "-f, --fps=<video_fps>\t\t"
+    fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
                 "Test video FPS (frame per second) (default: %0.2f)\n",
         DEFAULT_FPS);
-    fprintf(fp, "-r, --rcv_ip=ip_address\t\t"
+    fprintf(fp, "-r, --rcv_ip=<ip_address>\t\t"
                 "Receiver's IP address (default: %s)\n",
         DEFAULT_RECV_IP);
-    fprintf(fp, "-i, --rcv_port=port_number\t"
+    fprintf(fp, "-i, --rcv_port=<port_number>\t\t"
                 "Receiver's port number (default: %s)\n",
         DEFAULT_RECV_PORT);
-    fprintf(fp, "-s, --send_ip=ip_address\t"
+    fprintf(fp, "-s, --send_ip=<ip_address>\t\t"
                 "Send data to IP address (default: %s)\n",
         DEFAULT_SEND_IP);
-    fprintf(fp, "-p, --send_port=port_number\t"
+    fprintf(fp, "-p, --send_port=<port_number>\t\t"
                 "Send data to Port (default: %s)\n",
         DEFAULT_SEND_PORT);
-    fprintf(fp, "-o, --protocol=protocol_type\t"
+    fprintf(fp, "-o, --protocol=<protocol_type>\t\t"
                 "Set protocol type (default: %s)\n",
         DEFAULT_PROTOCOL);
-    fprintf(fp, "-n, --number=frame_number\t"
+    fprintf(fp, "-n, --number=<frame_number>\t\t"
                 "Total frame number to send (default: %d)\n",
         DEFAULT_TOTAL_NUM);
-    fprintf(fp, "-b, --file=input_file\t\t"
+    fprintf(fp, "-b, --file=<input_file>\t\t\t"
                 "Input file name (optional)\n");
-    fprintf(fp, "-t, --type=payload_type\t\t"
+    fprintf(fp, "-t, --type=<payload_type>\t\t"
                 "Payload type (default: %s)\n",
         DEFAULT_PAYLOAD_TYPE);
-    fprintf(fp, "-k, --socketpath=socket_path\t"
+    fprintf(fp, "-k, --socketpath=<socket_path>\t\t"
                 "Set memif socket path (default: %s)\n",
         DEFAULT_MEMIF_SOCKET_PATH);
-    fprintf(fp, "-m, --master=is_master\t\t"
+    fprintf(fp, "-m, --master=<is_master>\t\t"
                 "Set memif conn is master (default: %d)\n",
         DEFAULT_MEMIF_IS_MASTER);
-    fprintf(fp, "-d, --interfaceid=interface_id\t"
+    fprintf(fp, "-d, --interfaceid=<interface_id>\t"
                 "Set memif conn interface id (default: %d)\n",
         DEFAULT_MEMIF_INTERFACE_ID);
-    fprintf(fp, "-l, --loop=is_loop\t\t"
+    fprintf(fp, "-l, --loop=<is_loop>\t\t\t"
                 "Set infinity loop sending (default: %d)\n",
         DEFAULT_INFINITY_LOOP);
-    fprintf(fp, "-x, --pix_fmt=pixel_format\t"
+    fprintf(fp, "-x, --pix_fmt=<pixel_format>\t\t"
                 "Pixel format (default: %s)\n",
         DEFAULT_VIDEO_FMT);
     fprintf(fp, "\n");
