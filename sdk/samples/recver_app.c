@@ -29,6 +29,12 @@
 #define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_LOCAL_FILE "data-sdk.264" // recver only
 #define DEFAULT_VIDEO_FMT "yuv422p10le"
+#define DEFAULT_AUDIO_TYPE "frame"
+#define DEFAULT_AUDIO_FORMAT "pcm16"
+#define DEFAULT_AUDIO_SAMPLING "48k"
+#define DEFAULT_AUDIO_PTIME "1ms"
+#define DEFAULT_ANC_TYPE "frame"
+#define DEFAULT_PAYLOAD_CODEC "jpegxs"
 
 static volatile bool keepRunning = true;
 
@@ -89,6 +95,21 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-x, --pix_fmt=<mcm_pix_fmt>\t\t"
                 "Set pix_fmt conn color format (default: %s)\n",
         DEFAULT_VIDEO_FMT);
+    fprintf(fp, "-a, --audio_type=<audio_type>\t\t"
+                "Define audio type [frame|rtp] (default: %s)\n",
+        DEFAULT_AUDIO_TYPE);
+    fprintf(fp, "-j, --audio_format=<audio_format>\t"
+                "Define audio format [pcm8|pcm16|pcm24|am824] (default: %s)\n",
+        DEFAULT_AUDIO_FORMAT);
+    fprintf(fp, "-g, --audio_sampling=<audio_sampling>\t"
+                "Define audio sampling [48k|96k|44k] (default: %s)\n",
+        DEFAULT_AUDIO_SAMPLING);
+    fprintf(fp, "-e, --audio_ptime=<audio_ptime>\t\t"
+                "Define audio ptime [1ms|125us|250us|333us|4ms|80us|1.09ms|0.14ms|0.09ms] (default: %s)\n",
+        DEFAULT_AUDIO_PTIME);
+    fprintf(fp, "-q, --anc_type=<anc_type>\t\t"
+                "Define anc type [frame|rtp] (default: %s)\n",
+        DEFAULT_ANC_TYPE);
     fprintf(fp, "\n");
 }
 
@@ -142,6 +163,14 @@ int main(int argc, char** argv)
     double vid_fps = DEFAULT_FPS;
     video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
 
+    char audio_type[5] = DEFAULT_AUDIO_TYPE;
+    char audio_format[5] = DEFAULT_AUDIO_FORMAT;
+    char audio_sampling[3] = DEFAULT_AUDIO_SAMPLING;
+    char audio_ptime[6] = DEFAULT_AUDIO_PTIME;
+    char anc_type[5] = DEFAULT_ANC_TYPE;
+    char payload_codec[6] = DEFAULT_PAYLOAD_CODEC;
+    uint32_t audio_channels = 0;
+
     mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = {};
     mcm_buffer* buf = NULL;
@@ -164,12 +193,20 @@ int main(int argc, char** argv)
         { "interfaceid", required_argument, NULL, 'd' },
         { "dumpfile", required_argument, NULL, 'b' },
         { "pix_fmt", required_argument, NULL, 'x' },
+        { "audio_type", required_argument, NULL, 'a' },
+        { "audio_format", required_argument, NULL, 'j' },
+        { "audio_sampling", required_argument, NULL, 'g' },
+        { "audio_ptime", required_argument, NULL, 'e' },
+        { "audio_channels", required_argument, NULL, 'c' },
+        { "anc_type", required_argument, NULL, 'q' },
         { 0 }
     };
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:r:i:s:p:o:t:k:m:d:b:x:", longopts, 0);
+        opt = getopt_long(argc, argv,
+                          "Hw:h:f:r:i:s:p:o:t:k:m:d:b:x:a:j:g:e:c:q:",
+                          longopts, 0);
         if (opt == -1) {
             break;
         }
@@ -231,6 +268,24 @@ int main(int argc, char** argv)
                 pix_fmt = PIX_FMT_NV12;
             }
             break;
+        case 'a':
+            strlcpy(audio_type, optarg, sizeof(audio_type));
+            break;
+        case 'j':
+            strlcpy(audio_format, optarg, sizeof(audio_format));
+            break;
+        case 'g':
+            strlcpy(audio_sampling, optarg, sizeof(audio_sampling));
+            break;
+        case 'e':
+            strlcpy(audio_ptime, optarg, sizeof(audio_ptime));
+            break;
+        case 'c':
+            audio_channels = atoi(optarg);
+            break;
+        case 'q':
+            strlcpy(anc_type, optarg, sizeof(anc_type));
+            break;
         case '?':
             usage(stderr, argv[0]);
             return 1;
@@ -248,7 +303,6 @@ int main(int argc, char** argv)
     param.type = is_rx;
 
     /* protocol type */
-
     if (strncmp(protocol_type, "memif", sizeof(protocol_type)) == 0) {
         param.protocol = PROTO_MEMIF;
         strlcpy(param.memif_interface.socket_path, socket_path, sizeof(param.memif_interface.socket_path));
@@ -271,7 +325,11 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
     } else if (strncmp(payload_type, "st22", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
-        param.payload_codec = PAYLOAD_CODEC_JPEGXS;
+        if (strncmp(payload_codec, "jpegxs", sizeof(payload_codec)) == 0) {
+            param.payload_codec = PAYLOAD_CODEC_JPEGXS;
+        } else if (strncmp(payload_codec, "h264", sizeof(payload_codec)) == 0) {
+            param.payload_codec = PAYLOAD_CODEC_H264;
+        }
     } else if (strncmp(payload_type, "st30", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
     } else if (strncmp(payload_type, "st40", sizeof(payload_type)) == 0) {
@@ -284,17 +342,64 @@ int main(int argc, char** argv)
 
     switch (param.payload_type) {
     case PAYLOAD_TYPE_ST30_AUDIO:
-        /* audio format */
-        param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-        param.payload_args.audio_args.channel = 2;
-        param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
-        param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
-        param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
+        // mcm_audio_type
+        if (strncmp(audio_type, "frame", sizeof(audio_type)) == 0) {
+            param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
+        } else if (strncmp(audio_type, "rtp", sizeof(audio_type)) == 0) {
+            param.payload_args.audio_args.type = AUDIO_TYPE_RTP_LEVEL;
+        }
+        // only 1 or 2 channels are supported now
+        if (audio_channels > 0 && audio_channels < 3){
+            param.payload_args.audio_args.channel = audio_channels;
+        }
+        // mcm_audio_format
+        if (strncmp(audio_format, "pcm8", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_PCM8;
+        } else if (strncmp(audio_format, "pcm16", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
+        } else if (strncmp(audio_format, "pcm24", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_PCM24;
+        } else if (strncmp(audio_format, "am824", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_AM824;
+        }
+        // mcm_audio_sampling
+        if (strncmp(audio_sampling, "48k", sizeof(audio_sampling)) == 0) {
+            param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
+        } else if (strncmp(audio_sampling, "96k", sizeof(audio_sampling)) == 0) {
+            param.payload_args.audio_args.sampling = AUDIO_SAMPLING_96K;
+        } else if (strncmp(audio_sampling, "44k", sizeof(audio_sampling)) == 0) {
+            param.payload_args.audio_args.sampling = AUDIO_SAMPLING_44K;
+        }
+        // mcm_audio_ptime
+        if (strncmp(audio_ptime, "1ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
+        } else if (strncmp(audio_ptime, "125us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_125US;
+        } else if (strncmp(audio_ptime, "250us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_250US;
+        } else if (strncmp(audio_ptime, "333us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_333US;
+        } else if (strncmp(audio_ptime, "4ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_4MS;
+        } else if (strncmp(audio_ptime, "80us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_80US;
+        } else if (strncmp(audio_ptime, "1.09ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_1_09MS;
+        } else if (strncmp(audio_ptime, "0.14ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_0_14MS;
+        } else if (strncmp(audio_ptime, "0.09ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_0_09MS;
+        }
         break;
     case PAYLOAD_TYPE_ST40_ANCILLARY:
-        /* ancillary format */
-        param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION;
-        param.payload_args.anc_args.type = ANC_TYPE_FRAME_LEVEL;
+        // mcm_anc_format
+        param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION; // the only possible value
+        // mcm_anc_type
+        if (strncmp(anc_type, "frame", sizeof(anc_type)) == 0) {
+            param.payload_args.audio_args.type = ANC_TYPE_FRAME_LEVEL;
+        } else if (strncmp(anc_type, "rtp", sizeof(anc_type)) == 0) {
+            param.payload_args.audio_args.type = ANC_TYPE_RTP_LEVEL;
+        }
         param.payload_args.anc_args.fps = vid_fps;
         break;
     case PAYLOAD_TYPE_RTSP_VIDEO:
@@ -367,7 +472,10 @@ int main(int argc, char** argv)
             first_frame = false;
         }
 
-        if (strncmp(payload_type, "rtsp", sizeof(payload_type)) != 0) {
+        /* TODO: Perhaps?:
+        if (payload_type != PAYLOAD_TYPE_RTSP_VIDEO) {
+        */
+        if (param.payload_type != PAYLOAD_TYPE_RTSP_VIDEO) {
             if (dump_fp) {
                 fwrite(buf->data, buf->len, 1, dump_fp);
             } else {
