@@ -126,25 +126,6 @@ int mcm_parse_audio_packet_time(AVFormatContext* avctx, mcm_audio_ptime *ptime,
     return AVERROR(EINVAL);
 }
 
-/* Parse MCM audio PCM format and codec id */
-int mcm_parse_audio_pcm_format(AVFormatContext* avctx, mcm_audio_format *fmt,
-                               enum AVCodecID *codec_id, char *str)
-{
-    if (!str || !strcmp(str, "pcm24")) {
-        *fmt = AUDIO_FMT_PCM24;
-        *codec_id = AV_CODEC_ID_PCM_S24BE;
-        return 0;
-    }
-    if (!strcmp(str, "pcm16")) {
-        *fmt = AUDIO_FMT_PCM16;
-        *codec_id = AV_CODEC_ID_PCM_S16BE;
-        return 0;
-    }
-
-    av_log(avctx, AV_LOG_ERROR, "Audio PCM format not supported\n");
-    return AVERROR(EINVAL);
-}
-
 /* Check compatibility of ST2110-30 related audio parameters */
 int mcm_check_audio_params_compat(mcm_audio_sampling sample_rate,
                                   mcm_audio_ptime ptime)

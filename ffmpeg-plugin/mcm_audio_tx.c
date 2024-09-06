@@ -173,19 +173,6 @@ static const AVClass mcm_audio_muxer_class = {
     .category = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-const FFOutputFormat ff_mcm_audio_muxer = {
-    .p.name = "mcm_audio",
-    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio pcm24"),
-    .priv_data_size = sizeof(McmAudioMuxerContext),
-    .write_header = mcm_audio_write_header,
-    .write_packet = mcm_audio_write_packet,
-    .write_trailer = mcm_audio_write_trailer,
-    .p.audio_codec = AV_CODEC_ID_PCM_S24BE,
-    .p.video_codec = AV_CODEC_ID_NONE,
-    .p.flags = AVFMT_NOFILE,
-    .p.priv_class = &mcm_audio_muxer_class,
-};
-
 const FFOutputFormat ff_mcm_audio_pcm16_muxer = {
     .p.name = "mcm_audio_pcm16",
     .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio pcm16"),
@@ -194,6 +181,19 @@ const FFOutputFormat ff_mcm_audio_pcm16_muxer = {
     .write_packet = mcm_audio_write_packet,
     .write_trailer = mcm_audio_write_trailer,
     .p.audio_codec = AV_CODEC_ID_PCM_S16BE,
+    .p.video_codec = AV_CODEC_ID_NONE,
+    .p.flags = AVFMT_NOFILE,
+    .p.priv_class = &mcm_audio_muxer_class,
+};
+
+const FFOutputFormat ff_mcm_audio_pcm24_muxer = {
+    .p.name = "mcm_audio_pcm24",
+    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio pcm24"),
+    .priv_data_size = sizeof(McmAudioMuxerContext),
+    .write_header = mcm_audio_write_header,
+    .write_packet = mcm_audio_write_packet,
+    .write_trailer = mcm_audio_write_trailer,
+    .p.audio_codec = AV_CODEC_ID_PCM_S24BE,
     .p.video_codec = AV_CODEC_ID_NONE,
     .p.flags = AVFMT_NOFILE,
     .p.priv_class = &mcm_audio_muxer_class,

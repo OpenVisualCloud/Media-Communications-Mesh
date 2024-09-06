@@ -1,16 +1,16 @@
-From 0b5b445454655f3bbe326fef865a418a2de03f08 Mon Sep 17 00:00:00 2001
-From: Tomasz Szumski <tomasz.szumski@intel.com>
-Date: Thu, 29 Aug 2024 09:12:42 +0200
+From 8e3a267c09b6f270ca1411f5c9f4e7fb0e1af8cb Mon Sep 17 00:00:00 2001
+From: Konstantin Ilichev <konstantin.ilichev@intel.com>
+Date: Fri, 6 Sep 2024 20:33:36 +0000
 Subject: [PATCH] Enable FFmpeg support in MCM
 
 ---
- configure                | 9 +++++++++
- libavdevice/Makefile     | 5 +++++
- libavdevice/alldevices.c | 5 +++++
- 3 files changed, 19 insertions(+)
+ configure                | 10 ++++++++++
+ libavdevice/Makefile     |  6 ++++++
+ libavdevice/alldevices.c |  6 ++++++
+ 3 files changed, 22 insertions(+)
 
 diff --git a/configure b/configure
-index bde796d03a..f9eb340f7a 100755
+index 20d4e4b615..9fdac37877 100755
 --- a/configure
 +++ b/configure
 @@ -290,6 +290,7 @@ External library support:
@@ -21,7 +21,7 @@ index bde796d03a..f9eb340f7a 100755
    --enable-libvpx          enable VP8 and VP9 de/encoding via libvpx [no]
    --enable-libwebp         enable WebP encoding via libwebp [no]
    --enable-libx264         enable H.264 encoding via x264 [no]
-@@ -1903,6 +1904,7 @@ EXTERNAL_LIBRARY_LIST="
+@@ -1902,6 +1903,7 @@ EXTERNAL_LIBRARY_LIST="
      jni
      ladspa
      lcms2
@@ -29,19 +29,20 @@ index bde796d03a..f9eb340f7a 100755
      libaom
      libaribcaption
      libass
-@@ -3665,6 +3667,11 @@ xwma_demuxer_select="riffdec"
+@@ -3662,6 +3664,12 @@ xwma_demuxer_select="riffdec"
  android_camera_indev_deps="android camera2ndk mediandk pthreads"
  alsa_indev_deps="alsa"
  alsa_outdev_deps="alsa"
 +mcm_indev_deps="libmcm_dp"
 +mcm_outdev_deps="libmcm_dp"
-+mcm_audio_indev_deps="libmcm_dp"
-+mcm_audio_outdev_deps="libmcm_dp"
++mcm_audio_pcm16_indev_deps="libmcm_dp"
++mcm_audio_pcm24_indev_deps="libmcm_dp"
 +mcm_audio_pcm16_outdev_deps="libmcm_dp"
++mcm_audio_pcm24_outdev_deps="libmcm_dp"
  avfoundation_indev_deps="avfoundation corevideo coremedia pthreads"
  avfoundation_indev_suggest="coregraphics applicationservices"
  avfoundation_indev_extralibs="-framework Foundation"
-@@ -6834,6 +6841,8 @@ enabled libaribb24        && { check_pkg_config libaribb24 "aribb24 > 1.0.3" "ar
+@@ -6831,6 +6839,8 @@ enabled libaribb24        && { check_pkg_config libaribb24 "aribb24 > 1.0.3" "ar
  enabled libaribcaption    && require_pkg_config libaribcaption "libaribcaption >= 1.1.1" "aribcaption/aribcaption.h" aribcc_context_alloc
  enabled lv2               && require_pkg_config lv2 lilv-0 "lilv/lilv.h" lilv_world_new
  enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
@@ -51,37 +52,39 @@ index bde796d03a..f9eb340f7a 100755
  enabled libbluray         && require_pkg_config libbluray libbluray libbluray/bluray.h bd_open
  enabled libbs2b           && require_pkg_config libbs2b libbs2b bs2b.h bs2b_open
 diff --git a/libavdevice/Makefile b/libavdevice/Makefile
-index c30449201d..62bda757c3 100644
+index c30449201d..1d7c0d1a10 100644
 --- a/libavdevice/Makefile
 +++ b/libavdevice/Makefile
-@@ -20,6 +20,11 @@ OBJS-$(CONFIG_AUDIOTOOLBOX_OUTDEV)       += audiotoolbox.o
+@@ -20,6 +20,12 @@ OBJS-$(CONFIG_AUDIOTOOLBOX_OUTDEV)       += audiotoolbox.o
  OBJS-$(CONFIG_AVFOUNDATION_INDEV)        += avfoundation.o
  OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
  OBJS-$(CONFIG_CACA_OUTDEV)               += caca.o
 +OBJS-$(CONFIG_MCM_INDEV)                 += mcm_video_rx.o mcm_common.o
 +OBJS-$(CONFIG_MCM_OUTDEV)                += mcm_video_tx.o mcm_common.o
-+OBJS-$(CONFIG_MCM_AUDIO_INDEV)           += mcm_audio_rx.o mcm_common.o
-+OBJS-$(CONFIG_MCM_AUDIO_OUTDEV)          += mcm_audio_tx.o mcm_common.o
++OBJS-$(CONFIG_MCM_AUDIO_PCM16_INDEV)     += mcm_audio_rx.o mcm_common.o
++OBJS-$(CONFIG_MCM_AUDIO_PCM24_INDEV)     += mcm_audio_rx.o mcm_common.o
 +OBJS-$(CONFIG_MCM_AUDIO_PCM16_OUTDEV)    += mcm_audio_tx.o mcm_common.o
++OBJS-$(CONFIG_MCM_AUDIO_PCM24_OUTDEV)    += mcm_audio_tx.o mcm_common.o
  OBJS-$(CONFIG_DECKLINK_OUTDEV)           += decklink_enc.o decklink_enc_c.o decklink_common.o
  OBJS-$(CONFIG_DECKLINK_INDEV)            += decklink_dec.o decklink_dec_c.o decklink_common.o
  OBJS-$(CONFIG_DSHOW_INDEV)               += dshow_crossbar.o dshow.o dshow_enummediatypes.o \
 diff --git a/libavdevice/alldevices.c b/libavdevice/alldevices.c
-index 9b9a9146c7..a95f68850c 100644
+index 9b9a9146c7..364c918cda 100644
 --- a/libavdevice/alldevices.c
 +++ b/libavdevice/alldevices.c
-@@ -29,6 +29,11 @@ FF_VISIBILITY_PUSH_HIDDEN
+@@ -29,6 +29,12 @@ FF_VISIBILITY_PUSH_HIDDEN
  /* devices */
  extern const FFInputFormat  ff_alsa_demuxer;
  extern const FFOutputFormat ff_alsa_muxer;
 +extern const FFInputFormat  ff_mcm_demuxer;
 +extern const FFOutputFormat ff_mcm_muxer;
-+extern const FFInputFormat  ff_mcm_audio_demuxer;
-+extern const FFOutputFormat ff_mcm_audio_muxer;
++extern const FFInputFormat  ff_mcm_audio_pcm16_demuxer;
++extern const FFInputFormat  ff_mcm_audio_pcm24_demuxer;
 +extern const FFOutputFormat ff_mcm_audio_pcm16_muxer;
++extern const FFOutputFormat ff_mcm_audio_pcm24_muxer;
  extern const FFInputFormat  ff_android_camera_demuxer;
  extern const FFOutputFormat ff_audiotoolbox_muxer;
  extern const FFInputFormat  ff_avfoundation_demuxer;
 -- 
-2.45.1.windows.1
+2.34.1
 
