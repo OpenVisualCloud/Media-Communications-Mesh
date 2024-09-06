@@ -15,23 +15,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include "mcm_dp.h"
-
-#define DEFAULT_FRAME_WIDTH 1920
-#define DEFAULT_FRAME_HEIGHT 1080
-#define DEFAULT_FPS 30.0
-#define DEFAULT_RECV_IP "127.0.0.1"
-#define DEFAULT_RECV_PORT "9001"
-#define DEFAULT_SEND_IP "127.0.0.1"
-#define DEFAULT_SEND_PORT "9001"
-#define DEFAULT_PROTOCOL "auto"
-#define DEFAULT_PAYLOAD_TYPE "st20"
-#define DEFAULT_TOTAL_NUM 300 // sender only
-#define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
-#define DEFAULT_MEMIF_IS_MASTER 1
-#define DEFAULT_MEMIF_INTERFACE_ID 0
-#define DEFAULT_INFINITY_LOOP 0 // sender only
-#define DEFAULT_VIDEO_FMT "yuv422p10le"
+#include "sample_common.c"
 
 static volatile bool keepRunning = true;
 static char input_file[128] = "";
@@ -39,93 +23,6 @@ static char input_file[128] = "";
 void intHandler(int dummy)
 {
     keepRunning = 0;
-}
-
-/* print a description of all supported options */
-void usage(FILE* fp, const char* path)
-{
-    /* take only the last portion of the path */
-    const char* basename = strrchr(path, '/');
-    basename = basename ? basename + 1 : path;
-
-    fprintf(fp, "usage: %s [OPTION]\n", basename);
-    fprintf(fp, "-H, --help\t\t\t\t"
-                "Print this help and exit\n");
-    fprintf(fp, "-w, --width=<frame_width>\t\t"
-                "Width of test video frame (default: %d)\n",
-        DEFAULT_FRAME_WIDTH);
-    fprintf(fp, "-h, --height=<frame_height>\t\t"
-                "Height of test video frame (default: %d)\n",
-        DEFAULT_FRAME_HEIGHT);
-    fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
-                "Test video FPS (frame per second) (default: %0.2f)\n",
-        DEFAULT_FPS);
-    fprintf(fp, "-r, --rcv_ip=<ip_address>\t\t"
-                "Receiver's IP address (default: %s)\n",
-        DEFAULT_RECV_IP);
-    fprintf(fp, "-i, --rcv_port=<port_number>\t\t"
-                "Receiver's port number (default: %s)\n",
-        DEFAULT_RECV_PORT);
-    fprintf(fp, "-s, --send_ip=<ip_address>\t\t"
-                "Send data to IP address (default: %s)\n",
-        DEFAULT_SEND_IP);
-    fprintf(fp, "-p, --send_port=<port_number>\t\t"
-                "Send data to Port (default: %s)\n",
-        DEFAULT_SEND_PORT);
-    fprintf(fp, "-o, --protocol=<protocol_type>\t\t"
-                "Set protocol type (default: %s)\n",
-        DEFAULT_PROTOCOL);
-    fprintf(fp, "-t, --type=<payload_type>\t\t"
-                "Payload type (default: %s)\n",
-        DEFAULT_PAYLOAD_TYPE);
-    fprintf(fp, "-n, --number=<frame_number>\t\t"
-                "Total frame number to send (default: %d)\n",
-        DEFAULT_TOTAL_NUM);
-    fprintf(fp, "-b, --file=<input_file>\t\t\t"
-                "Input file name (optional)\n");
-    fprintf(fp, "-k, --socketpath=<socket_path>\t\t"
-                "Set memif socket path (default: %s)\n",
-        DEFAULT_MEMIF_SOCKET_PATH);
-    fprintf(fp, "-m, --master=<is_master>\t\t"
-                "Set memif conn is master (default: %d)\n",
-        DEFAULT_MEMIF_IS_MASTER);
-    fprintf(fp, "-d, --interfaceid=<interface_id>\t"
-                "Set memif conn interface id (default: %d)\n",
-        DEFAULT_MEMIF_INTERFACE_ID);
-    fprintf(fp, "-l, --loop=<is_loop>\t\t\t"
-                "Set infinity loop sending (default: %d)\n",
-        DEFAULT_INFINITY_LOOP);
-    fprintf(fp, "-x, --pix_fmt=<pixel_format>\t\t"
-                "Pixel format (default: %s)\n",
-        DEFAULT_VIDEO_FMT);
-    fprintf(fp, "\n");
-}
-
-static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
-{
-    size_t size = (size_t)(width*height);
-    switch (fmt) {
-        case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY) */
-            size = size * 2;
-            break;
-        case PIX_FMT_RGB8:
-            size = size * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
-            break;
-/* Customized YUV 420 8bit, set transport format as ST20_FMT_YUV_420_8BIT. For direct transport of
-none-RFC4175 formats like I420/NV12. When this input/output format is set, the frame is identical to
-transport frame without conversion. The frame should not have lines padding) */
-        case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka ST_FRAME_FMT_YUV420PLANAR8) */
-            size = size * 3 / 2;
-            break;
-        case PIX_FMT_YUV444P_10BIT_LE:
-            size = size * 2 * 3;
-            break;
-        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
-        default:
-            size = size * 2 * 2;
-    }
-    if (interlaced) size /= 2; /* if all fmt support interlace? */
-    return (int)size;
 }
 
 int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size)
@@ -170,7 +67,7 @@ int main(int argc, char** argv)
     char protocol_type[32] = "";
     char pix_fmt_string[32] = DEFAULT_VIDEO_FMT;
     char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
-    uint8_t is_master = DEFAULT_MEMIF_IS_MASTER;
+    uint8_t is_master = 1; // default for sender
     uint32_t interface_id = DEFAULT_MEMIF_INTERFACE_ID;
     bool loop = DEFAULT_INFINITY_LOOP;
 
@@ -180,6 +77,14 @@ int main(int argc, char** argv)
     double vid_fps = DEFAULT_FPS;
     video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
     uint32_t frame_size = 0;
+
+    char audio_type[5] = DEFAULT_AUDIO_TYPE;
+    char audio_format[5] = DEFAULT_AUDIO_FORMAT;
+    char audio_sampling[3] = DEFAULT_AUDIO_SAMPLING;
+    char audio_ptime[6] = DEFAULT_AUDIO_PTIME;
+    char anc_type[5] = DEFAULT_ANC_TYPE;
+    char payload_codec[6] = DEFAULT_PAYLOAD_CODEC;
+    uint32_t audio_channels = DEFAULT_AUDIO_CHANNELS;
 
     mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = { 0 };
@@ -199,19 +104,27 @@ int main(int argc, char** argv)
         { "send_port", required_argument, NULL, 'p' },
         { "protocol", required_argument, NULL, 'o' },
         { "type", required_argument, NULL, 't' },
-        { "number", required_argument, NULL, 'n' },
-        { "file", required_argument, NULL, 'b' },
         { "socketpath", required_argument, NULL, 'k' },
         { "master", required_argument, NULL, 'm' },
         { "interfaceid", required_argument, NULL, 'd' },
-        { "loop", required_argument, NULL, 'l' },
+        { "file", required_argument, NULL, 'b' },
         { "pix_fmt", required_argument, NULL, 'x' },
+        { "audio_type", required_argument, NULL, 'a' },
+        { "audio_format", required_argument, NULL, 'j' },
+        { "audio_sampling", required_argument, NULL, 'g' },
+        { "audio_ptime", required_argument, NULL, 'e' },
+        { "audio_channels", required_argument, NULL, 'c' },
+        { "anc_type", required_argument, NULL, 'q' },
+        { "number", required_argument, NULL, 'n' },
+        { "loop", required_argument, NULL, 'l' },
         { 0 }
     };
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hw:h:f:r:i:s:p:o:t:n:b:k:m:d:l:x:", longopts, 0);
+        opt = getopt_long(argc, argv,
+                          "Hw:h:f:r:i:s:p:o:t:k:m:d:b:x:a:j:g:e:c:q:n:l:",
+                          longopts, 0);
         if (opt == -1) {
             break;
         }
@@ -244,12 +157,6 @@ int main(int argc, char** argv)
         case 'o':
             strlcpy(protocol_type, optarg, sizeof(protocol_type));
             break;
-        case 'n':
-            total_num = atoi(optarg);
-            break;
-        case 'b':
-            strlcpy(input_file, optarg, sizeof(input_file));
-            break;
         case 't':
             strlcpy(payload_type, optarg, sizeof(payload_type));
             break;
@@ -262,8 +169,8 @@ int main(int argc, char** argv)
         case 'd':
             interface_id = atoi(optarg);
             break;
-        case 'l':
-            loop = (atoi(optarg)>0);
+        case 'b':
+            strlcpy(input_file, optarg, sizeof(input_file));
             break;
         case 'x':
             strlcpy(pix_fmt_string, optarg, sizeof(pix_fmt_string));
@@ -279,8 +186,32 @@ int main(int argc, char** argv)
                 pix_fmt = PIX_FMT_NV12;
             }
             break;
+        case 'a':
+            strlcpy(audio_type, optarg, sizeof(audio_type));
+            break;
+        case 'j':
+            strlcpy(audio_format, optarg, sizeof(audio_format));
+            break;
+        case 'g':
+            strlcpy(audio_sampling, optarg, sizeof(audio_sampling));
+            break;
+        case 'e':
+            strlcpy(audio_ptime, optarg, sizeof(audio_ptime));
+            break;
+        case 'c':
+            audio_channels = atoi(optarg);
+            break;
+        case 'q':
+            strlcpy(anc_type, optarg, sizeof(anc_type));
+            break;
+        case 'n':
+            total_num = atoi(optarg);
+            break;
+        case 'l':
+            loop = (atoi(optarg)>0);
+            break;
         case '?':
-            usage(stderr, argv[0]);
+            usage(stderr, argv[0], 1);
             return 1;
         default:
             break;
@@ -288,7 +219,7 @@ int main(int argc, char** argv)
     }
 
     if (help_flag) {
-        usage(stdout, argv[0]);
+        usage(stdout, argv[0], 1);
         return 0;
     }
 
@@ -318,7 +249,6 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
     } else if (strncmp(payload_type, "st22", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
-        param.payload_codec = PAYLOAD_CODEC_JPEGXS;
     } else if (strncmp(payload_type, "st30", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
     } else if (strncmp(payload_type, "st40", sizeof(payload_type)) == 0) {
@@ -330,22 +260,76 @@ int main(int argc, char** argv)
     }
 
     switch (param.payload_type) {
+    // TODO: Move to common
     case PAYLOAD_TYPE_ST30_AUDIO:
-        /* audio format */
-        param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-        param.payload_args.audio_args.channel = 2;
-        param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
-        param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
-        param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
+        // mcm_audio_type
+        if (strncmp(audio_type, "frame", sizeof(audio_type)) == 0) {
+            param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
+        } else if (strncmp(audio_type, "rtp", sizeof(audio_type)) == 0) {
+            param.payload_args.audio_args.type = AUDIO_TYPE_RTP_LEVEL;
+        }
+        // only 1 or 2 channels are supported now
+        if (audio_channels > 0 && audio_channels < 3){
+            param.payload_args.audio_args.channel = audio_channels;
+        }
+        // mcm_audio_format
+        if (strncmp(audio_format, "pcm8", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_PCM8;
+        } else if (strncmp(audio_format, "pcm16", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
+        } else if (strncmp(audio_format, "pcm24", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_PCM24;
+        } else if (strncmp(audio_format, "am824", sizeof(audio_format)) == 0) {
+            param.payload_args.audio_args.format = AUDIO_FMT_AM824;
+        }
+        // mcm_audio_sampling
+        if (strncmp(audio_sampling, "48k", sizeof(audio_sampling)) == 0) {
+            param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
+        } else if (strncmp(audio_sampling, "96k", sizeof(audio_sampling)) == 0) {
+            param.payload_args.audio_args.sampling = AUDIO_SAMPLING_96K;
+        } else if (strncmp(audio_sampling, "44k", sizeof(audio_sampling)) == 0) {
+            param.payload_args.audio_args.sampling = AUDIO_SAMPLING_44K;
+        }
+        // mcm_audio_ptime
+        if (strncmp(audio_ptime, "1ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
+        } else if (strncmp(audio_ptime, "125us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_125US;
+        } else if (strncmp(audio_ptime, "250us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_250US;
+        } else if (strncmp(audio_ptime, "333us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_333US;
+        } else if (strncmp(audio_ptime, "4ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_4MS;
+        } else if (strncmp(audio_ptime, "80us", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_80US;
+        } else if (strncmp(audio_ptime, "1.09ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_1_09MS;
+        } else if (strncmp(audio_ptime, "0.14ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_0_14MS;
+        } else if (strncmp(audio_ptime, "0.09ms", sizeof(audio_ptime)) == 0) {
+            param.payload_args.audio_args.ptime = AUDIO_PTIME_0_09MS;
+        }
         break;
     case PAYLOAD_TYPE_ST40_ANCILLARY:
-        /* ancillary format */
-        param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION;
-        param.payload_args.anc_args.type = ANC_TYPE_FRAME_LEVEL;
+        // mcm_anc_format
+        param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION; // the only possible value
+        // mcm_anc_type
+        if (strncmp(anc_type, "frame", sizeof(anc_type)) == 0) {
+            param.payload_args.audio_args.type = ANC_TYPE_FRAME_LEVEL;
+        } else if (strncmp(anc_type, "rtp", sizeof(anc_type)) == 0) {
+            param.payload_args.audio_args.type = ANC_TYPE_RTP_LEVEL;
+        }
         param.payload_args.anc_args.fps = vid_fps;
         break;
-    case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_ST22_VIDEO:
+        if (strncmp(payload_codec, "jpegxs", sizeof(payload_codec)) == 0) {
+            param.payload_codec = PAYLOAD_CODEC_JPEGXS;
+        } else if (strncmp(payload_codec, "h264", sizeof(payload_codec)) == 0) {
+            param.payload_codec = PAYLOAD_CODEC_H264;
+        }
+    case PAYLOAD_TYPE_RTSP_VIDEO:
+    case PAYLOAD_TYPE_ST20_VIDEO:
     default:
         /* video format */
         param.payload_args.video_args.width   = param.width = width;
