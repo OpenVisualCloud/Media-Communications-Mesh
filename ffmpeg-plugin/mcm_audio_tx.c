@@ -74,6 +74,12 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
     if (err)
         return err;
 
+    err = mcm_check_audio_params_compat(mcm_sample_rate, mcm_ptime);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Incompatible audio parameters\n");
+        return AVERROR(EINVAL);
+    }
+
     switch (codecpar->codec_id) {
     case AV_CODEC_ID_PCM_S24BE:
         mcm_fmt = AUDIO_FMT_PCM24;

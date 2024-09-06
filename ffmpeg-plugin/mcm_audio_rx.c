@@ -71,6 +71,12 @@ static int mcm_audio_read_header(AVFormatContext* avctx)
     if (err)
         return err;
 
+    err = mcm_check_audio_params_compat(mcm_sample_rate, mcm_ptime);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Incompatible audio parameters\n");
+        return AVERROR(EINVAL);
+    }
+
     /* audio format */
     param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
     param.payload_args.audio_args.channel = s->channels;

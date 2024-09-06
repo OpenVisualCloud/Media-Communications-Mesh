@@ -93,6 +93,34 @@ int mcm_parse_audio_packet_time(AVFormatContext* avctx, mcm_audio_ptime *ptime,
         *ptime = AUDIO_PTIME_125US;
         return 0;
     }
+    if (!strcmp(str, "250us")) {
+        *ptime = AUDIO_PTIME_250US;
+        return 0;
+    }
+    if (!strcmp(str, "333us")) {
+        *ptime = AUDIO_PTIME_333US;
+        return 0;
+    }
+    if (!strcmp(str, "4ms")) {
+        *ptime = AUDIO_PTIME_4MS;
+        return 0;
+    }
+    if (!strcmp(str, "80us")) {
+        *ptime = AUDIO_PTIME_80US;
+        return 0;
+    }
+    if (!strcmp(str, "1.09ms")) {
+        *ptime = AUDIO_PTIME_1_09MS;
+        return 0;
+    }
+    if (!strcmp(str, "0.14ms")) {
+        *ptime = AUDIO_PTIME_0_14MS;
+        return 0;
+    }
+    if (!strcmp(str, "0.09ms")) {
+        *ptime = AUDIO_PTIME_0_09MS;
+        return 0;
+    }
 
     av_log(avctx, AV_LOG_ERROR, "Audio packet time not supported\n");
     return AVERROR(EINVAL);
@@ -115,4 +143,36 @@ int mcm_parse_audio_pcm_format(AVFormatContext* avctx, mcm_audio_format *fmt,
 
     av_log(avctx, AV_LOG_ERROR, "Audio PCM format not supported\n");
     return AVERROR(EINVAL);
+}
+
+/* Check compatibility of ST2110-30 related audio parameters */
+int mcm_check_audio_params_compat(mcm_audio_sampling sample_rate,
+                                  mcm_audio_ptime ptime)
+{
+    switch (sample_rate) {
+    case AUDIO_SAMPLING_48K:
+    case AUDIO_SAMPLING_96K:
+        switch (ptime) {
+        case AUDIO_PTIME_1MS:
+        case AUDIO_PTIME_125US:
+        case AUDIO_PTIME_250US:
+        case AUDIO_PTIME_333US:
+        case AUDIO_PTIME_4MS:
+        case AUDIO_PTIME_80US:
+            return 0;
+        default:
+            return AVERROR(EINVAL);
+        }
+    case AUDIO_SAMPLING_44K:
+        switch (ptime) {
+        case AUDIO_PTIME_1_09MS:
+        case AUDIO_PTIME_0_14MS:
+        case AUDIO_PTIME_0_09MS:
+            return 0;
+        default:
+            return AVERROR(EINVAL);
+        }
+    default:
+        return AVERROR(EINVAL);
+    }
 }

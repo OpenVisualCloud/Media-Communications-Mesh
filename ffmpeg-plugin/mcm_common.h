@@ -30,6 +30,8 @@ int mcm_parse_audio_packet_time(AVFormatContext* avctx, mcm_audio_ptime *ptime,
                                 char *str);
 int mcm_parse_audio_pcm_format(AVFormatContext* avctx, mcm_audio_format *fmt,
                                enum AVCodecID *codec_id, char *str);
+int mcm_check_audio_params_compat(mcm_audio_sampling sample_rate,
+                                  mcm_audio_ptime ptime);
 
 #ifdef __cplusplus
 }
