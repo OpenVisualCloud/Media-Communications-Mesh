@@ -72,15 +72,6 @@ void usage(FILE* fp, const char* path, int is_sender)
     fprintf(fp, "Usage: %s [OPTION]\n", basename);
     fprintf(fp, "-H, --help\t\t\t\t"
                 "Print this help and exit\n");
-    fprintf(fp, "-w, --width=<frame_width>\t\t"
-                "Width of test video frame (default: %d)\n",
-        DEFAULT_FRAME_WIDTH);
-    fprintf(fp, "-h, --height=<frame_height>\t\t"
-                "Height of test video frame (default: %d)\n",
-        DEFAULT_FRAME_HEIGHT);
-    fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
-                "Test video FPS (frame per second) (default: %0.2f)\n",
-        DEFAULT_FPS);
     fprintf(fp, "-r, --rcv_ip=<ip_address>\t\t"
                 "Receiver's IP address (default: %s)\n",
         DEFAULT_RECV_IP);
@@ -110,14 +101,33 @@ void usage(FILE* fp, const char* path, int is_sender)
     if (is_sender){
         fprintf(fp, "-b, --file=<input_file>\t\t\t"
                     "Input file name (optional)\n");
-    } else {
+        fprintf(fp, "-l, --loop=<is_loop>\t\t\t"
+                    "Set infinity loop sending (default: %d)\n",
+            DEFAULT_INFINITY_LOOP);
+    } else { // receiver
         fprintf(fp, "-b, --dumpfile=<file_name>\t\t"
                     "Save stream to local file (example: %s)\n",
             DEFAULT_LOCAL_FILE);
     }
+    fprintf(fp, "--------------------------------------   VIDEO (ST2x)   --------------------------------------\n");
+    fprintf(fp, "-w, --width=<frame_width>\t\t"
+                "Width of test video frame (default: %d)\n",
+        DEFAULT_FRAME_WIDTH);
+    fprintf(fp, "-h, --height=<frame_height>\t\t"
+                "Height of test video frame (default: %d)\n",
+        DEFAULT_FRAME_HEIGHT);
+    fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
+                "Test video FPS (frame per second) (default: %0.2f)\n",
+        DEFAULT_FPS);
     fprintf(fp, "-x, --pix_fmt=<pixel_format>\t\t"
                 "Pixel format (default: %s)\n",
         DEFAULT_VIDEO_FMT);
+    if (is_sender){
+        fprintf(fp, "-n, --number=<number_of_frames>\t\t"
+                    "Total frame number to send (default: %d)\n",
+            DEFAULT_TOTAL_NUM);
+    }
+    fprintf(fp, "--------------------------------------   AUDIO (ST3x)   --------------------------------------\n");
     fprintf(fp, "-a, --audio_type=<audio_type>\t\t"
                 "Define audio type [frame|rtp] (default: %s)\n",
         DEFAULT_AUDIO_TYPE);
@@ -133,16 +143,9 @@ void usage(FILE* fp, const char* path, int is_sender)
     fprintf(fp, "-c, --audio_channels=<channels>\t\t"
                 "Define number of audio channels [1|2] (default: %d)\n",
         DEFAULT_AUDIO_CHANNELS);
+    fprintf(fp, "-------------------------------------- ANCILLARY (ST4x) --------------------------------------\n");
     fprintf(fp, "-q, --anc_type=<anc_type>\t\t"
                 "Define anc type [frame|rtp] (default: %s)\n",
         DEFAULT_ANC_TYPE);
-    if (is_sender){
-        fprintf(fp, "-n, --number=<number_of_frames>\t\t"
-                    "Total frame number to send (default: %d)\n",
-            DEFAULT_TOTAL_NUM);
-        fprintf(fp, "-l, --loop=<is_loop>\t\t\t"
-                    "Set infinity loop sending (default: %d)\n",
-            DEFAULT_INFINITY_LOOP);
-    }
     fprintf(fp, "\n");
 }
