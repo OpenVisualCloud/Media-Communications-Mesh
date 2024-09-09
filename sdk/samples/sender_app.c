@@ -343,8 +343,8 @@ int main(int argc, char** argv)
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
     strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
     strlcpy(param.local_addr.port, send_port, sizeof(param.local_addr.port));
-    fprintf(stdout, "LOCAL: %s:%s", param.local_addr.ip, param.local_addr.port)
-    fprintf(stdout, "REMOTE: %s:%s", param.remote_addr.ip, param.remote_addr.port)
+    fprintf(stdout, "LOCAL: %s:%s\n", param.local_addr.ip, param.local_addr.port);
+    fprintf(stdout, "REMOTE: %s:%s\n", param.remote_addr.ip, param.remote_addr.port);
     frame_size = getFrameSize(pix_fmt, width, height, false);
 
     dp_ctx = mcm_create_connection(&param);
