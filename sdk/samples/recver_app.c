@@ -301,6 +301,8 @@ int main(int argc, char** argv)
     strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
     strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
+    fprintf(stdout, "LOCAL: %s:%s", param.local_addr.ip, param.local_addr.port)
+    fprintf(stdout, "REMOTE: %s:%s", param.remote_addr.ip, param.remote_addr.port)
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {
