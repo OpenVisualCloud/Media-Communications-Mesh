@@ -23,6 +23,65 @@
 #define DEFAULT_ANC_TYPE "frame"
 #define DEFAULT_PAYLOAD_CODEC "jpegxs"
 
+static int getAudioFrameSize(
+    mcm_audio_format audio_fmt,
+    mcm_audio_sampling sampling,
+    mcm_audio_ptime ptime,
+    uint32_t audio_channels)
+{
+    // AUDIO_PTIME_1_09MS, /**< packets time of 1.09ms, only for 44.1kHz sample */
+    // AUDIO_PTIME_0_14MS, /**< packet time of 0.14ms, only for 44.1kHz sample */
+    // AUDIO_PTIME_0_09MS, /**< packet time of 0.09ms, only for 44.1kHz sample */
+
+    // Audio frame size
+    int bits_per_sample;
+    int samples_per_second;
+    int slices_per_second;
+
+    // mcm_audio_format
+    if (audio_fmt == AUDIO_FMT_PCM8){
+        bits_per_sample = 8;
+    } else if (audio_fmt == AUDIO_FMT_PCM24){
+        bits_per_sample = 24;
+    } else if (audio_fmt == AUDIO_FMT_AM824){
+        bits_per_sample = 32;
+    } else { //if (audio_fmt == AUDIO_FMT_PCM16)
+        bits_per_sample = 16;
+    }
+
+    // for 48k
+    if (ptime == AUDIO_PTIME_125US){
+        slices_per_second = 8000; // 6
+    } else if (ptime == AUDIO_PTIME_250US){
+        slices_per_second = 4000; // 12
+    } else if (ptime == AUDIO_PTIME_4MS){
+        slices_per_second = 250; // 192
+    } else { // if (ptime == AUDIO_PTIME_1MS)
+        slices_per_second = 1000; // 48 samples per slice
+    }
+    // } else if (ptime == AUDIO_PTIME_333US){
+    //     slices_per_second = 3003; // TODO: not ideal
+    // } else if (ptime == AUDIO_PTIME_80US){
+    //     slices_per_second = 12500; // 0.384?
+    // } else if (ptime == AUDIO_PTIME_1_09MS){
+    //     slices_per_second = 917; // TODO: not ideal
+    // } else if (ptime == AUDIO_PTIME_0_14MS){
+    //     slices_per_second = 7142; // TODO: not ideal
+    // } else if (ptime == AUDIO_PTIME_0_09MS){
+    //     slices_per_second = 11111; // TODO: not ideal
+    // }
+
+    if (sampling == AUDIO_SAMPLING_96K){
+        samples_per_second = 96000;
+    } else if (sampling == AUDIO_SAMPLING_44K){
+        samples_per_second = 44100;
+    } else { // if (sampling == AUDIO_SAMPLING_48K)
+        samples_per_second = 48000;
+    }
+
+    return audio_channels * bits_per_sample * samples_per_second * 1.0 / slices_per_second; // bits per slice
+}
+
 static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
 {
     size_t size = 0;

@@ -56,6 +56,8 @@ int main(int argc, char** argv)
     mcm_conn_param param = {};
     mcm_buffer* buf = NULL;
 
+    uint32_t frm_size = 0;
+
     int help_flag = 0;
     int opt;
     struct option longopts[] = {
@@ -267,6 +269,12 @@ int main(int argc, char** argv)
         } else if (strncmp(audio_ptime, "0.09ms", sizeof(audio_ptime)) == 0) {
             param.payload_args.audio_args.ptime = AUDIO_PTIME_0_09MS;
         }
+        frm_size = getAudioFrameSize(
+                        param.payload_args.audio_args.format,
+                        param.payload_args.audio_args.sampling,
+                        param.payload_args.audio_args.ptime,
+                        param.payload_args.audio_args.channel
+        );
         break;
     case PAYLOAD_TYPE_ST40_ANCILLARY:
         // mcm_anc_format
@@ -294,6 +302,7 @@ int main(int argc, char** argv)
         param.payload_args.video_args.height  = param.height = height;
         param.payload_args.video_args.fps     = param.fps = vid_fps;
         param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
+        frm_size = getFrameSize(param.payload_args.video_args.pix_fmt, width, height, false);
         break;
     }
 
@@ -312,8 +321,6 @@ int main(int argc, char** argv)
     signal(SIGINT, intHandler);
 
     uint32_t frame_count = 0;
-    // uint32_t frm_size = width * height * 3 / 2; //TODO:assume it's NV12
-    uint32_t frm_size = getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height, false);
 
     const uint32_t fps_interval = 30;
     double fps = 0.0;

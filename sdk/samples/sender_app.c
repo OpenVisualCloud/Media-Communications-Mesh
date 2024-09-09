@@ -310,6 +310,12 @@ int main(int argc, char** argv)
         } else if (strncmp(audio_ptime, "0.09ms", sizeof(audio_ptime)) == 0) {
             param.payload_args.audio_args.ptime = AUDIO_PTIME_0_09MS;
         }
+        frame_size = getAudioFrameSize(
+                        param.payload_args.audio_args.format,
+                        param.payload_args.audio_args.sampling,
+                        param.payload_args.audio_args.ptime,
+                        param.payload_args.audio_args.channel
+        );
         break;
     case PAYLOAD_TYPE_ST40_ANCILLARY:
         // mcm_anc_format
@@ -336,6 +342,7 @@ int main(int argc, char** argv)
         param.payload_args.video_args.height  = param.height = height;
         param.payload_args.video_args.fps     = param.fps = vid_fps;
         param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
+        frame_size = getFrameSize(pix_fmt, width, height, false);
         break;
     }
 
@@ -345,7 +352,6 @@ int main(int argc, char** argv)
     strlcpy(param.local_addr.port, send_port, sizeof(param.local_addr.port));
     fprintf(stdout, "LOCAL: %s:%s\n", param.local_addr.ip, param.local_addr.port);
     fprintf(stdout, "REMOTE: %s:%s\n", param.remote_addr.ip, param.remote_addr.port);
-    frame_size = getFrameSize(pix_fmt, width, height, false);
 
     dp_ctx = mcm_create_connection(&param);
     if (dp_ctx == NULL) {
