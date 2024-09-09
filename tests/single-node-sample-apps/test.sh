@@ -28,6 +28,15 @@ height="${7:-360}"
 fps="${8:-60}"
 pixel_format="${9:-yuv422p10le}"
 
+# Audio parameters
+audio_type="${4:-pcm16}"
+audio_sampling="${5:-48k}"
+audio_ptime="${6:-1ms}"
+audio_channels="${7:-1}"
+
+# Ancilary parameters
+anc_type="${4:-frame}"
+
 # Test configuration (cont'd)
 wait_interval=$((duration + 5))
 
@@ -266,7 +275,7 @@ function run_test_memif() {
     return $(($error || $timeout))
 }
 
-function run_test_stXX() {
+function run_test_st2x() {
     # 1st argument is the connection type ('st20' or 'st22')
 
     # Notice: recver_app should be started before sender_app. Currently, this is
@@ -344,15 +353,172 @@ function run_test_stXX() {
     return $(($error || $timeout || $recver_app_timeout || $sender_app_timeout))
 }
 
+function run_test_st3x() {
+    # 1st argument is the connection type ('st30' or 'st31')
+
+    # Notice: recver_app should be started before sender_app. Currently, this is
+    # the only successful scenario.
+
+    [[ "$1" != "st30" && "$1" != "st31" ]] && error "Unknown connection type argument" && return 1
+
+    info "Connection type: ${1^^}"
+
+    info "Starting Tx side media_proxy"
+    local tx_media_proxy_cmd="media_proxy -d $tx_vf_bdf -i 192.168.96.1 -t 8002"
+    run_in_background "$bin_dir/$tx_media_proxy_cmd" "$tx_media_proxy_out"
+    tx_media_proxy_pid=$!
+
+    sleep 1
+
+    info "Starting Rx side media_proxy"
+    local rx_media_proxy_cmd="media_proxy -d $rx_vf_bdf -i 192.168.96.2 -t 8003"
+    run_in_background "$bin_dir/$rx_media_proxy_cmd" "$rx_media_proxy_out"
+    rx_media_proxy_pid=$!
+
+    sleep 1
+
+    info "Starting recver_app ($1)"
+    export MCM_MEDIA_PROXY_PORT=8003
+    local recver_app_cmd="recver_app -r 192.168.96.1 -t $1 -a ${audio_type} -g ${audio_sampling} -e ${audio_ptime} -c ${audio_channels} -b $output_file -o auto"
+    run_in_background "$bin_dir/$recver_app_cmd" "$recver_app_out"
+    recver_app_pid=$!
+
+    info "Waiting for recver_app to connect to Rx media_proxy ($1)"
+    wait_text 50 $recver_app_out "Success connect to MCM media-proxy"
+    local recver_app_timeout=$?
+    [ $recver_app_timeout -eq 0 ] && info "Connection established"
+
+    info "Starting sender_app"
+    export MCM_MEDIA_PROXY_PORT=8002
+    local sender_app_cmd="sender_app -s 192.168.96.2 -t $1 -a ${audio_type} -g ${audio_sampling} -e ${audio_ptime} -c ${audio_channels} -b $input_file -o auto"
+    run_in_background "$bin_dir/$sender_app_cmd" "$sender_app_out"
+    sender_app_pid=$!
+
+    info "Waiting for sender_app to connect to Tx media_proxy ($1)"
+    wait_text 100 $sender_app_out "Success connect to MCM media-proxy"
+    local sender_app_timeout=$?
+    [ $sender_app_timeout -eq 0 ] && info "Connection established"
+
+    wait_completion "$wait_interval"
+    local timeout=$?
+
+    sleep 1
+
+    shutdown_apps
+
+    check_results
+    local error=$?
+
+    info "Tx media_proxy stats"
+    local regex="throughput ([0-9]*\.[0-9]*) Mb/s: [0-9]*\.[0-9]* Mb/s, cpu busy ([0-9]*\.[0-9]*)"
+    while IFS= read -r line; do
+        if [[ $line =~ $regex ]]; then
+            info "  Throughput ${BASH_REMATCH[1]} Mb/s, CPU busy ${BASH_REMATCH[2]}"
+        fi
+    done < "$tx_media_proxy_out"
+
+    info "Rx media_proxy stats"
+    local regex="throughput ([0-9]*\.[0-9]*) Mb/s, cpu busy ([0-9]*\.[0-9]*)"
+    while IFS= read -r line; do
+        if [[ $line =~ $regex ]]; then
+            info "  Throughput ${BASH_REMATCH[1]} Mb/s, CPU busy ${BASH_REMATCH[2]}"
+        fi
+    done < "$rx_media_proxy_out"
+
+    info "Cleanup"
+    cleanup
+
+    return $(($error || $timeout || $recver_app_timeout || $sender_app_timeout))
+}
+
+function run_test_st4x() {
+    # 1st argument is the connection type ('st40' or 'st41')
+
+    # Notice: recver_app should be started before sender_app. Currently, this is
+    # the only successful scenario.
+
+    [[ "$1" != "st40" && "$1" != "st41" ]] && error "Unknown connection type argument" && return 1
+
+    info "Connection type: ${1^^}"
+
+    info "Starting Tx side media_proxy"
+    local tx_media_proxy_cmd="media_proxy -d $tx_vf_bdf -i 192.168.96.1 -t 8002"
+    run_in_background "$bin_dir/$tx_media_proxy_cmd" "$tx_media_proxy_out"
+    tx_media_proxy_pid=$!
+
+    sleep 1
+
+    info "Starting Rx side media_proxy"
+    local rx_media_proxy_cmd="media_proxy -d $rx_vf_bdf -i 192.168.96.2 -t 8003"
+    run_in_background "$bin_dir/$rx_media_proxy_cmd" "$rx_media_proxy_out"
+    rx_media_proxy_pid=$!
+
+    sleep 1
+
+    info "Starting recver_app ($1)"
+    export MCM_MEDIA_PROXY_PORT=8003
+    local recver_app_cmd="recver_app -r 192.168.96.1 -t $1 -q ${anc_type} -b $output_file -o auto"
+    run_in_background "$bin_dir/$recver_app_cmd" "$recver_app_out"
+    recver_app_pid=$!
+
+    info "Waiting for recver_app to connect to Rx media_proxy ($1)"
+    wait_text 50 $recver_app_out "Success connect to MCM media-proxy"
+    local recver_app_timeout=$?
+    [ $recver_app_timeout -eq 0 ] && info "Connection established"
+
+    info "Starting sender_app"
+    export MCM_MEDIA_PROXY_PORT=8002
+    local sender_app_cmd="sender_app -s 192.168.96.2 -t $1 -q ${anc_type} -b $input_file -o auto"
+    run_in_background "$bin_dir/$sender_app_cmd" "$sender_app_out"
+    sender_app_pid=$!
+
+    info "Waiting for sender_app to connect to Tx media_proxy ($1)"
+    wait_text 100 $sender_app_out "Success connect to MCM media-proxy"
+    local sender_app_timeout=$?
+    [ $sender_app_timeout -eq 0 ] && info "Connection established"
+
+    wait_completion "$wait_interval"
+    local timeout=$?
+
+    sleep 1
+
+    shutdown_apps
+
+    check_results
+    local error=$?
+
+    info "Tx media_proxy stats"
+    local regex="throughput ([0-9]*\.[0-9]*) Mb/s: [0-9]*\.[0-9]* Mb/s, cpu busy ([0-9]*\.[0-9]*)"
+    while IFS= read -r line; do
+        if [[ $line =~ $regex ]]; then
+            info "  Throughput ${BASH_REMATCH[1]} Mb/s, CPU busy ${BASH_REMATCH[2]}"
+        fi
+    done < "$tx_media_proxy_out"
+
+    info "Rx media_proxy stats"
+    local regex="throughput ([0-9]*\.[0-9]*) Mb/s, cpu busy ([0-9]*\.[0-9]*)"
+    while IFS= read -r line; do
+        if [[ $line =~ $regex ]]; then
+            info "  Throughput ${BASH_REMATCH[1]} Mb/s, CPU busy ${BASH_REMATCH[2]}"
+        fi
+    done < "$rx_media_proxy_out"
+
+    info "Cleanup"
+    cleanup
+
+    return $(($error || $timeout || $recver_app_timeout || $sender_app_timeout))
+}
+
 info "Test MCM Tx/Rx for Single Node"
 info "  Binary directory: $(realpath $bin_dir)"
 info "  Output directory: $(realpath $out_dir)"
 info "  Input file path: $input_file"
 info "  Input file size: $(stat -c%s $input_file) byte(s)"
-info "  Frame size: $width x $height, FPS: $fps"
+info "  Frame size: $width x $height, FPS: $fps / Audio ptime: $audio_ptime / Ancilary type: $anc_type"
 info "  Pixel format: $pixel_format"
-info "  Duration: ${duration}s"
-info "  Frames number: $frames_number"
+info "  Duration: ${duration}s / Audio type: ${audio_type}"
+info "  Frames number: $frames_number / Audio sampling: ${audio_sampling}"
+info "  Audio channels: ${audio_channels}"
 info "  Test option: $test_option"
 info "  NIC PF: $nic_pf"
 
@@ -384,10 +550,22 @@ do
             run_test_memif_rx
             ;;
         st20)
-            run_test_stXX st20
+            run_test_st2x st20
             ;;
         st22)
-            run_test_stXX st22
+            run_test_st2x st22
+            ;;
+        st30)
+            run_test_st3x st30
+            ;;
+        st31)
+            run_test_st3x st31
+            ;;
+        st40)
+            run_test_st4x st40
+            ;;
+        st41)
+            run_test_st4x st41
             ;;
         *)
             error "Unknown test option"
