@@ -74,6 +74,12 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
     if (err)
         return err;
 
+    err = mcm_check_audio_params_compat(mcm_sample_rate, mcm_ptime);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Incompatible audio parameters\n");
+        return AVERROR(EINVAL);
+    }
+
     switch (codecpar->codec_id) {
     case AV_CODEC_ID_PCM_S24BE:
         mcm_fmt = AUDIO_FMT_PCM24;
@@ -167,19 +173,6 @@ static const AVClass mcm_audio_muxer_class = {
     .category = AV_CLASS_CATEGORY_DEVICE_AUDIO_OUTPUT,
 };
 
-const FFOutputFormat ff_mcm_audio_muxer = {
-    .p.name = "mcm_audio",
-    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio pcm24"),
-    .priv_data_size = sizeof(McmAudioMuxerContext),
-    .write_header = mcm_audio_write_header,
-    .write_packet = mcm_audio_write_packet,
-    .write_trailer = mcm_audio_write_trailer,
-    .p.audio_codec = AV_CODEC_ID_PCM_S24BE,
-    .p.video_codec = AV_CODEC_ID_NONE,
-    .p.flags = AVFMT_NOFILE,
-    .p.priv_class = &mcm_audio_muxer_class,
-};
-
 const FFOutputFormat ff_mcm_audio_pcm16_muxer = {
     .p.name = "mcm_audio_pcm16",
     .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio pcm16"),
@@ -188,6 +181,19 @@ const FFOutputFormat ff_mcm_audio_pcm16_muxer = {
     .write_packet = mcm_audio_write_packet,
     .write_trailer = mcm_audio_write_trailer,
     .p.audio_codec = AV_CODEC_ID_PCM_S16BE,
+    .p.video_codec = AV_CODEC_ID_NONE,
+    .p.flags = AVFMT_NOFILE,
+    .p.priv_class = &mcm_audio_muxer_class,
+};
+
+const FFOutputFormat ff_mcm_audio_pcm24_muxer = {
+    .p.name = "mcm_audio_pcm24",
+    .p.long_name = NULL_IF_CONFIG_SMALL("Media Communications Mesh audio pcm24"),
+    .priv_data_size = sizeof(McmAudioMuxerContext),
+    .write_header = mcm_audio_write_header,
+    .write_packet = mcm_audio_write_packet,
+    .write_trailer = mcm_audio_write_trailer,
+    .p.audio_codec = AV_CODEC_ID_PCM_S24BE,
     .p.video_codec = AV_CODEC_ID_NONE,
     .p.flags = AVFMT_NOFILE,
     .p.priv_class = &mcm_audio_muxer_class,

@@ -106,27 +106,22 @@ udp://@:1234
 
 The table below shows a proper way to configure the sender and the receiver depending on the audio PCM encoding format
 
-| Audio encoding | Sender configuration | Receiver configuration |
-| --- | --- | --- |
-| PCM 24-bit | Output device `mcm_audio` | Input device `mcm_audio` and argument `-pcm_fmt pcm24`
-| PCM 16-bit | Output device `mcm_audio_pcm16` | Input device `mcm_audio` and argument `-pcm_fmt pcm16`
+| Audio encoding | Sender configuration            | Receiver configuration         |
+| -------------- | ------------------------------- | ------------------------------ |
+| PCM 16-bit     | Output device `mcm_audio_pcm16` | Input device `mcm_audio_pcm16` |
+| PCM 24-bit     | Output device `mcm_audio_pcm24` | Input device `mcm_audio_pcm24` |
 
 The next arguments are supported to configure an audio transmission
 
-| Argument      | Type    | Description                                      | Default   |
-| ------------- | :-----: | ------------------------------------------------ | :-------: |
-| `channels`    | Integer | Number of audio channels (`1`, `2`, etc.)        | `2`       |
-| `sample_rate` | Integer | Audio sample rate (`44100`, `48000`, or `96000`) | `48000`   |
-| `ptime`       | String  | MTL audio packet time (`"1ms"` or `"125us"`)     | `"1ms"`   |
-| `pcm_fmt`     | String  | PCM audio format (`"pcm24"` or `"pcm16"`)        | `"pcm24"` |
+| Argument      | Type    | Description                                                                                                                                                                                       | Default   |
+| ------------- | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------: |
+| `channels`    | Integer | Number of audio channels (`1`, `2`, etc.)                                                                                                                                                         | `2`       |
+| `sample_rate` | Integer | Audio sample rate (`44100`, `48000`, or `96000`)                                                                                                                                                  | `48000`   |
+| `ptime`       | String  | Audio packet time according to ST2110-30. For 48000 and 96000 sampling: `"1ms"`, `"125us"`, `"250us"`, `"333us"`, `"4ms"`, or `"80us"`. For 44100 sampling: `"1.09ms"`, `"0.14ms"`, or `"0.09ms"` | `"1ms"`   |
 
-## Example – Run audio transmission
+## Example – Run audio transmission, PCM 24-bit
 
-This example demonstrates sending an audio file from the 1st FFmpeg instance to the 2nd FFmpeg instance via MCM.
-
-There are two options of configuration:
-* **Option A** for PCM 24-bit encoded audio
-* **Option B** for PCM 16-bit encoded audio
+This example demonstrates sending a PCM 24-bit encoded audio file from the 1st FFmpeg instance to the 2nd FFmpeg instance via MCM.
 
 ### NIC setup
 
@@ -140,27 +135,11 @@ TBD
    ```
 2. Start FFmpeg to receive packets from MCM and store on the disk
    
-   **Option A – PCM 24-bit audio**
    ```bash
-   sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm_audio \
+   sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm_audio_pcm24 \
       -channels 2 \
       -sample_rate 48000 \
       -ptime 1ms \
-      -pcm_fmt pcm24 \
-      -protocol_type auto \
-      -payload_type st30 \
-      -ip_addr 192.168.96.1 \
-      -port 9001 \
-      -i - output.wav
-   ```
-
-   **Option B – PCM 16-bit audio**
-   ```bash
-   sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm_audio \
-      -channels 2 \
-      -sample_rate 48000 \
-      -ptime 1ms \
-      -pcm_fmt pcm16 \
       -protocol_type auto \
       -payload_type st30 \
       -ip_addr 192.168.96.1 \
@@ -176,21 +155,8 @@ TBD
    ```
 2. Start FFmpeg to stream an audio file to the receiver via MCM
 
-   **Option A – PCM 24-bit audio**
    ```bash
-   sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <audio-file-path> -f mcm_audio \
-      -channels 2 \
-      -sample_rate 48000 \
-      -ptime 1ms \
-      -protocol_type auto \
-      -payload_type st30 \
-      -ip_addr 192.168.96.2 \
-      -port 9001 -
-   ```
-
-   **Option B – PCM 16-bit audio**
-   ```bash
-   sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <audio-file-path> -f mcm_audio_pcm16 \
+   sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <audio-file-path> -f mcm_audio_pcm24 \
       -channels 2 \
       -sample_rate 48000 \
       -ptime 1ms \
