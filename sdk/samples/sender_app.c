@@ -89,7 +89,7 @@ int main(int argc, char** argv)
     mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = { 0 };
     mcm_buffer* buf = NULL;
-    uint32_t total_num = 300;
+    uint32_t total_num = DEFAULT_TOTAL_NUM;
 
     int help_flag = 0;
     int opt;
@@ -392,7 +392,6 @@ int main(int argc, char** argv)
             break;
         }
         printf("INFO: frame_size = %u\n", frame_size);
-        // buf->len = frame_size;   // the len field MUST NOT be altered!
 
         if (input_fp == NULL) {
             gen_test_data(buf, frame_count);
@@ -437,7 +436,7 @@ int main(int argc, char** argv)
 
         frame_count++;
 
-        if (frame_count >= total_num) {
+        if (total_num > 0 && frame_count >= total_num) {
             break;
         }
 

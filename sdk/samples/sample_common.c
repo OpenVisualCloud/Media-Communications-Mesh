@@ -9,7 +9,7 @@
 #define DEFAULT_SEND_PORT "9001"
 #define DEFAULT_PROTOCOL "auto"
 #define DEFAULT_PAYLOAD_TYPE "st20"
-#define DEFAULT_TOTAL_NUM 300 // sender only
+#define DEFAULT_TOTAL_NUM 0 // sender only
 #define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
 #define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_INFINITY_LOOP 0 // sender only
@@ -183,7 +183,7 @@ void usage(FILE* fp, const char* path, int is_sender)
         DEFAULT_VIDEO_FMT);
     if (is_sender){
         fprintf(fp, "-n, --number=<number_of_frames>\t\t"
-                    "Total frame number to send (default: %d)\n",
+                    "Total frame number to send (default = inf: %d)\n",
             DEFAULT_TOTAL_NUM);
     }
     fprintf(fp, "--------------------------------------   AUDIO (ST3x)   --------------------------------------\n");
