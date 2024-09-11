@@ -31,6 +31,7 @@ sudo ./test.sh <test-option> <pf-bdf> <input-file> <duration> <frames_number> <w
    * `memif` – use a memif direct connection
    * `st20` – use an ST20 connection via media proxy
    * `st22` – use an ST22 connection via media proxy
+   * `af_xdp` - use a native_af_xdp connection for media proxy. MtlManager is required to be available in $PATH.
 
 * `pf-bdf` – NIC PF bus device function, default `0000:32:00.1`. VFs will be created on top of this PF.
 * `input-file` – input video file path
@@ -115,3 +116,12 @@ TBD
 sudo ./test.sh st22 0000:32:00.1 video.yuv 30 300 640 360 60 yuv422p10le
 ```
 TBD
+
+## Run test – af_xdp
+
+### Prerequisites
+1. Build and install MtlManager from [MTL repository](https://github.com/OpenVisualCloud/Media-Transport-Library/tree/main/manager).
+
+```bash
+sudo ./test.sh af_xdp 0000:32:00.1 video.yuv 30 300 640 360 60 yuv422p10le
+```

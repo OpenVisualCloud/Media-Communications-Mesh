@@ -35,6 +35,15 @@ Usage: media_proxy [OPTION]
 -t, --tcp=port_number   Port number for TCP socket controller (defaults: 8002).
 ```
 
+#### Run media-proxy using `native_af_xdp`
+
+To use media-proxy with the native `af_xdp/ebpf` device a device name should be provided with the `native_af_xdp:` prefix, for example `media-proxy --dev native_af_xdp:ens259f0np0`.
+Notice that the device must have a pre-assigned IP address. The `--ip` parameter is not applied in this mode.
+
+> [!CAUTION]
+> `MtlManager` from the Media-Transport-Library `manager` subdirectory must be running.
+> Only a device physical function with a pre-configured IP address can be used for the `native_af_xdp` mode.
+
 ### Docker
 The Media Proxy can be run as a docker container.
 Since Media Proxy depends on the MTL library, so you need to [setup MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md) on the host first.
