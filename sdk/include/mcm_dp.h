@@ -18,17 +18,18 @@ extern "C" {
 #include "libmemif.h"
 
 /* Media proxy control commands. */
-#define MCM_CREATE_SESSION 1
-#define MCM_DESTROY_SESSION 2
+#define MCM_CREATE_CONNECTION 1
+#define MCM_DELETE_CONNECTION 2
 #define MCM_QUERY_MEMIF_PATH 3
 #define MCM_QUERY_MEMIF_ID 4
 #define MCM_QUERY_MEMIF_PARAM 5
 
 // Media proxy magic_word and version
 // 4 letters can be casted to numerical value in code:
+// header version had been upgraded to 0x20 due to significant changes in the API
 #ifndef HEADER_MAGIC_WORD
     #define HEADER_MAGIC_WORD "mcm"
-    #define HEADER_VERSION 0x10
+    #define HEADER_VERSION 0x20
 #endif
 
 typedef struct _msg_header {
@@ -87,14 +88,68 @@ typedef struct {
     char port[6];
 } mcm_dp_addr;
 
-typedef struct {
-    struct {
-        uint16_t seq_num; /* Sequence number */
-        uint32_t timestamp; /* Timestamp */
-    } metadata; /**< filled by sender side */
-    size_t len; /**< size of data filled in "data" */
-    void* data;
-} mcm_buffer;
+/* Mesh client handle type */
+typedef void * MeshClient;
+
+/* Mesh connection handle type */
+typedef void * MeshConnection;
+
+/* Mesh shared memory buffer type */
+typedef void * MeshBuffer;
+
+/* Mesh shared memory buffer information structure */
+typedef struct MeshBufferInfo {
+    /* Pointer to shared memory area storing data */
+    void * const data;
+
+    /* Actual length of data in the buffer */
+    const size_t len;
+
+    /* Max length of data in the buffer, i.e. buffer capacity */
+    const size_t max_len;
+} MeshBufferInfo;
+
+/* Mesh log levels definition */
+typedef enum MeshLogLevel {
+    MESH_LOG_QUIET = -1,
+    MESH_LOG_FATAL = 0,
+    MESH_LOG_ERROR,
+    MESH_LOG_WARNING,
+    MESH_LOG_INFO,
+    MESH_LOG_VERBOSE,
+    MESH_LOG_DEBUG,
+    MESH_LOG_TRACE,
+} MeshLogLevel;
+
+/* Error codes */
+#define MESH_ERR_BAD_CLIENT_HANDLE        (1000)
+#define MESH_ERR_BAD_CONNECTION_HANDLE    (1001)
+#define MESH_ERR_BAD_BUFFER_HANDLE        (1002)
+#define MESH_ERR_CONNECTION_CLOSED        (1003)
+#define MESH_ERR_TIMEOUT                  (1004)
+
+/* Maximum number of connections maintained with a Mesh Client*/
+#define MAX_NUMBER_OF_CONNECTIONS 2048
+
+/* Mesh client configuration structure */
+typedef struct MeshClientConfig {
+
+    /* Default timeout interval for any API call */
+    int timeout_ms;
+
+    /* Max number of streams */
+    int max_streams_num;
+
+    /* Log level */
+    MeshLogLevel log_level;
+
+    /* table with pointers to Mesh Connections under this Mesh Client*/
+    MeshConnection *connections[MAX_NUMBER_OF_CONNECTIONS];
+
+    /* number of currently configured connections with this Mesh Client*/
+    int number_of_connections;
+    
+} MeshClientConfig;
 
 typedef enum {
     /* YUV 4:2:0 */
@@ -203,7 +258,16 @@ typedef struct {
     double fps;
 } mcm_anc_args;
 
+#define MESH_VERSION_MAJOR 24
+#define MESH_VERSION_MINOR  9
+#define MESH_VERSION_HOTFIX 1
+
+/* used as a data structure sent to Media Proxy while connecting*/
 typedef struct {
+    uint8_t mesh_version_major;
+    uint8_t mesh_version_minor;
+    uint8_t mesh_version_hotfix;
+
     transfer_type type;
     proto_type protocol;
 
@@ -232,8 +296,8 @@ typedef struct {
     uint8_t payload_mtl_pacing;
 } mcm_conn_param;
 
-typedef struct _mcm_conn_context mcm_conn_context;
-typedef struct _mcm_conn_context {
+/* Mesh connection */
+typedef struct MeshConnectionConfig {
     /* data */
     /* connect information */
     transfer_type type;
@@ -253,41 +317,31 @@ typedef struct _mcm_conn_context {
     mcm_audio_sampling sampling;
     int st30_frame_size;
     int pkt_len;
+} MeshConnectionConfig;
 
-    /* function */
-    mcm_buffer* (*dequeue_buffer)(mcm_conn_context* self, int timeout, int* error_code);
-    int (*enqueue_buffer)(mcm_conn_context* self, mcm_buffer* buf);
-} mcm_conn_context;
+/* Create a new mesh client */
+int mesh_create_client(MeshClient *mc, MeshClientConfig *cfg);
+
+/* Delete mesh client */
+int mesh_delete_client(MeshClient *mc);
 
 /**
  * \brief Create session for MCM data plane connection.
  * @param param Parameters for the connect session.
  * \return The context handler of created connect session.
  */
-mcm_conn_context* mcm_create_connection(mcm_conn_param* param);
+/* Create a new mesh connection */
+int mesh_create_connection(MeshClient mc, MeshConnection *conn, MeshConnectionConfig *cfg);
 
 /**
  * \brief Destroy MCM DP connection.
  * @param pctx The context handler of connection.
  */
-void mcm_destroy_connection(mcm_conn_context* pctx);
+/* Delete mesh connection */
+int mesh_delete_connection(MeshConnection *conn);
 
-/**
- * Get buffer from buffer queue.
- *
- * For TX side, this function used to alloc buffer from buffer queue.
- * For RX side, this function used to read buffer from TX side.
- *
- * \brief Get buffer from buffer queue.
- * @param pctx The context handler of created connect session.
- * @param timeout - timeout in milliseconds
- * Passive event polling -
- * timeout = 0 - dont wait for event, check event queue if there is an event
- * and return. timeout = -1 - wait until event
- * @param error_code Error code if failed, can be set to NULL if doesn't care.
- * \return Pointer to the mcm_buffer, return NULL if failed.
- */
-mcm_buffer* mcm_dequeue_buffer(mcm_conn_context* pctx, int timeout, int* error_code);
+/* Get buffer from mesh connection */
+int mesh_get_buffer(MeshConnection conn, MeshBuffer *buf, MeshBufferInfo *info, int timeout_ms);
 
 /**
  * Put buffer to buffer queue.
@@ -296,11 +350,22 @@ mcm_buffer* mcm_dequeue_buffer(mcm_conn_context* pctx, int timeout, int* error_c
  * For TX side, this function used to send buffer to RX side.
  *
  * \brief Put buffer to buffer queue.
- * @param pctx The context handler of created connect session.
- * @param buf Pinter to the mcm_buffer.
- * \return Error code if failed, return "0" if success.
+ * @param conn The context handler of created connect session.
+ * @param timeout - timeout in milliseconds
+ * Passive event polling -
+ * timeout = 0 - dont wait for event, check event queue if there is an event
+ * and return. timeout = -1 - wait until event 
+ * * \return Error code if failed, return "0" if success.
  */
-int mcm_enqueue_buffer(mcm_conn_context* pctx, mcm_buffer* buf);
+
+/* Put buffer to mesh connection */
+int mesh_put_buffer(MeshConnection conn, MeshBuffer *buf, int timeout_ms);
+
+/* Set length of data in the buffer */
+int mesh_set_buffer_len(MeshConnection conn, MeshBuffer buf, size_t new_len);
+
+/* Log a message */
+void mesh_log(MeshClient mc, int log_level, ...);
 
 #ifdef __cplusplus
 }
