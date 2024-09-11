@@ -42,7 +42,7 @@ Notice that the device must have a pre-assigned IP address. The `--ip` parameter
 
 > [!CAUTION]
 > `MtlManager` from the Media-Transport-Library `manager` subdirectory must be running.
-> Only a device physical function with a preconfigured IP address can be used for the `native_af_xdp` mode.
+> Only a device physical function with a pre-configured IP address can be used for the `native_af_xdp` mode.
 
 ### Docker
 The Media Proxy can be run as a docker container.
