@@ -144,7 +144,6 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         dest = s->unsent_mcm_buf->data;
 
         if (s->unsent_len) {
-            memcpy(dest, s->unsent_mcm_buf->data, s->unsent_len);
             dest += s->unsent_len;
             len -= s->unsent_len;
             s->unsent_len = 0;
