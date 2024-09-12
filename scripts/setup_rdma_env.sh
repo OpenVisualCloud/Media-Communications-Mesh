@@ -132,6 +132,6 @@ else
     echo -e "Usage\n"
     echo -e "$0 install" "\n\t" "setup environment\n"
     echo -e "$0 check" "\n\t" "check environment\n"
-    echo -e "$0 set_mtu INTERFACE" "\n\t" "temporarily set MTU to 9000 on given interface\n"
-    echo -e "$0 perftest INTERFACE" "\n\t" "run perftest\n"
+    echo -e "$0 set_mtu <INTERFACE>" "\n\t" "temporarily set MTU to 9000 on given interface\n"
+    echo -e "$0 perftest <INTERFACE>" "\n\t" "run perftest\n"
 fi
