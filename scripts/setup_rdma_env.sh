@@ -1,5 +1,7 @@
 #!/usr/bin/env bash
 
+set -eo pipefail
+
 if [[ ! -d rdma ]]; then
     mkdir rdma
 fi
