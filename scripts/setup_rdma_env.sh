@@ -2,18 +2,18 @@
 
 set -eo pipefail
 
-if [[ ! -d rdma ]]; then
-    mkdir rdma
-fi
-cd rdma
+WORKING_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")/rdma"
+mkdir -p "$WORKING_DIR"
 
 install_irdma() {
     echo "Installing irdma driver..."
-    wget https://downloadmirror.intel.com/832291/irdma-1.15.11.tgz -O irdma.tar.gz
-    tar -xf irdma.tar.gz
-    cd irdma-*
+    pushd "$WORKING_DIR"
+    wget https://downloadmirror.intel.com/832291/irdma-1.15.11.tgz -O ./irdma.tar.gz
+    tar -xf ./irdma.tar.gz
+    pushd ./irdma-*
     sudo ./build.sh
-    cd ..
+    popd
+    popd
     modprobe irdma
 }
 
@@ -21,22 +21,22 @@ configure_irdma() {
     echo "Configuring irdma driver..."
 
     # enable RoCE
-    roce_ena_val=$(grep "options irdma roce_ena=" /etc/modprobe.d/irdma.conf, cut -d "=" -f 2)
+    roce_ena_val=$(grep "options irdma roce_ena=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
     if [[ -z "$roce_ena_val" ]]; then
         echo "options irdma roce_ena=1" | sudo tee -a /etc/modprobe.d/irdma.conf
         sudo dracut -f
     elif [[ "$roce_ena_val" != "1" ]]; then
-        sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' a.conf
+        sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
         sudo dracut -f
     fi
 
     # increase irdma Queue Pair limit
-    limits_sel_val=$(grep "options irdma limits_sel=" /etc/modprobe.d/irdma.conf, cut -d "=" -f 2)
+    limits_sel_val=$(grep "options irdma limits_sel=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
     if [[ -z "$limits_sel_val" ]]; then
         echo "options irdma limits_sel=5" | sudo tee -a /etc/modprobe.d/irdma.conf
         sudo dracut -f
-    elif [[ "$limits_sel_val" != "1" ]]; then
-        sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' a.conf
+    elif [[ "$limits_sel_val" != "5" ]]; then
+        sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
         sudo dracut -f
     fi
 }
@@ -46,13 +46,13 @@ install_perftest() {
     sudo apt update
     sudo apt install -y libibverbs-dev librdmacm-dev libibumad-dev libpci-dev
     echo "Installing perftest..."
-    git clone https://github.com/linux-rdma/perftest.git perftest
-    cd perftest
+    git clone https://github.com/linux-rdma/perftest.git "$WORKING_DIR"/perftest
+    pushd "$WORKING_DIR"/perftest
     ./autogen.sh
     ./configure
     make
     sudo make install
-    cd ..
+    popd
 }
 
 check_roce() {
@@ -95,19 +95,19 @@ set_mtu() {
 
 run_perftest() {
     sudo ip addr add 192.168.255.255/24 dev $1
-    taskset -c 1 ib_write_bw --qp=4 --report_gbit -D 60 --tos 96 -R &> perftest_server.log &
+    taskset -c 1 ib_write_bw --qp=4 --report_gbit -D 60 --tos 96 -R &> "$WORKING_DIR"/perftest_server.log &
     server_pid=$!
-    ib_write_bw 192.168.255.255 --qp=4 --report_gbit -D 60 --tos 96 -R &> perftest_client.log &
+    ib_write_bw 192.168.255.255 --qp=4 --report_gbit -D 60 --tos 96 -R &> "$WORKING_DIR"/perftest_client.log &
     client_pid=$!
     echo "perftest is running. Waiting 60 s..."
     wait $server_pid
     wait $client_pid
-    echo "perftest completed. See results in rdma/perftest_server.log and rdma/perftest_client.log"
+    echo "perftest completed. See results in $WORKING_DIR/perftest_server.log and $WORKING_DIR/perftest_client.log"
     sudo ip addr del 192.168.255.255/24 dev $1
 }
 
 if [[ "$1" == "install" ]]; then
-    rm -rf ../rdma/*
+    rm -rf "$WORKING_DIR"/*
     install_irdma
     configure_irdma
     install_perftest
