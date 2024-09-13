@@ -7,15 +7,6 @@ if [[ ! -d rdma ]]; then
 fi
 cd rdma
 
-install_ice() {
-    echo "Installing ice driver..."
-    wget https://downloadmirror.intel.com/832286/ice-1.15.4.tar.gz -O ice.tar.gz
-    tar -xf ice.tar.gz
-    cd ice-*/src
-    sudo make install
-    cd ../..
-}
-
 install_irdma() {
     echo "Installing irdma driver..."
     wget https://downloadmirror.intel.com/832291/irdma-1.15.11.tgz -O irdma.tar.gz
@@ -117,7 +108,6 @@ run_perftest() {
 
 if [[ "$1" == "install" ]]; then
     rm -rf ../rdma/*
-    # install_ice
     install_irdma
     configure_irdma
     install_perftest
