@@ -26,7 +26,7 @@ void print_memif_details(memif_conn_handle_t conn)
 
     err = memif_get_details(conn, &md, buf, buflen);
     if (err != MEMIF_ERR_SUCCESS) {
-        log_info("%s", memif_strerror(err));
+        mesh_log(mc, MESH_LOG_INFO, "%s", memif_strerror(err));
         if (err == MEMIF_ERR_NOCONN) {
             free(buf);
             return;
@@ -97,7 +97,7 @@ int on_connect(memif_conn_handle_t conn, void* priv_data)
 
     err = memif_refill_queue(conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
-        log_error("memif_refill_queue: %s", memif_strerror(err));
+        mesh_log(mc, MESH_LOG_ERROR, "memif_refill_queue: %s", memif_strerror(err));
         return err;
     }
 
@@ -105,7 +105,7 @@ int on_connect(memif_conn_handle_t conn, void* priv_data)
 
     pmemif->is_connected = 1;
 
-    log_info("memif connected!");
+    mesh_log(mc, MESH_LOG_INFO, "memif connected!");
     return 0;
 }
 
@@ -125,12 +125,12 @@ int on_disconnect(memif_conn_handle_t conn, void* priv_data)
     /* stop event polling thread */
     err = memif_cancel_poll_event(memif_get_socket_handle(conn));
     if (err != MEMIF_ERR_SUCCESS) {
-        log_error("We are doomed...");
+        mesh_log(mc, MESH_LOG_ERROR, "We are doomed...");
     }
 
     pmemif->is_connected = 0;
 
-    log_info("memif disconnected!");
+    mesh_log(mc, MESH_LOG_INFO, "memif disconnected!");
     return 0;
 }
 
@@ -144,7 +144,7 @@ int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     /* receive packets from the shared memory */
     err = memif_rx_burst(conn, qid, &rx_bufs, 1, &rx_buf_num);
     if (err != MEMIF_ERR_SUCCESS) {
-        log_error("memif_rx_burst: %s", memif_strerror(err));
+        mesh_log(mc, MESH_LOG_ERROR, "memif_rx_burst: %s", memif_strerror(err));
         return err;
     }
 
@@ -152,7 +152,7 @@ int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 
     err = memif_refill_queue(conn, qid, rx_buf_num, 0);
     if (err != MEMIF_ERR_SUCCESS) {
-        log_error("memif_refill_queue: %s", memif_strerror(err));
+        mesh_log(mc, MESH_LOG_ERROR, "memif_refill_queue: %s", memif_strerror(err));
         return err;
     }
 
@@ -170,9 +170,9 @@ int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     /* receive packets from the shared memory */
     err = memif_rx_burst(conn, qid, pmemif->working_bufs, MEMIF_BUFFER_NUM, (uint16_t*)&pmemif->buf_num);
     if (err != MEMIF_ERR_SUCCESS) {
-        log_error("memif_rx_burst: %s", memif_strerror(err));
-        log_error("received buffer number: %d", pmemif->buf_num);
-        // log_error("buffer flag: %d, len: %d, index: %d\n",
+        mesh_log(mc, MESH_LOG_ERROR, "memif_rx_burst: %s", memif_strerror(err));
+        mesh_log(mc, MESH_LOG_ERROR, "received buffer number: %d", pmemif->buf_num);
+        // mesh_log(mc, MESH_LOG_ERROR, "buffer flag: %d, len: %d, index: %d\n",
         //     pmemif->working_bufs.flags, pmemif->working_bufs.len, pmemif->working_bufs.desc_index);
         // pmemif->buf_num = 0;
         return err;
@@ -187,7 +187,7 @@ int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 
     // err = memif_refill_queue(conn, qid, rx_buf_num, 0);
     // if (err != MEMIF_ERR_SUCCESS) {
-    //     log_error("memif_refill_queue: %s", memif_strerror(err));
+    //     mesh_log(mc, MESH_LOG_ERROR, "memif_refill_queue: %s", memif_strerror(err));
     //     return err;
     // }
 
@@ -197,15 +197,14 @@ int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     return 0;
 }
 
-mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_conn_param* memif_args)
+int mcm_create_connection_memif(MeshClient *mc, MeshConnection *conn, mcm_conn_param* svc_args, memif_conn_param* memif_args)
 {
     int ret = 0;
-    mcm_conn_context* conn_ctx = NULL;
     memif_conn_context* shm_conn = NULL;
     memif_socket_handle_t memif_socket;
 
     if (svc_args == NULL || memif_args == NULL) {
-        log_error("Illegal svc_argseters.");
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal svc_argseters.");
         return NULL;
     }
 
@@ -221,23 +220,23 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
         unlink(memif_args->socket_args.path);
     }
 
-    log_info("Create memif socket.");
+    mesh_log(mc, MESH_LOG_INFO, "Create memif socket.");
     ret = memif_create_socket(&memif_socket, &memif_args->socket_args, NULL);
     if (ret != MEMIF_ERR_SUCCESS) {
-        log_info("memif_create_socket: %s", memif_strerror(ret));
+        mesh_log(mc, MESH_LOG_INFO, "memif_create_socket: %s", memif_strerror(ret));
         return NULL;
     }
 
     /* Fill information about memif connection */
     shm_conn = calloc(1, sizeof(memif_conn_context));
     if (shm_conn == NULL) {
-        log_error("Out of Memory.");
+        mesh_log(mc, MESH_LOG_ERROR, "Out of Memory.");
         exit(-1);
     }
     shm_conn->sockfd = memif_socket;
     memif_args->conn_args.socket = memif_socket;
 
-    log_info("Create memif interface.");
+    mesh_log(mc, MESH_LOG_INFO, "Create memif interface.");
     if (svc_args->type == is_tx) {
         ret = memif_create(&shm_conn->conn, &memif_args->conn_args,
             on_connect, on_disconnect, tx_on_receive, shm_conn);
@@ -246,7 +245,7 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
             on_connect, on_disconnect, rx_on_receive, shm_conn);
     }
     if (ret != MEMIF_ERR_SUCCESS) {
-        log_info("memif_create: %s", memif_strerror(ret));
+        mesh_log(mc, MESH_LOG_INFO, "memif_create: %s", memif_strerror(ret));
         free(shm_conn);
         shm_conn = NULL;
         memif_delete_socket(&memif_socket);
@@ -256,7 +255,7 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
     do {
         ret = memif_poll_event(shm_conn->sockfd, -1);
         if (ret != MEMIF_ERR_SUCCESS) {
-            log_error("Create memif connection failed.");
+            mesh_log(mc, MESH_LOG_ERROR, "Create memif connection failed.");
             free(shm_conn);
             shm_conn = NULL;
             memif_delete_socket(&memif_socket);
@@ -264,9 +263,8 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
         }
     } while (shm_conn->is_connected == 0);
 
-    conn_ctx = calloc(1, sizeof(mcm_conn_context));
-    if (conn_ctx == NULL) {
-        log_error("Outof Memory.");
+    if (conn == NULL) {
+        mesh_log(mc, MESH_LOG_ERROR, "No connection.");
         free(shm_conn);
         shm_conn = NULL;
         memif_delete_socket(&memif_socket);
@@ -282,59 +280,55 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
     }
 
     /* connection protocol */
-    conn_ctx->proto = PROTO_MEMIF;
-    conn_ctx->priv = (void*)shm_conn;
+    conn->proto = PROTO_MEMIF;
+    conn->priv = (void*)shm_conn;
     /* video frame format */
-    conn_ctx->width = svc_args->width;
-    conn_ctx->height = svc_args->height;
-    conn_ctx->pix_fmt = svc_args->pix_fmt;
-    conn_ctx->fps = svc_args->fps;
+    conn->width = svc_args->width;
+    conn->height = svc_args->height;
+    conn->pix_fmt = svc_args->pix_fmt;
+    conn->fps = svc_args->fps;
     /* frame buffer size */
-    conn_ctx->frame_size = memif_args->conn_args.buffer_size;
+    conn->frame_size = memif_args->conn_args.buffer_size;
 
-    /* Intialize functions. */
-    conn_ctx->dequeue_buffer = memif_dequeue_buffer;
-    conn_ctx->enqueue_buffer = memif_enqueue_buffer;
-
-    return conn_ctx;
+    return NULL;
 }
 
-mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* error_code)
+ memif_dequeue_buffer(MeshClient mc, MeshConnection conn, MeshBuffer buf, int timeout)
 {
     int err = 0;
     memif_conn_context* memif_conn = NULL;
     memif_buffer_t memif_buf = {};
     uint16_t buf_num = 0;
-    mcm_buffer* buf = NULL;
+    buf = NULL;
 
-    if (!conn_ctx || !conn_ctx->priv) {
-        log_error("Illegal Parameter.");
+    if (!conn || !conn->priv) {
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameter.");
         return NULL;
     }
-    memif_conn = (memif_conn_context*)conn_ctx->priv;
+    memif_conn = (memif_conn_context*)conn->priv;
 
     while (memif_conn->is_connected == 0) {
-        log_error("Data connection stopped.");
+        mesh_log(mc, MESH_LOG_ERROR, "Data connection stopped.");
         return NULL;
     }
 
-    if (conn_ctx->type == is_tx) {  /* TX */
+    if (conn->type == is_tx) {  /* TX */
         /* trigger the callbacks. */
         err = memif_poll_event(memif_conn->sockfd, 0);
         if (err != MEMIF_ERR_SUCCESS) {
-            log_info("TX memif_poll_event: %s", memif_strerror(err));
+            mesh_log(mc, MESH_LOG_INFO, "TX memif_poll_event: %s", memif_strerror(err));
             return NULL;
         }
 
         do {
             const size_t sleep_interval = 10; /* 0.01 s */
             err = memif_buffer_alloc(memif_conn->conn, memif_conn->qid, &memif_buf, 1,
-                &buf_num, conn_ctx->frame_size);
+                &buf_num, conn->frame_size);
             if (err == MEMIF_ERR_SUCCESS) {
                 break;
             } else {
                 if (err == MEMIF_ERR_NOBUF_RING) {
-                    // log_error("Empty of memif buffer ring.");
+                    // mesh_log(mc, MESH_LOG_ERROR, "Empty of memif buffer ring.");
                     if (timeout == 0) {
                         /* no wait */
                         break;
@@ -344,28 +338,28 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
                         /* trigger the callbacks. */
                         err = memif_poll_event(memif_conn->sockfd, sleep_interval);
                         if (err != MEMIF_ERR_SUCCESS) {
-                            log_info("TX memif event: %s", memif_strerror(err));
+                            mesh_log(mc, MESH_LOG_INFO, "TX memif event: %s", memif_strerror(err));
                             break;
                         }
                         timeout -= sleep_interval;
                         timeout = timeout < 0 ? 0 : timeout;
                     }
                 } else {
-                    log_error("Failed to alloc memif buffer: %s", memif_strerror(err));
+                    mesh_log(mc, MESH_LOG_ERROR, "Failed to alloc memif buffer: %s", memif_strerror(err));
                     break;
                 }
             }
         } while (1);
 
         if (err == MEMIF_ERR_SUCCESS) {
-            buf = calloc(1, sizeof(mcm_buffer));
-            buf->len = conn_ctx->frame_size;
+            buf = calloc(1, sizeof(MeshBufferStruct));
+            buf->len = conn->frame_size;
             buf->data = memif_buf.data;
             memif_conn->working_bufs[0] = memif_buf;
             memif_conn->working_idx = 0;
             memif_conn->buf_num = buf_num;
         } else {
-            log_error("Failed to alloc buffer from memory queue.");
+            mesh_log(mc, MESH_LOG_ERROR, "Failed to alloc buffer from memory queue.");
             if (error_code) {
                 *error_code = err;
             }
@@ -377,10 +371,10 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         }
 
         if (err != MEMIF_ERR_SUCCESS) {
-            log_error("memif_poll_event: %s", memif_strerror(err));
+            mesh_log(mc, MESH_LOG_ERROR, "memif_poll_event: %s", memif_strerror(err));
         } else {
             if (memif_conn->buf_num > 0) {
-                buf = calloc(1, sizeof(mcm_buffer));
+                buf = calloc(1, sizeof(MeshBufferStruct));
                 buf->len = memif_conn->working_bufs[memif_conn->working_idx].len;
                 buf->data = memif_conn->working_bufs[memif_conn->working_idx].data;
                 memif_conn->working_idx++;
@@ -398,28 +392,28 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
     return buf;
 }
 
-int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
+int memif_enqueue_buffer(MeshClient mc, MeshConnection conn, MeshBuffer buf, int timeout)
 {
     int err = 0;
     memif_conn_context* memif_conn = NULL;
     uint16_t buf_num = 0;
     // static size_t frame_count = 0;
 
-    if (!conn_ctx || !conn_ctx->priv || !buf) {
-        log_error("Illegal Parameter.");
+    if (!conn || !conn_->priv || !buf) {
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameter.");
         return -1;
     }
 
-    memif_conn = (memif_conn_context*)conn_ctx->priv;
+    memif_conn = (memif_conn_context*)conn->priv;
 
     if (memif_conn->is_connected == 0) {
-        log_error("Data connection stopped.");
+        mesh_log(mc, MESH_LOG_ERROR, "Data connection stopped.");
         return -1;
     }
 
-    if (conn_ctx->type == is_tx) {
+    if (conn->type == is_tx) {
         if (buf->data != memif_conn->working_bufs[0].data) {
-            log_error("Unknown buffer address.");
+            mesh_log(mc, MESH_LOG_ERROR, "Unknown buffer address.");
             return -1;
         }
 
@@ -429,16 +423,16 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
 
         err = memif_tx_burst(memif_conn->conn, memif_conn->qid, &memif_conn->working_bufs[0], 1, &buf_num);
         if (err != MEMIF_ERR_SUCCESS) {
-            log_error("memif_tx_burst: %s", memif_strerror(err));
+            mesh_log(mc, MESH_LOG_ERROR, "memif_tx_burst: %s", memif_strerror(err));
         }
 
         memif_conn->buf_num--;
         // frame_count++;
-        // log_info("TX sent frames: %lu", frame_count);
+        // mesh_log(mc, MESH_LOG_INFO, "TX sent frames: %lu", frame_count);
     } else {
         err = memif_refill_queue(memif_conn->conn, memif_conn->qid, 1, 0);
         if (err != MEMIF_ERR_SUCCESS) {
-            log_error("memif_refill_queue: %s", memif_strerror(err));
+            mesh_log(mc, MESH_LOG_ERROR, "memif_refill_queue: %s", memif_strerror(err));
         }
     }
 
@@ -450,7 +444,7 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
 void mcm_destroy_connection_memif(memif_conn_context* pctx)
 {
     if (!pctx) {
-        log_error("Illegal Parameter.");
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameter.");
         return;
     }
 

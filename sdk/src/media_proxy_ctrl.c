@@ -19,7 +19,7 @@ int get_media_proxy_addr(mcm_dp_addr* proxy_addr)
     const char DEFAULT_PROXY_PORT[] = "8002";
 
     if (proxy_addr == NULL) {
-        log_error("Illegal Parameter.");
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameter.");
         return -1;
     }
 
@@ -48,7 +48,7 @@ int open_socket(mcm_dp_addr* proxy_addr)
     /* create socket and verification */
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        log_error("Failed to create socket.");
+        mesh_log(mc, MESH_LOG_ERROR, "Failed to create socket.");
         return -1;
     }
 
@@ -59,7 +59,7 @@ int open_socket(mcm_dp_addr* proxy_addr)
 
     /* connect to media-proxy socket. */
     if (connect(sockfd, (struct sockaddr*)&srvaddr, sizeof(srvaddr)) != 0) {
-        log_error("Failed to connect to media-proxy socket.");
+        mesh_log(mc, MESH_LOG_ERROR, "Failed to connect to media-proxy socket.");
         close(sockfd);
         return -1;
     }
@@ -76,13 +76,13 @@ void close_socket(int sockfd)
     return;
 }
 
-int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* session_id)
+int media_proxy_create_session(MeshClient *mc, MeshConnection* conn, int sockfd, uint32_t* session_id)
 {
     ssize_t ret = 0;
     mcm_proxy_ctl_msg msg = {};
 
     if (sockfd <= 0 || param == NULL || session_id == NULL) {
-        log_error("Illegal Parameters.");
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameters.");
         return -1;
     }
 
@@ -91,31 +91,31 @@ int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* sess
     msg.header.version = HEADER_VERSION;
 
     msg.command.inst = MCM_CREATE_SESSION;
-    msg.command.data_len = sizeof(mcm_conn_param);
+    msg.command.data_len = sizeof(MeshConnectionConfig);
     msg.data = param;
 
     /* header */
     if (write(sockfd, &msg.header, sizeof(msg.header)) <= 0) {
-        log_error("Send message header failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send message header failed.");
         return -1;
     }
 
     /* command */
     if (write(sockfd, &msg.command, sizeof(msg.command)) <= 0) {
-        log_error("Send command failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send command failed.");
         return -1;
     }
 
     /* parameters */
     if (write(sockfd, msg.data, msg.command.data_len) <= 0) {
-        log_error("Send parameters failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send parameters failed.");
         return -1;
     }
 
     /* get session id */
     ret = read(sockfd, session_id, sizeof(uint32_t));
     if (ret <= 0) {
-        log_error("Receive session id failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Receive session id failed.");
         log_info("Session ID can not be received: %d", *session_id);
         return -1;
     }
@@ -124,13 +124,13 @@ int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* sess
     return 0;
 }
 
-int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param* param, memif_conn_param* memif_conn_args)
+int media_proxy_query_interface(MeshClient *mc, MeshConnection* conn, int sockfd, uint32_t session_id, mcm_conn_param* param, memif_conn_param* memif_conn_args)
 {
     ssize_t ret = 0;
     mcm_proxy_ctl_msg msg = {};
 
     if (sockfd < 0 || memif_conn_args == NULL) {
-        log_error("Illegal Parameters.");
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameters.");
         return -1;
     }
 
@@ -145,45 +145,45 @@ int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param*
 
     /* header */
     if (write(sockfd, &msg.header, sizeof(msg.header)) <= 0) {
-        log_error("Send message header failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send message header failed.");
         return -1;
     }
 
     /* command */
     if (write(sockfd, &msg.command, sizeof(msg.command)) <= 0) {
-        log_error("Send command failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send command failed.");
         return -1;
     }
 
     /* parameters */
     if (write(sockfd, msg.data, msg.command.data_len) <= 0) {
-        log_error("Send parameters failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send parameters failed.");
         return -1;
     }
 
     /* get result */
     ret = read(sockfd, memif_conn_args, sizeof(memif_conn_param));
     if (ret <= 0) {
-        log_error("Receive interface id failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Receive interface id failed.");
         return -1;
     }
 
     return 0;
 }
 
-void media_proxy_destroy_session(mcm_conn_context* pctx)
+void media_proxy_destroy_session(MeshClient *mc, MeshConnection *conn)
 {
     int sockfd = 0;
     uint32_t session_id = 0;
     mcm_proxy_ctl_msg msg = {};
 
-    if (pctx == NULL) {
-        log_error("Illegal Parameters.");
+    if (conn == NULL) {
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameters.");
         return;
     }
 
-    sockfd = pctx->proxy_sockfd;
-    session_id = pctx->session_id;
+    sockfd = conn->proxy_sockfd;
+    session_id = conn->session_id;
 
     /* intialize message header. */
     msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
@@ -195,19 +195,19 @@ void media_proxy_destroy_session(mcm_conn_context* pctx)
 
     /* header */
     if (write(sockfd, &msg.header, sizeof(msg.header)) <= 0) {
-        log_error("Send message header failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send message header failed.");
         return;
     }
 
     /* command */
     if (write(sockfd, &msg.command, sizeof(msg.command)) <= 0) {
-        log_error("Send command failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send command failed.");
         return;
     }
 
     /* parameters */
     if (write(sockfd, msg.data, msg.command.data_len) <= 0) {
-        log_error("Send parameters failed.");
+        mesh_log(mc, MESH_LOG_ERROR, "Send parameters failed.");
         return;
     }
 
