@@ -37,7 +37,8 @@ RUN apt-get update --fix-missing && \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
         m4 clang llvm zlib1g-dev libelf-dev libcap-ng-dev \
-        gcc-multilib systemtap-sdt-dev librdmacm-dev libfdt-dev && \
+        gcc-multilib systemtap-sdt-dev librdmacm-dev \
+        libfdt-dev autoconf && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
