@@ -130,7 +130,7 @@ transport frame without conversion. The frame should not have lines padding) */
 }
 
 /* print a description of all supported options */
-void usage(FILE* fp, const char* path, int is_sender)
+static void usage(FILE* fp, const char* path, int is_sender)
 {
     /* take only the last portion of the path */
     const char* basename = strrchr(path, '/');
