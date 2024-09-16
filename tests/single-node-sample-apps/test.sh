@@ -34,7 +34,7 @@ audio_sampling="${5:-48k}"
 audio_ptime="${6:-1ms}"
 audio_channels="${7:-1}"
 
-# Ancilary parameters
+# Ancillary parameters
 anc_type="${4:-frame}"
 
 # Test configuration (cont'd)
@@ -512,15 +512,29 @@ function run_test_st4x() {
 info "Test MCM Tx/Rx for Single Node"
 info "  Binary directory: $(realpath $bin_dir)"
 info "  Output directory: $(realpath $out_dir)"
-info "  Input file path: $input_file"
+info "  Test option: ${test_option}"
+info "  NIC PF: ${nic_pf}"
+info "  Input file path: ${input_file}"
 info "  Input file size: $(stat -c%s $input_file) byte(s)"
-info "  Frame size: $width x $height, FPS: $fps / Audio ptime: $audio_ptime / Ancilary type: $anc_type"
-info "  Pixel format: $pixel_format"
-info "  Duration: ${duration}s / Audio type: ${audio_type}"
-info "  Frames number: $frames_number / Audio sampling: ${audio_sampling}"
-info "  Audio channels: ${audio_channels}"
-info "  Test option: $test_option"
-info "  NIC PF: $nic_pf"
+if [[ "${test_option}" =~ st2[0-2] ]]; then
+    info "  VIDEO OPTIONS:"
+    info "    Duration: ${duration}s"
+    info "    Number of frames: ${frames_number}"
+    info "    Frame size: ${width} x ${height}"
+    info "    FPS: ${fps}"
+    info "    Pixel format: ${pixel_format}"
+elif [[ "${test_option}" =~ st3[01] ]]; then
+    info "  AUDIO OPTIONS:"
+    info "    Audio type: ${audio_type}"
+    info "    Audio sampling: ${audio_sampling}"
+    info "    Audio ptime: ${audio_ptime}"
+    info "    Audio channels: ${audio_channels}"
+elif [[ "${test_option}" =~ st4[013] ]]; then
+    info "  ANCILLARY OPTIONS:"
+    info "    Ancillary type: ${anc_type}"
+else
+    info "Unknown test_option"
+fi
 
 [ ! -f "$input_file" ] && error "Input file not found" && exit 1
 
