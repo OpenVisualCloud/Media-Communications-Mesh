@@ -54,6 +54,7 @@ static int getAudioFrameSize(
                 slices_per_second = 1;
                 break;
             }
+        /* no break is intentional here */
         case AUDIO_SAMPLING_44K:
             switch (ptime) {
             case AUDIO_PTIME_1MS:

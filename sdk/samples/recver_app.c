@@ -218,8 +218,8 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_NONE;
     }
 
+    // TODO: Move whole switch-case to common
     switch (param.payload_type) {
-    // TODO: Move to common
     case PAYLOAD_TYPE_ST30_AUDIO:
         // mcm_audio_type
         if (strncmp(audio_type, "frame", sizeof(audio_type)) == 0) {
@@ -227,8 +227,9 @@ int main(int argc, char** argv)
         } else if (strncmp(audio_type, "rtp", sizeof(audio_type)) == 0) {
             param.payload_args.audio_args.type = AUDIO_TYPE_RTP_LEVEL;
         }
-        // only 1 or 2 channels are supported now
-        if (audio_channels > 0 && audio_channels < 3){
+        /* TODO: Only 1 to 8 channels are supported here now
+                 Tested only with 1 and 2 channels*/
+        if (audio_channels > 0 && audio_channels < 9){
             param.payload_args.audio_args.channel = audio_channels;
         }
         // mcm_audio_format
@@ -297,12 +298,11 @@ int main(int argc, char** argv)
     case PAYLOAD_TYPE_ST20_VIDEO:
     default:
         /* video format */
-        param.pix_fmt = pix_fmt;
         param.payload_args.video_args.width   = param.width = width;
         param.payload_args.video_args.height  = param.height = height;
         param.payload_args.video_args.fps     = param.fps = vid_fps;
         param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
-        frm_size = getFrameSize(param.payload_args.video_args.pix_fmt, width, height, false);
+        frm_size = getFrameSize(pix_fmt, width, height, false);
         break;
     }
 
@@ -363,9 +363,6 @@ int main(int argc, char** argv)
             first_frame = false;
         }
 
-        /* TODO: Perhaps?:
-        if (payload_type != PAYLOAD_TYPE_RTSP_VIDEO) {
-        */
         if (param.payload_type != PAYLOAD_TYPE_RTSP_VIDEO) {
             if (dump_fp) {
                 fwrite(buf->data, buf->len, 1, dump_fp);
