@@ -267,17 +267,8 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
         }
         conn_ctx->session_id = 0;
         break;
-    case PROTO_TCP:
-        log_warn("Unsupported protocol: TCP (%d)", param->protocol);
-        break;
-    case PROTO_HTTP:
-        log_warn("Unsupported protocol: HTTP (%d)", param->protocol);
-        break;
-    case PROTO_GRPC:
-        log_warn("Unsupported protocol: GRPC (%d)", param->protocol);
-        break;
     default:
-        log_warn("Unsupported protocol: %d", param->protocol);
+        log_warn("Unsupported protocol (%d)", param->protocol);
         break;
     }
 
@@ -323,17 +314,8 @@ void mcm_destroy_connection(mcm_conn_context* pctx)
     case PROTO_UDP:
         mcm_destroy_connection_udp((udp_context*)pctx->priv);
         break;
-    case PROTO_TCP:
-        log_warn("Unsupported protocol: TCP (%d)", pctx->proto);
-        break;
-    case PROTO_HTTP:
-        log_warn("Unsupported protocol: HTTP (%d)", pctx->proto);
-        break;
-    case PROTO_GRPC:
-        log_warn("Unsupported protocol: GRPC (%d)", pctx->proto);
-        break;
     default:
-        log_warn("Unsupported protocol: %d", pctx->proto);
+        log_warn("Unsupported protocol (%d)", pctx->proto);
         break;
     }
 
