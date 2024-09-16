@@ -10,34 +10,34 @@
 #include <stdio.h>
 #include <time.h>
 
-#define logmsg(tag, fmt, ...)                         \
-    do {                                              \
-        printf("%s - " fmt "\n", tag, ##__VA_ARGS__); \
+#define logmsg(tag, fmt, ...)                                                                      \
+    do {                                                                                           \
+        printf("%s - " fmt "\n", tag, ##__VA_ARGS__);                                              \
     } while (0)
 
-#define log_info(fmt, ...)                  \
-    do {                                    \
-        logmsg("INFO", fmt, ##__VA_ARGS__); \
+#define log_info(fmt, ...)                                                                         \
+    do {                                                                                           \
+        logmsg("INFO", fmt, ##__VA_ARGS__);                                                        \
     } while (0)
 
 #ifdef DEBUG
-  #define log_debug(fmt, ...)                  \
-      do {                                     \
-          logmsg("DEBUG", fmt, ##__VA_ARGS__); \
-      } while (0)
+#define log_debug(fmt, ...)                                                                        \
+    do {                                                                                           \
+        logmsg("DEBUG", fmt, ##__VA_ARGS__);                                                       \
+    } while (0)
 #else
-  // Define log_debug as empty in release build
-  #define log_debug(fmt, ...)
+// Define log_debug as empty in release build
+#define log_debug(fmt, ...)
 #endif
 
-#define log_warn(fmt, ...)                  \
-    do {                                    \
-        logmsg("WARN", fmt, ##__VA_ARGS__); \
+#define log_warn(fmt, ...)                                                                         \
+    do {                                                                                           \
+        logmsg("WARN", fmt, ##__VA_ARGS__);                                                        \
     } while (0)
 
-#define log_error(fmt, ...)                  \
-    do {                                     \
-        logmsg("ERROR", fmt, ##__VA_ARGS__); \
+#define log_error(fmt, ...)                                                                        \
+    do {                                                                                           \
+        logmsg("ERROR", fmt, ##__VA_ARGS__);                                                       \
     } while (0)
 
 #endif /* LOG_H */

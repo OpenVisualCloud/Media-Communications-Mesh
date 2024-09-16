@@ -19,67 +19,56 @@
 #include <icmp_proto.h>
 
 /* reply with the same data */
-int
-basic_packet_handler (memif_connection_t *c)
+int basic_packet_handler(memif_connection_t *c)
 {
-  int i;
-  memif_buffer_t *dest, *src;
+    int i;
+    memif_buffer_t *dest, *src;
 
-  /* in case of zero-copy the tx_buf_num will be zero, so the loop body won't
-   * execute */
-  for (i = 0; i < c->tx_buf_num; i++)
-    {
-      memcpy (c->tx_bufs[i].data, c->rx_bufs[i].data, c->rx_bufs[i].len);
+    /* in case of zero-copy the tx_buf_num will be zero, so the loop body won't
+     * execute */
+    for (i = 0; i < c->tx_buf_num; i++) {
+        memcpy(c->tx_bufs[i].data, c->rx_bufs[i].data, c->rx_bufs[i].len);
     }
 
-  return 0;
+    return 0;
 }
 
 /* ICMPv4 and ARP handler */
-int
-icmp_packet_handler (memif_connection_t *c)
+int icmp_packet_handler(memif_connection_t *c)
 {
-  int i;
-  memif_buffer_t *dest, *src;
+    int i;
+    memif_buffer_t *dest, *src;
 
-  /* if tx_buf_num > 0 we use non-zero-copy mode */
-  if (c->tx_buf_num > 0)
-    {
-      for (i = 0; i < c->tx_buf_num; i++)
-	{
-	  uint32_t len;
-	  void *packet = c->tx_bufs[i].data;
+    /* if tx_buf_num > 0 we use non-zero-copy mode */
+    if (c->tx_buf_num > 0) {
+        for (i = 0; i < c->tx_buf_num; i++) {
+            uint32_t len;
+            void *packet = c->tx_bufs[i].data;
 
-	  memcpy (c->tx_bufs[i].data, c->rx_bufs[i].data, c->rx_bufs[i].len);
-	  c->tx_bufs[i].flags = c->rx_bufs[i].flags;
-	  len = c->tx_bufs[i].len = c->rx_bufs[i].len;
+            memcpy(c->tx_bufs[i].data, c->rx_bufs[i].data, c->rx_bufs[i].len);
+            c->tx_bufs[i].flags = c->rx_bufs[i].flags;
+            len = c->tx_bufs[i].len = c->rx_bufs[i].len;
 
-	  while (c->rx_bufs[i].flags & MEMIF_BUFFER_FLAG_NEXT)
-	    {
-	      i++;
-	      memcpy (c->tx_bufs[i].data, c->rx_bufs[i].data,
-		      c->rx_bufs[i].len);
-	      c->tx_bufs[i].flags = c->rx_bufs[i].flags;
-	      len += c->tx_bufs[i].len = c->rx_bufs[i].len;
-	    }
+            while (c->rx_bufs[i].flags & MEMIF_BUFFER_FLAG_NEXT) {
+                i++;
+                memcpy(c->tx_bufs[i].data, c->rx_bufs[i].data, c->rx_bufs[i].len);
+                c->tx_bufs[i].flags = c->rx_bufs[i].flags;
+                len += c->tx_bufs[i].len = c->rx_bufs[i].len;
+            }
 
-	  resolve_packet (packet, &len, c->ip_addr, c->hw_addr);
-	}
-    }
-  else
-    {
-      for (i = 0; i < c->rx_buf_num; i++)
-	{
-	  uint32_t len = c->rx_bufs[i].len;
-	  void *packet = c->rx_bufs[i].data;
-	  while (c->rx_bufs[i].flags & MEMIF_BUFFER_FLAG_NEXT)
-	    {
-	      i++;
-	      len += c->rx_bufs[i].len;
-	    }
-	  resolve_packet (packet, &len, c->ip_addr, c->hw_addr);
-	}
+            resolve_packet(packet, &len, c->ip_addr, c->hw_addr);
+        }
+    } else {
+        for (i = 0; i < c->rx_buf_num; i++) {
+            uint32_t len = c->rx_bufs[i].len;
+            void *packet = c->rx_bufs[i].data;
+            while (c->rx_bufs[i].flags & MEMIF_BUFFER_FLAG_NEXT) {
+                i++;
+                len += c->rx_bufs[i].len;
+            }
+            resolve_packet(packet, &len, c->ip_addr, c->hw_addr);
+        }
     }
 
-  return 0;
+    return 0;
 }

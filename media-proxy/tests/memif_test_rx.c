@@ -14,8 +14,8 @@
 #define IF_ID 0
 
 typedef struct {
-    char* video_fn;
-    FILE* video_fd;
+    char *video_fn;
+    FILE *video_fd;
 
     size_t frame_idx;
     uint16_t width;
@@ -24,19 +24,19 @@ typedef struct {
     uint32_t frame_cnt;
 
     shm_connection_t memif_intf;
-    char* memif_app_name;
-    char* memif_if_name;
+    char *memif_app_name;
+    char *memif_if_name;
     uint32_t memif_if_id;
-    char* memif_socket_path;
+    char *memif_socket_path;
 } app_context_t;
 
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
-int on_connect(memif_conn_handle_t conn, void* priv_data)
+int on_connect(memif_conn_handle_t conn, void *priv_data)
 {
     int err = 0;
-    app_context_t* app_ctx = (app_context_t*)priv_data;
-    shm_connection_t* pmemif = &app_ctx->memif_intf;
+    app_context_t *app_ctx = (app_context_t *)priv_data;
+    shm_connection_t *pmemif = &app_ctx->memif_intf;
 
     INFO("RX memif connected!");
 
@@ -62,10 +62,10 @@ int on_connect(memif_conn_handle_t conn, void* priv_data)
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
-    app_context_t* app_ctx = (app_context_t*)priv_data;
-    shm_connection_t* pmemif = &app_ctx->memif_intf;
+    app_context_t *app_ctx = (app_context_t *)priv_data;
+    shm_connection_t *pmemif = &app_ctx->memif_intf;
 
     if (pmemif->is_connected == 0)
         return 0;
@@ -90,16 +90,16 @@ int on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
     int ret = 0;
     uint16_t buf_num = FRAME_COUNT;
     uint16_t rx_buf_num = 0;
-    app_context_t* app_ctx = (app_context_t*)priv_data;
-    shm_connection_t* pmemif = &app_ctx->memif_intf;
-    memif_buffer_t* rx_bufs = NULL;
+    app_context_t *app_ctx = (app_context_t *)priv_data;
+    shm_connection_t *pmemif = &app_ctx->memif_intf;
+    memif_buffer_t *rx_bufs = NULL;
     static int counter = 0;
-    FILE* fp = NULL;
+    FILE *fp = NULL;
 
     rx_bufs = pmemif->rx_bufs;
 
@@ -127,16 +127,16 @@ int on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     return ret;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     int ret = 0;
     int opt = 0;
-    app_context_t app_ctx = { 0 };
+    app_context_t app_ctx = {0};
 
     uint8_t is_master = 0;
-    memif_socket_args_t memif_socket_args = { 0 };
+    memif_socket_args_t memif_socket_args = {0};
     memif_socket_handle_t memif_socket;
-    memif_conn_args_t memif_conn_args = { 0 };
+    memif_conn_args_t memif_conn_args = {0};
     /* memif conenction handle */
     memif_conn_handle_t memif_conn = NULL;
     /*
@@ -175,7 +175,9 @@ int main(int argc, char** argv)
             is_master = 1;
             break;
         default: /* '?' */
-            fprintf(stderr, "Usage: %s [-a App name] [-i interface name] [-f file] [-s socket] [-m] \n", argv[0]);
+            fprintf(stderr,
+                    "Usage: %s [-a App name] [-i interface name] [-f file] [-s socket] [-m] \n",
+                    argv[0]);
             exit(EXIT_FAILURE);
         }
     }
@@ -215,15 +217,15 @@ int main(int argc, char** argv)
     memif_conn_args.buffer_size = app_ctx.frame_size;
     memif_conn_args.log2_ring_size = 2;
     strncpy(memif_conn_args.interface_name, app_ctx.memif_if_name,
-        sizeof(memif_conn_args.interface_name));
+            sizeof(memif_conn_args.interface_name));
     memif_conn_args.is_master = is_master;
 
     /* rx buffers */
     // memif_buffer_t *rx_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
 
     INFO("Create memif interface.");
-    ret = memif_create(&memif_conn, &memif_conn_args,
-        on_connect, on_disconnect, on_receive, &app_ctx);
+    ret = memif_create(&memif_conn, &memif_conn_args, on_connect, on_disconnect, on_receive,
+                       &app_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create_socket: %s", memif_strerror(ret));
         exit(-1);

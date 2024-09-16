@@ -32,89 +32,103 @@
 
 static volatile bool keepRunning = true;
 
-void intHandler(int dummy)
-{
-    keepRunning = 0;
-}
+void intHandler(int dummy) { keepRunning = 0; }
 
 /* print a description of all supported options */
-void usage(FILE* fp, const char* path)
+void usage(FILE *fp, const char *path)
 {
     /* take only the last portion of the path */
-    const char* basename = strrchr(path, '/');
+    const char *basename = strrchr(path, '/');
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "Usage: %s [OPTION]\n", basename);
     fprintf(fp, "-H, --help\t\t\t"
                 "Print this help and exit\n");
-    fprintf(fp, "-w, --width=<frame_width>\t"
-                "Width of test video frame (default: %d)\n",
-        DEFAULT_FRAME_WIDTH);
-    fprintf(fp, "-h, --height=<frame_height>\t"
-                "Height of test video frame (default: %d)\n",
-        DEFAULT_FRAME_HEIGHT);
-    fprintf(fp, "-f, --fps=<video_fps>\t\t"
-                "Test video FPS (frame per second) (default: %0.2f)\n",
-        DEFAULT_FPS);
-    fprintf(fp, "-r, --ip=ip_address\t\t"
-                "Receive data from IP address (default: %s)\n",
-        DEFAULT_RECV_IP);
-    fprintf(fp, "-p, --port=port_number\t\t"
-                "Receive data from Port (default: %s)\n",
-        DEFAULT_RECV_PORT);
-    fprintf(fp, "-o, --protocol=protocol_type\t"
-                "Set protocol type (default: %s)\n",
-        DEFAULT_PROTOCOL);
-    fprintf(fp, "-t, --type=payload_type\t\t"
-                "Payload type (default: %s)\n",
-        DEFAULT_PAYLOAD_TYPE);
-    fprintf(fp, "-s, --dumpfile=file_name\t"
-                "Save stream to local file (example: %s)\n",
-        DEFAULT_LOCAL_FILE);
-    fprintf(fp, "-k, --socketpath=socket_path\t"
-                "Set memif socket path (default: %s)\n",
-        DEFAULT_MEMIF_SOCKET_PATH);
-    fprintf(fp, "-m, --master=is_master\t\t"
-                "Set memif conn is master (default: %d)\n",
-        DEFAULT_MEMIF_IS_MASTER);
-    fprintf(fp, "-d, --interfaceid=interface_id\t"
-                "Set memif conn interface id (default: %d)\n",
-        DEFAULT_MEMIF_INTERFACE_ID);
-    fprintf(fp, "-x, --pix_fmt=mcm_pix_fmt\t"
-                "Set pix_fmt conn color format (default: %s)\n",
-        DEFAULT_VIDEO_FMT);
+    fprintf(fp,
+            "-w, --width=<frame_width>\t"
+            "Width of test video frame (default: %d)\n",
+            DEFAULT_FRAME_WIDTH);
+    fprintf(fp,
+            "-h, --height=<frame_height>\t"
+            "Height of test video frame (default: %d)\n",
+            DEFAULT_FRAME_HEIGHT);
+    fprintf(fp,
+            "-f, --fps=<video_fps>\t\t"
+            "Test video FPS (frame per second) (default: %0.2f)\n",
+            DEFAULT_FPS);
+    fprintf(fp,
+            "-r, --ip=ip_address\t\t"
+            "Receive data from IP address (default: %s)\n",
+            DEFAULT_RECV_IP);
+    fprintf(fp,
+            "-p, --port=port_number\t\t"
+            "Receive data from Port (default: %s)\n",
+            DEFAULT_RECV_PORT);
+    fprintf(fp,
+            "-o, --protocol=protocol_type\t"
+            "Set protocol type (default: %s)\n",
+            DEFAULT_PROTOCOL);
+    fprintf(fp,
+            "-t, --type=payload_type\t\t"
+            "Payload type (default: %s)\n",
+            DEFAULT_PAYLOAD_TYPE);
+    fprintf(fp,
+            "-s, --dumpfile=file_name\t"
+            "Save stream to local file (example: %s)\n",
+            DEFAULT_LOCAL_FILE);
+    fprintf(fp,
+            "-k, --socketpath=socket_path\t"
+            "Set memif socket path (default: %s)\n",
+            DEFAULT_MEMIF_SOCKET_PATH);
+    fprintf(fp,
+            "-m, --master=is_master\t\t"
+            "Set memif conn is master (default: %d)\n",
+            DEFAULT_MEMIF_IS_MASTER);
+    fprintf(fp,
+            "-d, --interfaceid=interface_id\t"
+            "Set memif conn interface id (default: %d)\n",
+            DEFAULT_MEMIF_INTERFACE_ID);
+    fprintf(fp,
+            "-x, --pix_fmt=mcm_pix_fmt\t"
+            "Set pix_fmt conn color format (default: %s)\n",
+            DEFAULT_VIDEO_FMT);
     fprintf(fp, "\n");
 }
 
 static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
 {
     size_t size = 0;
-    size_t pixels = (size_t)(width*height);
+    size_t pixels = (size_t)(width * height);
     switch (fmt) {
-        case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY) */
-            size = pixels * 2;
-            break;
-        case PIX_FMT_RGB8:
-            size = pixels * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
-            break;
-/* Customized YUV 420 8bit, set transport format as ST20_FMT_YUV_420_8BIT. For direct transport of
-none-RFC4175 formats like I420/NV12. When this input/output format is set, the frame is identical to
-transport frame without conversion. The frame should not have lines padding) */
-        case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka ST_FRAME_FMT_YUV420PLANAR8) */
-            size = pixels * 3 / 2;
-            break;
-        case PIX_FMT_YUV444P_10BIT_LE:
-            size = pixels * 2 * 3;
-            break;
-        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
-        default:
-            size = pixels * 2 * 2;
+    case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY)
+                           */
+        size = pixels * 2;
+        break;
+    case PIX_FMT_RGB8:
+        size = pixels * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
+        break;
+        /* Customized YUV 420 8bit, set transport format as ST20_FMT_YUV_420_8BIT. For direct
+        transport of none-RFC4175 formats like I420/NV12. When this input/output format is set, the
+        frame is identical to transport frame without conversion. The frame should not have lines
+        padding) */
+    case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka
+                          ST_FRAME_FMT_YUV420PLANAR8) */
+        size = pixels * 3 / 2;
+        break;
+    case PIX_FMT_YUV444P_10BIT_LE:
+        size = pixels * 2 * 3;
+        break;
+    case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka
+                                      ST_FRAME_FMT_YUV422PLANAR10LE) */
+    default:
+        size = pixels * 2 * 2;
     }
-    if (interlaced) size /= 2; /* if all fmt support interlace? */
+    if (interlaced)
+        size /= 2; /* if all fmt support interlace? */
     return (int)size;
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     int err = 0;
     char recv_addr[46] = DEFAULT_RECV_IP;
@@ -136,30 +150,21 @@ int main(int argc, char** argv)
     double vid_fps = DEFAULT_FPS;
     video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
 
-    mcm_conn_context* dp_ctx = NULL;
+    mcm_conn_context *dp_ctx = NULL;
     mcm_conn_param param = {};
-    mcm_buffer* buf = NULL;
+    mcm_buffer *buf = NULL;
 
     int help_flag = 0;
     int opt;
     struct option longopts[] = {
-        { "help", no_argument, &help_flag, 'H' },
-        { "width", required_argument, NULL, 'w' },
-        { "height", required_argument, NULL, 'h' },
-        { "fps", required_argument, NULL, 'f' },
-        { "rcv_ip", required_argument, NULL, 'r' },
-        { "rcv_port", required_argument, NULL, 'i' },
-        { "send_ip", required_argument, NULL, 's' },
-        { "send_port", required_argument, NULL, 'p' },
-        { "protocol", required_argument, NULL, 'o' },
-        { "type", required_argument, NULL, 't' },
-        { "socketpath", required_argument, NULL, 'k' },
-        { "master", required_argument, NULL, 'm' },
-        { "interfaceid", required_argument, NULL, 'd' },
-        { "dumpfile", required_argument, NULL, 'b' },
-        { "pix_fmt", required_argument, NULL, 'x' },
-        { 0 }
-    };
+        {"help", no_argument, &help_flag, 'H'},        {"width", required_argument, NULL, 'w'},
+        {"height", required_argument, NULL, 'h'},      {"fps", required_argument, NULL, 'f'},
+        {"rcv_ip", required_argument, NULL, 'r'},      {"rcv_port", required_argument, NULL, 'i'},
+        {"send_ip", required_argument, NULL, 's'},     {"send_port", required_argument, NULL, 'p'},
+        {"protocol", required_argument, NULL, 'o'},    {"type", required_argument, NULL, 't'},
+        {"socketpath", required_argument, NULL, 'k'},  {"master", required_argument, NULL, 'm'},
+        {"interfaceid", required_argument, NULL, 'd'}, {"dumpfile", required_argument, NULL, 'b'},
+        {"pix_fmt", required_argument, NULL, 'x'},     {0}};
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
@@ -213,13 +218,13 @@ int main(int argc, char** argv)
             break;
         case 'x':
             strlcpy(pix_fmt_string, optarg, sizeof(pix_fmt_string));
-            if (strncmp(pix_fmt_string, "yuv422p", sizeof(pix_fmt_string)) == 0){
+            if (strncmp(pix_fmt_string, "yuv422p", sizeof(pix_fmt_string)) == 0) {
                 pix_fmt = PIX_FMT_YUV422P;
             } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(pix_fmt_string)) == 0) {
                 pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            } else if (strncmp(pix_fmt_string, "yuv444p10le", sizeof(pix_fmt_string)) == 0){
+            } else if (strncmp(pix_fmt_string, "yuv444p10le", sizeof(pix_fmt_string)) == 0) {
                 pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-            } else if (strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)) == 0){
+            } else if (strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)) == 0) {
                 pix_fmt = PIX_FMT_RGB8;
             } else {
                 pix_fmt = PIX_FMT_NV12;
@@ -245,7 +250,8 @@ int main(int argc, char** argv)
 
     if (strncmp(protocol_type, "memif", sizeof(protocol_type)) == 0) {
         param.protocol = PROTO_MEMIF;
-        strlcpy(param.memif_interface.socket_path, socket_path, sizeof(param.memif_interface.socket_path));
+        strlcpy(param.memif_interface.socket_path, socket_path,
+                sizeof(param.memif_interface.socket_path));
         param.memif_interface.is_master = is_master;
         param.memif_interface.interface_id = interface_id;
     } else if (strncmp(protocol_type, "udp", sizeof(protocol_type)) == 0) {
@@ -297,9 +303,9 @@ int main(int argc, char** argv)
     default:
         /* video format */
         param.pix_fmt = pix_fmt;
-        param.payload_args.video_args.width   = param.width = width;
-        param.payload_args.video_args.height  = param.height = height;
-        param.payload_args.video_args.fps     = param.fps = vid_fps;
+        param.payload_args.video_args.width = param.width = width;
+        param.payload_args.video_args.height = param.height = height;
+        param.payload_args.video_args.fps = param.fps = vid_fps;
         param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
         break;
     }
@@ -328,7 +334,7 @@ int main(int argc, char** argv)
     float latency = 0;
     struct timespec ts_recv = {}, ts_send = {};
     struct timespec ts_begin = {}, ts_end = {};
-    FILE* dump_fp = NULL;
+    FILE *dump_fp = NULL;
 
     if (strlen(file_name) > 0) {
         dump_fp = fopen(file_name, "wb");
@@ -369,9 +375,10 @@ int main(int argc, char** argv)
                 // pre-set the first several bytes
                 ptr = buf->data;
                 if (*(uint32_t *)ptr != frame_count) {
-                    printf("Wrong data content: expected %u, got %u\n", frame_count, *(uint32_t*)ptr);
+                    printf("Wrong data content: expected %u, got %u\n", frame_count,
+                           *(uint32_t *)ptr);
                     /* catch up the sender frame count */
-                    frame_count = *(uint32_t*)ptr;
+                    frame_count = *(uint32_t *)ptr;
                 }
                 ptr += sizeof(frame_count);
                 ts_send = *(struct timespec *)ptr;
@@ -391,13 +398,15 @@ int main(int argc, char** argv)
                 latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
                 latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
 
-                printf("RX frames: [%u], latency: %0.1f ms, FPS: %0.3f\n", frame_count, latency, fps);
+                printf("RX frames: [%u], latency: %0.1f ms, FPS: %0.3f\n", frame_count, latency,
+                       fps);
             }
-        } else { //TODO: rtsp receiver side test code
+        } else { // TODO: rtsp receiver side test code
             if (dump_fp) {
                 fwrite(buf->data, buf->len, 1, dump_fp);
             }
-            printf("RX package number:%d   seq_num: %d, timestamp: %u, RX H264 NALU: %ld\n", frame_count, buf->metadata.seq_num, buf->metadata.timestamp, buf->len);
+            printf("RX package number:%d   seq_num: %d, timestamp: %u, RX H264 NALU: %ld\n",
+                   frame_count, buf->metadata.seq_num, buf->metadata.timestamp, buf->len);
         }
 
         frame_count++;

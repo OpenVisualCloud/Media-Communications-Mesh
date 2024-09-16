@@ -66,74 +66,66 @@ enum st_tx_frame_status {
 struct st_tx_frame {
     enum st_tx_frame_status stat;
     size_t size;
-    bool second_field; /* for interlaced mode */
-    bool slice_trigger; /* for slice */
+    bool second_field;    /* for interlaced mode */
+    bool slice_trigger;   /* for slice */
     uint16_t lines_ready; /* for slice */
 };
 
 struct st_rx_frame {
-    void* frame;
+    void *frame;
     size_t size;
 };
 
-static inline int st_pthread_mutex_init(pthread_mutex_t* mutex,
-    pthread_mutexattr_t* attr)
+static inline int st_pthread_mutex_init(pthread_mutex_t *mutex, pthread_mutexattr_t *attr)
 {
     return pthread_mutex_init(mutex, attr);
 }
 
-static inline int st_pthread_mutex_trylock(pthread_mutex_t* mutex)
+static inline int st_pthread_mutex_trylock(pthread_mutex_t *mutex)
 {
     return pthread_mutex_trylock(mutex);
 }
 
-static inline int st_pthread_mutex_lock(pthread_mutex_t* mutex)
+static inline int st_pthread_mutex_lock(pthread_mutex_t *mutex)
 {
     return pthread_mutex_lock(mutex);
 }
 
-static inline int st_pthread_mutex_unlock(pthread_mutex_t* mutex)
+static inline int st_pthread_mutex_unlock(pthread_mutex_t *mutex)
 {
     return pthread_mutex_unlock(mutex);
 }
 
-static inline int st_pthread_mutex_destroy(pthread_mutex_t* mutex)
+static inline int st_pthread_mutex_destroy(pthread_mutex_t *mutex)
 {
     return pthread_mutex_destroy(mutex);
 }
 
-static inline int st_pthread_cond_init(pthread_cond_t* cond,
-    pthread_condattr_t* cond_attr)
+static inline int st_pthread_cond_init(pthread_cond_t *cond, pthread_condattr_t *cond_attr)
 {
     return pthread_cond_init(cond, cond_attr);
 }
 
-static inline int st_pthread_cond_wait(pthread_cond_t* cond, pthread_mutex_t* mutex)
+static inline int st_pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     return pthread_cond_wait(cond, mutex);
 }
 
-static inline int st_pthread_cond_destroy(pthread_cond_t* cond)
+static inline int st_pthread_cond_destroy(pthread_cond_t *cond)
 {
     return pthread_cond_destroy(cond);
 }
 
-static inline int st_pthread_cond_signal(pthread_cond_t* cond)
-{
-    return pthread_cond_signal(cond);
-}
+static inline int st_pthread_cond_signal(pthread_cond_t *cond) { return pthread_cond_signal(cond); }
 
-static inline int st_open(const char* path, int flags) { return open(path, flags); }
+static inline int st_open(const char *path, int flags) { return open(path, flags); }
 
-static inline int st_open_mode(const char* path, int flags, mode_t mode)
+static inline int st_open_mode(const char *path, int flags, mode_t mode)
 {
     return open(path, flags, mode);
 }
 
-static inline FILE* st_fopen(const char* path, const char* mode)
-{
-    return fopen(path, mode);
-}
+static inline FILE *st_fopen(const char *path, const char *mode) { return fopen(path, mode); }
 
 static inline void st_pause(void)
 {
@@ -144,8 +136,7 @@ static inline void st_pause(void)
 #endif
 }
 
-static inline void st_usleep(
-    useconds_t usec)
+static inline void st_usleep(useconds_t usec)
 { // windows usleep function precision is only 1~15ms
 #ifdef WINDOWSENV
     LARGE_INTEGER delay;
@@ -165,7 +156,7 @@ static inline void st_usleep(
 #endif
 }
 
-static inline void st_getrealtime(struct timespec* pspec)
+static inline void st_getrealtime(struct timespec *pspec)
 {
 #ifdef WINDOWSENV
     unsigned __int64 t;

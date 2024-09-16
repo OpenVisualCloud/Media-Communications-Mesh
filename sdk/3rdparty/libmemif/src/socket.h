@@ -21,21 +21,20 @@
 #include <memif_private.h>
 
 /* interface identification errors (disconnect messages)*/
-#define MEMIF_VER_ERR       "incompatible version"
-#define MEMIF_ID_ERR        "unmatched interface id"
-#define MEMIF_SLAVE_ERR     "cannot connect to salve"
-#define MEMIF_CONN_ERR      "already connected"
-#define MEMIF_MODE_ERR      "mode mismatch"
-#define MEMIF_SECRET_ERR    "incorrect secret"
-#define MEMIF_NOSECRET_ERR  "secret required"
+#define MEMIF_VER_ERR "incompatible version"
+#define MEMIF_ID_ERR "unmatched interface id"
+#define MEMIF_SLAVE_ERR "cannot connect to salve"
+#define MEMIF_CONN_ERR "already connected"
+#define MEMIF_MODE_ERR "mode mismatch"
+#define MEMIF_SECRET_ERR "incorrect secret"
+#define MEMIF_NOSECRET_ERR "secret required"
 
 /* socket.c */
 
-int memif_listener_handler (memif_fd_event_type_t type, void *private_ctx);
+int memif_listener_handler(memif_fd_event_type_t type, void *private_ctx);
 
-int memif_control_channel_handler (memif_fd_event_type_t type,
-				   void *private_ctx);
+int memif_control_channel_handler(memif_fd_event_type_t type, void *private_ctx);
 
-void memif_delete_control_channel (memif_control_channel_t *cc);
+void memif_delete_control_channel(memif_control_channel_t *cc);
 
 #endif /* _SOCKET_H_ */

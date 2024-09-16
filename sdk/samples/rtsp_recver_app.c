@@ -20,44 +20,43 @@
 
 static volatile bool keepRunning = true;
 
-void intHandler(int dummy)
-{
-    keepRunning = 0;
-}
+void intHandler(int dummy) { keepRunning = 0; }
 
 /* print a description of all supported options */
-void usage(FILE* fp, const char* path)
+void usage(FILE *fp, const char *path)
 {
     /* take only the last portion of the path */
-    const char* basename = strrchr(path, '/');
+    const char *basename = strrchr(path, '/');
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "usage: %s [OPTION]\n", basename);
     fprintf(fp, "-h, --help\t\t\t"
                 "Print this help and exit.\n");
-    fprintf(fp, "-r, --ip=ip_address\t\t"
-                "Receive data from IP address (defaults: %s).\n", DEFAULT_RECV_IP);
-    fprintf(fp, "-p, --port=port_number\t"
-                "Receive data from Port (defaults: %s).\n", DEFAULT_RECV_PORT);
+    fprintf(fp,
+            "-r, --ip=ip_address\t\t"
+            "Receive data from IP address (defaults: %s).\n",
+            DEFAULT_RECV_IP);
+    fprintf(fp,
+            "-p, --port=port_number\t"
+            "Receive data from Port (defaults: %s).\n",
+            DEFAULT_RECV_PORT);
 }
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     char recv_addr[46] = DEFAULT_RECV_IP;
     char recv_port[6] = DEFAULT_RECV_PORT;
 
-    mcm_conn_context* dp_ctx = NULL;
-    mcm_conn_param param = { 0 };
-    mcm_buffer* buf = NULL;
+    mcm_conn_context *dp_ctx = NULL;
+    mcm_conn_param param = {0};
+    mcm_buffer *buf = NULL;
 
     int help_flag = 0;
     int opt;
-    struct option longopts[] = {
-        { "help", no_argument, &help_flag, 1 },
-        { "ip", required_argument, NULL, 'r' },
-        { "port", required_argument, NULL, 'p' },
-        { 0 }
-    };
+    struct option longopts[] = {{"help", no_argument, &help_flag, 1},
+                                {"ip", required_argument, NULL, 'r'},
+                                {"port", required_argument, NULL, 'p'},
+                                {0}};
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
@@ -85,7 +84,7 @@ int main(int argc, char** argv)
     }
 
     if (help_flag) {
-        usage (stdout, argv[0]);
+        usage(stdout, argv[0]);
         return 0;
     }
 
@@ -107,7 +106,7 @@ int main(int argc, char** argv)
     uint32_t frame_count = 0;
     const uint32_t fps_interval = 30;
     double fps = 0.0;
-    void* ptr = NULL;
+    void *ptr = NULL;
     int timeout = -1;
     bool first_frame = true;
     long latency = 0;
@@ -137,13 +136,13 @@ int main(int argc, char** argv)
 
         /* operate on the buffer */
         ptr = buf->data;
-        if (*(uint32_t*)ptr != frame_count) {
-            printf("Wrong data content: expected %d, got %u\n", frame_count, *(uint32_t*)ptr);
+        if (*(uint32_t *)ptr != frame_count) {
+            printf("Wrong data content: expected %d, got %u\n", frame_count, *(uint32_t *)ptr);
             /* catch up the sender frame count */
-            frame_count = *(uint32_t*)ptr;
+            frame_count = *(uint32_t *)ptr;
         }
         ptr += sizeof(frame_count);
-        ts_send = *(struct timespec*)ptr;
+        ts_send = *(struct timespec *)ptr;
 
         /* free buffer */
         if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
@@ -167,8 +166,7 @@ int main(int argc, char** argv)
         latency = 1000 * (ts_recv.tv_sec - ts_send.tv_sec);
         latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000;
 
-        printf("RX frames: [%u], latency: %ld ms, FPS: %0.3f\n",
-            frame_count, latency, fps);
+        printf("RX frames: [%u], latency: %ld ms, FPS: %0.3f\n", frame_count, latency, fps);
     }
 
     /* Clean up */

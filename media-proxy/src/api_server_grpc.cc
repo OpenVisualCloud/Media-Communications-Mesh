@@ -6,12 +6,10 @@
 
 #include "api_server_grpc.h"
 
-ConfigureServiceImpl::ConfigureServiceImpl(ProxyContext* ctx)
-    : m_ctx(ctx)
-{
-}
+ConfigureServiceImpl::ConfigureServiceImpl(ProxyContext *ctx) : m_ctx(ctx) {}
 
-Status ConfigureServiceImpl::TxStart(ServerContext* context, const TxControlRequest* request, ControlReply* reply)
+Status ConfigureServiceImpl::TxStart(ServerContext *context, const TxControlRequest *request,
+                                     ControlReply *reply)
 {
     int session_id = 0;
     std::string ret_msg = "";
@@ -29,7 +27,8 @@ Status ConfigureServiceImpl::TxStart(ServerContext* context, const TxControlRequ
     return Status::OK;
 }
 
-Status ConfigureServiceImpl::RxStart(ServerContext* context, const RxControlRequest* request, ControlReply* reply)
+Status ConfigureServiceImpl::RxStart(ServerContext *context, const RxControlRequest *request,
+                                     ControlReply *reply)
 {
     int session_id = 0;
     std::string ret_msg = "";
@@ -47,7 +46,8 @@ Status ConfigureServiceImpl::RxStart(ServerContext* context, const RxControlRequ
     return Status::OK;
 }
 
-Status ConfigureServiceImpl::TxStop(ServerContext* context, const StopControlRequest* request, ControlReply* reply)
+Status ConfigureServiceImpl::TxStop(ServerContext *context, const StopControlRequest *request,
+                                    ControlReply *reply)
 {
     std::cout << "\nReceived command: Stop." << std::endl;
 
@@ -57,7 +57,8 @@ Status ConfigureServiceImpl::TxStop(ServerContext* context, const StopControlReq
     return Status::OK;
 }
 
-Status ConfigureServiceImpl::RxStop(ServerContext* context, const StopControlRequest* request, ControlReply* reply)
+Status ConfigureServiceImpl::RxStop(ServerContext *context, const StopControlRequest *request,
+                                    ControlReply *reply)
 {
     std::cout << "\nReceived command: Stop." << std::endl;
 
@@ -67,7 +68,8 @@ Status ConfigureServiceImpl::RxStop(ServerContext* context, const StopControlReq
     return Status::OK;
 }
 
-Status ConfigureServiceImpl::Stop(ServerContext* context, const StopControlRequest* request, ControlReply* reply)
+Status ConfigureServiceImpl::Stop(ServerContext *context, const StopControlRequest *request,
+                                  ControlReply *reply)
 {
     std::cout << "\nReceived command: Stop." << std::endl;
 
@@ -77,34 +79,31 @@ Status ConfigureServiceImpl::Stop(ServerContext* context, const StopControlReque
     return Status::OK;
 }
 
-MsmDataPlaneServiceImpl::MsmDataPlaneServiceImpl(ProxyContext* ctx)
-    : m_ctx(ctx)
-{
-}
+MsmDataPlaneServiceImpl::MsmDataPlaneServiceImpl(ProxyContext *ctx) : m_ctx(ctx) {}
 
-Status MsmDataPlaneServiceImpl::stream_add_del(ServerContext* context, const StreamData* request, StreamResult* reply)
+Status MsmDataPlaneServiceImpl::stream_add_del(ServerContext *context, const StreamData *request,
+                                               StreamResult *reply)
 {
     return Status::OK;
 }
 
-HealthServiceImpl::HealthServiceImpl(ProxyContext* ctx)
-    : m_ctx(ctx)
-{
-}
+HealthServiceImpl::HealthServiceImpl(ProxyContext *ctx) : m_ctx(ctx) {}
 
-Status HealthServiceImpl::Check(ServerContext* context, const HealthCheckRequest* request, HealthCheckResponse* reply)
+Status HealthServiceImpl::Check(ServerContext *context, const HealthCheckRequest *request,
+                                HealthCheckResponse *reply)
 {
     reply->set_status(controller::HealthCheckResponse_ServingStatus_SERVING);
 
     return Status::OK;
 }
 
-Status HealthServiceImpl::Watch(ServerContext* context, const HealthCheckRequest* request, HealthCheckResponse* reply)
+Status HealthServiceImpl::Watch(ServerContext *context, const HealthCheckRequest *request,
+                                HealthCheckResponse *reply)
 {
     return Status::OK;
 }
 
-void RunRPCServer(ProxyContext* ctx)
+void RunRPCServer(ProxyContext *ctx)
 {
     ConfigureServiceImpl service(ctx);
 

@@ -29,7 +29,7 @@ typedef struct {
 
     size_t buffer_size;
     /* buffer queue */
-    memif_buffer_t* shm_bufs;
+    memif_buffer_t *shm_bufs;
     /* number of buffers pointing to shared memory */
     uint16_t buf_num;
 
@@ -47,10 +47,11 @@ typedef struct {
 } memif_ops_t;
 
 /* Create memif connection . */
-mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_conn_param* memif_args);
+mcm_conn_context *mcm_create_connection_memif(mcm_conn_param *svc_args,
+                                              memif_conn_param *memif_args);
 
 /* Destroy memif connection. */
-void mcm_destroy_connection_memif(memif_conn_context* pctx);
+void mcm_destroy_connection_memif(memif_conn_context *pctx);
 
 /* Alloc buffer from queue. */
 // void* memif_alloc_buffer(void* conn_ctx, size_t size);
@@ -65,10 +66,10 @@ void mcm_destroy_connection_memif(memif_conn_context* pctx);
 // void memif_free_buffer(void* conn_ctx, mcm_buffer* buf);
 
 /* Alloc video frame buffer from buffer queue. */
-mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* error_code);
+mcm_buffer *memif_dequeue_buffer(mcm_conn_context *conn_ctx, int timeout, int *error_code);
 
 /* Return video frame buffer to buffer queue. */
-int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf);
+int memif_enqueue_buffer(mcm_conn_context *conn_ctx, mcm_buffer *buf);
 
 #ifdef __cplusplus
 }

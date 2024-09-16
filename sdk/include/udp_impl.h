@@ -21,22 +21,22 @@ typedef struct _udp_context {
 } udp_context;
 
 /* Create MCM DP connect session for application. */
-udp_context* mcm_create_connection_udp(mcm_conn_param* param);
+udp_context *mcm_create_connection_udp(mcm_conn_param *param);
 
 /* Destroy MCM DP connection. */
-void mcm_destroy_connection_udp(udp_context* conn_ctx);
+void mcm_destroy_connection_udp(udp_context *conn_ctx);
 
 /* Alloc buffer from queue. */
-mcm_buffer* mcm_alloc_buffer_udp(void* conn_ctx, size_t size);
+mcm_buffer *mcm_alloc_buffer_udp(void *conn_ctx, size_t size);
 
 /* Send out video frame on TX side. */
-int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf);
+int mcm_send_buffer_udp(void *conn_ctx, mcm_buffer *buf);
 
 /* Receive video frame on RX side. */
-int mcm_recv_buffer_udp(void* conn_ctx, mcm_buffer* buf);
+int mcm_recv_buffer_udp(void *conn_ctx, mcm_buffer *buf);
 
 /* Return video frame buffer to queue. */
-void mcm_free_buffer_udp(void* conn_ctx, mcm_buffer** buf);
+void mcm_free_buffer_udp(void *conn_ctx, mcm_buffer **buf);
 
 #ifdef __cplusplus
 }

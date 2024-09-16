@@ -16,7 +16,7 @@
 #include <bsd/string.h>
 #include <errno.h>
 
-static void* rx_memif_event_loop(void* arg)
+static void *rx_memif_event_loop(void *arg)
 {
     int err = MEMIF_ERR_SUCCESS;
     memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
@@ -31,10 +31,10 @@ static void* rx_memif_event_loop(void* arg)
     return NULL;
 }
 
-int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* memif_ops)
+int rx_udp_h264_shm_init(rx_udp_h264_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (rx_ctx == NULL) {
         printf("%s, fail to initialize udp h264 share memory.\n", __func__);
@@ -46,20 +46,22 @@ int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* mem
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_rx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_rx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_rx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(rx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(rx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(rx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(rx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(rx_ctx->memif_socket_args.path) - 1);
+            sizeof(rx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
@@ -86,20 +88,21 @@ int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* mem
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = 5184000;
     rx_ctx->memif_conn_args.log2_ring_size = 8;
-    memcpy((char*)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(rx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     INFO("create memif interface.");
-    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args,
-        rx_udp_h264_on_connect, rx_on_disconnect, rx_on_receive, rx_ctx);
+    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args, rx_udp_h264_on_connect,
+                       rx_on_disconnect, rx_on_receive, rx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop,
+                         rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -108,9 +111,9 @@ int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* mem
     return 0;
 }
 
-static int udp_server_h264(void* arg)
+static int udp_server_h264(void *arg)
 {
-    rx_udp_h264_session_context_t* s = arg;
+    rx_udp_h264_session_context_t *s = arg;
     mudp_handle socket = s->socket;
     ssize_t udp_len = MUDP_MAX_BYTES;
     char buf[udp_len];
@@ -118,21 +121,21 @@ static int udp_server_h264(void* arg)
     int err = 0;
     uint16_t qid = 0;
     uint16_t buf_num = 1;
-    memif_buffer_t* tx_bufs = s->shm_bufs;
-    char* dst;
-    char* dst_nalu_size_point;
+    memif_buffer_t *tx_bufs = s->shm_bufs;
+    char *dst;
+    char *dst_nalu_size_point;
     uint16_t tx_buf_num = 0, tx = 0;
     uint32_t buf_size = s->memif_nalu_size;
 
     int flagFragment = 0;
-    //FILE* fp = fopen("data1.264", "wb");
+    // FILE* fp = fopen("data1.264", "wb");
     unsigned char h264_frame_start_str[4];
     h264_frame_start_str[0] = 0;
     h264_frame_start_str[1] = 0;
     h264_frame_start_str[2] = 0;
     h264_frame_start_str[3] = 1;
 
-    mcm_buffer* rtp_header;
+    mcm_buffer *rtp_header;
 
     bool memif_alloc = false;
 
@@ -140,7 +143,7 @@ static int udp_server_h264(void* arg)
         INFO("%s, wait for share memory is ready\n", __func__);
         sleep(1);
     }
-    //INFO("%s, start socket %p\n", __func__, socket);
+    // INFO("%s, start socket %p\n", __func__, socket);
     if (s->fragments_bunch == false) {
         rtp_header = calloc(1, sizeof(mcm_buffer));
     }
@@ -154,7 +157,7 @@ static int udp_server_h264(void* arg)
             return 0;
         }
         if (s->check_first_new_NALU == true) {
-            unsigned char RTP_payload_type = *((unsigned char*)buf + 1);
+            unsigned char RTP_payload_type = *((unsigned char *)buf + 1);
             unsigned char mark = RTP_payload_type & 0x80;
             if (mark > 0) {
                 s->new_NALU = 1;
@@ -173,7 +176,8 @@ static int udp_server_h264(void* arg)
                 /* allocate memory */
                 tx_bufs = s->shm_bufs;
                 while (memif_alloc != true) {
-                    err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &s->tx_buf_num, buf_size);
+                    err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &s->tx_buf_num,
+                                             buf_size);
                     if (err != MEMIF_ERR_SUCCESS) {
                         INFO("Failed to alloc memif buffer: %s, err:%d", memif_strerror(err), err);
                         return -1;
@@ -184,24 +188,26 @@ static int udp_server_h264(void* arg)
                 }
                 s->dst = tx_bufs->data;
                 tx = 0;
-                rtp_header->metadata.seq_num = *((uint16_t*)(buf + 2));
-                rtp_header->metadata.timestamp = *((uint32_t*)(buf + 4));
-                mtl_memcpy(s->dst, &rtp_header->metadata.seq_num, sizeof(rtp_header->metadata.seq_num));
+                rtp_header->metadata.seq_num = *((uint16_t *)(buf + 2));
+                rtp_header->metadata.timestamp = *((uint32_t *)(buf + 4));
+                mtl_memcpy(s->dst, &rtp_header->metadata.seq_num,
+                           sizeof(rtp_header->metadata.seq_num));
                 s->dst += sizeof(rtp_header->metadata.seq_num);
-                mtl_memcpy(s->dst, &rtp_header->metadata.timestamp, sizeof(rtp_header->metadata.timestamp));
+                mtl_memcpy(s->dst, &rtp_header->metadata.timestamp,
+                           sizeof(rtp_header->metadata.timestamp));
                 s->dst += sizeof(rtp_header->metadata.timestamp);
                 s->dst_nalu_size_point = s->dst;
                 s->dst += sizeof(size_t);
                 rtp_header->len = 0;
 
-                //fwrite(h264_frame_start_str, 1, 1, s->fp);
+                // fwrite(h264_frame_start_str, 1, 1, s->fp);
                 mtl_memcpy(s->dst, h264_frame_start_str, sizeof(unsigned char));
                 s->dst += sizeof(unsigned char);
                 rtp_header->len = rtp_header->len + 1;
             }
 
-            unsigned char payload_header = *((unsigned char*)(buf + 12));
-            unsigned char fragment_header = *((unsigned char*)(buf + 13));
+            unsigned char payload_header = *((unsigned char *)(buf + 12));
+            unsigned char fragment_header = *((unsigned char *)(buf + 13));
 
             typedef unsigned char u8;
             u8 payload_type = payload_header & 0x1f;
@@ -222,15 +228,15 @@ static int udp_server_h264(void* arg)
                 // printf("fragment true!\n");
                 if (fragment_start == 0x80) {
                     // printf("fragment start!\n");
-                    //fwrite(h264_frame_start_str + 1, 3, 1, s->fp);//printf("001\n");
+                    // fwrite(h264_frame_start_str + 1, 3, 1, s->fp);//printf("001\n");
                     mtl_memcpy(s->dst, h264_frame_start_str + 1, sizeof(unsigned char) * 3);
                     s->dst += sizeof(unsigned char) * 3;
                     rtp_header->len = rtp_header->len + 3;
-                    //fwrite(&payload_header_temp, 1, 1, s->fp);
+                    // fwrite(&payload_header_temp, 1, 1, s->fp);
                     mtl_memcpy(s->dst, &payload_header_temp, sizeof(unsigned char));
                     s->dst += sizeof(unsigned char);
                     rtp_header->len = rtp_header->len + 1;
-                    //fwrite(buf + 14, (int)recv - 14, 1, s->fp);
+                    // fwrite(buf + 14, (int)recv - 14, 1, s->fp);
                     mtl_memcpy(s->dst, buf + 14, (int)recv - 14);
                     s->dst += (int)recv - 14;
                     rtp_header->len = rtp_header->len + (int)recv - 14;
@@ -238,13 +244,13 @@ static int udp_server_h264(void* arg)
                 } else {
                     if (fragment_end == 0x40) {
                         // printf("fragment end!\n");
-                        //fwrite(buf + 14, (int)recv - 14, 1, s->fp);
+                        // fwrite(buf + 14, (int)recv - 14, 1, s->fp);
                         mtl_memcpy(s->dst, buf + 14, (int)recv - 14);
                         s->dst += (int)recv - 14;
                         rtp_header->len = rtp_header->len + (int)recv - 14;
                     } else {
                         // printf("fragment middle!\n");
-                        //fwrite(buf + 14, (int)recv - 14, 1, s->fp);
+                        // fwrite(buf + 14, (int)recv - 14, 1, s->fp);
                         mtl_memcpy(s->dst, buf + 14, (int)recv - 14);
                         s->dst += (int)recv - 14;
                         rtp_header->len = rtp_header->len + (int)recv - 14;
@@ -253,17 +259,17 @@ static int udp_server_h264(void* arg)
                 }
             } else {
                 // printf("fragment false!\n");
-                //fwrite(h264_frame_start_str + 1, 3, 1, s->fp);//printf("001\n");
+                // fwrite(h264_frame_start_str + 1, 3, 1, s->fp);//printf("001\n");
                 mtl_memcpy(s->dst, h264_frame_start_str + 1, sizeof(unsigned char) * 3);
                 s->dst += sizeof(unsigned char) * 3;
                 rtp_header->len = rtp_header->len + 3;
-                //fwrite(buf + 12, (int)recv - 12, 1, s->fp);
+                // fwrite(buf + 12, (int)recv - 12, 1, s->fp);
                 mtl_memcpy(s->dst, buf + 12, sizeof(unsigned char) * ((int)recv - 12));
                 s->dst += sizeof(unsigned char) * ((int)recv - 12);
                 rtp_header->len = rtp_header->len + (int)recv - 12;
             }
 
-            unsigned char RTP_payload_type = *((unsigned char*)buf + 1);
+            unsigned char RTP_payload_type = *((unsigned char *)buf + 1);
             unsigned char mark = RTP_payload_type & 0x80;
 
             if (mark > 0) {
@@ -283,10 +289,11 @@ static int udp_server_h264(void* arg)
             memif_alloc = false;
             tx_bufs = s->shm_bufs;
             while (memif_alloc != true) {
-                err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
+                err =
+                    memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
                 if (err != MEMIF_ERR_SUCCESS) {
                     INFO("Failed to alloc memif buffer: %s, err:%d", memif_strerror(err), err);
-                    //continue;
+                    // continue;
                     free(rtp_header);
                     return -1;
                 } else {
@@ -296,11 +303,12 @@ static int udp_server_h264(void* arg)
             }
             dst = tx_bufs->data;
             tx = 0;
-            rtp_header->metadata.seq_num = *((uint16_t*)(buf + 2));
-            rtp_header->metadata.timestamp = *((uint32_t*)(buf + 4));
+            rtp_header->metadata.seq_num = *((uint16_t *)(buf + 2));
+            rtp_header->metadata.timestamp = *((uint32_t *)(buf + 4));
             mtl_memcpy(dst, &rtp_header->metadata.seq_num, sizeof(rtp_header->metadata.seq_num));
             dst += sizeof(rtp_header->metadata.seq_num);
-            mtl_memcpy(dst, &rtp_header->metadata.timestamp, sizeof(rtp_header->metadata.timestamp));
+            mtl_memcpy(dst, &rtp_header->metadata.timestamp,
+                       sizeof(rtp_header->metadata.timestamp));
             dst += sizeof(rtp_header->metadata.timestamp);
             dst_nalu_size_point = dst;
             dst += sizeof(size_t);
@@ -314,8 +322,8 @@ static int udp_server_h264(void* arg)
                 dst += sizeof(unsigned char);
                 rtp_header->len = rtp_header->len + 1;
             }
-            unsigned char payload_header = *((unsigned char*)(buf + 12));
-            unsigned char fragment_header = *((unsigned char*)(buf + 13));
+            unsigned char payload_header = *((unsigned char *)(buf + 12));
+            unsigned char fragment_header = *((unsigned char *)(buf + 13));
 
             typedef unsigned char u8;
             u8 payload_type = payload_header & 0x1f;
@@ -377,7 +385,7 @@ static int udp_server_h264(void* arg)
                 INFO("memif_tx_burst for fragment=%d: %s", flagFragment, memif_strerror(err));
             }
 
-            unsigned char RTP_payload_type = *((unsigned char*)buf + 1);
+            unsigned char RTP_payload_type = *((unsigned char *)buf + 1);
             unsigned char mark = RTP_payload_type & 0x80;
 
             if (mark > 0) {
@@ -387,17 +395,17 @@ static int udp_server_h264(void* arg)
     } else {
         INFO("%s, has stopped\n", __func__);
     }
-    if(rtp_header != NULL) {
+    if (rtp_header != NULL) {
         free(rtp_header);
         rtp_header = NULL;
     }
     return 0;
 }
 
-static int media_proxy_mudp_poll(void* priv)
+static int media_proxy_mudp_poll(void *priv)
 {
     int ret;
-    rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
+    rx_udp_h264_session_context_t *ctx = (rx_udp_h264_session_context_t *)priv;
 
     if (ctx->sch_start == true) {
         int ret = udp_server_h264(ctx);
@@ -412,24 +420,27 @@ static int media_proxy_mudp_poll(void* priv)
     return MTL_TASKLET_ALL_DONE;
 }
 
-static int udp_poll_tasklet_start(void* priv)
+static int udp_poll_tasklet_start(void *priv)
 {
-    rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
+    rx_udp_h264_session_context_t *ctx = (rx_udp_h264_session_context_t *)priv;
     ctx->sch_start = true;
     return 0;
 }
 
-static int udp_poll_tasklet_stop(void* priv)
+static int udp_poll_tasklet_stop(void *priv)
 {
-    rx_udp_h264_session_context_t* ctx = (rx_udp_h264_session_context_t*)priv;
+    rx_udp_h264_session_context_t *ctx = (rx_udp_h264_session_context_t *)priv;
     ctx->sch_start = false;
     return 0;
 }
 
-rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_handle, mcm_dp_addr* dp_addr, memif_ops_t* memif_ops, mtl_sch_handle schs[])
+rx_udp_h264_session_context_t *mtl_udp_h264_rx_session_create(mtl_handle dev_handle,
+                                                              mcm_dp_addr *dp_addr,
+                                                              memif_ops_t *memif_ops,
+                                                              mtl_sch_handle schs[])
 {
     // struct st_sample_context ctx;
-    rx_udp_h264_session_context_t* ctx = NULL;
+    rx_udp_h264_session_context_t *ctx = NULL;
     static int idx = 0;
     int err = 0;
     int ret = 0;
@@ -448,13 +459,14 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
     // ctx->udp_port = 20000;
     ctx->udp_port = atoi(dp_addr->port);
     ctx->payload_type = 112;
-    snprintf(ctx->param.port[MTL_PORT_P], sizeof(ctx->param.port[MTL_PORT_P]), "%s", "0000:4b:01.3");
+    snprintf(ctx->param.port[MTL_PORT_P], sizeof(ctx->param.port[MTL_PORT_P]), "%s",
+             "0000:4b:01.3");
     ctx->udp_mode = SAMPLE_UDP_TRANSPORT_H264;
 
     ctx->st = dev_handle;
     ctx->stop = false;
     ctx->fragments_bunch = true;
-    //ctx->fp = fopen("data1.264", "wb");
+    // ctx->fp = fopen("data1.264", "wb");
 
     if (ctx->fragments_bunch == true) {
         ctx->rtp_header = calloc(1, sizeof(mcm_buffer));
@@ -480,12 +492,9 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
         INFO("%s, socket create fail\n", __func__);
         return NULL;
     }
-    mudp_init_sockaddr(&ctx->client_addr, ctx->rx_sip_addr[MTL_PORT_P],
-        ctx->udp_port);
-    mudp_init_sockaddr(&ctx->bind_addr, ctx->param.sip_addr[MTL_PORT_P],
-        ctx->udp_port);
-    ret = mudp_bind(ctx->socket, (const struct sockaddr*)&ctx->bind_addr,
-        sizeof(ctx->bind_addr));
+    mudp_init_sockaddr(&ctx->client_addr, ctx->rx_sip_addr[MTL_PORT_P], ctx->udp_port);
+    mudp_init_sockaddr(&ctx->bind_addr, ctx->param.sip_addr[MTL_PORT_P], ctx->udp_port);
+    ret = mudp_bind(ctx->socket, (const struct sockaddr *)&ctx->bind_addr, sizeof(ctx->bind_addr));
     if (ret < 0) {
         INFO("%s, bind fail %d\n", __func__, ret);
         return NULL;

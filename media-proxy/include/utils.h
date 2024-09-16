@@ -9,21 +9,21 @@
 
 #include <stdio.h>
 
-#define INFO(...)                     \
-    do {                              \
-        printf("INFO: " __VA_ARGS__); \
-        printf("\n");                 \
+#define INFO(...)                                                                                  \
+    do {                                                                                           \
+        printf("INFO: " __VA_ARGS__);                                                              \
+        printf("\n");                                                                              \
     } while (0)
-#define ERROR(...)                     \
-    do {                               \
-        printf("ERROR: " __VA_ARGS__); \
-        printf("\n");                  \
+#define ERROR(...)                                                                                 \
+    do {                                                                                           \
+        printf("ERROR: " __VA_ARGS__);                                                             \
+        printf("\n");                                                                              \
     } while (0)
 
-#define DEBUG(...)                     \
-    do {                               \
-        printf("DEBUG: " __VA_ARGS__); \
-        printf("\n");                  \
+#define DEBUG(...)                                                                                 \
+    do {                                                                                           \
+        printf("DEBUG: " __VA_ARGS__);                                                             \
+        printf("\n");                                                                              \
     } while (0)
 
 #endif

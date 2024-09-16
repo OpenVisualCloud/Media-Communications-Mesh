@@ -115,7 +115,8 @@ static int mcm_calc_audio_buffer_size(mcm_audio_args *params, uint32_t *size)
     return 0;
 }
 
-static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memif_socket_args, memif_conn_args_t* memif_conn_args)
+static void parse_memif_param(mcm_conn_param *request, memif_socket_args_t *memif_socket_args,
+                              memif_conn_args_t *memif_conn_args)
 {
     char type_str[8] = "";
     char interface_name[32];
@@ -130,18 +131,24 @@ static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memi
     memif_conn_args->is_master = request->memif_interface.is_master;
     memif_conn_args->interface_id = request->memif_interface.interface_id;
 
-    snprintf(memif_socket_args->app_name, sizeof(memif_socket_args->app_name), "memif_%s_%d", type_str, atoi(request->local_addr.port));
-    snprintf(interface_name, sizeof(interface_name), "memif_%s_%d", type_str, atoi(request->local_addr.port));
-    strlcpy((char*)memif_conn_args->interface_name, interface_name, sizeof(memif_conn_args->interface_name));
+    snprintf(memif_socket_args->app_name, sizeof(memif_socket_args->app_name), "memif_%s_%d",
+             type_str, atoi(request->local_addr.port));
+    snprintf(interface_name, sizeof(interface_name), "memif_%s_%d", type_str,
+             atoi(request->local_addr.port));
+    strlcpy((char *)memif_conn_args->interface_name, interface_name,
+            sizeof(memif_conn_args->interface_name));
     if (!strlen(request->memif_interface.socket_path)) {
-        strlcpy(memif_socket_args->path, "/run/mcm/mcm_rx_memif.sock", sizeof(memif_socket_args->path));
+        strlcpy(memif_socket_args->path, "/run/mcm/mcm_rx_memif.sock",
+                sizeof(memif_socket_args->path));
     } else {
-        strlcpy(memif_socket_args->path, request->memif_interface.socket_path, sizeof(memif_socket_args->path));
+        strlcpy(memif_socket_args->path, request->memif_interface.socket_path,
+                sizeof(memif_socket_args->path));
     }
 
     switch (request->payload_type) {
     case PAYLOAD_TYPE_ST30_AUDIO:
-        err = mcm_calc_audio_buffer_size(&request->payload_args.audio_args, &memif_conn_args->buffer_size);
+        err = mcm_calc_audio_buffer_size(&request->payload_args.audio_args,
+                                         &memif_conn_args->buffer_size);
         if (err)
             log_error("Invalid audio parameters.");
         break;
@@ -150,17 +157,18 @@ static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memi
     case PAYLOAD_TYPE_ST22_VIDEO:
     case PAYLOAD_TYPE_RTSP_VIDEO:
     default:
-        memif_conn_args->buffer_size = request->payload_args.video_args.width * request->payload_args.video_args.height * 4;
+        memif_conn_args->buffer_size =
+            request->payload_args.video_args.width * request->payload_args.video_args.height * 4;
     }
 
     memif_conn_args->log2_ring_size = 4;
 }
 
 /* Connect to MCM media proxy daemon through memif. */
-mcm_conn_context* mcm_create_connection_proxy(mcm_conn_param* param)
+mcm_conn_context *mcm_create_connection_proxy(mcm_conn_param *param)
 {
     int ret = 0;
-    mcm_conn_context* conn_ctx = NULL;
+    mcm_conn_context *conn_ctx = NULL;
     mcm_dp_addr media_proxy_addr = {};
     int sockfd = 0;
     uint32_t session_id = 0;
@@ -219,10 +227,10 @@ mcm_conn_context* mcm_create_connection_proxy(mcm_conn_param* param)
  *              media-proxy.
  * @return Connection context if success, NULL if failed.
  ******************************************************/
-mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
+mcm_conn_context *mcm_create_connection(mcm_conn_param *param)
 {
-    void* p_ctx = NULL;
-    mcm_conn_context* conn_ctx = NULL;
+    void *p_ctx = NULL;
+    mcm_conn_context *conn_ctx = NULL;
 
     if (param == NULL) {
         log_error("Illegal Parameters.");
@@ -254,7 +262,7 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
             return NULL;
         }
         conn_ctx->proto = PROTO_UDP;
-        conn_ctx->priv = (void*)p_ctx;
+        conn_ctx->priv = (void *)p_ctx;
         break;
     case PROTO_MEMIF:
         memif_conn_param memif_param = {};
@@ -281,7 +289,7 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
 }
 
 /* Destroy MCM DP connection. */
-void mcm_destroy_connection(mcm_conn_context* pctx)
+void mcm_destroy_connection(mcm_conn_context *pctx)
 {
     useconds_t wait_time = 0;
 
@@ -309,10 +317,10 @@ void mcm_destroy_connection(mcm_conn_context* pctx)
 
     switch (pctx->proto) {
     case PROTO_MEMIF:
-        mcm_destroy_connection_memif((memif_conn_context*)pctx->priv);
+        mcm_destroy_connection_memif((memif_conn_context *)pctx->priv);
         break;
     case PROTO_UDP:
-        mcm_destroy_connection_udp((udp_context*)pctx->priv);
+        mcm_destroy_connection_udp((udp_context *)pctx->priv);
         break;
     default:
         log_warn("Unsupported protocol: %d", pctx->proto);
@@ -322,12 +330,12 @@ void mcm_destroy_connection(mcm_conn_context* pctx)
     free(pctx);
 }
 
-mcm_buffer* mcm_dequeue_buffer(mcm_conn_context* pctx, int timeout, int* error_code)
+mcm_buffer *mcm_dequeue_buffer(mcm_conn_context *pctx, int timeout, int *error_code)
 {
     return pctx->dequeue_buffer(pctx, timeout, error_code);
 }
 
-int mcm_enqueue_buffer(mcm_conn_context* pctx, mcm_buffer* buf)
+int mcm_enqueue_buffer(mcm_conn_context *pctx, mcm_buffer *buf)
 {
     return pctx->enqueue_buffer(pctx, buf);
 }

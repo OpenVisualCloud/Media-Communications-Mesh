@@ -9,7 +9,7 @@
 
 #include "logger.h"
 
-int main(int argc, char** argv)
+int main(int argc, char **argv)
 {
     log_info("Normal information.");
     log_warn("Warning.");

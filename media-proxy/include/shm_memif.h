@@ -28,13 +28,13 @@ typedef struct {
     uint16_t qid;
 
     /* tx buffers */
-    memif_buffer_t* tx_bufs;
+    memif_buffer_t *tx_bufs;
     /* allocated tx buffers counter */
     /* number of tx buffers pointing to shared memory */
     uint16_t tx_buf_num;
 
     /* rx buffers */
-    memif_buffer_t* rx_bufs;
+    memif_buffer_t *rx_bufs;
     /* allcoated rx buffers counter */
     /* number of rx buffers pointing to shared memory */
     uint16_t rx_buf_num;
@@ -44,31 +44,31 @@ void print_memif_details(memif_conn_handle_t conn);
 
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
-int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
+int rx_st20p_on_connect(memif_conn_handle_t conn, void *priv_data);
+int rx_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
+int rx_on_disconnect(memif_conn_handle_t conn, void *priv_data);
+int rx_st20p_on_disconnect(memif_conn_handle_t conn, void *priv_data);
 
-int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_udp_h264_on_connect(memif_conn_handle_t conn, void* priv_data);
+int rx_st22p_on_connect(memif_conn_handle_t conn, void *priv_data);
+int rx_st22p_on_disconnect(memif_conn_handle_t conn, void *priv_data);
+int rx_st30_on_connect(memif_conn_handle_t conn, void *priv_data);
+int rx_st40_on_connect(memif_conn_handle_t conn, void *priv_data);
+int rx_udp_h264_on_connect(memif_conn_handle_t conn, void *priv_data);
 
-int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-int tx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st30_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
+int tx_st20p_on_connect(memif_conn_handle_t conn, void *priv_data);
+int tx_st20p_on_disconnect(memif_conn_handle_t conn, void *priv_data);
+int tx_st22p_on_disconnect(memif_conn_handle_t conn, void *priv_data);
+int tx_on_disconnect(memif_conn_handle_t conn, void *priv_data);
+int tx_st20p_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
+int tx_st22p_on_connect(memif_conn_handle_t conn, void *priv_data);
+int tx_st22p_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
+int tx_st30_on_connect(memif_conn_handle_t conn, void *priv_data);
+int tx_st30_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
+int tx_st40_on_connect(memif_conn_handle_t conn, void *priv_data);
+int tx_st40_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
 
 #ifdef __cplusplus
 }

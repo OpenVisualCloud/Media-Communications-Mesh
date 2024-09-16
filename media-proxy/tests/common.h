@@ -20,10 +20,10 @@
 /* maximum tx/rx memif buffers */
 #define MAX_MEMIF_BUFS 256
 
-#define INFO(...)                     \
-    do {                              \
-        printf("INFO: " __VA_ARGS__); \
-        printf("\n");                 \
+#define INFO(...)                                                                                  \
+    do {                                                                                           \
+        printf("INFO: " __VA_ARGS__);                                                              \
+        printf("\n");                                                                              \
     } while (0)
 
 void print_memif_details(memif_conn_handle_t conn)
@@ -34,7 +34,7 @@ void print_memif_details(memif_conn_handle_t conn)
     memif_details_t md;
     memset(&md, 0, sizeof(md));
     ssize_t buflen = 2048;
-    char* buf = (char*)malloc(buflen);
+    char *buf = (char *)malloc(buflen);
     memset(buf, 0, buflen);
     int err, e;
 
@@ -47,12 +47,12 @@ void print_memif_details(memif_conn_handle_t conn)
         }
     }
 
-    printf("\tinterface name: %s\n", (char*)md.if_name);
-    printf("\tapp name: %s\n", (char*)md.inst_name);
-    printf("\tremote interface name: %s\n", (char*)md.remote_if_name);
-    printf("\tremote app name: %s\n", (char*)md.remote_inst_name);
+    printf("\tinterface name: %s\n", (char *)md.if_name);
+    printf("\tapp name: %s\n", (char *)md.inst_name);
+    printf("\tremote interface name: %s\n", (char *)md.remote_if_name);
+    printf("\tremote app name: %s\n", (char *)md.remote_inst_name);
     printf("\tid: %u\n", md.id);
-    printf("\tsecret: %s\n", (char*)md.secret);
+    printf("\tsecret: %s\n", (char *)md.secret);
     printf("\trole: ");
     if (md.role)
         printf("slave\n");
@@ -73,7 +73,7 @@ void print_memif_details(memif_conn_handle_t conn)
         printf("unknown\n");
         break;
     }
-    printf("\tsocket path: %s\n", (char*)md.socket_path);
+    printf("\tsocket path: %s\n", (char *)md.socket_path);
     printf("\tregions num: %d\n", md.regions_num);
     for (int i = 0; i < md.regions_num; i++) {
         printf("\t\tregions idx: %d\n", md.regions[i].index);
@@ -102,15 +102,15 @@ void print_memif_details(memif_conn_handle_t conn)
     free(buf);
 }
 
-void alloc_memif_buffers(shm_connection_t* c)
+void alloc_memif_buffers(shm_connection_t *c)
 {
-    c->rx_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * MAX_MEMIF_BUFS);
+    c->rx_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * MAX_MEMIF_BUFS);
     c->rx_buf_num = 0;
-    c->tx_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * MAX_MEMIF_BUFS);
+    c->tx_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * MAX_MEMIF_BUFS);
     c->tx_buf_num = 0;
 }
 
-void free_memif_buffers(shm_connection_t* c)
+void free_memif_buffers(shm_connection_t *c)
 {
     if (c->rx_bufs != NULL)
         free(c->rx_bufs);

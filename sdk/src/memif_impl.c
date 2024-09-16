@@ -20,7 +20,7 @@ void print_memif_details(memif_conn_handle_t conn)
     memif_details_t md;
     memset(&md, 0, sizeof(md));
     ssize_t buflen = 2048;
-    char* buf = (char*)malloc(buflen);
+    char *buf = (char *)malloc(buflen);
     memset(buf, 0, buflen);
     int err, e;
 
@@ -33,12 +33,12 @@ void print_memif_details(memif_conn_handle_t conn)
         }
     }
 
-    printf("\tinterface name: %s\n", (char*)md.if_name);
-    printf("\tapp name: %s\n", (char*)md.inst_name);
-    printf("\tremote interface name: %s\n", (char*)md.remote_if_name);
-    printf("\tremote app name: %s\n", (char*)md.remote_inst_name);
+    printf("\tinterface name: %s\n", (char *)md.if_name);
+    printf("\tapp name: %s\n", (char *)md.inst_name);
+    printf("\tremote interface name: %s\n", (char *)md.remote_if_name);
+    printf("\tremote app name: %s\n", (char *)md.remote_inst_name);
     printf("\tid: %u\n", md.id);
-    printf("\tsecret: %s\n", (char*)md.secret);
+    printf("\tsecret: %s\n", (char *)md.secret);
     printf("\trole: ");
     if (md.role)
         printf("slave\n");
@@ -59,7 +59,7 @@ void print_memif_details(memif_conn_handle_t conn)
         printf("unknown\n");
         break;
     }
-    printf("\tsocket path: %s\n", (char*)md.socket_path);
+    printf("\tsocket path: %s\n", (char *)md.socket_path);
     printf("\tregions num: %d\n", md.regions_num);
     for (int i = 0; i < md.regions_num; i++) {
         printf("\t\tregions idx: %d\n", md.regions[i].index);
@@ -90,10 +90,10 @@ void print_memif_details(memif_conn_handle_t conn)
 
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
-int on_connect(memif_conn_handle_t conn, void* priv_data)
+int on_connect(memif_conn_handle_t conn, void *priv_data)
 {
     int err = 0;
-    memif_conn_context* pmemif = (memif_conn_context*)priv_data;
+    memif_conn_context *pmemif = (memif_conn_context *)priv_data;
 
     err = memif_refill_queue(conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -111,10 +111,10 @@ int on_connect(memif_conn_handle_t conn, void* priv_data)
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
     int err = 0;
-    memif_conn_context* pmemif = (memif_conn_context*)priv_data;
+    memif_conn_context *pmemif = (memif_conn_context *)priv_data;
 
     // if (pmemif->is_connected == 0)
     //     return 0;
@@ -134,7 +134,7 @@ int on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int tx_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
     int err = 0;
     uint16_t rx_buf_num = 0;
@@ -159,21 +159,23 @@ int tx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     return 0;
 }
 
-int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int rx_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
     int err = 0;
     // uint16_t rx_buf_num = 0;
-    memif_conn_context* pmemif = (memif_conn_context*)priv_data;
+    memif_conn_context *pmemif = (memif_conn_context *)priv_data;
     // static int counter = 0;
     // static memif_buffer_t rx_buf = {};
 
     /* receive packets from the shared memory */
-    err = memif_rx_burst(conn, qid, pmemif->working_bufs, MEMIF_BUFFER_NUM, (uint16_t*)&pmemif->buf_num);
+    err = memif_rx_burst(conn, qid, pmemif->working_bufs, MEMIF_BUFFER_NUM,
+                         (uint16_t *)&pmemif->buf_num);
     if (err != MEMIF_ERR_SUCCESS) {
         log_error("memif_rx_burst: %s", memif_strerror(err));
         log_error("received buffer number: %d", pmemif->buf_num);
         // log_error("buffer flag: %d, len: %d, index: %d\n",
-        //     pmemif->working_bufs.flags, pmemif->working_bufs.len, pmemif->working_bufs.desc_index);
+        //     pmemif->working_bufs.flags, pmemif->working_bufs.len,
+        //     pmemif->working_bufs.desc_index);
         // pmemif->buf_num = 0;
         return err;
     }
@@ -197,11 +199,12 @@ int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     return 0;
 }
 
-mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_conn_param* memif_args)
+mcm_conn_context *mcm_create_connection_memif(mcm_conn_param *svc_args,
+                                              memif_conn_param *memif_args)
 {
     int ret = 0;
-    mcm_conn_context* conn_ctx = NULL;
-    memif_conn_context* shm_conn = NULL;
+    mcm_conn_context *conn_ctx = NULL;
+    memif_conn_context *shm_conn = NULL;
     memif_socket_handle_t memif_socket;
 
     if (svc_args == NULL || memif_args == NULL) {
@@ -211,7 +214,7 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
 
     /* unlink socket file */
     if (memif_args->conn_args.is_master && memif_args->socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             if (mkdir("/run/mcm", 0666) == -1) {
                 perror("Fail to create directory for memif.");
@@ -239,11 +242,11 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
 
     log_info("Create memif interface.");
     if (svc_args->type == is_tx) {
-        ret = memif_create(&shm_conn->conn, &memif_args->conn_args,
-            on_connect, on_disconnect, tx_on_receive, shm_conn);
+        ret = memif_create(&shm_conn->conn, &memif_args->conn_args, on_connect, on_disconnect,
+                           tx_on_receive, shm_conn);
     } else {
-        ret = memif_create(&shm_conn->conn, &memif_args->conn_args,
-            on_connect, on_disconnect, rx_on_receive, shm_conn);
+        ret = memif_create(&shm_conn->conn, &memif_args->conn_args, on_connect, on_disconnect,
+                           rx_on_receive, shm_conn);
     }
     if (ret != MEMIF_ERR_SUCCESS) {
         log_info("memif_create: %s", memif_strerror(ret));
@@ -283,7 +286,7 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
 
     /* connection protocol */
     conn_ctx->proto = PROTO_MEMIF;
-    conn_ctx->priv = (void*)shm_conn;
+    conn_ctx->priv = (void *)shm_conn;
     /* video frame format */
     conn_ctx->width = svc_args->width;
     conn_ctx->height = svc_args->height;
@@ -299,26 +302,26 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
     return conn_ctx;
 }
 
-mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* error_code)
+mcm_buffer *memif_dequeue_buffer(mcm_conn_context *conn_ctx, int timeout, int *error_code)
 {
     int err = 0;
-    memif_conn_context* memif_conn = NULL;
+    memif_conn_context *memif_conn = NULL;
     memif_buffer_t memif_buf = {};
     uint16_t buf_num = 0;
-    mcm_buffer* buf = NULL;
+    mcm_buffer *buf = NULL;
 
     if (!conn_ctx || !conn_ctx->priv) {
         log_error("Illegal Parameter.");
         return NULL;
     }
-    memif_conn = (memif_conn_context*)conn_ctx->priv;
+    memif_conn = (memif_conn_context *)conn_ctx->priv;
 
     while (memif_conn->is_connected == 0) {
         log_error("Data connection stopped.");
         return NULL;
     }
 
-    if (conn_ctx->type == is_tx) {  /* TX */
+    if (conn_ctx->type == is_tx) { /* TX */
         /* trigger the callbacks. */
         err = memif_poll_event(memif_conn->sockfd, 0);
         if (err != MEMIF_ERR_SUCCESS) {
@@ -328,8 +331,8 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
 
         do {
             const size_t sleep_interval = 10; /* 0.01 s */
-            err = memif_buffer_alloc(memif_conn->conn, memif_conn->qid, &memif_buf, 1,
-                &buf_num, conn_ctx->frame_size);
+            err = memif_buffer_alloc(memif_conn->conn, memif_conn->qid, &memif_buf, 1, &buf_num,
+                                     conn_ctx->frame_size);
             if (err == MEMIF_ERR_SUCCESS) {
                 break;
             } else {
@@ -370,7 +373,7 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
                 *error_code = err;
             }
         }
-    } else {    /* RX */
+    } else { /* RX */
         /* waiting for the buffer ready from rx_on_receive callback. */
         if (memif_conn->buf_num <= 0) {
             err = memif_poll_event(memif_conn->sockfd, timeout);
@@ -398,10 +401,10 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
     return buf;
 }
 
-int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
+int memif_enqueue_buffer(mcm_conn_context *conn_ctx, mcm_buffer *buf)
 {
     int err = 0;
-    memif_conn_context* memif_conn = NULL;
+    memif_conn_context *memif_conn = NULL;
     uint16_t buf_num = 0;
     // static size_t frame_count = 0;
 
@@ -410,7 +413,7 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
         return -1;
     }
 
-    memif_conn = (memif_conn_context*)conn_ctx->priv;
+    memif_conn = (memif_conn_context *)conn_ctx->priv;
 
     if (memif_conn->is_connected == 0) {
         log_error("Data connection stopped.");
@@ -427,7 +430,8 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
         if (buf->len < memif_conn->working_bufs[0].len)
             memif_conn->working_bufs[0].len = buf->len;
 
-        err = memif_tx_burst(memif_conn->conn, memif_conn->qid, &memif_conn->working_bufs[0], 1, &buf_num);
+        err = memif_tx_burst(memif_conn->conn, memif_conn->qid, &memif_conn->working_bufs[0], 1,
+                             &buf_num);
         if (err != MEMIF_ERR_SUCCESS) {
             log_error("memif_tx_burst: %s", memif_strerror(err));
         }
@@ -447,7 +451,7 @@ int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf)
     return err;
 }
 
-void mcm_destroy_connection_memif(memif_conn_context* pctx)
+void mcm_destroy_connection_memif(memif_conn_context *pctx)
 {
     if (!pctx) {
         log_error("Illegal Parameter.");
