@@ -3,6 +3,9 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
+# TODO: Extract video, audio and ancillary to separate scripts
+#       and treat test.sh as an interface to use them
+
 # Directories
 script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 . "${script_dir}/test_memif.sh"

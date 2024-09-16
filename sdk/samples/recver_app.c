@@ -4,6 +4,9 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+// TODO: Split the code, so video, audio and ancillary are separate sub-apps
+// TODO: Push all code that duplicates in sender_app to sample_common
+
 #include <bsd/string.h>
 #include <getopt.h>
 #include <signal.h>
