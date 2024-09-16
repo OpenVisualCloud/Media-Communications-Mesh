@@ -814,8 +814,7 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param* request) {
     }
     dp_ctx = new (dp_session_context_t);
     ParseMemIFParam(request, memif_ops);
-    // TODO: Hardcoded size. fix.
-    opts.transfer_size = request->width * request->height *4;
+    opts.transfer_size = request->payload_args.rdma_args.transfer_size;
     opts.dir = direction::RX;
     memcpy(&opts.remote_addr, &request->remote_addr, sizeof(request->remote_addr));
     memcpy(&opts.local_addr, &request->local_addr, sizeof(request->local_addr));
@@ -1010,8 +1009,7 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param* request) {
     dp_ctx = new (dp_session_context_t);
     ParseMemIFParam(request, memif_ops);
     opts.dir = direction::TX;
-    // TODO: Hardcoded size. fix.
-    opts.transfer_size = request->width * request->height * 4;
+    opts.transfer_size = request->payload_args.rdma_args.transfer_size;
     memcpy(&opts.remote_addr, &request->remote_addr, sizeof(request->remote_addr));
     memcpy(&opts.local_addr, &request->local_addr, sizeof(request->local_addr));
     tx_ctx = rdma_tx_session_create(mDevHandle_rdma, &opts, &memif_ops);

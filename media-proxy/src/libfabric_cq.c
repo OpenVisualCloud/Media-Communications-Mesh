@@ -68,7 +68,7 @@ static int rdma_spin_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur
                 return -FI_ENODATA;
             }
         }
-    } while (total - *cur > 0);
+    } while (total != *cur);
 
     return 0;
 }
@@ -105,7 +105,7 @@ static int rdma_fdwait_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *c
     fd = cq == ep_ctx->txcq ? ep_ctx->tx_fd : ep_ctx->rx_fd;
     fids[0] = &cq->fid;
 
-    while (total - *cur > 0) {
+    while (total != *cur) {
         ret = fi_trywait(ep_ctx->rdma_ctx->fabric, fids, 1);
         if (ret == FI_SUCCESS) {
             ret = rdma_poll_fd(fd, timeout);
@@ -133,7 +133,7 @@ static int rdma_wait_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur
     struct fi_cq_err_entry comp;
     int ret;
 
-    while (total - *cur > 0) {
+    while (total != *cur) {
         ret = fi_cq_sread(cq, &comp, 1, NULL, timeout);
         if (ret > 0) {
             (*cur)++;

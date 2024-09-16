@@ -16,7 +16,7 @@
 #include "mcm_dp.h"
 
 #define DEFAULT_RECV_IP "127.0.0.1"
-#define DEFAULT_RECV_PORT "9002"
+#define DEFAULT_RECV_PORT "9001"
 #define DEFAULT_SEND_IP "127.0.0.1"
 #define DEFAULT_SEND_PORT "9001"
 #define DEFAULT_FRAME_WIDTH 1920
@@ -292,6 +292,10 @@ int main(int argc, char** argv)
         param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION;
         param.payload_args.anc_args.type = ANC_TYPE_FRAME_LEVEL;
         param.payload_args.anc_args.fps = vid_fps;
+        break;
+    case PAYLOAD_TYPE_RDMA_VIDEO:
+        param.payload_args.rdma_args.transfer_size = 
+            getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height, false);
         break;
     case PAYLOAD_TYPE_RTSP_VIDEO:
     case PAYLOAD_TYPE_ST20_VIDEO:

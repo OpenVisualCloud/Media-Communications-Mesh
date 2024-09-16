@@ -29,7 +29,7 @@ extern "C" {
 #define RDMA_LOG(level, fmt, ...)						\
 	do {								\
 		int saved_errno = errno;				\
-		fprintf(stderr, "[%s] fabtests:%s:%d: " fmt "\n",	\
+		fprintf(stderr, "[%s] rdma:%s:%d: " fmt "\n",	\
 			level, __FILE__, __LINE__, ##__VA_ARGS__);	\
 		errno = saved_errno;					\
 	} while (0)
