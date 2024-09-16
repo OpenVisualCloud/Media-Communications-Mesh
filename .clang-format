@@ -1,3 +1,11 @@
 ---
-Language:        Cpp
-BasedOnStyle:  WebKit
+BasedOnStyle: LLVM
+IndentWidth: 4
+UseTab: Never
+ColumnLimit: 100
+BreakBeforeBraces: Linux
+AllowShortIfStatementsOnASingleLine: false
+IndentCaseLabels: false
+IncludeBlocks: Preserve
+SortIncludes: false
+...
