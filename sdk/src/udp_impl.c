@@ -13,7 +13,7 @@
 #include "udp_impl.h"
 #include "logger.h"
 
-udp_context* mcm_create_connection_udp(mcm_conn_param* param)
+udp_context* mcm_create_connection_udp(MeshConnectionConfig* param)
 {
     udp_context* udp_ctx = NULL;
     struct sockaddr_in tx_addr = {}, rx_addr = {};

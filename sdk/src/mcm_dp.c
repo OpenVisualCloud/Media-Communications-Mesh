@@ -14,6 +14,28 @@
 #include "mcm_dp.h"
 #include "media_proxy_ctrl.h"
 
+/* Create a new mesh client */
+int mesh_create_client(MeshClient *mc, MeshClientConfig cfg)
+{
+    mc = calloc(1, sizeof(MeshClientConfig));
+    if (mc==NULL) return MESH_CANNOT_CREATE_MESH_CLIENT;
+
+    memcpy(mc, &cfg, sizeof(MeshClientConfig));   
+    return 0;
+}
+
+/* Delete mesh client */
+int mesh_delete_client(MeshClient *mc)
+{
+    if (mc)
+    {
+        free(mc);
+        return 0;        
+    }
+    else
+        return MESH_ERR_BAD_CLIENT_HANDLE;
+}
+
 /* Calculate audio buffer size based on ST2110-30 related parameters */
 static int mcm_calc_audio_buffer_size(mcm_audio_args *params, uint32_t *size)
 {
@@ -157,143 +179,172 @@ static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memi
 }
 
 /* Connect to MCM media proxy daemon through memif. */
-mcm_conn_context* mcm_create_connection_proxy(mcm_conn_param* param)
+int mcm_create_connection_proxy(MeshClient mc, MeshConnection conn)
 {
     int ret = 0;
-    mcm_conn_context* conn_ctx = NULL;
-    mcm_dp_addr media_proxy_addr = {};
     int sockfd = 0;
     uint32_t session_id = 0;
     memif_conn_param memif_param = {};
 
+    MeshClientConfig *mc_conf = (MeshClientConfig*) mc;
+    MeshConnectionConfig *conn_conf= (MeshConnectionConfig*) conn;
+
+    mcm_conn_param param;
+    param.type = conn_conf->type;
+    param.protocol = conn_conf->proto;
+    param.local_addr = conn_conf->local_addr;
+    param.remote_addr = conn_conf->remote_addr;
+    param.memif_interface = conn_conf->memif_interface;
+    param.payload_type = conn_conf->payload_type;
+    param.payload_codec = conn_conf->payload_codec;
+    param.payload_args.video_args = conn_conf->payload_args.video_args;
+    param.payload_args.audio_args = conn_conf->payload_args.audio_args;
+    param.payload_args.anc_args = conn_conf->payload_args.anc_args;
+    param.width = conn_conf->width;
+    param.height = conn_conf->height;
+    param.fps = conn_conf->fps;
+    param.pix_fmt = conn_conf->pix_fmt;
+    param.payload_type_nr = conn_conf->payload_type_nr;
+    param.payload_mtl_flags_mask = conn_conf->payload_mtl_flags_mask;
+    param.payload_mtl_pacing = conn_conf->payload_mtl_pacing;
+
     /* Get media-proxy address. */
-    ret = get_media_proxy_addr(&media_proxy_addr);
+    ret = get_media_proxy_addr(mc, mc_conf->proxy_addr);
     if (ret != 0) {
-        log_warn("Fail to get MCM Media-Proxy address.");
-        return NULL;
+        mesh_log(mc, MESH_LOG_ERROR, "Fail to get MCM Media-Proxy address.");
+        return MESH_CANNOT_CREATE_MESH_CONNECTION;
     }
 
-    log_info("Connecting to MCM Media-Proxy: %s:%s", media_proxy_addr.ip, media_proxy_addr.port);
+//TBD    mesh_log(mc, MESH_LOG_INFO, ("Connecting to MCM Media-Proxy: %s:%s", conn_conf->proxy_addr->ip, conn_conf->proxy_addr->ip));
 
     /* Create socket connection with media-proxy. */
-    sockfd = open_socket(&media_proxy_addr);
+    sockfd = open_socket(mc, mc_conf->proxy_addr);
     if (sockfd < 0) {
-        log_error("Fail to create network connection to Media-Proxy.");
-        return NULL;
+        mesh_log(mc, MESH_LOG_ERROR, "Fail to create network connection to Media-Proxy.");
+        return MESH_CANNOT_CREATE_MESH_CONNECTION;
     }
 
     /* Create media-proxy session thru socket. */
-    ret = media_proxy_create_session(sockfd, param, &session_id);
-    if (ret < 0) {
-        log_error("Fail to create network connection to Media-Proxy.");
+    ret = media_proxy_create_session(mc, &param, sockfd, &session_id);
+    if (ret) {
+        mesh_log(mc, MESH_LOG_ERROR, "Fail to create network connection to Media-Proxy.");
         close_socket(sockfd);
-        return NULL;
+        return MESH_CANNOT_CREATE_MESH_CONNECTION;
     }
 
     /* Query memif info from media-proxy. */
-    ret = media_proxy_query_interface(sockfd, session_id, param, &memif_param);
-    if (ret < 0) {
-        log_error("Fail to query interface from Media-Proxy.");
+    ret = media_proxy_query_interface(mc, sockfd, session_id, &param, &memif_param);
+    if (ret) {
+        mesh_log(mc, MESH_LOG_ERROR, "Fail to query interface from Media-Proxy.");
         close_socket(sockfd);
-        return NULL;
+        return MESH_CANNOT_CREATE_MESH_CONNECTION;
     }
 
     /* Connect memif connection. */
-    conn_ctx = mcm_create_connection_memif(param, &memif_param);
-    if (conn_ctx == NULL) {
-        log_error("Fail to create memif interface.");
+    ret = mcm_create_connection_memif(mc, conn, &param, &memif_param);
+    if (ret) {
+        mesh_log(mc, MESH_LOG_ERROR, "Fail to create memif interface.");
         close_socket(sockfd);
-        return NULL;
+        return MESH_CANNOT_CREATE_MESH_CONNECTION;
     }
 
-    conn_ctx->proxy_sockfd = sockfd;
-    conn_ctx->session_id = session_id;
+    conn_conf->proxy_sockfd = sockfd;
+    conn_conf->session_id = session_id;
 
-    return conn_ctx;
+    mesh_log(mc, MESH_LOG_INFO, ("Connected to MCM Media-Proxy"));
+    return MCM_DP_SUCCESS;
 }
 
 /*****************************************************
  * Create network connection.
- *
- * @param param Parameters to create the connection with
- *              media-proxy.
- * @return Connection context if success, NULL if failed.
  ******************************************************/
-mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
+
+/* Create a new mesh connection */
+int mesh_create_connection(MeshClient mc, MeshConnection *conn, mcm_conn_param *param)
 {
-    void* p_ctx = NULL;
-    mcm_conn_context* conn_ctx = NULL;
+    conn = calloc(1, sizeof(MeshConnectionConfig));
+    if (mc==NULL) return MESH_CANNOT_CREATE_MESH_CONNECTION;
+
+    MeshConnectionConfig *conn_conf= (MeshConnectionConfig*) conn;
+
+    conn_conf->type = param->type;
+    conn_conf->proto = param->protocol;
+    conn_conf->local_addr = param->local_addr;
+    conn_conf->remote_addr = param->remote_addr;
+    conn_conf->memif_interface = param->memif_interface;
+    conn_conf->payload_type = param->payload_type;
+    conn_conf->payload_codec = param->payload_codec;
+    conn_conf->payload_args.video_args = param->payload_args.video_args;
+    conn_conf->payload_args.audio_args = param->payload_args.audio_args;
+    conn_conf->payload_args.anc_args = param->payload_args.anc_args;
+    conn_conf->width = param->width;
+    conn_conf->height = param->height;
+    conn_conf->fps = param->fps;
+    conn_conf->pix_fmt = param->pix_fmt;
+    conn_conf->payload_type_nr = param->payload_type_nr;
+    conn_conf->payload_mtl_flags_mask = param->payload_mtl_flags_mask;
+    conn_conf->payload_mtl_pacing = param->payload_mtl_pacing;
 
     if (param == NULL) {
-        log_error("Illegal Parameters.");
-        return NULL;
+        mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameters.");
+        return MCM_DP_ERROR_INVALID_PARAM;
     }
 
     /* Create connection w/o media-proxy. */
     switch (param->protocol) {
     case PROTO_AUTO:
         /* Connect to MCM media proxy daemon through memif. */
-        conn_ctx = mcm_create_connection_proxy(param);
-        if (conn_ctx == NULL) {
-            log_error("Fail to connect MCM media-proxy.");
-            return conn_ctx;
+        if (mcm_create_connection_proxy(mc, conn)) {
+            mesh_log(mc, MESH_LOG_ERROR, "Fail to connect MCM media-proxy.");
+            return MESH_CANNOT_CREATE_MESH_CONNECTION;
         } else {
-            log_info("Success connect to MCM media-proxy.");
+            mesh_log(mc, MESH_LOG_INFO, "Success connect to MCM media-proxy.");
         }
+        conn_conf->proto = PROTO_AUTO;
         break;
     case PROTO_UDP:
-        p_ctx = mcm_create_connection_udp(param);
-        if (p_ctx == NULL) {
-            log_error("Fail to create UDP connection.");
-            return NULL;
+        if (mcm_create_connection_proxy(mc, conn)) {
+            mesh_log(mc, MESH_LOG_ERROR, "Fail to create UDP connection.");
+            return MESH_CANNOT_CREATE_MESH_CONNECTION;
         }
-        conn_ctx = calloc(1, sizeof(mcm_conn_context));
-        if (conn_ctx == NULL) {
-            log_error("Outof Memory.");
-            free(p_ctx);
-            return NULL;
-        }
-        conn_ctx->proto = PROTO_UDP;
-        conn_ctx->priv = (void*)p_ctx;
+        conn_conf->proto = PROTO_UDP;
         break;
     case PROTO_MEMIF:
         memif_conn_param memif_param = {};
         parse_memif_param(param, &(memif_param.socket_args), &(memif_param.conn_args));
         /* Connect memif connection. */
-        conn_ctx = mcm_create_connection_memif(param, &memif_param);
-        if (!conn_ctx) {
-            log_error("Failed to create memif connection.");
-            return NULL;
+        if (mcm_create_connection_memif(mc, conn, param, &memif_param)) {
+            mesh_log(mc, MESH_LOG_ERROR, "Failed to create memif connection.");
+            return MESH_CANNOT_CREATE_MESH_CONNECTION;
         }
-        conn_ctx->session_id = 0;
+        conn_conf->session_id = 0;
         break;
     default:
-        log_warn("Unsupported protocol: %d", param->protocol);
+        mesh_log(mc, MESH_LOG_ERROR, "Unsupported protocol: %d", param->protocol);
         break;
     }
 
     /* common settings for all protocols. */
-    if (conn_ctx != NULL) {
-        conn_ctx->type = param->type;
-    }
-
-    return conn_ctx;
+    conn_conf->type = param->type;
+    return MCM_DP_SUCCESS;
 }
 
 /* Destroy MCM DP connection. */
-void mcm_destroy_connection(mcm_conn_context* pctx)
+int mesh_delete_connection(MeshClient mc, MeshConnection *conn)
 {
+    MeshConnectionConfig *conn_conf= (MeshConnectionConfig*) conn;
+
     useconds_t wait_time = 0;
 
-    if (pctx == NULL) {
-        return;
+    if (conn_conf == NULL) {
+        return MESH_ERR_BAD_CONNECTION_HANDLE;
     }
 
-    if (pctx->type == is_tx) {
-        if (pctx->fps > 0) {
+    if (conn_conf->type == is_tx) {
+        if (conn_conf->fps > 0) {
             uint32_t tmp_val = 0;
             /* Wait for time of send 20 frames in current FPS. */
-            tmp_val = 1000000 / pctx->fps;
+            tmp_val = 1000000 / conn_conf->fps;
             tmp_val *= 20;
             wait_time = (useconds_t)tmp_val;
         } else {
@@ -303,31 +354,39 @@ void mcm_destroy_connection(mcm_conn_context* pctx)
         usleep(wait_time);
     }
 
-    if (pctx->proxy_sockfd > 0) {
-        media_proxy_destroy_session(pctx);
+    if (conn_conf->proxy_sockfd > 0) {
+        media_proxy_destroy_session(mc, conn);
     }
 
-    switch (pctx->proto) {
+    switch (conn_conf->proto) {
     case PROTO_MEMIF:
-        mcm_destroy_connection_memif((memif_conn_context*)pctx->priv);
+        mcm_destroy_connection_memif(mc, (memif_conn_context*)conn_conf->priv);
         break;
     case PROTO_UDP:
-        mcm_destroy_connection_udp((udp_context*)pctx->priv);
+        mcm_destroy_connection_udp((udp_context*)conn_conf->priv);
         break;
     default:
-        log_warn("Unsupported protocol: %d", pctx->proto);
+        mesh_log(mc, MESH_LOG_ERROR, "Unsupported protocol: %d", conn_conf->proto);
         break;
     }
 
-    free(pctx);
+    free(conn);
+    conn=NULL;
+    
+    return MCM_DP_SUCCESS;
 }
 
-mcm_buffer* mcm_dequeue_buffer(mcm_conn_context* pctx, int timeout, int* error_code)
+int mesh_get_buffer(MeshClient mc, MeshConnection conn, MeshBuffer buf, int timeout_ms)
 {
-    return pctx->dequeue_buffer(pctx, timeout, error_code);
+    return memif_dequeue_buffer(mc, conn, buf, timeout_ms);
 }
 
-int mcm_enqueue_buffer(mcm_conn_context* pctx, mcm_buffer* buf)
+int mesh_put_buffer(MeshClient mc, MeshConnection conn, MeshBuffer buf, int timeout_ms)
 {
-    return pctx->enqueue_buffer(pctx, buf);
+    return memif_enqueue_buffer(mc, conn, buf, timeout_ms);
+}
+
+void mesh_log(MeshClient mc, int log_level, ...)
+{    
+
 }
