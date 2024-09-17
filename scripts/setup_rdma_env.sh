@@ -5,7 +5,8 @@ set -eo pipefail
 WORKING_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")/rdma"
 IRDMA_DMID="832291"
 IRDMA_VER="1.15.11"
-if [[ ! -f $WORKING_DIR/.. ]]; then
+
+if [[ -f $WORKING_DIR ]]; then
     echo "Can't create rdma directory because of the rdma file $WORKING_DIR"
     exit 1
 fi
