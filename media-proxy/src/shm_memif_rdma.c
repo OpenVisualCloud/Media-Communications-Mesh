@@ -15,9 +15,9 @@
 /* rx_rdma_on_connect informs user about connected status.
  * private_ctx is used by user to identify connection.
  */
-int rx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
+int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
-    rx_rdma_session_context_t* rx_ctx = (rx_rdma_session_context_t*)priv_data;
+    rx_rdma_session_context_t *rx_ctx = (rx_rdma_session_context_t *)priv_data;
     int err;
 
     INFO("RX RDMA memif connected!");
@@ -25,8 +25,8 @@ int rx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
     rx_ctx->fb_count = 3;
 
     /* rx buffers */
-    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
-    if (!rx_ctx->shm_bufs){
+    rx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    if (!rx_ctx->shm_bufs) {
         ERROR("Failed to allocate memory");
         return -ENOMEM;
     }
@@ -47,9 +47,9 @@ int rx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int rx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int rx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
-    rx_rdma_session_context_t* rx_ctx = priv_data;
+    rx_rdma_session_context_t *rx_ctx = priv_data;
     memif_socket_handle_t socket;
     int err;
 
@@ -80,9 +80,9 @@ int rx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int tx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
+int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
-    tx_rdma_session_context_t* tx_ctx = (tx_rdma_session_context_t*)priv_data;
+    tx_rdma_session_context_t *tx_ctx = (tx_rdma_session_context_t *)priv_data;
     int err = 0;
 
     INFO("TX memif connected!");
@@ -102,9 +102,9 @@ int tx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int tx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int tx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
-    tx_rdma_session_context_t* tx_ctx = priv_data;
+    tx_rdma_session_context_t *tx_ctx = priv_data;
     memif_socket_handle_t socket;
     static int counter = 0;
     int err = 0;
@@ -136,11 +136,11 @@ int tx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int tx_rdma_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
     int err = 0;
-    tx_rdma_session_context_t* tx_ctx = (tx_rdma_session_context_t*)priv_data;
-    memif_buffer_t shm_bufs = { 0 };
+    tx_rdma_session_context_t *tx_ctx = (tx_rdma_session_context_t *)priv_data;
+    memif_buffer_t shm_bufs = {0};
     uint16_t buf_num = 0;
 
     if (tx_ctx->stop) {

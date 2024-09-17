@@ -294,7 +294,7 @@ int main(int argc, char** argv)
         param.payload_args.anc_args.fps = vid_fps;
         break;
     case PAYLOAD_TYPE_RDMA_VIDEO:
-        param.payload_args.rdma_args.transfer_size = 
+        param.payload_args.rdma_args.transfer_size =
             getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height, false);
         break;
     case PAYLOAD_TYPE_RTSP_VIDEO:

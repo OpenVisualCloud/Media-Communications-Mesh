@@ -39,11 +39,11 @@ typedef struct {
     uint64_t tx_cq_cntr;
     uint64_t rx_cq_cntr;
 
-    libfabric_ctx* rdma_ctx;
+    libfabric_ctx *rdma_ctx;
 } ep_ctx_t;
 
 typedef struct {
-    libfabric_ctx* rdma_ctx;
+    libfabric_ctx *rdma_ctx;
     char *data_buf;
     size_t data_buf_size;
     rdma_addr remote_addr;
@@ -51,12 +51,11 @@ typedef struct {
     enum direction dir;
 } ep_cfg_t;
 
-int ep_send_buf(ep_ctx_t* ep_ctx, char* buf, size_t buf_size);
+int ep_send_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size);
 // *buf has to point to registered memory
-int ep_recv_buf(ep_ctx_t *ep_ctx, char* buf, size_t buf_size);
-int ep_init(ep_ctx_t** ep_ctx, ep_cfg_t* cfg);
-int ep_destroy(ep_ctx_t** ep_ctx);
-
+int ep_recv_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size);
+int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
+int ep_destroy(ep_ctx_t **ep_ctx);
 
 #ifdef __cplusplus
 }

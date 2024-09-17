@@ -334,7 +334,7 @@ int main(int argc, char** argv)
         param.payload_args.anc_args.fps = vid_fps;
         break;
     case PAYLOAD_TYPE_RDMA_VIDEO:
-        param.payload_args.rdma_args.transfer_size = 
+        param.payload_args.rdma_args.transfer_size =
             getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height, false);
         break;
     case PAYLOAD_TYPE_ST20_VIDEO:
@@ -351,7 +351,7 @@ int main(int argc, char** argv)
     strlcpy(param.remote_addr.ip, send_addr, sizeof(param.remote_addr.ip));
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
     strlcpy(param.local_addr.ip, recv_addr, sizeof(param.local_addr.ip));
-    strlcpy(param.local_addr.port,  recv_port, sizeof(param.local_addr.port));
+    strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
     frame_size = getFrameSize(pix_fmt, width, height, false);
 
     dp_ctx = mcm_create_connection(&param);

@@ -42,18 +42,17 @@ static void rdma_freehints(struct fi_info *hints)
     fi_freeinfo(hints);
 }
 
-static int rdma_init_fabric(libfabric_ctx* rdma_ctx, struct fi_info* hints)
+static int rdma_init_fabric(libfabric_ctx *rdma_ctx, struct fi_info *hints)
 {
     int ret;
 
     ret = rdma_hmem_init(FI_HMEM_SYSTEM);
-    if (ret)
-    {
+    if (ret) {
         return ret;
         RDMA_PRINTERR("rdma_hmem_init", ret);
     }
 
-    ret = fi_getinfo(FI_VERSION(1,21), NULL, NULL, 0, hints, &rdma_ctx->info);
+    ret = fi_getinfo(FI_VERSION(1, 21), NULL, NULL, 0, hints, &rdma_ctx->info);
     if (ret)
         return ret;
 
@@ -86,8 +85,7 @@ static int rdma_init_fabric(libfabric_ctx* rdma_ctx, struct fi_info* hints)
     return 0;
 }
 
-
-int rdma_init(libfabric_ctx** ctx)
+int rdma_init(libfabric_ctx **ctx)
 {
     int op, ret = 0;
     (*ctx) = calloc(1, sizeof(libfabric_ctx));
@@ -97,9 +95,9 @@ int rdma_init(libfabric_ctx** ctx)
     }
 
     // (*ctx)->options = RDMA_OPT_RX_CQ | RDMA_OPT_TX_CQ;
-	(*ctx)->comp_method = RDMA_COMP_SPIN;
+    (*ctx)->comp_method = RDMA_COMP_SPIN;
 
-    struct fi_info* hints = fi_allocinfo();
+    struct fi_info *hints = fi_allocinfo();
     if (!hints) {
         (*ctx) = NULL;
         return EXIT_FAILURE;
@@ -107,17 +105,15 @@ int rdma_init(libfabric_ctx** ctx)
 
     hints->fabric_attr->prov_name = strdup("verbs");
 
-
     hints->caps = FI_MSG;
     hints->domain_attr->resource_mgmt = FI_RM_ENABLED; // TODO: check performance
     hints->mode = FI_CONTEXT;
     hints->domain_attr->threading = FI_THREAD_SAFE; // TODO: check performance
     hints->addr_format = FI_FORMAT_UNSPEC;
     hints->ep_attr->type = FI_EP_RDM;
-    hints->domain_attr->mr_mode = FI_MR_LOCAL | FI_MR_ENDPOINT |
-        (FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR);
+    hints->domain_attr->mr_mode =
+        FI_MR_LOCAL | FI_MR_ENDPOINT | (FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR);
     hints->tx_attr->tclass = FI_TC_BULK_DATA;
-
 
     ret = rdma_init_fabric((*ctx), hints);
     if (ret) {
@@ -130,7 +126,7 @@ int rdma_init(libfabric_ctx** ctx)
     return EXIT_SUCCESS;
 }
 
-static void rdma_free_res(libfabric_ctx* rdma_ctx)
+static void rdma_free_res(libfabric_ctx *rdma_ctx)
 {
     int ret;
 
@@ -147,7 +143,7 @@ static void rdma_free_res(libfabric_ctx* rdma_ctx)
         RDMA_PRINTERR("rdma_hmem_cleanup", ret);
 }
 
-int rdma_deinit(libfabric_ctx** ctx)
+int rdma_deinit(libfabric_ctx **ctx)
 {
     rdma_free_res(*ctx);
 

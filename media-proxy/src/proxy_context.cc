@@ -718,9 +718,9 @@ void ProxyContext::ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_
 int ProxyContext::RxStart(const RxControlRequest* request)
 {
     INFO("ProxyContext: RxStart(const RxControlRequest* request)");
-    dp_session_context_t* st_ctx = NULL;
+    dp_session_context_t *st_ctx = NULL;
     rx_session_context_t* rx_ctx = NULL;
-    struct st20p_rx_ops opts = { 0 };
+    struct st20p_rx_ops opts = {0};
     memif_ops_t memif_ops = { 0 };
 
     if (mDevHandle == NULL) {
@@ -760,9 +760,9 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 int ProxyContext::TxStart(const TxControlRequest* request)
 {
     INFO("ProxyContext: TxStart(const TxControlRequest* request)");
-    dp_session_context_t* st_ctx = NULL;
+    dp_session_context_t *st_ctx = NULL;
     tx_session_context_t* tx_ctx = NULL;
-    struct st20p_tx_ops opts = { 0 };
+    struct st20p_tx_ops opts = {0};
     memif_ops_t memif_ops = { 0 };
 
     if (!mDevHandle) {
@@ -799,11 +799,12 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     return (st_ctx->id);
 }
 
-int ProxyContext::RxStart_rdma(const mcm_conn_param* request) {
-    rx_rdma_session_context_t* rx_ctx = NULL;
-    dp_session_context_t* dp_ctx = NULL;
-    memif_ops_t memif_ops = { 0 };
-    rdma_s_ops_t opts = { 0 };
+int ProxyContext::RxStart_rdma(const mcm_conn_param *request)
+{
+    rx_rdma_session_context_t *rx_ctx = NULL;
+    dp_session_context_t *dp_ctx = NULL;
+    memif_ops_t memif_ops = {0};
+    rdma_s_ops_t opts = {0};
     int ret;
 
     if (!mDevHandle_rdma) {
@@ -835,11 +836,11 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param* request) {
     return dp_ctx->id;
 }
 
-int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
+int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
 {
     INFO("ProxyContext: RxStart(const mcm_conn_param* request)");
-    dp_session_context_t* st_ctx = NULL;
-    struct st20p_rx_ops opts = { 0 };
+    dp_session_context_t *st_ctx = NULL;
+    struct st20p_rx_ops opts = {0};
     memif_ops_t memif_ops = { 0 };
     int ret;
 
@@ -986,7 +987,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
     return (st_ctx->id);
 }
 
-int ProxyContext::RxStart(const mcm_conn_param* request)
+int ProxyContext::RxStart(const mcm_conn_param *request)
 {
     if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO)
         return RxStart_rdma(request);
@@ -994,11 +995,12 @@ int ProxyContext::RxStart(const mcm_conn_param* request)
     return RxStart_mtl(request);
 }
 
-int ProxyContext::TxStart_rdma(const mcm_conn_param* request) {
-    tx_rdma_session_context_t* tx_ctx = NULL;
-    dp_session_context_t* dp_ctx = NULL;
-    memif_ops_t memif_ops = { 0 };
-    rdma_s_ops_t opts = { 0 };
+int ProxyContext::TxStart_rdma(const mcm_conn_param *request)
+{
+    tx_rdma_session_context_t *tx_ctx = NULL;
+    dp_session_context_t *dp_ctx = NULL;
+    memif_ops_t memif_ops = {0};
+    rdma_s_ops_t opts = {0};
     int ret;
 
     if (!mDevHandle_rdma) {
@@ -1030,10 +1032,10 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param* request) {
     return dp_ctx->id;
 }
 
-int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
+int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
 {
     INFO("ProxyContext: TxStart(const mcm_conn_param* request)");
-    dp_session_context_t* st_ctx = NULL;
+    dp_session_context_t *st_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
 
     /* add lock to protect MTL library initialization to avoid being called by multi-session simultaneously */
@@ -1136,7 +1138,8 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
     return (st_ctx->id);
 }
 
-int ProxyContext::TxStart(const mcm_conn_param* request) {
+int ProxyContext::TxStart(const mcm_conn_param *request)
+{
     if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO)
         return TxStart_rdma(request);
 
@@ -1146,9 +1149,7 @@ int ProxyContext::TxStart(const mcm_conn_param* request) {
 void ProxyContext::TxStop(const int32_t session_id)
 {
     auto ctx = std::find_if(mDpCtx.begin(), mDpCtx.end(),
-        [session_id](auto it) {
-            return it->id == session_id;
-        });
+                            [session_id](auto it) { return it->id == session_id; });
 
     if (ctx != mDpCtx.end()) {
         INFO("%s, Stop TX session ID: %d", __func__, session_id);
@@ -1195,10 +1196,8 @@ void ProxyContext::TxStop(const int32_t session_id)
 void ProxyContext::RxStop(const int32_t session_id)
 {
     auto it = std::find_if(mDpCtx.begin(), mDpCtx.end(),
-        [session_id](auto it) {
-            return it->id == session_id;
-        });
-    dp_session_context_t* ctx = *it;
+                           [session_id](auto it) { return it->id == session_id; });
+    dp_session_context_t *ctx = *it;
 
     if (it != mDpCtx.end()) {
         INFO("%s, Stop RX session ID: %d", __func__, session_id);

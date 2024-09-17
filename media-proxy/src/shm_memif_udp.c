@@ -33,7 +33,7 @@ int rx_udp_h264_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     /* rx buffers */
     rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
-    if (!rx_ctx->shm_bufs){
+    if (!rx_ctx->shm_bufs) {
         ERROR("Failed to allocate memory");
         return -ENOMEM;
     }

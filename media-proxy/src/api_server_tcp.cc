@@ -155,8 +155,10 @@ void* msg_loop(void* ptr)
                             memcpy(&param.conn_args, &it->tx_session->memif_conn_args, sizeof(memif_conn_args_t));
                             break;
                         case PAYLOAD_TYPE_RDMA_VIDEO:
-                            memcpy(&param.socket_args, &it->tx_rdma_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->tx_rdma_session->memif_conn_args, sizeof(memif_conn_args_t));
+                            memcpy(&param.socket_args, &it->tx_rdma_session->memif_socket_args,
+                                   sizeof(memif_socket_args_t));
+                            memcpy(&param.conn_args, &it->tx_rdma_session->memif_conn_args,
+                                   sizeof(memif_conn_args_t));
                             break;
                         default:
                             INFO("Unknown session type.");
@@ -185,8 +187,10 @@ void* msg_loop(void* ptr)
                             memcpy(&param.conn_args, &it->rx_session->memif_conn_args, sizeof(memif_conn_args_t));
                             break;
                         case PAYLOAD_TYPE_RDMA_VIDEO:
-                            memcpy(&param.socket_args, &it->rx_rdma_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->rx_rdma_session->memif_conn_args, sizeof(memif_conn_args_t));
+                            memcpy(&param.socket_args, &it->rx_rdma_session->memif_socket_args,
+                                   sizeof(memif_socket_args_t));
+                            memcpy(&param.conn_args, &it->rx_rdma_session->memif_conn_args,
+                                   sizeof(memif_conn_args_t));
                             break;
                         default:
                             INFO("Unknown session type.");

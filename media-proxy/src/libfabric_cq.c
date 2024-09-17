@@ -13,7 +13,8 @@
 
 #define CQ_TIMEOUT (-1)
 
-void rdma_cq_set_wait_attr(struct fi_cq_attr cq_attr, enum cq_comp_method method, struct fid_wait *waitset)
+void rdma_cq_set_wait_attr(struct fi_cq_attr cq_attr, enum cq_comp_method method,
+                           struct fid_wait *waitset)
 {
     switch (method) {
     case RDMA_COMP_SREAD:
@@ -43,8 +44,8 @@ void rdma_cq_set_wait_attr(struct fi_cq_attr cq_attr, enum cq_comp_method method
 /*
  * fi_cq_err_entry can be cast to any CQ entry format.
  */
-static int rdma_spin_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur,
-                uint64_t total, int timeout)
+static int rdma_spin_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
+                              int timeout)
 {
     struct fi_cq_err_entry comp;
     struct timespec a, b;
@@ -95,8 +96,8 @@ static int rdma_poll_fd(int fd, int timeout)
 /*
  * fi_cq_err_entry can be cast to any CQ entry format.
  */
-static int rdma_fdwait_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur,
-                uint64_t total, int timeout)
+static int rdma_fdwait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
+                                int timeout)
 {
     struct fi_cq_err_entry comp;
     struct fid *fids[1];
@@ -127,8 +128,8 @@ static int rdma_fdwait_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *c
 /*
  * fi_cq_err_entry can be cast to any CQ entry format.
  */
-static int rdma_wait_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur,
-                uint64_t total, int timeout)
+static int rdma_wait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
+                              int timeout)
 {
     struct fi_cq_err_entry comp;
     int ret;
@@ -145,8 +146,8 @@ static int rdma_wait_for_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur
     return 0;
 }
 
-int rdma_get_cq_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur,
-            uint64_t total, int timeout)
+int rdma_get_cq_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
+                     int timeout)
 {
     int ret;
 
@@ -163,8 +164,7 @@ int rdma_get_cq_comp(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur,
     return ret;
 }
 
-int rdma_read_cq(ep_ctx_t* ep_ctx, struct fid_cq *cq, uint64_t *cur,
-               uint64_t total, int timeout)
+int rdma_read_cq(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total, int timeout)
 {
     int ret;
 

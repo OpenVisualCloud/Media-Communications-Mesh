@@ -32,7 +32,6 @@
 #include <rdma/fi_domain.h>
 #include <rdma/fi_errno.h>
 
-
 int rdma_ze_init(void);
 int rdma_ze_cleanup(void);
 int rdma_ze_alloc(uint64_t device, void **buf, size_t size);
@@ -41,15 +40,9 @@ int rdma_ze_free(void *buf);
 int rdma_ze_memset(uint64_t device, void *buf, int value, size_t size);
 int rdma_ze_copy(uint64_t device, void *dst, const void *src, size_t size);
 
-static inline int rdma_host_init(void)
-{
-    return FI_SUCCESS;
-}
+static inline int rdma_host_init(void) { return FI_SUCCESS; }
 
-static inline int rdma_host_cleanup(void)
-{
-    return FI_SUCCESS;
-}
+static inline int rdma_host_cleanup(void) { return FI_SUCCESS; }
 
 static inline int rdma_host_alloc(uint64_t device, void **buffer, size_t size)
 {
@@ -63,15 +56,13 @@ static inline int rdma_host_free(void *buf)
     return FI_SUCCESS;
 }
 
-static inline int rdma_host_memset(uint64_t device, void *buf, int value,
-                 size_t size)
+static inline int rdma_host_memset(uint64_t device, void *buf, int value, size_t size)
 {
     memset(buf, value, size);
     return FI_SUCCESS;
 }
 
-static inline int rdma_host_memcpy(uint64_t device, void *dst, const void *src,
-                 size_t size)
+static inline int rdma_host_memcpy(uint64_t device, void *dst, const void *src, size_t size)
 {
     memcpy(dst, src, size);
     return FI_SUCCESS;
@@ -80,24 +71,19 @@ static inline int rdma_host_memcpy(uint64_t device, void *dst, const void *src,
 int rdma_default_alloc_host(void **buf, size_t size);
 int rdma_default_free_host(void *buf);
 
-
 int rdma_hmem_init(enum fi_hmem_iface iface);
 int rdma_hmem_cleanup(enum fi_hmem_iface iface);
-int rdma_hmem_alloc(enum fi_hmem_iface iface, uint64_t device, void **buf,
-          size_t size);
+int rdma_hmem_alloc(enum fi_hmem_iface iface, uint64_t device, void **buf, size_t size);
 int rdma_hmem_alloc_host(enum fi_hmem_iface iface, void **buf, size_t size);
 int rdma_hmem_free(enum fi_hmem_iface iface, void *buf);
 int rdma_hmem_free_host(enum fi_hmem_iface iface, void *buf);
-int rdma_hmem_memset(enum fi_hmem_iface iface, uint64_t device, void *buf,
-           int value, size_t size);
-int rdma_hmem_copy_to(enum fi_hmem_iface iface, uint64_t device, void *dst,
-            const void *src, size_t size);
-int rdma_hmem_copy_from(enum fi_hmem_iface iface, uint64_t device, void *dst,
-              const void *src, size_t size);
-int rdma_hmem_get_dmabuf_fd(enum fi_hmem_iface iface,
-              void *buf, size_t len,
-              int *fd, uint64_t *offset);
-int rdma_hmem_no_get_dmabuf_fd(void *buf, size_t len,
-                 int *fd, uint64_t *offset);
+int rdma_hmem_memset(enum fi_hmem_iface iface, uint64_t device, void *buf, int value, size_t size);
+int rdma_hmem_copy_to(enum fi_hmem_iface iface, uint64_t device, void *dst, const void *src,
+                      size_t size);
+int rdma_hmem_copy_from(enum fi_hmem_iface iface, uint64_t device, void *dst, const void *src,
+                        size_t size);
+int rdma_hmem_get_dmabuf_fd(enum fi_hmem_iface iface, void *buf, size_t len, int *fd,
+                            uint64_t *offset);
+int rdma_hmem_no_get_dmabuf_fd(void *buf, size_t len, int *fd, uint64_t *offset);
 
 #endif /* _HMEM_H_ */

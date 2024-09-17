@@ -13,9 +13,9 @@ extern "C" {
 
 #include "libfabric_dev.h"
 
-int rdma_reg_mr(libfabric_ctx* rdma_ctx, struct fid_ep* ep, struct fi_info *fi, void *buf, size_t size, uint64_t access,
-	      uint64_t key, enum fi_hmem_iface iface, uint64_t device,
-	      struct fid_mr **mr, void **desc);
+int rdma_reg_mr(libfabric_ctx *rdma_ctx, struct fid_ep *ep, struct fi_info *fi, void *buf,
+                size_t size, uint64_t access, uint64_t key, enum fi_hmem_iface iface,
+                uint64_t device, struct fid_mr **mr, void **desc);
 
 uint64_t rdma_info_to_mr_access(struct fi_info *info);
 

@@ -11,27 +11,26 @@
 extern "C" {
 #endif
 
-
 #include <mcm_dp.h>
 
 #include "app_platform.h"
 #include "libfabric_dev.h"
-#include "shm_memif.h" /* share memory */
+#include "shm_memif.h"
 #include "utils.h"
 #include "libfabric_ep.h"
 
 typedef struct {
-  size_t transfer_size;
-  rdma_addr remote_addr;
-  rdma_addr local_addr;
-  enum direction dir;
+    size_t transfer_size;
+    rdma_addr remote_addr;
+    rdma_addr local_addr;
+    enum direction dir;
 } rdma_s_ops_t;
 
 typedef struct {
     libfabric_ctx st;
     int idx;
-    libfabric_ctx* rdma_ctx;
-    ep_ctx_t* ep_ctx;
+    libfabric_ctx *rdma_ctx;
+    ep_ctx_t *ep_ctx;
 
     int frame_done_cnt;
     int packet_done_cnt;
@@ -54,7 +53,7 @@ typedef struct {
     /* memif conenction handle */
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t* shm_bufs;
+    memif_buffer_t *shm_bufs;
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
@@ -67,9 +66,8 @@ typedef struct {
 typedef struct {
     libfabric_ctx st;
     int idx;
-    libfabric_ctx* rdma_ctx;
-    ep_ctx_t* ep_ctx;
-
+    libfabric_ctx *rdma_ctx;
+    ep_ctx_t *ep_ctx;
 
     bool stop;
     pthread_t frame_thread;
@@ -91,7 +89,7 @@ typedef struct {
     memif_socket_handle_t memif_socket;
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t* shm_bufs;
+    memif_buffer_t *shm_bufs;
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
@@ -105,22 +103,24 @@ typedef struct {
 } rx_rdma_session_context_t;
 
 /* TX: Create RDMA session */
-tx_rdma_session_context_t* rdma_tx_session_create(libfabric_ctx* dev_handle, rdma_s_ops_t* opts, memif_ops_t* memif_ops);
+tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdma_s_ops_t *opts,
+                                                  memif_ops_t *memif_ops);
 
 /* RX: Create RDMA session */
-rx_rdma_session_context_t* rdma_rx_session_create(libfabric_ctx* dev_handle, rdma_s_ops_t* opts, memif_ops_t* memif_ops);
+rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdma_s_ops_t *opts,
+                                                  memif_ops_t *memif_ops);
 
 /* TX: Stop rdma session */
-void rdma_tx_session_stop(tx_rdma_session_context_t* pctx);
+void rdma_tx_session_stop(tx_rdma_session_context_t *pctx);
 
 /* RX: Stop rdma session */
-void rdma_rx_session_stop(rx_rdma_session_context_t* pctx);
+void rdma_rx_session_stop(rx_rdma_session_context_t *pctx);
 
 /* TX: Destroy rdma session */
-void rdma_tx_session_destroy(tx_rdma_session_context_t** ppctx);
+void rdma_tx_session_destroy(tx_rdma_session_context_t **ppctx);
 
 /* RX: Destroy rdma session */
-void rdma_rx_session_destroy(rx_rdma_session_context_t** ppctx);
+void rdma_rx_session_destroy(rx_rdma_session_context_t **ppctx);
 
 #ifdef __cplusplus
 }
