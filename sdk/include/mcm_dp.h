@@ -150,6 +150,9 @@ typedef struct MeshClientConfig {
     uint8_t mesh_version_minor;
     uint8_t mesh_version_hotfix;
 
+    /* Media Proxy address */
+    mcm_dp_addr* proxy_addr;    
+
    /* Default timeout interval for any API call */
     int timeout_ms;
 
@@ -161,7 +164,6 @@ typedef struct MeshClientConfig {
 
     /* Log function*/
     void *mesh_log_fun;    
-    
 } MeshClientConfig;
 
 typedef enum {
@@ -283,9 +285,6 @@ typedef struct MeshConnectionConfig {
     /* connect information */
     transfer_type type;
     proto_type proto;
-
-    /* Media Proxy address */
-    mcm_dp_addr* proxy_addr;    
 
     mcm_dp_addr local_addr;
     mcm_dp_addr remote_addr;    

@@ -70,6 +70,7 @@ int mcm_create_connection_proxy(MeshClient mc, MeshConnection conn)
     uint32_t session_id = 0;
     memif_conn_param memif_param = {};
 
+    MeshClientConfig *mc_conf = (MeshClientConfig*) mc;
     MeshConnectionConfig *conn_conf= (MeshConnectionConfig*) conn;
 
     mcm_conn_param param;
@@ -92,7 +93,7 @@ int mcm_create_connection_proxy(MeshClient mc, MeshConnection conn)
     param.payload_mtl_pacing = conn_conf->payload_mtl_pacing;
 
     /* Get media-proxy address. */
-    ret = get_media_proxy_addr(mc, conn_conf->proxy_addr);
+    ret = get_media_proxy_addr(mc, mc_conf->proxy_addr);
     if (ret != 0) {
         mesh_log(mc, MESH_LOG_ERROR, "Fail to get MCM Media-Proxy address.");
         return MESH_CANNOT_CREATE_MESH_CONNECTION;
@@ -101,7 +102,7 @@ int mcm_create_connection_proxy(MeshClient mc, MeshConnection conn)
 //TBD    mesh_log(mc, MESH_LOG_INFO, ("Connecting to MCM Media-Proxy: %s:%s", conn_conf->proxy_addr->ip, conn_conf->proxy_addr->ip));
 
     /* Create socket connection with media-proxy. */
-    sockfd = open_socket(mc, conn_conf->proxy_addr);
+    sockfd = open_socket(mc, mc_conf->proxy_addr);
     if (sockfd < 0) {
         mesh_log(mc, MESH_LOG_ERROR, "Fail to create network connection to Media-Proxy.");
         return MESH_CANNOT_CREATE_MESH_CONNECTION;
