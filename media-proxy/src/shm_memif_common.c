@@ -17,10 +17,10 @@ void print_memif_details(memif_conn_handle_t conn)
     memif_details_t md;
     memset(&md, 0, sizeof(md));
     ssize_t buflen = 2048;
-    char* buf = NULL;
+    char *buf = NULL;
     int err = 0;
 
-    buf = (char*)malloc(buflen);
+    buf = (char *)malloc(buflen);
     if (buf == NULL) {
         INFO("Not Enough Memory.");
         return;
@@ -36,12 +36,12 @@ void print_memif_details(memif_conn_handle_t conn)
         }
     }
 
-    printf("\tinterface name: %s\n", (char*)md.if_name);
-    printf("\tapp name: %s\n", (char*)md.inst_name);
-    printf("\tremote interface name: %s\n", (char*)md.remote_if_name);
-    printf("\tremote app name: %s\n", (char*)md.remote_inst_name);
+    printf("\tinterface name: %s\n", (char *)md.if_name);
+    printf("\tapp name: %s\n", (char *)md.inst_name);
+    printf("\tremote interface name: %s\n", (char *)md.remote_if_name);
+    printf("\tremote app name: %s\n", (char *)md.remote_inst_name);
     printf("\tid: %u\n", md.id);
-    printf("\tsecret: %s\n", (char*)md.secret);
+    printf("\tsecret: %s\n", (char *)md.secret);
     printf("\trole: ");
     if (md.role)
         printf("slave\n");
@@ -62,7 +62,7 @@ void print_memif_details(memif_conn_handle_t conn)
         printf("unknown\n");
         break;
     }
-    printf("\tsocket path: %s\n", (char*)md.socket_path);
+    printf("\tsocket path: %s\n", (char *)md.socket_path);
     printf("\tregions num: %d\n", md.regions_num);
     for (int i = 0; i < md.regions_num; i++) {
         printf("\t\tregions idx: %d\n", md.regions[i].index);
@@ -93,10 +93,10 @@ void print_memif_details(memif_conn_handle_t conn)
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int rx_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
     int err = 0;
-    rx_session_context_t* rx_ctx = priv_data;
+    rx_session_context_t *rx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL) {
@@ -134,7 +134,7 @@ int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int rx_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
     int err = 0;
     memif_buffer_t shm_bufs;
@@ -159,11 +159,11 @@ int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int tx_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
     static int counter = 0;
     int err = 0;
-    tx_session_context_t* tx_ctx = priv_data;
+    tx_session_context_t *tx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     // if (tx_ctx == NULL) {

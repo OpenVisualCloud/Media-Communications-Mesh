@@ -12,9 +12,9 @@
 #include "logger.h"
 #include "media_proxy_ctrl.h"
 
-int get_media_proxy_addr(mcm_dp_addr* proxy_addr)
+int get_media_proxy_addr(mcm_dp_addr *proxy_addr)
 {
-    char* penv_val = NULL;
+    char *penv_val = NULL;
     const char DEFAULT_PROXY_IP[] = "127.0.0.1";
     const char DEFAULT_PROXY_PORT[] = "8002";
 
@@ -40,7 +40,7 @@ int get_media_proxy_addr(mcm_dp_addr* proxy_addr)
     return 0;
 }
 
-int open_socket(mcm_dp_addr* proxy_addr)
+int open_socket(mcm_dp_addr *proxy_addr)
 {
     int sockfd = -1;
     struct sockaddr_in srvaddr = {};
@@ -58,7 +58,7 @@ int open_socket(mcm_dp_addr* proxy_addr)
     srvaddr.sin_port = htons(atoi(proxy_addr->port));
 
     /* connect to media-proxy socket. */
-    if (connect(sockfd, (struct sockaddr*)&srvaddr, sizeof(srvaddr)) != 0) {
+    if (connect(sockfd, (struct sockaddr *)&srvaddr, sizeof(srvaddr)) != 0) {
         log_error("Failed to connect to media-proxy socket.");
         close(sockfd);
         return -1;
@@ -76,7 +76,7 @@ void close_socket(int sockfd)
     return;
 }
 
-int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* session_id)
+int media_proxy_create_session(int sockfd, mcm_conn_param *param, uint32_t *session_id)
 {
     ssize_t ret = 0;
     mcm_proxy_ctl_msg msg = {};
@@ -87,7 +87,7 @@ int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* sess
     }
 
     /* intialize message header. */
-    msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
+    msg.header.magic_word = *(uint32_t *)HEADER_MAGIC_WORD;
     msg.header.version = HEADER_VERSION;
 
     msg.command.inst = MCM_CREATE_SESSION;
@@ -124,7 +124,8 @@ int media_proxy_create_session(int sockfd, mcm_conn_param* param, uint32_t* sess
     return 0;
 }
 
-int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param* param, memif_conn_param* memif_conn_args)
+int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param *param,
+                                memif_conn_param *memif_conn_args)
 {
     ssize_t ret = 0;
     mcm_proxy_ctl_msg msg = {};
@@ -135,7 +136,7 @@ int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param*
     }
 
     /* intialize message header. */
-    msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
+    msg.header.magic_word = *(uint32_t *)HEADER_MAGIC_WORD;
     msg.header.version = HEADER_VERSION;
 
     /* memif parameters */
@@ -171,7 +172,7 @@ int media_proxy_query_interface(int sockfd, uint32_t session_id, mcm_conn_param*
     return 0;
 }
 
-void media_proxy_destroy_session(mcm_conn_context* pctx)
+void media_proxy_destroy_session(mcm_conn_context *pctx)
 {
     int sockfd = 0;
     uint32_t session_id = 0;
@@ -186,7 +187,7 @@ void media_proxy_destroy_session(mcm_conn_context* pctx)
     session_id = pctx->session_id;
 
     /* intialize message header. */
-    msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
+    msg.header.magic_word = *(uint32_t *)HEADER_MAGIC_WORD;
     msg.header.version = HEADER_VERSION;
 
     msg.command.inst = MCM_DESTROY_SESSION;

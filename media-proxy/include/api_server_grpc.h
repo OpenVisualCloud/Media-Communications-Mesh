@@ -38,36 +38,47 @@ using controller::HealthCheckRequest;
 using controller::HealthCheckResponse;
 using controller::HealthCheckResponse_ServingStatus;
 
-class ConfigureServiceImpl final : public Configure::Service {
-public:
-    ConfigureServiceImpl(ProxyContext* ctx);
-    Status TxStart(ServerContext* context, const TxControlRequest* request, ControlReply* reply) override;
-    Status RxStart(ServerContext* context, const RxControlRequest* request, ControlReply* reply) override;
-    Status TxStop(ServerContext* context, const StopControlRequest* request, ControlReply* reply) override;
-    Status RxStop(ServerContext* context, const StopControlRequest* request, ControlReply* reply) override;
-    Status Stop(ServerContext* context, const StopControlRequest* request, ControlReply* reply) override;
+class ConfigureServiceImpl final : public Configure::Service
+{
+  public:
+    ConfigureServiceImpl(ProxyContext *ctx);
+    Status TxStart(ServerContext *context, const TxControlRequest *request,
+                   ControlReply *reply) override;
+    Status RxStart(ServerContext *context, const RxControlRequest *request,
+                   ControlReply *reply) override;
+    Status TxStop(ServerContext *context, const StopControlRequest *request,
+                  ControlReply *reply) override;
+    Status RxStop(ServerContext *context, const StopControlRequest *request,
+                  ControlReply *reply) override;
+    Status Stop(ServerContext *context, const StopControlRequest *request,
+                ControlReply *reply) override;
 
-private:
-    ProxyContext* m_ctx;
+  private:
+    ProxyContext *m_ctx;
 };
 
-class MsmDataPlaneServiceImpl final : public MsmDataPlane::Service {
-public:
-    MsmDataPlaneServiceImpl(ProxyContext* ctx);
-    Status stream_add_del(ServerContext* context, const StreamData* request, StreamResult* reply) override;
+class MsmDataPlaneServiceImpl final : public MsmDataPlane::Service
+{
+  public:
+    MsmDataPlaneServiceImpl(ProxyContext *ctx);
+    Status stream_add_del(ServerContext *context, const StreamData *request,
+                          StreamResult *reply) override;
 
-private:
-    ProxyContext* m_ctx;
+  private:
+    ProxyContext *m_ctx;
 };
 
-class HealthServiceImpl final : public Health::Service {
-public:
-    HealthServiceImpl(ProxyContext* ctx);
-    Status Check(ServerContext* context, const HealthCheckRequest* request, HealthCheckResponse* reply) override;
-    Status Watch(ServerContext* context, const HealthCheckRequest* request, HealthCheckResponse* reply) override;
+class HealthServiceImpl final : public Health::Service
+{
+  public:
+    HealthServiceImpl(ProxyContext *ctx);
+    Status Check(ServerContext *context, const HealthCheckRequest *request,
+                 HealthCheckResponse *reply) override;
+    Status Watch(ServerContext *context, const HealthCheckRequest *request,
+                 HealthCheckResponse *reply) override;
 
-private:
-    ProxyContext* m_ctx;
+  private:
+    ProxyContext *m_ctx;
 };
 
-void RunRPCServer(ProxyContext* ctx);
+void RunRPCServer(ProxyContext *ctx);

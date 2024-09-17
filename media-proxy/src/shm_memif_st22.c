@@ -9,17 +9,17 @@
 #include "mtl.h"
 #include "shm_memif.h"
 
-int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
+int rx_st22p_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
-    rx_st22p_session_context_t* rx_ctx = (rx_st22p_session_context_t*)priv_data;
+    rx_st22p_session_context_t *rx_ctx = (rx_st22p_session_context_t *)priv_data;
     int err = 0;
 
     INFO("RX memif connected!");
 
 #if defined(ZERO_COPY)
-    memif_details_t md = { 0 };
+    memif_details_t md = {0};
     ssize_t buflen = 2048;
-    char* buf = (char*)calloc(1, buflen);
+    char *buf = (char *)calloc(1, buflen);
 
     err = memif_get_details(conn, &md, buf, buflen);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -43,7 +43,7 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
 #endif
 
     /* rx buffers */
-    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    rx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
     rx_ctx->shm_buf_num = rx_ctx->fb_count;
 
     err = memif_refill_queue(conn, 0, -1, 0);
@@ -59,10 +59,10 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int rx_st22p_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
     int err = 0;
-    rx_st22p_session_context_t* rx_ctx = priv_data;
+    rx_st22p_session_context_t *rx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL || priv_data == NULL) {
@@ -77,7 +77,8 @@ int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     rx_ctx->shm_ready = 0;
 
 #if defined(ZERO_COPY)
-    if (mtl_dma_unmap(rx_ctx->st, rx_ctx->source_begin, rx_ctx->source_begin_iova, rx_ctx->source_begin_iova_map_sz) < 0) {
+    if (mtl_dma_unmap(rx_ctx->st, rx_ctx->source_begin, rx_ctx->source_begin_iova,
+                      rx_ctx->source_begin_iova_map_sz) < 0) {
         ERROR("Fail to unmap DMA memory address.");
     }
 #endif
@@ -98,9 +99,9 @@ int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
+int tx_st22p_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
-    tx_st22p_session_context_t* tx_ctx = (tx_st22p_session_context_t*)priv_data;
+    tx_st22p_session_context_t *tx_ctx = (tx_st22p_session_context_t *)priv_data;
     int err = 0;
 
     INFO("TX memif connected!");
@@ -112,9 +113,9 @@ int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
     }
 
 #if defined(ZERO_COPY)
-    memif_details_t md = { 0 };
+    memif_details_t md = {0};
     ssize_t buflen = 2048;
-    char* buf = (char*)calloc(1, buflen);
+    char *buf = (char *)calloc(1, buflen);
 
     err = memif_get_details(conn, &md, buf, buflen);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -143,11 +144,11 @@ int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
 
 /* informs user about disconnected status. private_ctx is used by user to
  * identify connection */
-int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
+int tx_st22p_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 {
     static int counter = 0;
     int err = 0;
-    tx_st22p_session_context_t* tx_ctx = priv_data;
+    tx_st22p_session_context_t *tx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL || priv_data == NULL) {
@@ -164,7 +165,8 @@ int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     // mtl_st22p_tx_session_destroy(&tx_ctx);
 
 #if defined(ZERO_COPY)
-    if (mtl_dma_unmap(tx_ctx->st, tx_ctx->source_begin, tx_ctx->source_begin_iova, tx_ctx->source_begin_iova_map_sz) < 0) {
+    if (mtl_dma_unmap(tx_ctx->st, tx_ctx->source_begin, tx_ctx->source_begin_iova,
+                      tx_ctx->source_begin_iova_map_sz) < 0) {
         ERROR("Fail to unmap DMA memory address.");
     }
 #endif
@@ -187,16 +189,16 @@ int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-static void tx_st22p_build_frame(memif_buffer_t shm_bufs, struct st_frame* frame)
+static void tx_st22p_build_frame(memif_buffer_t shm_bufs, struct st_frame *frame)
 {
     mtl_memcpy(frame->addr[0], shm_bufs.data, shm_bufs.len);
 }
 
-int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int tx_st22p_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
     int err = 0;
-    tx_st22p_session_context_t* tx_ctx = (tx_st22p_session_context_t*)priv_data;
-    memif_buffer_t shm_bufs = { 0 };
+    tx_st22p_session_context_t *tx_ctx = (tx_st22p_session_context_t *)priv_data;
+    memif_buffer_t shm_bufs = {0};
     uint16_t buf_num = 0;
 
     if (tx_ctx->stop) {
@@ -213,7 +215,7 @@ int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
     // INFO("memif_rx_burst: size: %d, num: %d", shm_bufs.len, buf_num);
 
     st22p_tx_handle handle = tx_ctx->handle;
-    struct st_frame* frame = NULL;
+    struct st_frame *frame = NULL;
 
     do {
         frame = st22p_tx_get_frame(handle);
@@ -227,15 +229,18 @@ int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 
     /* Send out frame. */
 #if defined(ZERO_COPY)
-    struct st_ext_frame ext_frame = { 0 };
+    struct st_ext_frame ext_frame = {0};
     ext_frame.addr[0] = shm_bufs.data;
-    ext_frame.iova[0] = tx_ctx->source_begin_iova + ((uint8_t*)shm_bufs.data - tx_ctx->source_begin);
+    ext_frame.iova[0] =
+        tx_ctx->source_begin_iova + ((uint8_t *)shm_bufs.data - tx_ctx->source_begin);
     ext_frame.linesize[0] = st_frame_least_linesize(frame->fmt, frame->width, 0);
     uint8_t planes = st_frame_fmt_planes(frame->fmt);
     for (uint8_t plane = 1; plane < planes; plane++) { /* assume planes continous */
         ext_frame.linesize[plane] = st_frame_least_linesize(frame->fmt, frame->width, plane);
-        ext_frame.addr[plane] = (uint8_t*)ext_frame.addr[plane - 1] + ext_frame.linesize[plane - 1] * frame->height;
-        ext_frame.iova[plane] = ext_frame.iova[plane - 1] + ext_frame.linesize[plane - 1] * frame->height;
+        ext_frame.addr[plane] =
+            (uint8_t *)ext_frame.addr[plane - 1] + ext_frame.linesize[plane - 1] * frame->height;
+        ext_frame.iova[plane] =
+            ext_frame.iova[plane - 1] + ext_frame.linesize[plane - 1] * frame->height;
     }
     ext_frame.size = shm_bufs.len;
     ext_frame.opaque = conn;

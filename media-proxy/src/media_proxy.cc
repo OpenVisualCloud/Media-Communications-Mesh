@@ -20,30 +20,34 @@
 #define DEFAULT_TCP_PORT "8002"
 
 /* print a description of all supported options */
-void usage(FILE* fp, const char* path)
+void usage(FILE *fp, const char *path)
 {
     /* take only the last portion of the path */
-    const char* basename = strrchr(path, '/');
+    const char *basename = strrchr(path, '/');
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "Usage: %s [OPTION]\n", basename);
     fprintf(fp, "-h, --help\t\t"
                 "Print this help and exit.\n");
-    fprintf(fp, "-d, --dev=dev_port\t"
-                "PCI device port (defaults: %s).\n",
-        DEFAULT_DEV_PORT);
-    fprintf(fp, "-i, --ip=ip_address\t"
-                "IP address for media data transportation (defaults: %s).\n",
-        DEFAULT_DP_IP);
-    fprintf(fp, "-g, --grpc=port_number\t"
-                "Port number gRPC controller (defaults: %s).\n",
-        DEFAULT_GRPC_PORT);
-    fprintf(fp, "-t, --tcp=port_number\t"
-                "Port number for TCP socket controller (defaults: %s).\n",
-        DEFAULT_TCP_PORT);
+    fprintf(fp,
+            "-d, --dev=dev_port\t"
+            "PCI device port (defaults: %s).\n",
+            DEFAULT_DEV_PORT);
+    fprintf(fp,
+            "-i, --ip=ip_address\t"
+            "IP address for media data transportation (defaults: %s).\n",
+            DEFAULT_DP_IP);
+    fprintf(fp,
+            "-g, --grpc=port_number\t"
+            "Port number gRPC controller (defaults: %s).\n",
+            DEFAULT_GRPC_PORT);
+    fprintf(fp,
+            "-t, --tcp=port_number\t"
+            "Port number for TCP socket controller (defaults: %s).\n",
+            DEFAULT_TCP_PORT);
 }
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     std::string grpc_port = DEFAULT_GRPC_PORT;
     std::string tcp_port = DEFAULT_TCP_PORT;
@@ -52,13 +56,9 @@ int main(int argc, char* argv[])
     int help_flag = 0;
     int opt;
     struct option longopts[] = {
-        { "help", no_argument, &help_flag, 1 },
-        { "dev", required_argument, NULL, 'd' },
-        { "ip", required_argument, NULL, 'i' },
-        { "grpc", required_argument, NULL, 'g' },
-        { "tcp", required_argument, NULL, 't' },
-        { 0 }
-    };
+        {"help", no_argument, &help_flag, 1},  {"dev", required_argument, NULL, 'd'},
+        {"ip", required_argument, NULL, 'i'},  {"grpc", required_argument, NULL, 'g'},
+        {"tcp", required_argument, NULL, 't'}, {0}};
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
         setenv("KAHAWAI_CFG_PATH", IMTL_CONFIG_PATH, 0);
     }
 
-    ProxyContext* ctx = new ProxyContext("0.0.0.0:" + grpc_port, "0.0.0.0:" + tcp_port);
+    ProxyContext *ctx = new ProxyContext("0.0.0.0:" + grpc_port, "0.0.0.0:" + tcp_port);
     ctx->setDevicePort(dev_port);
     ctx->setDataPlaneAddress(dp_ip);
 

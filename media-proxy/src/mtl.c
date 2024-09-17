@@ -14,26 +14,25 @@
 #include "shm_memif.h"
 #include <mcm_dp.h>
 
-static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame);
-static int tx_st30_shm_deinit(tx_st30_session_context_t* pctx);
-static int rx_st30_shm_deinit(rx_st30_session_context_t* pctx);
-static int tx_st40_shm_deinit(tx_st40_session_context_t* pctx);
-static int rx_st40_shm_deinit(rx_st40_session_context_t* pctx);
+static void rx_st30_consume_frame(rx_st30_session_context_t *s, void *frame);
+static int tx_st30_shm_deinit(tx_st30_session_context_t *pctx);
+static int rx_st30_shm_deinit(rx_st30_session_context_t *pctx);
+static int tx_st40_shm_deinit(tx_st40_session_context_t *pctx);
+static int rx_st40_shm_deinit(rx_st40_session_context_t *pctx);
 
-static int tx_st30_next_frame(void* priv, uint16_t* next_frame_idx,
-    struct st30_tx_frame_meta* meta)
+static int tx_st30_next_frame(void *priv, uint16_t *next_frame_idx, struct st30_tx_frame_meta *meta)
 {
-    tx_st30_session_context_t* s = priv;
+    tx_st30_session_context_t *s = priv;
     int ret;
     uint16_t consumer_idx = s->framebuff_consumer_idx;
-    struct st_tx_frame* framebuff = &s->framebuffs[consumer_idx];
+    struct st_tx_frame *framebuff = &s->framebuffs[consumer_idx];
     MTL_MAY_UNUSED(meta);
 
     st_pthread_mutex_lock(&s->st30_wake_mutex);
     if (ST_TX_FRAME_READY == framebuff->stat) {
-        DEBUG("%s(%d), next frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__,
-            s->idx, consumer_idx, meta->epoch,
-            st10_get_tai(meta->tfmt, meta->timestamp, st30_get_sample_rate(s->sampling)));
+        DEBUG("%s(%d), next frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__, s->idx,
+              consumer_idx, meta->epoch,
+              st10_get_tai(meta->tfmt, meta->timestamp, st30_get_sample_rate(s->sampling)));
         ret = 0;
         framebuff->stat = ST_TX_FRAME_IN_TRANSMITTING;
         *next_frame_idx = consumer_idx;
@@ -52,25 +51,23 @@ static int tx_st30_next_frame(void* priv, uint16_t* next_frame_idx,
     return ret;
 }
 
-static int tx_st30_frame_done(void* priv, uint16_t frame_idx,
-    struct st30_tx_frame_meta* meta)
+static int tx_st30_frame_done(void *priv, uint16_t frame_idx, struct st30_tx_frame_meta *meta)
 {
-    tx_st30_session_context_t* s = priv;
+    tx_st30_session_context_t *s = priv;
     int ret;
-    struct st_tx_frame* framebuff = &s->framebuffs[frame_idx];
+    struct st_tx_frame *framebuff = &s->framebuffs[frame_idx];
     MTL_MAY_UNUSED(meta);
 
     st_pthread_mutex_lock(&s->st30_wake_mutex);
     if (ST_TX_FRAME_IN_TRANSMITTING == framebuff->stat) {
         ret = 0;
         framebuff->stat = ST_TX_FRAME_FREE;
-        DEBUG("%s(%d), done frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__,
-            s->idx, frame_idx, meta->epoch,
-            st10_get_tai(meta->tfmt, meta->timestamp, st30_get_sample_rate(s->sampling)));
+        DEBUG("%s(%d), done frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__, s->idx,
+              frame_idx, meta->epoch,
+              st10_get_tai(meta->tfmt, meta->timestamp, st30_get_sample_rate(s->sampling)));
     } else {
         ret = -EIO;
-        DEBUG("%s(%d), err status %d for frame %u\n", __func__, s->idx, framebuff->stat,
-            frame_idx);
+        DEBUG("%s(%d), err status %d for frame %u\n", __func__, s->idx, framebuff->stat, frame_idx);
     }
     st_pthread_cond_signal(&s->st30_wake_cond);
     st_pthread_mutex_unlock(&s->st30_wake_mutex);
@@ -80,9 +77,9 @@ static int tx_st30_frame_done(void* priv, uint16_t frame_idx,
     return ret;
 }
 
-static int tx_st30_rtp_done(void* priv)
+static int tx_st30_rtp_done(void *priv)
 {
-    tx_st30_session_context_t* s = priv;
+    tx_st30_session_context_t *s = priv;
     st_pthread_mutex_lock(&s->st30_wake_mutex);
     st_pthread_cond_signal(&s->st30_wake_cond);
     st_pthread_mutex_unlock(&s->st30_wake_mutex);
@@ -90,20 +87,19 @@ static int tx_st30_rtp_done(void* priv)
     return 0;
 }
 
-static int tx_st40_next_frame(void* priv, uint16_t* next_frame_idx,
-    struct st40_tx_frame_meta* meta)
+static int tx_st40_next_frame(void *priv, uint16_t *next_frame_idx, struct st40_tx_frame_meta *meta)
 {
-    tx_st40_session_context_t* s = priv;
+    tx_st40_session_context_t *s = priv;
     int ret;
     uint16_t consumer_idx = s->framebuff_consumer_idx;
-    struct st_tx_frame* framebuff = &s->framebuffs[consumer_idx];
+    struct st_tx_frame *framebuff = &s->framebuffs[consumer_idx];
     MTL_MAY_UNUSED(meta);
 
     st_pthread_mutex_lock(&s->st40_wake_mutex);
     if (ST_TX_FRAME_READY == framebuff->stat) {
-        DEBUG("%s(%d), next frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__,
-            s->idx, consumer_idx, meta->epoch,
-            st10_get_tai(meta->tfmt, meta->timestamp, ST10_VIDEO_SAMPLING_RATE_90K));
+        DEBUG("%s(%d), next frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__, s->idx,
+              consumer_idx, meta->epoch,
+              st10_get_tai(meta->tfmt, meta->timestamp, ST10_VIDEO_SAMPLING_RATE_90K));
         ret = 0;
         framebuff->stat = ST_TX_FRAME_IN_TRANSMITTING;
         *next_frame_idx = consumer_idx;
@@ -122,25 +118,23 @@ static int tx_st40_next_frame(void* priv, uint16_t* next_frame_idx,
     return ret;
 }
 
-static int tx_st40_frame_done(void* priv, uint16_t frame_idx,
-    struct st40_tx_frame_meta* meta)
+static int tx_st40_frame_done(void *priv, uint16_t frame_idx, struct st40_tx_frame_meta *meta)
 {
-    tx_st40_session_context_t* s = priv;
+    tx_st40_session_context_t *s = priv;
     int ret;
-    struct st_tx_frame* framebuff = &s->framebuffs[frame_idx];
+    struct st_tx_frame *framebuff = &s->framebuffs[frame_idx];
     MTL_MAY_UNUSED(meta);
 
     st_pthread_mutex_lock(&s->st40_wake_mutex);
     if (ST_TX_FRAME_IN_TRANSMITTING == framebuff->stat) {
         ret = 0;
         framebuff->stat = ST_TX_FRAME_FREE;
-        DEBUG("%s(%d), done frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__,
-            s->idx, frame_idx, meta->epoch,
-            st10_get_tai(meta->tfmt, meta->timestamp, ST10_VIDEO_SAMPLING_RATE_90K));
+        DEBUG("%s(%d), done frame idx %u, epoch %" PRIu64 ", tai %" PRIu64 "\n", __func__, s->idx,
+              frame_idx, meta->epoch,
+              st10_get_tai(meta->tfmt, meta->timestamp, ST10_VIDEO_SAMPLING_RATE_90K));
     } else {
         ret = -EIO;
-        DEBUG("%s(%d), err status %d for frame %u\n", __func__, s->idx, framebuff->stat,
-            frame_idx);
+        DEBUG("%s(%d), err status %d for frame %u\n", __func__, s->idx, framebuff->stat, frame_idx);
     }
     st_pthread_cond_signal(&s->st40_wake_cond);
     st_pthread_mutex_unlock(&s->st40_wake_mutex);
@@ -150,9 +144,9 @@ static int tx_st40_frame_done(void* priv, uint16_t frame_idx,
     return ret;
 }
 
-static int tx_st40_rtp_done(void* priv)
+static int tx_st40_rtp_done(void *priv)
 {
-    tx_st40_session_context_t* s = priv;
+    tx_st40_session_context_t *s = priv;
     st_pthread_mutex_lock(&s->st40_wake_mutex);
     st_pthread_cond_signal(&s->st40_wake_cond);
     st_pthread_mutex_unlock(&s->st40_wake_mutex);
@@ -165,11 +159,9 @@ void st_rx_debug_dump(struct st20p_rx_ops ops)
     INFO("Parse RX Session Ops ...");
     INFO("name          : %s", ops.name);
     INFO("priv          : %p", ops.priv);
-    INFO("ip_addr      : %u, %u, %u, %u",
-        ops.port.ip_addr[MTL_PORT_P][0],
-        ops.port.ip_addr[MTL_PORT_P][1],
-        ops.port.ip_addr[MTL_PORT_P][2],
-        ops.port.ip_addr[MTL_PORT_P][3]);
+    INFO("ip_addr      : %u, %u, %u, %u", ops.port.ip_addr[MTL_PORT_P][0],
+         ops.port.ip_addr[MTL_PORT_P][1], ops.port.ip_addr[MTL_PORT_P][2],
+         ops.port.ip_addr[MTL_PORT_P][3]);
     INFO("num_port      : %u", ops.port.num_port);
     INFO("port          : %s", ops.port.port[MTL_PORT_P]);
     INFO("udp_port      : %u", ops.port.udp_port[MTL_PORT_P]);
@@ -189,11 +181,9 @@ void st_rx_st22p_debug_dump(struct st22p_rx_ops ops)
     INFO("Parse RX Session Ops ...");
     INFO("name          : %s", ops.name);
     INFO("priv          : %p", ops.priv);
-    INFO("ip_addr      : %u, %u, %u, %u",
-        ops.port.ip_addr[MTL_PORT_P][0],
-        ops.port.ip_addr[MTL_PORT_P][1],
-        ops.port.ip_addr[MTL_PORT_P][2],
-        ops.port.ip_addr[MTL_PORT_P][3]);
+    INFO("ip_addr      : %u, %u, %u, %u", ops.port.ip_addr[MTL_PORT_P][0],
+         ops.port.ip_addr[MTL_PORT_P][1], ops.port.ip_addr[MTL_PORT_P][2],
+         ops.port.ip_addr[MTL_PORT_P][3]);
     INFO("num_port      : %u", ops.port.num_port);
     INFO("port          : %s", ops.port.port[MTL_PORT_P]);
     INFO("udp_port      : %u", ops.port.udp_port[MTL_PORT_P]);
@@ -254,9 +244,9 @@ void st_tx_st22p_debug_dump(struct st22p_tx_ops ops)
     INFO("framebuff_cnt : %d", ops.framebuff_cnt);
 }
 
-static int rx_st20p_frame_available(void* priv)
+static int rx_st20p_frame_available(void *priv)
 {
-    rx_session_context_t* s = priv;
+    rx_session_context_t *s = priv;
 
     st_pthread_mutex_lock(&s->wake_mutex);
     st_pthread_cond_signal(&s->wake_cond);
@@ -265,9 +255,9 @@ static int rx_st20p_frame_available(void* priv)
     return 0;
 }
 
-static int rx_st22p_frame_available(void* priv)
+static int rx_st22p_frame_available(void *priv)
 {
-    rx_st22p_session_context_t* s = priv;
+    rx_st22p_session_context_t *s = priv;
 
     st_pthread_mutex_lock(&s->st22p_wake_mutex);
     st_pthread_cond_signal(&s->st22p_wake_cond);
@@ -277,10 +267,10 @@ static int rx_st22p_frame_available(void* priv)
 }
 
 #if defined(ZERO_COPY)
-static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
-    struct st20_rx_frame_meta* meta)
+static int rx_st20p_query_ext_frame(void *priv, struct st_ext_frame *ext_frame,
+                                    struct st20_rx_frame_meta *meta)
 {
-    rx_session_context_t* rx_ctx = priv;
+    rx_session_context_t *rx_ctx = priv;
     int err = 0;
 
     /* allocate memory */
@@ -288,7 +278,7 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     uint16_t buf_num = 1;
     uint32_t buf_size = rx_ctx->frame_size;
     uint16_t rx_buf_num = 0;
-    memif_buffer_t* rx_bufs = rx_ctx->shm_bufs;
+    memif_buffer_t *rx_bufs = rx_ctx->shm_bufs;
 
     if (rx_ctx->shm_ready == 0) {
         ERROR("rx_st20p_query_ext_frame: MemIF connection not ready.");
@@ -302,19 +292,23 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     }
 
     size_t pg_sz = mtl_page_size(rx_ctx->st);
-    void* ext_fb_malloc = rx_bufs->data;
-    uint8_t* ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)ext_fb_malloc, pg_sz);
-    mtl_iova_t ext_fb_iova = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
+    void *ext_fb_malloc = rx_bufs->data;
+    uint8_t *ext_fb = (uint8_t *)MTL_ALIGN((uint64_t)ext_fb_malloc, pg_sz);
+    mtl_iova_t ext_fb_iova =
+        rx_ctx->source_begin_iova + ((uint8_t *)rx_bufs->data - rx_ctx->source_begin);
 
     uint8_t planes = st_frame_fmt_planes(rx_ctx->output_fmt);
     for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
-        ext_frame->linesize[plane] = st_frame_least_linesize(rx_ctx->output_fmt, meta->width, plane);
+        ext_frame->linesize[plane] =
+            st_frame_least_linesize(rx_ctx->output_fmt, meta->width, plane);
         if (plane == 0) {
             ext_frame->addr[plane] = rx_bufs->data;
             ext_frame->iova[plane] = ext_fb_iova;
         } else {
-            ext_frame->addr[plane] = (uint8_t*)ext_frame->addr[plane - 1] + ext_frame->linesize[plane - 1] * meta->height;
-            ext_frame->iova[plane] = ext_frame->iova[plane - 1] + ext_frame->linesize[plane - 1] * meta->height;
+            ext_frame->addr[plane] = (uint8_t *)ext_frame->addr[plane - 1] +
+                                     ext_frame->linesize[plane - 1] * meta->height;
+            ext_frame->iova[plane] =
+                ext_frame->iova[plane - 1] + ext_frame->linesize[plane - 1] * meta->height;
         }
     }
     ext_frame->size = rx_ctx->frame_size;
@@ -324,10 +318,10 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     return 0;
 }
 
-static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
-    struct st22_rx_frame_meta* meta)
+static int rx_st22p_query_ext_frame(void *priv, struct st_ext_frame *ext_frame,
+                                    struct st22_rx_frame_meta *meta)
 {
-    rx_st22p_session_context_t * rx_ctx = priv;
+    rx_st22p_session_context_t *rx_ctx = priv;
     int err = 0;
 
     /* allocate memory */
@@ -336,7 +330,7 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     uint32_t buf_size = rx_ctx->frame_size;
     uint16_t rx_buf_num = 0;
     int width = rx_ctx->width, height = rx_ctx->height;
-    memif_buffer_t* rx_bufs = rx_ctx->shm_bufs;
+    memif_buffer_t *rx_bufs = rx_ctx->shm_bufs;
 
     if (rx_ctx->shm_ready == 0) {
         ERROR("rx_st22p_query_ext_frame: MemIF connection not ready.");
@@ -353,8 +347,9 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     size_t frame_size = rx_ctx->frame_size;
     size_t pg_sz = mtl_page_size(rx_ctx->st);
     rx_ctx->ext_fb_malloc = rx_bufs->data;
-    rx_ctx->ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)rx_ctx->ext_fb_malloc, pg_sz);
-    rx_ctx->ext_fb_iova = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
+    rx_ctx->ext_fb = (uint8_t *)MTL_ALIGN((uint64_t)rx_ctx->ext_fb_malloc, pg_sz);
+    rx_ctx->ext_fb_iova =
+        rx_ctx->source_begin_iova + ((uint8_t *)rx_bufs->data - rx_ctx->source_begin);
 
     for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
         ext_frame->linesize[plane] = st_frame_least_linesize(rx_ctx->output_fmt, width, plane);
@@ -362,8 +357,10 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
             ext_frame->addr[plane] = rx_bufs->data;
             ext_frame->iova[plane] = rx_ctx->ext_fb_iova;
         } else {
-            ext_frame->addr[plane] = (uint8_t*)ext_frame->addr[plane - 1] + ext_frame->linesize[plane - 1] * height;
-            ext_frame->iova[plane] = ext_frame->iova[plane - 1] + ext_frame->linesize[plane - 1] * height;
+            ext_frame->addr[plane] =
+                (uint8_t *)ext_frame->addr[plane - 1] + ext_frame->linesize[plane - 1] * height;
+            ext_frame->iova[plane] =
+                ext_frame->iova[plane - 1] + ext_frame->linesize[plane - 1] * height;
         }
     }
     ext_frame->size = frame_size;
@@ -375,9 +372,9 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
 }
 #endif
 
-static int tx_st20p_frame_available(void* priv)
+static int tx_st20p_frame_available(void *priv)
 {
-    tx_session_context_t* s = (tx_session_context_t*)priv;
+    tx_session_context_t *s = (tx_session_context_t *)priv;
 
     st_pthread_mutex_lock(&s->wake_mutex);
     st_pthread_cond_signal(&s->wake_cond);
@@ -386,9 +383,9 @@ static int tx_st20p_frame_available(void* priv)
     return 0;
 }
 
-static int tx_st22p_frame_available(void* priv)
+static int tx_st22p_frame_available(void *priv)
 {
-    tx_st22p_session_context_t* s = (tx_st22p_session_context_t*)priv;
+    tx_st22p_session_context_t *s = (tx_st22p_session_context_t *)priv;
 
     st_pthread_mutex_lock(&s->st22p_wake_mutex);
     st_pthread_cond_signal(&s->st22p_wake_cond);
@@ -406,10 +403,9 @@ static inline uint64_t st_app_get_monotonic_time()
     return ((uint64_t)ts.tv_sec * NS_PER_S) + ts.tv_nsec;
 }
 
-static int rx_st30_frame_ready(void* priv, void* frame,
-    struct st30_rx_frame_meta* meta)
+static int rx_st30_frame_ready(void *priv, void *frame, struct st30_rx_frame_meta *meta)
 {
-    rx_st30_session_context_t* s = priv;
+    rx_st30_session_context_t *s = priv;
 
     if (!s->handle)
         return -1;
@@ -425,9 +421,9 @@ static int rx_st30_frame_ready(void* priv, void* frame,
     return 0;
 }
 
-static int rx_st30_rtp_ready(void* priv)
+static int rx_st30_rtp_ready(void *priv)
 {
-    rx_st30_session_context_t* s = priv;
+    rx_st30_session_context_t *s = priv;
 
     st_pthread_mutex_lock(&s->st30_wake_mutex);
     st_pthread_cond_signal(&s->st30_wake_cond);
@@ -436,9 +432,9 @@ static int rx_st30_rtp_ready(void* priv)
     return 0;
 }
 
-static int rx_st40_rtp_ready(void* priv)
+static int rx_st40_rtp_ready(void *priv)
 {
-    rx_st40_session_context_t* s = priv;
+    rx_st40_session_context_t *s = priv;
 
     st_pthread_mutex_lock(&s->st40_wake_mutex);
     st_pthread_cond_signal(&s->st40_wake_cond);
@@ -447,13 +443,13 @@ static int rx_st40_rtp_ready(void* priv)
     return 0;
 }
 
-static int tx_st20p_frame_done(void* priv, struct st_frame* frame)
+static int tx_st20p_frame_done(void *priv, struct st_frame *frame)
 {
     int err = 0;
     memif_conn_handle_t conn = NULL;
     uint16_t qid = 0;
     uint16_t buf_num = 1;
-    tx_session_context_t* tx_ctx = (tx_session_context_t*)priv;
+    tx_session_context_t *tx_ctx = (tx_session_context_t *)priv;
 
     if (tx_ctx == NULL || tx_ctx->handle == NULL) {
         return -1; /* not ready */
@@ -473,13 +469,13 @@ static int tx_st20p_frame_done(void* priv, struct st_frame* frame)
     return err;
 }
 
-static int tx_st22p_frame_done(void* priv, struct st_frame* frame)
+static int tx_st22p_frame_done(void *priv, struct st_frame *frame)
 {
     int err = 0;
     memif_conn_handle_t conn = NULL;
     uint16_t qid = 0;
     uint16_t buf_num = 1;
-    tx_st22p_session_context_t* tx_ctx = (tx_st22p_session_context_t*)priv;
+    tx_st22p_session_context_t *tx_ctx = (tx_st22p_session_context_t *)priv;
 
     if (tx_ctx == NULL || tx_ctx->handle == NULL) {
         return -1; /* not ready */
@@ -498,12 +494,12 @@ static int tx_st22p_frame_done(void* priv, struct st_frame* frame)
     return err;
 }
 
-static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* frame)
+static void rx_st20p_consume_frame(rx_session_context_t *s, struct st_frame *frame)
 {
     int err = 0;
     uint16_t qid = 0;
-    mcm_buffer* rx_mcm_buff = NULL;
-    memif_buffer_t* rx_bufs = NULL;
+    mcm_buffer *rx_mcm_buff = NULL;
+    memif_buffer_t *rx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
     uint32_t buf_size = s->frame_size;
@@ -517,9 +513,9 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
     conn = s->memif_conn;
 
 #if defined(ZERO_COPY)
-    rx_bufs = (memif_buffer_t*)frame->opaque;
+    rx_bufs = (memif_buffer_t *)frame->opaque;
     rx_buf_num = 1;
-    rx_mcm_buff = (mcm_buffer*)rx_bufs->data;
+    rx_mcm_buff = (mcm_buffer *)rx_bufs->data;
 #else
     /* allocate memory */
     rx_bufs = s->shm_bufs;
@@ -544,12 +540,12 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
     s->fb_recv++;
 }
 
-static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_frame* frame)
+static void rx_st22p_consume_frame(rx_st22p_session_context_t *s, struct st_frame *frame)
 {
     int err = 0;
     uint16_t qid = 0;
-    mcm_buffer* rx_mcm_buff = NULL;
-    memif_buffer_t* rx_bufs = NULL;
+    mcm_buffer *rx_mcm_buff = NULL;
+    memif_buffer_t *rx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
     uint32_t buf_size = s->frame_size;
@@ -563,9 +559,9 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
     conn = s->memif_conn;
 
 #if defined(ZERO_COPY)
-    rx_bufs = (memif_buffer_t*)frame->opaque;
+    rx_bufs = (memif_buffer_t *)frame->opaque;
     rx_buf_num = 1;
-    rx_mcm_buff = (mcm_buffer*)rx_bufs->data;
+    rx_mcm_buff = (mcm_buffer *)rx_bufs->data;
 #else
     /* allocate memory */
     rx_bufs = s->shm_bufs;
@@ -581,7 +577,7 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
     // mtl_memcpy(testdata, frame->addr, s->frame_size);
 
     uint8_t planes = st_frame_fmt_planes(frame->fmt);
-    uint8_t* dst = rx_bufs->data;
+    uint8_t *dst = rx_bufs->data;
     for (uint8_t plane = 0; plane < planes; plane++) {
         size_t plane_sz = st_frame_plane_size(frame, plane);
         mtl_memcpy(dst, frame->addr[plane], plane_sz);
@@ -600,11 +596,11 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
     s->fb_recv++;
 }
 
-static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame)
+static void rx_st30_consume_frame(rx_st30_session_context_t *s, void *frame)
 {
     int err = 0;
     uint16_t qid = 0;
-    memif_buffer_t* tx_bufs = NULL;
+    memif_buffer_t *tx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
     uint32_t buf_size = s->pkt_len;
@@ -627,7 +623,7 @@ static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame)
     }
 
     /* Fill the shared-memory buffer. */
-    uint8_t* dst = tx_bufs->data;
+    uint8_t *dst = tx_bufs->data;
     mtl_memcpy(dst, frame, s->st30_frame_size);
 
     /* Send to microservice application. */
@@ -639,11 +635,11 @@ static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame)
     return;
 }
 
-static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, uint16_t len)
+static void rx_st40_consume_frame(rx_st40_session_context_t *s, void *usrptr, uint16_t len)
 {
     int err = 0;
     uint16_t qid = 0;
-    memif_buffer_t* tx_bufs = NULL;
+    memif_buffer_t *tx_bufs = NULL;
     uint16_t buf_num = 1;
     memif_conn_handle_t conn;
     uint32_t buf_size = s->pkt_len;
@@ -666,7 +662,7 @@ static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, ui
     }
 
     /* Fill the shared-memory buffer. */
-    uint8_t* dst = tx_bufs->data;
+    uint8_t *dst = tx_bufs->data;
     mtl_memcpy(dst, usrptr, len);
 
     /* Send to microservice application. */
@@ -678,17 +674,19 @@ static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, ui
     return;
 }
 
-static void rx_st40_handle_rtp(rx_st40_session_context_t* s, void* usrptr)
+static void rx_st40_handle_rtp(rx_st40_session_context_t *s, void *usrptr)
 {
-    struct st40_rfc8331_rtp_hdr* hdr = (struct st40_rfc8331_rtp_hdr*)usrptr;
-    struct st40_rfc8331_payload_hdr* payload_hdr = (struct st40_rfc8331_payload_hdr*)(&hdr[1]);
+    struct st40_rfc8331_rtp_hdr *hdr = (struct st40_rfc8331_rtp_hdr *)usrptr;
+    struct st40_rfc8331_payload_hdr *payload_hdr = (struct st40_rfc8331_payload_hdr *)(&hdr[1]);
     int anc_count = hdr->anc_count;
     int idx, total_size, payload_len;
 
     for (idx = 0; idx < anc_count; idx++) {
         payload_hdr->swaped_first_hdr_chunk = ntohl(payload_hdr->swaped_first_hdr_chunk);
         payload_hdr->swaped_second_hdr_chunk = ntohl(payload_hdr->swaped_second_hdr_chunk);
-        if (!st40_check_parity_bits(payload_hdr->second_hdr_chunk.did) || !st40_check_parity_bits(payload_hdr->second_hdr_chunk.sdid) || !st40_check_parity_bits(payload_hdr->second_hdr_chunk.data_count)) {
+        if (!st40_check_parity_bits(payload_hdr->second_hdr_chunk.did) ||
+            !st40_check_parity_bits(payload_hdr->second_hdr_chunk.sdid) ||
+            !st40_check_parity_bits(payload_hdr->second_hdr_chunk.data_count)) {
             ERROR("anc RTP checkParityBits error\n");
             return;
         }
@@ -696,9 +694,10 @@ static void rx_st40_handle_rtp(rx_st40_session_context_t* s, void* usrptr)
 
         // verify checksum
         uint16_t checksum = 0;
-        checksum = st40_get_udw(udw_size + 3, (uint8_t*)&payload_hdr->second_hdr_chunk);
+        checksum = st40_get_udw(udw_size + 3, (uint8_t *)&payload_hdr->second_hdr_chunk);
         payload_hdr->swaped_second_hdr_chunk = htonl(payload_hdr->swaped_second_hdr_chunk);
-        if (checksum != st40_calc_checksum(3 + udw_size, (uint8_t*)&payload_hdr->second_hdr_chunk)) {
+        if (checksum !=
+            st40_calc_checksum(3 + udw_size, (uint8_t *)&payload_hdr->second_hdr_chunk)) {
             ERROR("anc frame checksum error\n");
             return;
         }
@@ -706,20 +705,21 @@ static void rx_st40_handle_rtp(rx_st40_session_context_t* s, void* usrptr)
 #ifdef DEBUG
         uint16_t data;
         for (int i = 0; i < udw_size; i++) {
-            data = st40_get_udw(i + 3, (uint8_t*)&payload_hdr->second_hdr_chunk);
+            data = st40_get_udw(i + 3, (uint8_t *)&payload_hdr->second_hdr_chunk);
             if (!st40_check_parity_bits(data))
                 ERROR("anc udw checkParityBits error\n");
             DEBUG("%c", data & 0xff);
         }
         DEBUG("\n");
 #endif
-        total_size = ((3 + udw_size + 1) * 10) / 8; // Calculate size of the
-                                                    // 10-bit words: DID, SDID, DATA_COUNT
-                                                    // + size of buffer with data + checksum
+        total_size = ((3 + udw_size + 1) * 10) / 8;     // Calculate size of the
+                                                        // 10-bit words: DID, SDID, DATA_COUNT
+                                                        // + size of buffer with data + checksum
         total_size = (4 - total_size % 4) + total_size; // Calculate word align to the 32-bit
                                                         // word of ANC data packet
-        payload_len = sizeof(struct st40_rfc8331_payload_hdr) - 4 + total_size; // Full size of one ANC
-        payload_hdr = (struct st40_rfc8331_payload_hdr*)((uint8_t*)payload_hdr + payload_len);
+        payload_len =
+            sizeof(struct st40_rfc8331_payload_hdr) - 4 + total_size; // Full size of one ANC
+        payload_hdr = (struct st40_rfc8331_payload_hdr *)((uint8_t *)payload_hdr + payload_len);
     }
 
     s->stat_frame_total_received++;
@@ -727,11 +727,11 @@ static void rx_st40_handle_rtp(rx_st40_session_context_t* s, void* usrptr)
         s->stat_frame_first_rx_time = st_app_get_monotonic_time();
 }
 
-static void* rx_st20p_frame_thread(void* arg)
+static void *rx_st20p_frame_thread(void *arg)
 {
-    rx_session_context_t* s = (rx_session_context_t*)arg;
+    rx_session_context_t *s = (rx_session_context_t *)arg;
     st20p_rx_handle handle = s->handle;
-    struct st_frame* frame;
+    struct st_frame *frame;
 
     printf("%s(%d), start\n", __func__, s->idx);
     while (!s->stop) {
@@ -755,11 +755,11 @@ static void* rx_st20p_frame_thread(void* arg)
     return NULL;
 }
 
-static void* rx_st22p_frame_thread(void* arg)
+static void *rx_st22p_frame_thread(void *arg)
 {
-    rx_st22p_session_context_t* s = (rx_st22p_session_context_t*)arg;
+    rx_st22p_session_context_t *s = (rx_st22p_session_context_t *)arg;
     st22p_rx_handle handle = s->handle;
-    struct st_frame* frame;
+    struct st_frame *frame;
 
     printf("%s(%d), start\n", __func__, s->idx);
     while (!s->stop) {
@@ -783,13 +783,13 @@ static void* rx_st22p_frame_thread(void* arg)
     return NULL;
 }
 
-static void* rx_st40_frame_thread(void* arg)
+static void *rx_st40_frame_thread(void *arg)
 {
-    rx_st40_session_context_t* s = arg;
+    rx_st40_session_context_t *s = arg;
     int idx = s->idx;
-    void* usrptr = NULL;
+    void *usrptr = NULL;
     uint16_t len = 0;
-    void* mbuf = NULL;
+    void *mbuf = NULL;
 
     INFO("%s(%d), start\n", __func__, idx);
     while (!s->stop) {
@@ -813,15 +813,15 @@ static void* rx_st40_frame_thread(void* arg)
 }
 
 /* Initiliaze MTL library */
-mtl_handle inst_init(struct mtl_init_params* st_param)
+mtl_handle inst_init(struct mtl_init_params *st_param)
 {
     mtl_handle dev_handle = NULL;
-    struct mtl_init_params param = { 0 };
+    struct mtl_init_params param = {0};
 
     if (st_param == NULL) {
         int session_num = 1;
         const char port_bdf[] = "0000:31:00.0";
-        const uint8_t local_ip[MTL_IP_ADDR_LEN] = { 192, 168, 96, 1 };
+        const uint8_t local_ip[MTL_IP_ADDR_LEN] = {192, 168, 96, 1};
 
         /* set default parameters */
         param.num_ports = 1;
@@ -829,7 +829,7 @@ mtl_handle inst_init(struct mtl_init_params* st_param)
         memcpy(param.sip_addr[MTL_PORT_P], local_ip, MTL_IP_ADDR_LEN);
         param.flags = MTL_FLAG_TASKLET_THREAD;
         param.log_level = MTL_LOG_LEVEL_INFO; // log level. ERROR, INFO, WARNING
-        param.priv = NULL; // usr crx pointer
+        param.priv = NULL;                    // usr crx pointer
         param.ptp_get_time_fn = NULL;
         param.rx_queues_cnt[MTL_PORT_P] = session_num;
         param.tx_queues_cnt[MTL_PORT_P] = session_num;
@@ -855,7 +855,7 @@ mtl_handle inst_init(struct mtl_init_params* st_param)
     return dev_handle;
 }
 
-static void* tx_memif_event_loop(void* arg)
+static void *tx_memif_event_loop(void *arg)
 {
     int err = MEMIF_ERR_SUCCESS;
     memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
@@ -871,7 +871,7 @@ static void* tx_memif_event_loop(void* arg)
     return NULL;
 }
 
-static void* rx_memif_event_loop(void* arg)
+static void *rx_memif_event_loop(void *arg)
 {
     int err = MEMIF_ERR_SUCCESS;
     memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
@@ -887,10 +887,10 @@ static void* rx_memif_event_loop(void* arg)
     return NULL;
 }
 
-int rx_st20p_shm_init(rx_session_context_t* rx_ctx, memif_ops_t* memif_ops)
+int rx_st20p_shm_init(rx_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (rx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -902,24 +902,26 @@ int rx_st20p_shm_init(rx_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_rx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_rx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_rx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(rx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(rx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(rx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(rx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(rx_ctx->memif_socket_args.path) - 1);
+            sizeof(rx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -944,20 +946,21 @@ int rx_st20p_shm_init(rx_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->frame_size;
     rx_ctx->memif_conn_args.log2_ring_size = 2;
-    memcpy((char*)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(rx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     INFO("create memif interface.");
-    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args,
-        rx_st20p_on_connect, rx_st20p_on_disconnect, rx_on_receive, rx_ctx);
+    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args, rx_st20p_on_connect,
+                       rx_st20p_on_disconnect, rx_on_receive, rx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop,
+                         rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -966,10 +969,10 @@ int rx_st20p_shm_init(rx_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     return 0;
 }
 
-int rx_st22p_shm_init(rx_st22p_session_context_t* rx_ctx, memif_ops_t* memif_ops)
+int rx_st22p_shm_init(rx_st22p_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (rx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -981,24 +984,26 @@ int rx_st22p_shm_init(rx_st22p_session_context_t* rx_ctx, memif_ops_t* memif_ops
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_rx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_rx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_rx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(rx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(rx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(rx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(rx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(rx_ctx->memif_socket_args.path) - 1);
+            sizeof(rx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -1023,20 +1028,21 @@ int rx_st22p_shm_init(rx_st22p_session_context_t* rx_ctx, memif_ops_t* memif_ops
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->frame_size;
     rx_ctx->memif_conn_args.log2_ring_size = 2;
-    memcpy((char*)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(rx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     INFO("create memif interface.");
-    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args,
-        rx_st22p_on_connect, rx_st22p_on_disconnect, rx_on_receive, rx_ctx);
+    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args, rx_st22p_on_connect,
+                       rx_st22p_on_disconnect, rx_on_receive, rx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop,
+                         rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -1045,7 +1051,7 @@ int rx_st22p_shm_init(rx_st22p_session_context_t* rx_ctx, memif_ops_t* memif_ops
     return 0;
 }
 
-int rx_shm_deinit(rx_session_context_t* rx_ctx)
+int rx_shm_deinit(rx_session_context_t *rx_ctx)
 {
     if (rx_ctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
@@ -1071,7 +1077,7 @@ int rx_shm_deinit(rx_session_context_t* rx_ctx)
     return 0;
 }
 
-int tx_shm_deinit(tx_session_context_t* tx_ctx)
+int tx_shm_deinit(tx_session_context_t *tx_ctx)
 {
     if (tx_ctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
@@ -1097,7 +1103,7 @@ int tx_shm_deinit(tx_session_context_t* tx_ctx)
     return 0;
 }
 
-int rx_st22p_shm_deinit(rx_st22p_session_context_t* rx_ctx)
+int rx_st22p_shm_deinit(rx_st22p_session_context_t *rx_ctx)
 {
     if (rx_ctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
@@ -1123,7 +1129,7 @@ int rx_st22p_shm_deinit(rx_st22p_session_context_t* rx_ctx)
     return 0;
 }
 
-int tx_st22p_shm_deinit(tx_st22p_session_context_t* tx_ctx)
+int tx_st22p_shm_deinit(tx_st22p_session_context_t *tx_ctx)
 {
     if (tx_ctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
@@ -1149,7 +1155,7 @@ int tx_st22p_shm_deinit(tx_st22p_session_context_t* tx_ctx)
     return 0;
 }
 
-int rx_st30_shm_deinit(rx_st30_session_context_t* pctx)
+int rx_st30_shm_deinit(rx_st30_session_context_t *pctx)
 {
     if (pctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
@@ -1175,64 +1181,7 @@ int rx_st30_shm_deinit(rx_st30_session_context_t* pctx)
     return 0;
 }
 
-int tx_st30_shm_deinit(tx_st30_session_context_t* pctx)
-{
-    if (pctx == NULL) {
-        printf("%s, Illegal parameter.\n", __func__);
-        return -1;
-    }
-
-    pthread_cancel(pctx->memif_event_thread);
-
-    /* free-up resources */
-    memif_delete(&pctx->memif_conn);
-    memif_delete_socket(&pctx->memif_socket);
-
-    /* unlink socket file */
-    if (pctx->memif_conn_args.is_master && pctx->memif_socket_args.path[0] != '@') {
-        unlink(pctx->memif_socket_args.path);
-    }
-
-    if (pctx->shm_bufs) {
-        free(pctx->shm_bufs);
-        pctx->shm_bufs = NULL;
-    }
-
-    if (pctx->framebuffs) {
-        free(pctx->shm_bufs);
-        pctx->shm_bufs = NULL;
-    }
-
-    return 0;
-}
-
-int rx_st40_shm_deinit(rx_st40_session_context_t* pctx)
-{
-    if (pctx == NULL) {
-        printf("%s, Illegal parameter.\n", __func__);
-        return -1;
-    }
-
-    pthread_cancel(pctx->memif_event_thread);
-
-    /* free-up resources */
-    memif_delete(&pctx->memif_conn);
-    memif_delete_socket(&pctx->memif_socket);
-
-    /* unlink socket file */
-    if (pctx->memif_conn_args.is_master && pctx->memif_socket_args.path[0] != '@') {
-        unlink(pctx->memif_socket_args.path);
-    }
-
-    if (pctx->shm_bufs) {
-        free(pctx->shm_bufs);
-        pctx->shm_bufs = NULL;
-    }
-
-    return 0;
-}
-
-int tx_st40_shm_deinit(tx_st40_session_context_t* pctx)
+int tx_st30_shm_deinit(tx_st30_session_context_t *pctx)
 {
     if (pctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
@@ -1263,11 +1212,68 @@ int tx_st40_shm_deinit(tx_st40_session_context_t* pctx)
     return 0;
 }
 
-int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
+int rx_st40_shm_deinit(rx_st40_session_context_t *pctx)
+{
+    if (pctx == NULL) {
+        printf("%s, Illegal parameter.\n", __func__);
+        return -1;
+    }
+
+    pthread_cancel(pctx->memif_event_thread);
+
+    /* free-up resources */
+    memif_delete(&pctx->memif_conn);
+    memif_delete_socket(&pctx->memif_socket);
+
+    /* unlink socket file */
+    if (pctx->memif_conn_args.is_master && pctx->memif_socket_args.path[0] != '@') {
+        unlink(pctx->memif_socket_args.path);
+    }
+
+    if (pctx->shm_bufs) {
+        free(pctx->shm_bufs);
+        pctx->shm_bufs = NULL;
+    }
+
+    return 0;
+}
+
+int tx_st40_shm_deinit(tx_st40_session_context_t *pctx)
+{
+    if (pctx == NULL) {
+        printf("%s, Illegal parameter.\n", __func__);
+        return -1;
+    }
+
+    pthread_cancel(pctx->memif_event_thread);
+
+    /* free-up resources */
+    memif_delete(&pctx->memif_conn);
+    memif_delete_socket(&pctx->memif_socket);
+
+    /* unlink socket file */
+    if (pctx->memif_conn_args.is_master && pctx->memif_socket_args.path[0] != '@') {
+        unlink(pctx->memif_socket_args.path);
+    }
+
+    if (pctx->shm_bufs) {
+        free(pctx->shm_bufs);
+        pctx->shm_bufs = NULL;
+    }
+
+    if (pctx->framebuffs) {
+        free(pctx->shm_bufs);
+        pctx->shm_bufs = NULL;
+    }
+
+    return 0;
+}
+
+int tx_st20p_shm_init(tx_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
     const uint16_t FRAME_COUNT = 4;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (tx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -1279,22 +1285,26 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_tx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_tx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_tx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
-    strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name, sizeof(tx_ctx->memif_socket_args.app_name) - 1);
+    strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name,
+            sizeof(tx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
-    strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path, sizeof(tx_ctx->memif_socket_args.path) - 1);
+    strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path,
+            sizeof(tx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && tx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -1319,15 +1329,17 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->frame_size;
     tx_ctx->memif_conn_args.log2_ring_size = 2;
-    snprintf((char*)tx_ctx->memif_conn_args.interface_name, sizeof(tx_ctx->memif_conn_args.interface_name), "%s", memif_ops->interface_name);
+    snprintf((char *)tx_ctx->memif_conn_args.interface_name,
+             sizeof(tx_ctx->memif_conn_args.interface_name), "%s", memif_ops->interface_name);
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
+    tx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
     tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
-    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st20p_on_connect, tx_st20p_on_disconnect, tx_st20p_on_receive, tx_ctx);
+    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st20p_on_connect,
+                       tx_st20p_on_disconnect, tx_st20p_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         free(tx_ctx->shm_bufs);
@@ -1335,7 +1347,8 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop,
+                         tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         free(tx_ctx->shm_bufs);
@@ -1345,11 +1358,11 @@ int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     return 0;
 }
 
-int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops)
+int tx_st22p_shm_init(tx_st22p_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
     const uint16_t FRAME_COUNT = 4;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (tx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -1361,24 +1374,26 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_tx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_tx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_tx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(tx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(tx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(tx_ctx->memif_socket_args.path) - 1);
+            sizeof(tx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && tx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -1403,17 +1418,17 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->frame_size;
     tx_ctx->memif_conn_args.log2_ring_size = 2;
-    memcpy((char*)tx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(tx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)tx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(tx_ctx->memif_conn_args.interface_name));
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
+    tx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
     tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
-    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,
-        tx_st22p_on_connect, tx_st22p_on_disconnect, tx_st22p_on_receive, tx_ctx);
+    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st22p_on_connect,
+                       tx_st22p_on_disconnect, tx_st22p_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         free(tx_ctx->shm_bufs);
@@ -1421,7 +1436,8 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop,
+                         tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         free(tx_ctx->shm_bufs);
@@ -1431,10 +1447,10 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
     return 0;
 }
 
-int tx_st30_shm_init(tx_st30_session_context_t* tx_ctx, memif_ops_t* memif_ops)
+int tx_st30_shm_init(tx_st30_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (tx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -1446,24 +1462,26 @@ int tx_st30_shm_init(tx_st30_session_context_t* tx_ctx, memif_ops_t* memif_ops)
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_tx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_tx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_tx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(tx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(tx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(tx_ctx->memif_socket_args.path) - 1);
+            sizeof(tx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && tx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -1488,20 +1506,21 @@ int tx_st30_shm_init(tx_st30_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->pkt_len;
     tx_ctx->memif_conn_args.log2_ring_size = 4;
-    memcpy((char*)tx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(tx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)tx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(tx_ctx->memif_conn_args.interface_name));
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     INFO("Create memif interface.");
-    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,
-        tx_st30_on_connect, tx_on_disconnect, tx_st30_on_receive, tx_ctx);
+    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st30_on_connect,
+                       tx_on_disconnect, tx_st30_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop,
+                         tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -1510,10 +1529,10 @@ int tx_st30_shm_init(tx_st30_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     return 0;
 }
 
-int rx_st30_shm_init(rx_st30_session_context_t* rx_ctx, memif_ops_t* memif_ops)
+int rx_st30_shm_init(rx_st30_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (rx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -1525,24 +1544,26 @@ int rx_st30_shm_init(rx_st30_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_rx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_rx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_rx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(rx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(rx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(rx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(rx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(rx_ctx->memif_socket_args.path) - 1);
+            sizeof(rx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -1567,20 +1588,21 @@ int rx_st30_shm_init(rx_st30_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->pkt_len;
     rx_ctx->memif_conn_args.log2_ring_size = 4;
-    memcpy((char*)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(rx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     INFO("Create memif interface.");
-    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args,
-        rx_st30_on_connect, rx_on_disconnect, rx_on_receive, rx_ctx);
+    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args, rx_st30_on_connect,
+                       rx_on_disconnect, rx_on_receive, rx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop,
+                         rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -1589,11 +1611,11 @@ int rx_st30_shm_init(rx_st30_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     return 0;
 }
 
-int tx_st40_shm_init(tx_st40_session_context_t* tx_ctx, memif_ops_t* memif_ops)
+int tx_st40_shm_init(tx_st40_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
     const uint16_t FRAME_COUNT = 4;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (tx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -1605,24 +1627,26 @@ int tx_st40_shm_init(tx_st40_session_context_t* tx_ctx, memif_ops_t* memif_ops)
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_tx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_tx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_tx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(tx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(tx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(tx_ctx->memif_socket_args.path) - 1);
+            sizeof(tx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && tx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -1647,17 +1671,17 @@ int tx_st40_shm_init(tx_st40_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->pkt_len;
     tx_ctx->memif_conn_args.log2_ring_size = 2;
-    memcpy((char*)tx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(tx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)tx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(tx_ctx->memif_conn_args.interface_name));
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
+    tx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
     tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
-    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,
-        tx_st40_on_connect, tx_on_disconnect, tx_st40_on_receive, tx_ctx);
+    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st40_on_connect,
+                       tx_on_disconnect, tx_st40_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         free(tx_ctx->shm_bufs);
@@ -1665,7 +1689,8 @@ int tx_st40_shm_init(tx_st40_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop,
+                         tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         free(tx_ctx->shm_bufs);
@@ -1675,10 +1700,10 @@ int tx_st40_shm_init(tx_st40_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     return 0;
 }
 
-int rx_st40_shm_init(rx_st40_session_context_t* rx_ctx, memif_ops_t* memif_ops)
+int rx_st40_shm_init(rx_st40_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    memif_ops_t default_memif_ops = { 0 };
+    memif_ops_t default_memif_ops = {0};
 
     if (rx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -1690,24 +1715,26 @@ int rx_st40_shm_init(rx_st40_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 
     if (memif_ops == NULL) {
         strncpy(default_memif_ops.app_name, "mcm_rx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_rx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strncpy(default_memif_ops.interface_name, "mcm_rx",
+                sizeof(default_memif_ops.interface_name));
+        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock",
+                sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
     strncpy(rx_ctx->memif_socket_args.app_name, memif_ops->app_name,
-        sizeof(rx_ctx->memif_socket_args.app_name) - 1);
+            sizeof(rx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
     strncpy(rx_ctx->memif_socket_args.path, memif_ops->socket_path,
-        sizeof(rx_ctx->memif_socket_args.path) - 1);
+            sizeof(rx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
+        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             ret = mkdir("/run/mcm", 0666);
             if (ret != 0) {
@@ -1732,20 +1759,21 @@ int rx_st40_shm_init(rx_st40_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->pkt_len;
     rx_ctx->memif_conn_args.log2_ring_size = 2;
-    memcpy((char*)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
-        sizeof(rx_ctx->memif_conn_args.interface_name));
+    memcpy((char *)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
+           sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     INFO("Create memif interface.");
-    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args,
-        rx_st40_on_connect, rx_on_disconnect, rx_on_receive, rx_ctx);
+    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args, rx_st40_on_connect,
+                       rx_on_disconnect, rx_on_receive, rx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop,
+                         rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -1755,12 +1783,13 @@ int rx_st40_shm_init(rx_st40_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 }
 
 /* Create new RX session */
-rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops)
+rx_session_context_t *mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops *opts,
+                                                  memif_ops_t *memif_ops)
 {
     int ret = 0;
     static int idx = 0;
     int fb_cnt = 4;
-    rx_session_context_t* rx_ctx = NULL;
+    rx_session_context_t *rx_ctx = NULL;
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -1779,7 +1808,7 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
     st_pthread_mutex_init(&rx_ctx->wake_mutex, NULL);
     st_pthread_cond_init(&rx_ctx->wake_cond, NULL);
 
-    struct st20p_rx_ops ops_rx = { 0 };
+    struct st20p_rx_ops ops_rx = {0};
     if (opts) {
         mtl_memcpy(&ops_rx, opts, sizeof(struct st20p_rx_ops));
     }
@@ -1812,8 +1841,8 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
 #if defined(ZERO_COPY)
     bool equal = st_frame_fmt_equal_transport(ops_rx.output_fmt, ops_rx.transport_fmt);
     INFO("st_frame_fmt_equal_transport: %s", equal ? "true" : "false");
-    if(equal) {
-        rx_ctx->ext_frames = (struct st20_ext_frame*)malloc(sizeof(*rx_ctx->ext_frames) * fb_cnt);
+    if (equal) {
+        rx_ctx->ext_frames = (struct st20_ext_frame *)malloc(sizeof(*rx_ctx->ext_frames) * fb_cnt);
         // TODO: Move allocation from query_ext_frame here.
         // for (int i = 0; i < fb_cnt; i++) {
         //     rx_ctx->ext_frames[i].buf_addr = rx_ctx->frames_begin_addr + i * rx_ctx->frame_size;
@@ -1826,7 +1855,8 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
         ops_rx.query_ext_frame = rx_st20p_query_ext_frame;
         ops_rx.flags |= ST20P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
     } else {
-        ERROR("st_frame_fmt_equal_transport: %s. Currently not supported.", equal ? "true" : "false");
+        ERROR("st_frame_fmt_equal_transport: %s. Currently not supported.",
+              equal ? "true" : "false");
         return NULL;
     }
 #endif
@@ -1862,12 +1892,14 @@ rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct 
 }
 
 /* RX: Create ST22P session */
-rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, struct st22p_rx_ops* opts, memif_ops_t* memif_ops)
+rx_st22p_session_context_t *mtl_st22p_rx_session_create(mtl_handle dev_handle,
+                                                        struct st22p_rx_ops *opts,
+                                                        memif_ops_t *memif_ops)
 {
     int ret = 0;
     static int idx = 0;
-    rx_st22p_session_context_t* rx_ctx = NULL;
-    struct st22p_rx_ops ops_rx = { 0 };
+    rx_st22p_session_context_t *rx_ctx = NULL;
+    struct st22p_rx_ops ops_rx = {0};
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -1948,10 +1980,11 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
 }
 
 /* TX: Create ST30 session */
-tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, struct st30_tx_ops* opts, memif_ops_t* memif_ops)
+tx_st30_session_context_t *
+mtl_st30_tx_session_create(mtl_handle dev_handle, struct st30_tx_ops *opts, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    tx_st30_session_context_t* tx_ctx = NULL;
+    tx_st30_session_context_t *tx_ctx = NULL;
     struct st30_tx_ops ops_tx = {};
     static int idx = 0;
     const int fb_cnt = 4;
@@ -1968,7 +2001,8 @@ tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, str
     }
 
     tx_ctx->framebuff_cnt = 2;
-    tx_ctx->framebuffs = (struct st_tx_frame*)calloc(1, sizeof(*tx_ctx->framebuffs) * tx_ctx->framebuff_cnt);
+    tx_ctx->framebuffs =
+        (struct st_tx_frame *)calloc(1, sizeof(*tx_ctx->framebuffs) * tx_ctx->framebuff_cnt);
     if (!tx_ctx->framebuffs) {
         free(tx_ctx);
         return NULL;
@@ -1997,7 +2031,8 @@ tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, str
     // st_tx_st30_debug_dump(ops_tx);
 
     tx_ctx->sampling = ops_tx.sampling;
-    tx_ctx->pkt_len = st30_get_packet_size(ops_tx.fmt, ops_tx.ptime, ops_tx.sampling, ops_tx.channel);
+    tx_ctx->pkt_len =
+        st30_get_packet_size(ops_tx.fmt, ops_tx.ptime, ops_tx.sampling, ops_tx.channel);
 
     int pkt_per_frame = 1;
 
@@ -2040,12 +2075,13 @@ tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, str
 }
 
 /* RX: Create ST30 session */
-rx_st30_session_context_t* mtl_st30_rx_session_create(mtl_handle dev_handle, struct st30_rx_ops* opts, memif_ops_t* memif_ops)
+rx_st30_session_context_t *
+mtl_st30_rx_session_create(mtl_handle dev_handle, struct st30_rx_ops *opts, memif_ops_t *memif_ops)
 {
     int ret = 0;
     static int idx = 0;
-    rx_st30_session_context_t* rx_ctx = NULL;
-    struct st30_rx_ops ops_rx = { 0 };
+    rx_st30_session_context_t *rx_ctx = NULL;
+    struct st30_rx_ops ops_rx = {0};
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -2129,10 +2165,11 @@ rx_st30_session_context_t* mtl_st30_rx_session_create(mtl_handle dev_handle, str
 }
 
 /* TX: Create ST40 session */
-tx_st40_session_context_t* mtl_st40_tx_session_create(mtl_handle dev_handle, struct st40_tx_ops* opts, memif_ops_t* memif_ops)
+tx_st40_session_context_t *
+mtl_st40_tx_session_create(mtl_handle dev_handle, struct st40_tx_ops *opts, memif_ops_t *memif_ops)
 {
     int ret = 0;
-    tx_st40_session_context_t* tx_ctx = NULL;
+    tx_st40_session_context_t *tx_ctx = NULL;
     struct st40_tx_ops ops_tx = {};
     static int idx = 0;
     const int fb_cnt = 4;
@@ -2149,7 +2186,8 @@ tx_st40_session_context_t* mtl_st40_tx_session_create(mtl_handle dev_handle, str
     }
 
     tx_ctx->framebuff_cnt = opts->framebuff_cnt;
-    tx_ctx->framebuffs = (struct st_tx_frame*)calloc(1, sizeof(*tx_ctx->framebuffs) * tx_ctx->framebuff_cnt);
+    tx_ctx->framebuffs =
+        (struct st_tx_frame *)calloc(1, sizeof(*tx_ctx->framebuffs) * tx_ctx->framebuff_cnt);
     if (!tx_ctx->framebuffs) {
         free(tx_ctx);
         return NULL;
@@ -2207,12 +2245,13 @@ tx_st40_session_context_t* mtl_st40_tx_session_create(mtl_handle dev_handle, str
 }
 
 /* RX: Create ST40 session */
-rx_st40_session_context_t* mtl_st40_rx_session_create(mtl_handle dev_handle, struct st40_rx_ops* opts, memif_ops_t* memif_ops)
+rx_st40_session_context_t *
+mtl_st40_rx_session_create(mtl_handle dev_handle, struct st40_rx_ops *opts, memif_ops_t *memif_ops)
 {
     int ret = 0;
     static int idx = 0;
-    rx_st40_session_context_t* rx_ctx = NULL;
-    struct st40_rx_ops ops_rx = { 0 };
+    rx_st40_session_context_t *rx_ctx = NULL;
+    struct st40_rx_ops ops_rx = {0};
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -2281,7 +2320,7 @@ rx_st40_session_context_t* mtl_st40_rx_session_create(mtl_handle dev_handle, str
 }
 
 /* Stop RX ST20P session */
-void mtl_st20p_rx_session_stop(rx_session_context_t* rx_ctx)
+void mtl_st20p_rx_session_stop(rx_session_context_t *rx_ctx)
 {
     if (rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2298,7 +2337,7 @@ void mtl_st20p_rx_session_stop(rx_session_context_t* rx_ctx)
 }
 
 /* Stop RX ST22P session */
-void mtl_st22p_rx_session_stop(rx_st22p_session_context_t* rx_ctx)
+void mtl_st22p_rx_session_stop(rx_st22p_session_context_t *rx_ctx)
 {
     if (rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2315,10 +2354,10 @@ void mtl_st22p_rx_session_stop(rx_st22p_session_context_t* rx_ctx)
 }
 
 /* Destroy RX ST20P session */
-void mtl_st20p_rx_session_destroy(rx_session_context_t** p_rx_ctx)
+void mtl_st20p_rx_session_destroy(rx_session_context_t **p_rx_ctx)
 {
     int ret = 0;
-    rx_session_context_t* rx_ctx = NULL;
+    rx_session_context_t *rx_ctx = NULL;
 
     if (p_rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2344,10 +2383,10 @@ void mtl_st20p_rx_session_destroy(rx_session_context_t** p_rx_ctx)
 }
 
 /* Destroy RX ST22P session */
-void mtl_st22p_rx_session_destroy(rx_st22p_session_context_t** p_rx_ctx)
+void mtl_st22p_rx_session_destroy(rx_st22p_session_context_t **p_rx_ctx)
 {
     int ret = 0;
-    rx_st22p_session_context_t* rx_ctx = NULL;
+    rx_st22p_session_context_t *rx_ctx = NULL;
 
     if (p_rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2384,14 +2423,15 @@ void mtl_deinit(mtl_handle dev_handle)
 }
 
 /* TX: Create ST20P session */
-tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops)
+tx_session_context_t *mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops *opts,
+                                                  memif_ops_t *memif_ops)
 {
     static int idx = 0;
 
     /* dst ip address for tx video session */
     const int fb_cnt = 4;
 
-    tx_session_context_t* tx_ctx = NULL;
+    tx_session_context_t *tx_ctx = NULL;
     int ret = 0;
 
     if (dev_handle == NULL) {
@@ -2411,10 +2451,10 @@ tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct 
     st_pthread_mutex_init(&tx_ctx->wake_mutex, NULL);
     st_pthread_cond_init(&tx_ctx->wake_cond, NULL);
 
-    struct st20p_tx_ops ops_tx = { 0 };
+    struct st20p_tx_ops ops_tx = {0};
     if (opts == NULL) { /* set parameters to default */
         const char TX_ST20_PORT_BDF[] = "0000:31:00.0";
-        static uint8_t g_tx_st20_dst_ip[MTL_IP_ADDR_LEN] = { 192, 168, 96, 2 };
+        static uint8_t g_tx_st20_dst_ip[MTL_IP_ADDR_LEN] = {192, 168, 96, 2};
         const uint16_t TX_ST20_UDP_PORT = 20000 + idx;
         const uint8_t TX_ST20_PAYLOAD_TYPE = 112;
 
@@ -2475,15 +2515,17 @@ tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct 
 }
 
 /* TX: Create ST22P session */
-tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, struct st22p_tx_ops* opts, memif_ops_t* memif_ops)
+tx_st22p_session_context_t *mtl_st22p_tx_session_create(mtl_handle dev_handle,
+                                                        struct st22p_tx_ops *opts,
+                                                        memif_ops_t *memif_ops)
 {
-    struct st22p_tx_ops ops_tx = { 0 };
+    struct st22p_tx_ops ops_tx = {0};
     static int idx = 0;
 
     /* dst ip address for tx video session */
     const int fb_cnt = 4;
 
-    tx_st22p_session_context_t* tx_ctx = NULL;
+    tx_st22p_session_context_t *tx_ctx = NULL;
     int ret = 0;
 
     if (dev_handle == NULL) {
@@ -2545,9 +2587,9 @@ tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, s
 }
 
 /* TX: Destroy ST20P session */
-void mtl_st20p_tx_session_destroy(tx_session_context_t** p_tx_ctx)
+void mtl_st20p_tx_session_destroy(tx_session_context_t **p_tx_ctx)
 {
-    tx_session_context_t* tx_ctx = NULL;
+    tx_session_context_t *tx_ctx = NULL;
 
     if (p_tx_ctx == NULL) {
         printf("%s:%d Invalid parameter\n", __func__, __LINE__);
@@ -2577,9 +2619,9 @@ void mtl_st20p_tx_session_destroy(tx_session_context_t** p_tx_ctx)
 }
 
 /* TX: Destroy ST22P session */
-void mtl_st22p_tx_session_destroy(tx_st22p_session_context_t** p_tx_ctx)
+void mtl_st22p_tx_session_destroy(tx_st22p_session_context_t **p_tx_ctx)
 {
-    tx_st22p_session_context_t* tx_ctx = NULL;
+    tx_st22p_session_context_t *tx_ctx = NULL;
 
     if (p_tx_ctx == NULL) {
         printf("%s:%d Invalid parameter\n", __func__, __LINE__);
@@ -2609,7 +2651,7 @@ void mtl_st22p_tx_session_destroy(tx_st22p_session_context_t** p_tx_ctx)
 }
 
 /* TX: Stop ST20P session */
-void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx)
+void mtl_st20p_tx_session_stop(tx_session_context_t *tx_ctx)
 {
     if (tx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2630,7 +2672,7 @@ void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx)
 }
 
 /* TX: Stop ST22P session */
-void mtl_st22p_tx_session_stop(tx_st22p_session_context_t* tx_ctx)
+void mtl_st22p_tx_session_stop(tx_st22p_session_context_t *tx_ctx)
 {
     if (tx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2651,7 +2693,7 @@ void mtl_st22p_tx_session_stop(tx_st22p_session_context_t* tx_ctx)
 }
 
 /* TX: Stop ST30 session */
-void mtl_st30_tx_session_stop(tx_st30_session_context_t* pctx)
+void mtl_st30_tx_session_stop(tx_st30_session_context_t *pctx)
 {
     if (pctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2672,7 +2714,7 @@ void mtl_st30_tx_session_stop(tx_st30_session_context_t* pctx)
 }
 
 /* RX: Stop ST30 session */
-void mtl_st30_rx_session_stop(rx_st30_session_context_t* pctx)
+void mtl_st30_rx_session_stop(rx_st30_session_context_t *pctx)
 {
     if (pctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2689,9 +2731,9 @@ void mtl_st30_rx_session_stop(rx_st30_session_context_t* pctx)
 }
 
 /* TX: Destroy ST30 session */
-void mtl_st30_tx_session_destroy(tx_st30_session_context_t** ppctx)
+void mtl_st30_tx_session_destroy(tx_st30_session_context_t **ppctx)
 {
-    tx_st30_session_context_t* pctx = NULL;
+    tx_st30_session_context_t *pctx = NULL;
 
     if (ppctx == NULL) {
         printf("%s:%d Invalid parameter\n", __func__, __LINE__);
@@ -2721,10 +2763,10 @@ void mtl_st30_tx_session_destroy(tx_st30_session_context_t** ppctx)
 }
 
 /* RX: Destroy ST30 session */
-void mtl_st30_rx_session_destroy(rx_st30_session_context_t** ppctx)
+void mtl_st30_rx_session_destroy(rx_st30_session_context_t **ppctx)
 {
     int ret = 0;
-    rx_st30_session_context_t* pctx = NULL;
+    rx_st30_session_context_t *pctx = NULL;
 
     if (ppctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2750,7 +2792,7 @@ void mtl_st30_rx_session_destroy(rx_st30_session_context_t** ppctx)
 }
 
 /* TX: Stop ST40 session */
-void mtl_st40_tx_session_stop(tx_st40_session_context_t* pctx)
+void mtl_st40_tx_session_stop(tx_st40_session_context_t *pctx)
 {
     if (pctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2771,7 +2813,7 @@ void mtl_st40_tx_session_stop(tx_st40_session_context_t* pctx)
 }
 
 /* RX: Stop ST40 session */
-void mtl_st40_rx_session_stop(rx_st40_session_context_t* pctx)
+void mtl_st40_rx_session_stop(rx_st40_session_context_t *pctx)
 {
     if (pctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2788,9 +2830,9 @@ void mtl_st40_rx_session_stop(rx_st40_session_context_t* pctx)
 }
 
 /* TX: Destroy ST40 session */
-void mtl_st40_tx_session_destroy(tx_st40_session_context_t** ppctx)
+void mtl_st40_tx_session_destroy(tx_st40_session_context_t **ppctx)
 {
-    tx_st40_session_context_t* pctx = NULL;
+    tx_st40_session_context_t *pctx = NULL;
 
     if (ppctx == NULL) {
         printf("%s:%d Invalid parameter\n", __func__, __LINE__);
@@ -2820,10 +2862,10 @@ void mtl_st40_tx_session_destroy(tx_st40_session_context_t** ppctx)
 }
 
 /* RX: Destroy ST40 session */
-void mtl_st40_rx_session_destroy(rx_st40_session_context_t** ppctx)
+void mtl_st40_rx_session_destroy(rx_st40_session_context_t **ppctx)
 {
     int ret = 0;
-    rx_st40_session_context_t* pctx = NULL;
+    rx_st40_session_context_t *pctx = NULL;
 
     if (ppctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2848,7 +2890,7 @@ void mtl_st40_rx_session_destroy(rx_st40_session_context_t** ppctx)
     free(pctx);
 }
 
-int rx_udp_h264_shm_deinit(rx_udp_h264_session_context_t* rx_ctx)
+int rx_udp_h264_shm_deinit(rx_udp_h264_session_context_t *rx_ctx)
 {
     if (rx_ctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
@@ -2870,7 +2912,7 @@ int rx_udp_h264_shm_deinit(rx_udp_h264_session_context_t* rx_ctx)
 }
 
 /* Stop RX UDP H264 session */
-void mtl_rtsp_rx_session_stop(rx_udp_h264_session_context_t* rx_ctx)
+void mtl_rtsp_rx_session_stop(rx_udp_h264_session_context_t *rx_ctx)
 {
     int ret;
     if (rx_ctx == NULL) {
@@ -2893,10 +2935,10 @@ void mtl_rtsp_rx_session_stop(rx_udp_h264_session_context_t* rx_ctx)
 }
 
 /* Destroy RX UDP h264 session */
-void mtl_rtsp_rx_session_destroy(rx_udp_h264_session_context_t** p_rx_ctx)
+void mtl_rtsp_rx_session_destroy(rx_udp_h264_session_context_t **p_rx_ctx)
 {
     int ret = 0;
-    rx_udp_h264_session_context_t* rx_ctx = NULL;
+    rx_udp_h264_session_context_t *rx_ctx = NULL;
 
     if (p_rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);

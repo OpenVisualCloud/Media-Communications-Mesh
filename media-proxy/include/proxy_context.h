@@ -1,7 +1,7 @@
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  * SPDX-License-Identifier: BSD-3-Clause
-*/
+ */
 
 #ifndef __PROXY_CONTEXT_H
 #define __PROXY_CONTEXT_H
@@ -34,8 +34,9 @@ using controller::TxControlRequest;
 
 #pragma once
 
-class ProxyContext {
-public:
+class ProxyContext
+{
+  public:
     std::string mRpcCtrlAddr;
     int mRpcCtrlPort;
 
@@ -45,9 +46,9 @@ public:
     std::string mVideoFormat;
 
     // direction mDir;
-    std::vector<mtl_session_context_t*> mStCtx;
-    std::vector<rx_session_context_t*> mRxCtx;
-    std::vector<tx_session_context_t*> mTxCtx;
+    std::vector<mtl_session_context_t *> mStCtx;
+    std::vector<rx_session_context_t *> mRxCtx;
+    std::vector<tx_session_context_t *> mTxCtx;
     mtl_handle mDevHandle = NULL;
 
     /*udp pool*/
@@ -77,38 +78,38 @@ public:
     std::string getTCPListenAddress(void);
     int getTCPListenPort(void);
 
-    void ParseStInitParam(const TxControlRequest* request, struct mtl_init_params* init_param);
-    void ParseStInitParam(const RxControlRequest* request, struct mtl_init_params* init_param);
-    void ParseStInitParam(const mcm_conn_param* request, struct mtl_init_params* init_param);
+    void ParseStInitParam(const TxControlRequest *request, struct mtl_init_params *init_param);
+    void ParseStInitParam(const RxControlRequest *request, struct mtl_init_params *init_param);
+    void ParseStInitParam(const mcm_conn_param *request, struct mtl_init_params *init_param);
 
-    void ParseMemIFParam(const TxControlRequest* request, memif_ops_t& memif_ops);
-    void ParseMemIFParam(const RxControlRequest* request, memif_ops_t& memif_ops);
-    void ParseMemIFParam(const mcm_conn_param* request, memif_ops_t& memif_ops);
+    void ParseMemIFParam(const TxControlRequest *request, memif_ops_t &memif_ops);
+    void ParseMemIFParam(const RxControlRequest *request, memif_ops_t &memif_ops);
+    void ParseMemIFParam(const mcm_conn_param *request, memif_ops_t &memif_ops);
 
-    void ParseSt20TxOps(const TxControlRequest* request, struct st20p_tx_ops* opts);
-    void ParseSt20RxOps(const RxControlRequest* request, struct st20p_rx_ops* opts);
-    void ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx_ops* opts);
-    void ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx_ops* opts);
-    void ParseSt22TxOps(const mcm_conn_param* request, struct st22p_tx_ops* opts);
-    void ParseSt22RxOps(const mcm_conn_param* request, struct st22p_rx_ops* opts);
-    void ParseSt30TxOps(const mcm_conn_param* request, struct st30_tx_ops* opts);
-    void ParseSt30RxOps(const mcm_conn_param* request, struct st30_rx_ops* opts);
-    void ParseSt40TxOps(const mcm_conn_param* request, struct st40_tx_ops* opts);
-    void ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_ops* opts);
-    int TxStart(const TxControlRequest* request);
-    int RxStart(const RxControlRequest* request);
-    int TxStart(const mcm_conn_param* request);
-    int RxStart(const mcm_conn_param* request);
+    void ParseSt20TxOps(const TxControlRequest *request, struct st20p_tx_ops *opts);
+    void ParseSt20RxOps(const RxControlRequest *request, struct st20p_rx_ops *opts);
+    void ParseSt20TxOps(const mcm_conn_param *request, struct st20p_tx_ops *opts);
+    void ParseSt20RxOps(const mcm_conn_param *request, struct st20p_rx_ops *opts);
+    void ParseSt22TxOps(const mcm_conn_param *request, struct st22p_tx_ops *opts);
+    void ParseSt22RxOps(const mcm_conn_param *request, struct st22p_rx_ops *opts);
+    void ParseSt30TxOps(const mcm_conn_param *request, struct st30_tx_ops *opts);
+    void ParseSt30RxOps(const mcm_conn_param *request, struct st30_rx_ops *opts);
+    void ParseSt40TxOps(const mcm_conn_param *request, struct st40_tx_ops *opts);
+    void ParseSt40RxOps(const mcm_conn_param *request, struct st40_rx_ops *opts);
+    int TxStart(const TxControlRequest *request);
+    int RxStart(const RxControlRequest *request);
+    int TxStart(const mcm_conn_param *request);
+    int RxStart(const mcm_conn_param *request);
     void TxStop(const int32_t session_id);
     void RxStop(const int32_t session_id);
     void Stop();
 
-private:
+  private:
     std::atomic<std::uint32_t> mSessionCount;
     pthread_mutex_t sessions_count_mutex_lock;
 
-    ProxyContext(const ProxyContext&) = delete;
-    ProxyContext& operator=(const ProxyContext&) = delete;
+    ProxyContext(const ProxyContext &) = delete;
+    ProxyContext &operator=(const ProxyContext &) = delete;
     uint32_t incrementMSessionCount(bool postIncrement);
     st_frame_fmt getStFrameFmt(video_pixel_format fmt);
 };

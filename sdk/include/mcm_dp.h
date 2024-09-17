@@ -27,8 +27,8 @@ extern "C" {
 // Media proxy magic_word and version
 // 4 letters can be casted to numerical value in code:
 #ifndef HEADER_MAGIC_WORD
-    #define HEADER_MAGIC_WORD "mcm"
-    #define HEADER_VERSION 0x10
+#define HEADER_MAGIC_WORD "mcm"
+#define HEADER_VERSION 0x10
 #endif
 
 typedef struct _msg_header {
@@ -44,7 +44,7 @@ typedef struct _ctl_cmd {
 typedef struct _mcm_proxy_ctrl_msg {
     msg_header header;
     ctl_cmd command;
-    void* data;
+    void *data;
 } mcm_proxy_ctl_msg;
 
 typedef enum {
@@ -89,11 +89,11 @@ typedef struct {
 
 typedef struct {
     struct {
-        uint16_t seq_num; /* Sequence number */
+        uint16_t seq_num;   /* Sequence number */
         uint32_t timestamp; /* Timestamp */
-    } metadata; /**< filled by sender side */
-    size_t len; /**< size of data filled in "data" */
-    void* data;
+    } metadata;             /**< filled by sender side */
+    size_t len;             /**< size of data filled in "data" */
+    void *data;
 } mcm_buffer;
 
 typedef enum {
@@ -111,30 +111,30 @@ typedef enum {
 
 typedef enum {
     AUDIO_FMT_PCM8 = 0, /**< 8 bits per channel */
-    AUDIO_FMT_PCM16, /**< 16 bits per channel */
-    AUDIO_FMT_PCM24, /**< 24 bits per channel */
-    AUDIO_FMT_AM824, /**< 32 bits per channel */
-    AUDIO_FMT_MAX, /**< max value of this enum */
+    AUDIO_FMT_PCM16,    /**< 16 bits per channel */
+    AUDIO_FMT_PCM24,    /**< 24 bits per channel */
+    AUDIO_FMT_AM824,    /**< 32 bits per channel */
+    AUDIO_FMT_MAX,      /**< max value of this enum */
 } mcm_audio_format;
 
 typedef enum {
     AUDIO_SAMPLING_48K = 0, /**< sampling rate of 48kHz */
-    AUDIO_SAMPLING_96K, /**< sampling rate of 96kHz */
-    AUDIO_SAMPLING_44K, /**< sampling rate of 44.1kHz */
-    AUDIO_SAMPLING_MAX, /**< max value of this enum */
+    AUDIO_SAMPLING_96K,     /**< sampling rate of 96kHz */
+    AUDIO_SAMPLING_44K,     /**< sampling rate of 44.1kHz */
+    AUDIO_SAMPLING_MAX,     /**< max value of this enum */
 } mcm_audio_sampling;
 
 typedef enum {
     AUDIO_PTIME_1MS = 0, /**< packet time of 1ms */
-    AUDIO_PTIME_125US, /**< packet time of 125us */
-    AUDIO_PTIME_250US, /**< packet time of 250us */
-    AUDIO_PTIME_333US, /**< packet time of 333us */
-    AUDIO_PTIME_4MS, /**< packet time of 4ms */
-    AUDIO_PTIME_80US, /**< packet time of 80us */
-    AUDIO_PTIME_1_09MS, /**< packet time of 1.09ms, only for 44.1kHz sample */
-    AUDIO_PTIME_0_14MS, /**< packet time of 0.14ms, only for 44.1kHz sample */
-    AUDIO_PTIME_0_09MS, /**< packet time of 0.09ms, only for 44.1kHz sample */
-    AUDIO_PTIME_MAX, /**< max value of this enum */
+    AUDIO_PTIME_125US,   /**< packet time of 125us */
+    AUDIO_PTIME_250US,   /**< packet time of 250us */
+    AUDIO_PTIME_333US,   /**< packet time of 333us */
+    AUDIO_PTIME_4MS,     /**< packet time of 4ms */
+    AUDIO_PTIME_80US,    /**< packet time of 80us */
+    AUDIO_PTIME_1_09MS,  /**< packet time of 1.09ms, only for 44.1kHz sample */
+    AUDIO_PTIME_0_14MS,  /**< packet time of 0.14ms, only for 44.1kHz sample */
+    AUDIO_PTIME_0_09MS,  /**< packet time of 0.09ms, only for 44.1kHz sample */
+    AUDIO_PTIME_MAX,     /**< max value of this enum */
 } mcm_audio_ptime;
 
 typedef enum {
@@ -148,8 +148,8 @@ typedef enum {
 
 typedef enum {
     AUDIO_TYPE_FRAME_LEVEL = 0, /**< app interface lib based on frame level */
-    AUDIO_TYPE_RTP_LEVEL, /**< app interface lib based on RTP level */
-    AUDIO_TYPE_MAX, /**< max value of this enum */
+    AUDIO_TYPE_RTP_LEVEL,       /**< app interface lib based on RTP level */
+    AUDIO_TYPE_MAX,             /**< max value of this enum */
 } mcm_audio_type;
 
 /**
@@ -157,8 +157,8 @@ typedef enum {
  */
 typedef enum {
     ANC_TYPE_FRAME_LEVEL = 0, /**< app interface lib based on frame level */
-    ANC_TYPE_RTP_LEVEL, /**< app interface lib based on RTP level */
-    ANC_TYPE_MAX, /**< max value of this enum */
+    ANC_TYPE_RTP_LEVEL,       /**< app interface lib based on RTP level */
+    ANC_TYPE_MAX,             /**< max value of this enum */
 } mcm_anc_type;
 
 typedef enum {
@@ -240,7 +240,7 @@ typedef struct _mcm_conn_context {
     int proxy_sockfd;
     uint32_t session_id;
     proto_type proto;
-    void* priv;
+    void *priv;
 
     /* video resolution */
     uint32_t width;
@@ -255,8 +255,8 @@ typedef struct _mcm_conn_context {
     int pkt_len;
 
     /* function */
-    mcm_buffer* (*dequeue_buffer)(mcm_conn_context* self, int timeout, int* error_code);
-    int (*enqueue_buffer)(mcm_conn_context* self, mcm_buffer* buf);
+    mcm_buffer *(*dequeue_buffer)(mcm_conn_context *self, int timeout, int *error_code);
+    int (*enqueue_buffer)(mcm_conn_context *self, mcm_buffer *buf);
 } mcm_conn_context;
 
 /**
@@ -264,13 +264,13 @@ typedef struct _mcm_conn_context {
  * @param param Parameters for the connect session.
  * \return The context handler of created connect session.
  */
-mcm_conn_context* mcm_create_connection(mcm_conn_param* param);
+mcm_conn_context *mcm_create_connection(mcm_conn_param *param);
 
 /**
  * \brief Destroy MCM DP connection.
  * @param pctx The context handler of connection.
  */
-void mcm_destroy_connection(mcm_conn_context* pctx);
+void mcm_destroy_connection(mcm_conn_context *pctx);
 
 /**
  * Get buffer from buffer queue.
@@ -287,7 +287,7 @@ void mcm_destroy_connection(mcm_conn_context* pctx);
  * @param error_code Error code if failed, can be set to NULL if doesn't care.
  * \return Pointer to the mcm_buffer, return NULL if failed.
  */
-mcm_buffer* mcm_dequeue_buffer(mcm_conn_context* pctx, int timeout, int* error_code);
+mcm_buffer *mcm_dequeue_buffer(mcm_conn_context *pctx, int timeout, int *error_code);
 
 /**
  * Put buffer to buffer queue.
@@ -300,7 +300,7 @@ mcm_buffer* mcm_dequeue_buffer(mcm_conn_context* pctx, int timeout, int* error_c
  * @param buf Pinter to the mcm_buffer.
  * \return Error code if failed, return "0" if success.
  */
-int mcm_enqueue_buffer(mcm_conn_context* pctx, mcm_buffer* buf);
+int mcm_enqueue_buffer(mcm_conn_context *pctx, mcm_buffer *buf);
 
 #ifdef __cplusplus
 }

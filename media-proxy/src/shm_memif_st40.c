@@ -9,16 +9,16 @@
 #include "mtl.h"
 #include "shm_memif.h"
 
-int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
+int rx_st40_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
-    rx_st40_session_context_t* rx_ctx = (rx_st40_session_context_t*)priv_data;
+    rx_st40_session_context_t *rx_ctx = (rx_st40_session_context_t *)priv_data;
     int err = 0;
 
     INFO("RX memif connected!");
 
-    memif_details_t md = { 0 };
+    memif_details_t md = {0};
     ssize_t buflen = 2048;
-    char* buf = (char*)calloc(1, buflen);
+    char *buf = (char *)calloc(1, buflen);
 
     err = memif_get_details(conn, &md, buf, buflen);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -32,7 +32,7 @@ int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
     free(buf);
 
     /* RX buffers */
-    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    rx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
     rx_ctx->shm_buf_num = rx_ctx->fb_count;
 
     err = memif_refill_queue(conn, 0, -1, 0);
@@ -48,7 +48,7 @@ int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-static void tx_st40_build_frame(memif_buffer_t shm_bufs, struct st40_frame* dst)
+static void tx_st40_build_frame(memif_buffer_t shm_bufs, struct st40_frame *dst)
 {
     dst->meta[0].c = 0;
     dst->meta[0].line_number = 10;
@@ -64,9 +64,9 @@ static void tx_st40_build_frame(memif_buffer_t shm_bufs, struct st40_frame* dst)
     dst->data_size = shm_bufs.len;
 }
 
-int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
+int tx_st40_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
-    tx_st40_session_context_t* tx_ctx = (tx_st40_session_context_t*)priv_data;
+    tx_st40_session_context_t *tx_ctx = (tx_st40_session_context_t *)priv_data;
     int err = 0;
 
     INFO("TX memif connected!");
@@ -77,9 +77,9 @@ int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
         return err;
     }
 
-    memif_details_t md = { 0 };
+    memif_details_t md = {0};
     ssize_t buflen = 2048;
-    char* buf = (char*)calloc(1, buflen);
+    char *buf = (char *)calloc(1, buflen);
 
     err = memif_get_details(conn, &md, buf, buflen);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -99,15 +99,15 @@ int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-int tx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
+int tx_st40_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
     int err = 0;
-    tx_st40_session_context_t* tx_ctx = (tx_st40_session_context_t*)priv_data;
-    memif_buffer_t shm_bufs = { 0 };
+    tx_st40_session_context_t *tx_ctx = (tx_st40_session_context_t *)priv_data;
+    memif_buffer_t shm_bufs = {0};
     uint16_t buf_num = 0;
 
     uint16_t producer_idx;
-    struct st_tx_frame* framebuff;
+    struct st_tx_frame *framebuff;
 
     if (tx_ctx->stop) {
         INFO("TX session already stopped.");
@@ -136,7 +136,7 @@ int tx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
         break;
     }
 
-    struct st40_frame* frame_addr = st40_tx_get_framebuffer(tx_ctx->handle, producer_idx);
+    struct st40_frame *frame_addr = st40_tx_get_framebuffer(tx_ctx->handle, producer_idx);
     // void* mbuf;
     // void* usrptr = NULL;
     // uint16_t mbuf_len = 0;

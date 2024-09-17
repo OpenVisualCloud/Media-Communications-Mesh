@@ -13,9 +13,9 @@
 #include "udp_impl.h"
 #include "logger.h"
 
-udp_context* mcm_create_connection_udp(mcm_conn_param* param)
+udp_context *mcm_create_connection_udp(mcm_conn_param *param)
 {
-    udp_context* udp_ctx = NULL;
+    udp_context *udp_ctx = NULL;
     struct sockaddr_in tx_addr = {}, rx_addr = {};
     int sockfd = 0;
 
@@ -32,7 +32,7 @@ udp_context* mcm_create_connection_udp(mcm_conn_param* param)
         rx_addr.sin_port = htons(atoi(param->local_addr.port));
 
         /* Bind socket with RX address. */
-        if (bind(sockfd, (const struct sockaddr*)&rx_addr, sizeof(rx_addr)) < 0) {
+        if (bind(sockfd, (const struct sockaddr *)&rx_addr, sizeof(rx_addr)) < 0) {
             log_error("Fail to bind socket for RX.");
             close(sockfd);
             return NULL;
@@ -64,7 +64,7 @@ udp_context* mcm_create_connection_udp(mcm_conn_param* param)
     return udp_ctx;
 }
 
-void mcm_destroy_connection_udp(udp_context* pctx)
+void mcm_destroy_connection_udp(udp_context *pctx)
 {
     if (pctx == NULL) {
         return;
@@ -76,9 +76,9 @@ void mcm_destroy_connection_udp(udp_context* pctx)
     return;
 }
 
-mcm_buffer* mcm_alloc_buffer_udp(void* conn_ctx, size_t len)
+mcm_buffer *mcm_alloc_buffer_udp(void *conn_ctx, size_t len)
 {
-    mcm_buffer* pbuf = NULL;
+    mcm_buffer *pbuf = NULL;
 
     pbuf = calloc(1, sizeof(mcm_buffer));
     if (pbuf == NULL) {
@@ -95,9 +95,9 @@ mcm_buffer* mcm_alloc_buffer_udp(void* conn_ctx, size_t len)
     return pbuf;
 }
 
-void mcm_free_buffer_udp(void* conn_ctx, mcm_buffer** buf)
+void mcm_free_buffer_udp(void *conn_ctx, mcm_buffer **buf)
 {
-    mcm_buffer* pbuf = NULL;
+    mcm_buffer *pbuf = NULL;
 
     if (buf == NULL || *buf == NULL) {
         return;
@@ -112,11 +112,11 @@ void mcm_free_buffer_udp(void* conn_ctx, mcm_buffer** buf)
     return;
 }
 
-int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
+int mcm_send_buffer_udp(void *conn_ctx, mcm_buffer *buf)
 {
     int ret = 0;
-    udp_context* ctx = NULL;
-    char* data = NULL; // Changed to char* for pointer arithmetic
+    udp_context *ctx = NULL;
+    char *data = NULL; // Changed to char* for pointer arithmetic
     ssize_t n = 0;
     size_t len = 0;
 
@@ -125,7 +125,7 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
         return -1;
     }
 
-    ctx = (udp_context*)conn_ctx;
+    ctx = (udp_context *)conn_ctx;
 
     data = buf->data;
     len = (size_t)buf->len;
@@ -136,7 +136,7 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
     while (len > 0) {
         size_t send_length = len > SIZE_MAX ? SIZE_MAX : len;
         n = sendto(ctx->sockfd, data, send_length, MSG_CONFIRM,
-            (const struct sockaddr*)&ctx->rx_addr, sizeof(ctx->rx_addr));
+                   (const struct sockaddr *)&ctx->rx_addr, sizeof(ctx->rx_addr));
         if (n < 0 || len < (size_t)n) {
             log_error("Fail to send out data.");
             ret = -1;
@@ -148,10 +148,10 @@ int mcm_send_buffer_udp(void* conn_ctx, mcm_buffer* buf)
     return ret;
 }
 
-int mcm_recv_buffer_udp(void* conn_ctx, mcm_buffer* buf)
+int mcm_recv_buffer_udp(void *conn_ctx, mcm_buffer *buf)
 {
     int ret = 0;
-    udp_context* ctx = NULL;
+    udp_context *ctx = NULL;
     socklen_t addrlen = 0;
 
     if (conn_ctx == NULL || buf == NULL) {
@@ -159,12 +159,12 @@ int mcm_recv_buffer_udp(void* conn_ctx, mcm_buffer* buf)
         return -1;
     }
 
-    ctx = (udp_context*)conn_ctx;
+    ctx = (udp_context *)conn_ctx;
 
     addrlen = sizeof(ctx->tx_addr);
 
-    ret = recvfrom(ctx->sockfd, buf->data, buf->len, MSG_WAITALL,
-        (struct sockaddr*)&ctx->tx_addr, &addrlen);
+    ret = recvfrom(ctx->sockfd, buf->data, buf->len, MSG_WAITALL, (struct sockaddr *)&ctx->tx_addr,
+                   &addrlen);
     if (ret == -1) {
         log_error("Fail to send out data.");
     }

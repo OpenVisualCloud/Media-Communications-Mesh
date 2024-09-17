@@ -9,16 +9,16 @@
 #include "mtl.h"
 #include "shm_memif.h"
 
-int rx_udp_h264_on_connect(memif_conn_handle_t conn, void* priv_data)
+int rx_udp_h264_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
-    rx_udp_h264_session_context_t* rx_ctx = (rx_udp_h264_session_context_t*)priv_data;
+    rx_udp_h264_session_context_t *rx_ctx = (rx_udp_h264_session_context_t *)priv_data;
     int err = 0;
 
     INFO("RX memif connected!");
 
-    memif_details_t md = { 0 };
+    memif_details_t md = {0};
     ssize_t buflen = 2048;
-    char* buf = (char*)calloc(1, buflen);
+    char *buf = (char *)calloc(1, buflen);
 
     err = memif_get_details(conn, &md, buf, buflen);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -32,7 +32,7 @@ int rx_udp_h264_on_connect(memif_conn_handle_t conn, void* priv_data)
     free(buf);
 
     /* rx buffers */
-    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    rx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
     rx_ctx->shm_buf_num = rx_ctx->fb_count;
 
     err = memif_refill_queue(conn, 0, -1, 0);
