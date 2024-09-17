@@ -440,7 +440,7 @@ int main(int argc, char** argv)
 
         frame_count++;
 
-        if (param.payload_type != PAYLOAD_TYPE_ST30_AUDIO \
+        if (param.payload_type != PAYLOAD_TYPE_ST30_AUDIO
             && total_num > 0 && frame_count >= total_num) {
             break;
         }
