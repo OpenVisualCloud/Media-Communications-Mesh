@@ -10,12 +10,17 @@ BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build}"
 . "${SCRIPT_DIR}/../common.sh"
 
 pushd "${BUILD_DIR}/FFmpeg"
-PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" pkg-config --exists --print-errors libmcm_dp
+PKG_CONFIG_PATH="/usr/local/lib/pkgconfig" pkg-config --exists --print-errors libmcm_dp_s
 
 # copy source files to allow the configure tool to find them
 #cp -f ../mcm_* ./libavdevice/
 
-"${BUILD_DIR}/FFmpeg/configure" --enable-shared --enable-mcm $@
+"${BUILD_DIR}/FFmpeg/configure" \
+    --disable-doc \
+    --disable-shared \
+    --enable-static \
+    --enable-mcm \
+    --enable-cross-compile
 popd
 
 prompt "FFmpeg MCM plugin configuration completed."

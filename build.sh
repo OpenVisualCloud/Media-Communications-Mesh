@@ -22,3 +22,4 @@ cmake --build "${SCRIPT_DIR}/out" -j
 
 # Install
 run_as_root_user cmake --install "${SCRIPT_DIR}/out"
+run_as_root_user ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.so.1 2>/dev/null || true

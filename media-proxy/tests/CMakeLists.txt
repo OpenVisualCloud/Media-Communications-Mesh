@@ -9,8 +9,8 @@ set(CMAKE_C_STANDARD 11)
 
 add_executable(memif_test_rx memif_test_rx.c)
 target_include_directories(memif_test_rx PRIVATE ../include)
-target_link_libraries(memif_test_rx PRIVATE mcm_dp)
+target_link_libraries(memif_test_rx PRIVATE mcm_dp_shared)
 
 add_executable(memif_test_tx memif_test_tx.c)
 target_include_directories(memif_test_tx PRIVATE ../include)
-target_link_libraries(memif_test_tx PRIVATE mcm_dp)
+target_link_libraries(memif_test_tx PRIVATE mcm_dp_shared)

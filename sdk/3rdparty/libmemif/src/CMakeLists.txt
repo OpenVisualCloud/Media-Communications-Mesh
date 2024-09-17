@@ -32,7 +32,7 @@ list(APPEND MEMIF_SOURCES
 
 include_directories(${HEADERS_DIR})
 
-add_library(memif SHARED ${MEMIF_SOURCES})
+add_library(memif OBJECT ${MEMIF_SOURCES})
 target_link_libraries(memif ${CMAKE_THREAD_LIBS_INIT})
 
 set_target_properties(memif PROPERTIES POSITION_INDEPENDENT_CODE ON)
@@ -53,4 +53,10 @@ foreach(file ${MEMIF_HEADERS})
       )
 endforeach()
 
-install(TARGETS memif DESTINATION lib COMPONENT libmemif)
+add_library(memif_shared SHARED $<TARGET_OBJECTS:memif>)
+add_library(memif_static STATIC $<TARGET_OBJECTS:memif>)
+set_target_properties(memif_shared PROPERTIES OUTPUT_NAME memif)
+set_target_properties(memif_static PROPERTIES OUTPUT_NAME memif)
+
+install(TARGETS memif_shared DESTINATION lib COMPONENT libmemif)
+install(TARGETS memif_static DESTINATION lib COMPONENT libmemif)
