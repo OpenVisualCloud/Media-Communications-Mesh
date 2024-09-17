@@ -34,7 +34,7 @@ configure_irdma() {
         echo "options irdma roce_ena=1" | sudo tee -a /etc/modprobe.d/irdma.conf
         sudo dracut -f
     elif [[ "$roce_ena_val" != "1" ]]; then
-        sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
+        sudo sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
         sudo dracut -f
     fi
 
@@ -44,7 +44,7 @@ configure_irdma() {
         echo "options irdma limits_sel=5" | sudo tee -a /etc/modprobe.d/irdma.conf
         sudo dracut -f
     elif [[ "$limits_sel_val" != "5" ]]; then
-        sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
+        sudo sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
         sudo dracut -f
     fi
 }
