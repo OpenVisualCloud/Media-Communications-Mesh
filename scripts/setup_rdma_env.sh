@@ -54,12 +54,15 @@ install_perftest() {
     sudo apt update
     sudo apt install -y libibverbs-dev librdmacm-dev libibumad-dev libpci-dev
     echo "Installing perftest..."
-    git clone https://github.com/linux-rdma/perftest.git "$WORKING_DIR"/perftest
-    pushd "$WORKING_DIR"/perftest
+    pushd "$WORKING_DIR"
+    wget https://github.com/linux-rdma/perftest/releases/download/24.07.0-0.44/perftest-24.07.0-0.44.g57725f2.tar.gz -O perftest.tar.gz
+    tar -xf perftest.tar.gz
+    pushd ./perftest-24.07.0
     ./autogen.sh
     ./configure
     make
     sudo make install
+    popd
     popd
 }
 
