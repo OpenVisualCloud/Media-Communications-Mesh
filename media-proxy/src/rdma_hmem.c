@@ -71,7 +71,7 @@ int rdma_hmem_init(enum fi_hmem_iface iface)
     int ret;
 
     ret = hmem_ops[iface].init();
-    if (ret == FI_SUCCESS)
+    if (ret == 0)
         hmem_initialized = true;
 
     return ret;
@@ -79,11 +79,11 @@ int rdma_hmem_init(enum fi_hmem_iface iface)
 
 int rdma_hmem_cleanup(enum fi_hmem_iface iface)
 {
-    int ret = FI_SUCCESS;
+    int ret = 0;
 
     if (hmem_initialized) {
         ret = hmem_ops[iface].cleanup();
-        if (ret == FI_SUCCESS)
+        if (ret == 0)
             hmem_initialized = false;
     }
 
@@ -98,7 +98,7 @@ int rdma_hmem_alloc(enum fi_hmem_iface iface, uint64_t device, void **buf, size_
 int rdma_default_alloc_host(void **buf, size_t size)
 {
     *buf = malloc(size);
-    return (*buf == NULL) ? -FI_ENOMEM : 0;
+    return (*buf == NULL) ? -ENOMEM : 0;
 }
 
 int rdma_default_free_host(void *buf)
@@ -144,5 +144,5 @@ int rdma_hmem_get_dmabuf_fd(enum fi_hmem_iface iface, void *buf, size_t len, int
 
 int rdma_hmem_no_get_dmabuf_fd(void *buf, size_t len, int *fd, uint64_t *offset)
 {
-    return -FI_ENOSYS;
+    return -ENOSYS;
 }

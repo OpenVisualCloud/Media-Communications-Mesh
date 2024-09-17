@@ -295,7 +295,7 @@ int main(int argc, char** argv)
         break;
     case PAYLOAD_TYPE_RDMA_VIDEO:
         param.payload_args.rdma_args.transfer_size =
-            getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height, false);
+            getFrameSize(pix_fmt, width, height, false);
         break;
     case PAYLOAD_TYPE_RTSP_VIDEO:
     case PAYLOAD_TYPE_ST20_VIDEO:

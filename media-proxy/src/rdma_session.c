@@ -23,8 +23,9 @@ static void *rx_memif_event_loop(void *arg)
 
 int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 {
+    memif_ops_t default_memif_ops = { 0 };
+    struct stat st = { 0 };
     int err;
-    memif_ops_t default_memif_ops = {0};
 
     if (rx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -55,7 +56,6 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             err = mkdir("/run/mcm", 0666);
             if (err != 0) {
@@ -105,9 +105,10 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 
 int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 {
-    int err;
+    memif_ops_t default_memif_ops = { 0 };
     const uint16_t FRAME_COUNT = 4;
-    memif_ops_t default_memif_ops = {0};
+    struct stat st = { 0 };
+    int err;
 
     if (tx_ctx == NULL) {
         printf("%s, fail to initialize share memory.\n", __func__);
@@ -138,7 +139,6 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 
     /* unlink socket file */
     if (memif_ops->is_master && tx_ctx->memif_socket_args.path[0] != '@') {
-        struct stat st = {0};
         if (stat("/run/mcm", &st) == -1) {
             err = mkdir("/run/mcm", 0666);
             if (err != 0) {
@@ -279,7 +279,7 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
         return NULL;
     }
 
-    // TODO: use memif buffer with correct size
+    /* TODO: use memif buffer with correct size */
     ep_cfg_t ep_cfg = {
         .rdma_ctx = tx_ctx->rdma_ctx,
         .data_buf_size = tx_ctx->transfer_size,
@@ -314,7 +314,7 @@ static void rx_rdma_consume_frame(rx_rdma_session_context_t *s, char *frame)
     uint32_t buf_size = s->transfer_size;
     uint16_t rx_buf_num = 0, rx = 0;
 
-    if (s->shm_ready == 0) {
+    if (!s->shm_ready) {
         INFO("%s memif not ready\n", __func__);
         return;
     }
@@ -359,13 +359,13 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
                                                   memif_ops_t *memif_ops)
 {
     rx_rdma_session_context_t *rx_ctx;
-    ep_cfg_t ep_cfg = {0};
+    ep_cfg_t ep_cfg = { 0 };
     int err;
 
     rx_ctx = calloc(1, sizeof(rx_rdma_session_context_t));
     if (rx_ctx == NULL) {
         printf("%s, TX session contex malloc fail\n", __func__);
-        return rx_ctx;
+        return NULL;
     }
     rx_ctx->rdma_ctx = dev_handle;
     rx_ctx->stop = false;
@@ -380,7 +380,7 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
         return NULL;
     }
 
-    // TODO: use memif buffer with correct size
+    /* TODO: use memif buffer with correct size */
     ep_cfg.rdma_ctx = rx_ctx->rdma_ctx;
     ep_cfg.data_buf_size = rx_ctx->transfer_size;
     ep_cfg.local_addr = opts->local_addr;
@@ -417,7 +417,7 @@ void rdma_rx_session_stop(rx_rdma_session_context_t *rx_ctx)
         printf("%s: invalid parameter\n", __func__);
         return;
     }
-    // TODO: Add better synchronization
+    /* TODO: Add better synchronization */
     rx_ctx->stop = true;
 
     err = pthread_join(rx_ctx->frame_thread, NULL);
@@ -437,7 +437,7 @@ void rdma_rx_session_destroy(rx_rdma_session_context_t **p_rx_ctx)
     }
 
     rx_ctx = *p_rx_ctx;
-    // TODO: Remove free when memif buf will be used
+    /* TODO: Remove free when memif buf will be used */
     free(rx_ctx->ep_ctx->data_buf);
     err = ep_destroy(&rx_ctx->ep_ctx);
     if (err < 0) {
@@ -486,7 +486,7 @@ void rdma_tx_session_destroy(tx_rdma_session_context_t **p_tx_ctx)
     }
 
     tx_ctx = *p_tx_ctx;
-    // TODO: Remove free when memif buf will be used
+    /* TODO: Remove free when memif buf will be used */
     free(tx_ctx->ep_ctx->data_buf);
     err = ep_destroy(&tx_ctx->ep_ctx);
     if (err < 0) {

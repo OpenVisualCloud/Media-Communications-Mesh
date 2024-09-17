@@ -720,7 +720,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
     INFO("ProxyContext: RxStart(const RxControlRequest* request)");
     dp_session_context_t *st_ctx = NULL;
     rx_session_context_t* rx_ctx = NULL;
-    struct st20p_rx_ops opts = {0};
+    struct st20p_rx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
     if (mDevHandle == NULL) {
@@ -762,7 +762,7 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     INFO("ProxyContext: TxStart(const TxControlRequest* request)");
     dp_session_context_t *st_ctx = NULL;
     tx_session_context_t* tx_ctx = NULL;
-    struct st20p_tx_ops opts = {0};
+    struct st20p_tx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
     if (!mDevHandle) {
@@ -803,8 +803,8 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param *request)
 {
     rx_rdma_session_context_t *rx_ctx = NULL;
     dp_session_context_t *dp_ctx = NULL;
-    memif_ops_t memif_ops = {0};
-    rdma_s_ops_t opts = {0};
+    memif_ops_t memif_ops = { 0 };
+    rdma_s_ops_t opts = { 0 };
     int ret;
 
     if (!mDevHandle_rdma) {
@@ -840,7 +840,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
 {
     INFO("ProxyContext: RxStart(const mcm_conn_param* request)");
     dp_session_context_t *st_ctx = NULL;
-    struct st20p_rx_ops opts = {0};
+    struct st20p_rx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
     int ret;
 
@@ -999,8 +999,8 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param *request)
 {
     tx_rdma_session_context_t *tx_ctx = NULL;
     dp_session_context_t *dp_ctx = NULL;
-    memif_ops_t memif_ops = {0};
-    rdma_s_ops_t opts = {0};
+    memif_ops_t memif_ops = { 0 };
+    rdma_s_ops_t opts = { 0 };
     int ret;
 
     if (!mDevHandle_rdma) {
@@ -1246,6 +1246,8 @@ void ProxyContext::RxStop(const int32_t session_id)
 
 void ProxyContext::Stop()
 {
+    int err;
+
     for (auto it : mDpCtx) {
         if (it->type == TX) {
             mtl_st20p_tx_session_stop(it->tx_session);
@@ -1260,7 +1262,14 @@ void ProxyContext::Stop()
 
     mDpCtx.clear();
     st_pthread_mutex_destroy(&sessions_count_mutex_lock);
-    // destroy device
+
     mtl_deinit(mDevHandle);
     mDevHandle = NULL;
+
+    if (mDevHandle_rdma) {
+        err = rdma_deinit(&mDevHandle_rdma);
+        if (err) {
+            ERROR("%s, Failed to destroy rdma device.", __func__);
+        }
+    }
 }

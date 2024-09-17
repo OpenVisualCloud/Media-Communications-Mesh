@@ -59,7 +59,7 @@ int rx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
     }
 
     // release session
-    if (rx_ctx->shm_ready == 0) {
+    if (!rx_ctx->shm_ready) {
         return 0;
     }
     rx_ctx->shm_ready = 0;
@@ -115,7 +115,7 @@ int tx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
     }
 
     // release session
-    if (tx_ctx->shm_ready == 0) {
+    if (!tx_ctx->shm_ready) {
         return 0;
     }
     tx_ctx->shm_ready = 0;
@@ -138,10 +138,10 @@ int tx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 
 int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 {
-    int err = 0;
     tx_rdma_session_context_t *tx_ctx = (tx_rdma_session_context_t *)priv_data;
-    memif_buffer_t shm_bufs = {0};
+    memif_buffer_t shm_bufs = { 0 };
     uint16_t buf_num = 0;
+    int err = 0;
 
     if (tx_ctx->stop) {
         INFO("TX session already stopped.");
@@ -155,7 +155,7 @@ int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
         return err;
     }
 
-    // TODO: Use memif buffer directly. It has to be registered by libfabric
+    /* TODO: Use memif buffer directly. It has to be registered by libfabric */
     memcpy(tx_ctx->ep_ctx->data_buf, shm_bufs.data, shm_bufs.len);
     ep_send_buf(tx_ctx->ep_ctx, tx_ctx->ep_ctx->data_buf, shm_bufs.len);
 

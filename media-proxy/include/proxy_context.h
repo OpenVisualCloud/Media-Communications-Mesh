@@ -115,7 +115,7 @@ private:
     ProxyContext& operator=(const ProxyContext&) = delete;
     uint32_t incrementMSessionCount(bool postIncrement);
     st_frame_fmt getStFrameFmt(video_pixel_format fmt);
-    // TODO: WIP
+
     int TxStart_mtl(const mcm_conn_param *request);
     int RxStart_mtl(const mcm_conn_param *request);
     int TxStart_rdma(const mcm_conn_param *request);

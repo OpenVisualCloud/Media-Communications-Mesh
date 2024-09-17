@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2013-2018 Intel Corporation.  All rights reserved.
+ * Copyright (c) 2016 Cray Inc.  All rights reserved.
+ * Copyright (c) 2014-2017, Cisco Systems, Inc. All rights reserved.
+ * Copyright (c) 2021 Amazon.com, Inc. or its affiliates. All rights reserved.
+ *
+ * This software is available to you under the BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <assert.h>
 
 #include <rdma/fi_cm.h>
@@ -46,13 +77,13 @@ int rdma_reg_mr(libfabric_ctx *rdma_ctx, struct fid_ep *ep, struct fi_info *fi, 
                 size_t size, uint64_t access, uint64_t key, enum fi_hmem_iface iface,
                 uint64_t device, struct fid_mr **mr, void **desc)
 {
-    struct fi_mr_attr attr = {0};
-    struct iovec iov = {0};
-    int ret;
+    struct fi_mr_dmabuf dmabuf = { 0 };
+    struct fi_mr_attr attr = { 0 };
+    struct iovec iov = { 0 };
+    uint64_t dmabuf_offset;
     uint64_t flags;
     int dmabuf_fd;
-    uint64_t dmabuf_offset;
-    struct fi_mr_dmabuf dmabuf = {0};
+    int ret;
 
     iov.iov_base = buf;
     iov.iov_len = size;
@@ -77,7 +108,7 @@ int rdma_reg_mr(libfabric_ctx *rdma_ctx, struct fid_ep *ep, struct fi_info *fi, 
             return ret;
     }
 
-    return FI_SUCCESS;
+    return 0;
 }
 
 static inline int rdma_rma_write_target_allowed(uint64_t caps)

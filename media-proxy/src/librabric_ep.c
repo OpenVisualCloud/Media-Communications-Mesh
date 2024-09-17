@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2013-2018 Intel Corporation.  All rights reserved.
+ * Copyright (c) 2016 Cray Inc.  All rights reserved.
+ * Copyright (c) 2014-2017, Cisco Systems, Inc. All rights reserved.
+ * Copyright (c) 2021 Amazon.com, Inc. or its affiliates. All rights reserved.
+ *
+ * This software is available to you under the BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <assert.h>
 #include <fcntl.h>
 #include <netdb.h>
@@ -48,10 +79,9 @@ static int enable_ep(ep_ctx_t *ep_ctx)
     ret = fi_enable(ep_ctx->ep);
     if (ret) {
         RDMA_PRINTERR("fi_enable", ret);
-        return ret;
     }
 
-    return 0;
+    return ret;
 }
 
 static int ep_av_insert(libfabric_ctx *rdma_ctx, struct fid_av *av, void *addr, size_t count,
@@ -67,7 +97,7 @@ static int ep_av_insert(libfabric_ctx *rdma_ctx, struct fid_av *av, void *addr, 
         RDMA_ERR("fi_av_insert: number of addresses inserted = %d;"
                  " number of addresses given = %zd\n",
                  ret, count);
-        return -EXIT_FAILURE;
+        return -EINVAL;
     }
 
     return 0;
@@ -75,6 +105,7 @@ static int ep_av_insert(libfabric_ctx *rdma_ctx, struct fid_av *av, void *addr, 
 
 int ep_init_av_addr(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi)
 {
+    struct sockaddr_in *insert_addr_p;
     size_t addrlen;
     int ret;
 
@@ -89,30 +120,27 @@ int ep_init_av_addr(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *f
             RDMA_PRINTERR("fi_getname", ret);
             return ret;
         }
-        struct sockaddr_in *insert_addr_p = (struct sockaddr_in *)ep_ctx->data_buf;
+        insert_addr_p = (struct sockaddr_in *)ep_ctx->data_buf;
         memset(insert_addr_p->sin_zero, 0, sizeof(insert_addr_p->sin_zero));
 
         ret = ep_send_buf(ep_ctx, ep_ctx->data_buf, addrlen);
-        if (ret)
-            return ret;
+        return ret;
 
     } else {
         ret = ep_recv_buf(ep_ctx, ep_ctx->data_buf, ep_ctx->data_buf_size);
         if (ret)
             return ret;
 
-        ret = ep_av_insert(rdma_ctx, ep_ctx->av, ep_ctx->data_buf, 1, &ep_ctx->dest_av_entry, 0,
+        return ep_av_insert(rdma_ctx, ep_ctx->av, ep_ctx->data_buf, 1, &ep_ctx->dest_av_entry, 0,
                            NULL);
-        if (ret)
-            return ret;
     }
-
-    return 0;
 }
 
 static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi,
                         size_t tx_cq_size, size_t rx_cq_size, size_t av_size)
 {
+    struct fi_av_attr av_attr = { 0 };
+    struct fi_cq_attr cq_attr = { 0 };
     int ret;
 
     ret = fi_endpoint(rdma_ctx->domain, fi, &ep_ctx->ep, NULL);
@@ -121,7 +149,7 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         return ret;
     }
 
-    struct fi_cq_attr cq_attr = {.wait_obj = FI_WAIT_NONE};
+    cq_attr.wait_obj = FI_WAIT_NONE;
 
     if (cq_attr.format == FI_CQ_FORMAT_UNSPEC) {
         cq_attr.format = FI_CQ_FORMAT_CONTEXT;
@@ -151,7 +179,8 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         return ret;
     }
 
-    struct fi_av_attr av_attr = {.type = FI_AV_MAP, .count = 1};
+    av_attr.type = FI_AV_MAP;
+    av_attr.count = 1;
 
     if (!ep_ctx->av && (rdma_ctx->info->ep_attr->type == FI_EP_RDM ||
                         rdma_ctx->info->ep_attr->type == FI_EP_DGRAM)) {
@@ -172,14 +201,12 @@ static int ep_reg_mr(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *
 {
     int ret;
 
-    // TODO: I'm using address of ep_ctx as a key, maybe there is more elegant solution
+    /* TODO: I'm using address of ep_ctx as a key,
+     * maybe there is more elegant solution */
     ret = rdma_reg_mr(rdma_ctx, ep_ctx->ep, fi, ep_ctx->data_buf, ep_ctx->data_buf_size,
                       rdma_info_to_mr_access(fi), (uint64_t)ep_ctx, FI_HMEM_SYSTEM, 0,
                       &ep_ctx->data_mr, &ep_ctx->data_desc);
-    if (ret)
-        return ret;
-
-    return 0;
+    return ret;
 }
 
 int ep_send_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size)
@@ -189,15 +216,12 @@ int ep_send_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size)
     do {
         ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry,
                       ep_ctx->send_ctx);
-        if (ret == -FI_EAGAIN)
+        if (ret == -EAGAIN)
             (void)fi_cq_read(ep_ctx->txcq, NULL, 0);
-    } while (ret == -FI_EAGAIN);
+    } while (ret == -EAGAIN);
 
     ret = rdma_get_cq_comp(ep_ctx, ep_ctx->txcq, &ep_ctx->tx_cq_cntr, ep_ctx->tx_cq_cntr + 1, -1);
-    if (ret)
-        return ret;
-
-    return 0;
+    return ret;
 }
 
 int ep_recv_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size)
@@ -209,15 +233,11 @@ int ep_recv_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size)
     do {
         ret =
             fi_recv(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, FI_ADDR_UNSPEC, ep_ctx->recv_ctx);
-        if (ret == -FI_EAGAIN)
+        if (ret == -EAGAIN)
             (void)fi_cq_read(ep_ctx->rxcq, NULL, 0);
-    } while (ret == -FI_EAGAIN);
+    } while (ret == -EAGAIN);
 
-    ret = rdma_get_cq_comp(ep_ctx, ep_ctx->rxcq, &ep_ctx->rx_cq_cntr, ep_ctx->rx_cq_cntr + 1, -1);
-    if (ret)
-        return ret;
-
-    return 0;
+    return rdma_get_cq_comp(ep_ctx, ep_ctx->rxcq, &ep_ctx->rx_cq_cntr, ep_ctx->rx_cq_cntr + 1, -1);
 }
 
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
@@ -229,7 +249,7 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     *ep_ctx = calloc(1, sizeof(ep_ctx_t));
     if (!(*ep_ctx)) {
         printf("%s, libfabric ep context malloc fail\n", __func__);
-        return EXIT_FAILURE;
+        return -ENOMEM;
     }
     (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
     (*ep_ctx)->data_buf = cfg->data_buf;
@@ -290,7 +310,6 @@ int ep_destroy(ep_ctx_t **ep_ctx)
     if (!ep_ctx || !(*ep_ctx))
         return -EINVAL;
 
-    // TODO: make sure that you close everything inside ep_ctx
     RDMA_CLOSE_FID((*ep_ctx)->data_mr);
     RDMA_CLOSE_FID((*ep_ctx)->ep);
 

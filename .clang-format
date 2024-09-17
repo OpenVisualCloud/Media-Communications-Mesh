@@ -5,6 +5,7 @@ UseTab: Never
 ColumnLimit: 100
 BreakBeforeBraces: Linux
 AllowShortIfStatementsOnASingleLine: false
+AllowShortEnumsOnASingleLine: false
 IndentCaseLabels: false
 IncludeBlocks: Preserve
 SortIncludes: false

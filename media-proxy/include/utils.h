@@ -26,6 +26,9 @@
         printf("\n");                  \
     } while (0)
 
-enum direction { TX, RX };
+enum direction {
+    TX,
+    RX
+};
 
 #endif

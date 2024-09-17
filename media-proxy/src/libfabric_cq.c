@@ -1,3 +1,34 @@
+/*
+ * Copyright (c) 2013-2018 Intel Corporation.  All rights reserved.
+ * Copyright (c) 2016 Cray Inc.  All rights reserved.
+ * Copyright (c) 2014-2017, Cisco Systems, Inc. All rights reserved.
+ * Copyright (c) 2021 Amazon.com, Inc. or its affiliates. All rights reserved.
+ *
+ * This software is available to you under the BSD license below:
+ *
+ *     Redistribution and use in source and binary forms, with or
+ *     without modification, are permitted provided that the following
+ *     conditions are met:
+ *
+ *      - Redistributions of source code must retain the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer.
+ *
+ *      - Redistributions in binary form must reproduce the above
+ *        copyright notice, this list of conditions and the following
+ *        disclaimer in the documentation and/or other materials
+ *        provided with the distribution.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+ * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+ * BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+ * ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+ * CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
+
 #include <assert.h>
 
 #include <rdma/fi_cm.h>
@@ -66,7 +97,7 @@ static int rdma_spin_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur
             clock_gettime(CLOCK_MONOTONIC, &b);
             if ((b.tv_sec - a.tv_sec) > timeout) {
                 fprintf(stderr, "%ds timeout expired\n", timeout);
-                return -FI_ENODATA;
+                return -ENODATA;
             }
         }
     } while (total != *cur);
@@ -86,7 +117,7 @@ static int rdma_poll_fd(int fd, int timeout)
         RDMA_PRINTERR("poll", -errno);
         ret = -errno;
     } else if (!ret) {
-        ret = -FI_EAGAIN;
+        ret = -EAGAIN;
     } else {
         ret = 0;
     }
@@ -108,7 +139,7 @@ static int rdma_fdwait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *c
 
     while (total != *cur) {
         ret = fi_trywait(ep_ctx->rdma_ctx->fabric, fids, 1);
-        if (ret == FI_SUCCESS) {
+        if (!ret) {
             ret = rdma_poll_fd(fd, timeout);
             if (ret && ret != -FI_EAGAIN)
                 return ret;
@@ -166,26 +197,23 @@ int rdma_get_cq_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_
 
 int rdma_read_cq(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total, int timeout)
 {
-    int ret;
-
     switch (ep_ctx->rdma_ctx->comp_method) {
     case RDMA_COMP_SREAD:
     case RDMA_COMP_YIELD:
-        ret = rdma_wait_for_comp(ep_ctx, cq, cur, total, timeout);
+        return rdma_wait_for_comp(ep_ctx, cq, cur, total, timeout);
         break;
     case RDMA_COMP_WAIT_FD:
-        ret = rdma_fdwait_for_comp(ep_ctx, cq, cur, total, timeout);
+        return rdma_fdwait_for_comp(ep_ctx, cq, cur, total, timeout);
         break;
     default:
-        ret = rdma_spin_for_comp(ep_ctx, cq, cur, total, timeout);
+        return rdma_spin_for_comp(ep_ctx, cq, cur, total, timeout);
         break;
     }
-    return ret;
 }
 
 int rdma_get_cq_fd(struct fid_cq *cq, int *fd, enum cq_comp_method method)
 {
-    int ret = FI_SUCCESS;
+    int ret = 0;
 
     if (cq && method == RDMA_COMP_WAIT_FD) {
         ret = fi_control(&cq->fid, FI_GETWAIT, fd);
@@ -198,10 +226,9 @@ int rdma_get_cq_fd(struct fid_cq *cq, int *fd, enum cq_comp_method method)
 
 int rdma_cq_readerr(struct fid_cq *cq)
 {
-    struct fi_cq_err_entry cq_err;
+    struct fi_cq_err_entry cq_err = { 0 };
     int ret;
 
-    memset(&cq_err, 0, sizeof(cq_err));
     ret = fi_cq_readerr(cq, &cq_err, 0);
     if (ret < 0) {
         RDMA_PRINTERR("fi_cq_readerr", ret);
@@ -215,10 +242,9 @@ int rdma_cq_readerr(struct fid_cq *cq)
 // EQ not CQ
 void eq_readerr(struct fid_eq *eq, const char *eq_str)
 {
-    struct fi_eq_err_entry eq_err;
+    struct fi_eq_err_entry eq_err = { 0 };
     int rd;
 
-    memset(&eq_err, 0, sizeof(eq_err));
     rd = fi_eq_readerr(eq, &eq_err, 0);
     if (rd != sizeof(eq_err)) {
         RDMA_PRINTERR("fi_eq_readerr", rd);

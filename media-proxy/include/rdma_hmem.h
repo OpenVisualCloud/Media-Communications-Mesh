@@ -40,32 +40,32 @@ int rdma_ze_free(void *buf);
 int rdma_ze_memset(uint64_t device, void *buf, int value, size_t size);
 int rdma_ze_copy(uint64_t device, void *dst, const void *src, size_t size);
 
-static inline int rdma_host_init(void) { return FI_SUCCESS; }
+static inline int rdma_host_init(void) { return 0; }
 
-static inline int rdma_host_cleanup(void) { return FI_SUCCESS; }
+static inline int rdma_host_cleanup(void) { return 0; }
 
 static inline int rdma_host_alloc(uint64_t device, void **buffer, size_t size)
 {
     *buffer = malloc(size);
-    return !*buffer ? -FI_ENOMEM : FI_SUCCESS;
+    return !*buffer ? -ENOMEM : 0;
 }
 
 static inline int rdma_host_free(void *buf)
 {
     free(buf);
-    return FI_SUCCESS;
+    return 0;
 }
 
 static inline int rdma_host_memset(uint64_t device, void *buf, int value, size_t size)
 {
     memset(buf, value, size);
-    return FI_SUCCESS;
+    return 0;
 }
 
 static inline int rdma_host_memcpy(uint64_t device, void *dst, const void *src, size_t size)
 {
     memcpy(dst, src, size);
-    return FI_SUCCESS;
+    return 0;
 }
 
 int rdma_default_alloc_host(void **buf, size_t size);
