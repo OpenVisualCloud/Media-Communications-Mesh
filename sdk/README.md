@@ -54,7 +54,7 @@ Usage: sender_app [OPTION]
 -m, --master=<is_master>                Set memif conn is master (default: 1 for sender, 0 for recver)
 -d, --interfaceid=<interface_id>        Set memif conn interface id (default: 0)
 -b, --file=<input_file>                 Input file name (optional)
--l, --loop=<is_loop>                    Set infinity loop sending (default: 0)
+-l, --loop=<is_loop>                    Set infinite loop sending (default: 0)
 --------------------------------------   VIDEO (ST2x)   --------------------------------------
 -w, --width=<frame_width>               Width of test video frame (default: 1920)
 -h, --height=<frame_height>             Height of test video frame (default: 1080)
