@@ -718,9 +718,9 @@ void ProxyContext::ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_
 int ProxyContext::RxStart(const RxControlRequest* request)
 {
     INFO("ProxyContext: RxStart(const RxControlRequest* request)");
-    struct st20p_rx_ops opts = { 0 };
     dp_session_context_t* st_ctx = NULL;
     rx_session_context_t* rx_ctx = NULL;
+    struct st20p_rx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
     if (mDevHandle == NULL) {
@@ -730,7 +730,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 
         mDevHandle = inst_init(&st_param);
         if (mDevHandle == NULL) {
-            INFO("%s, Fail to initialize MTL.\n", __func__);
+            INFO("%s, Failed to initialize MTL.", __func__);
             return -1;
         }
     }
@@ -741,7 +741,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 
     rx_ctx = mtl_st20p_rx_session_create(mDevHandle, &opts, &memif_ops);
     if (rx_ctx == NULL) {
-        INFO("%s, Fail to create RX session.\n", __func__);
+        INFO("%s, Failed to create RX session.", __func__);
         return -1;
     }
 
@@ -760,19 +760,19 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 int ProxyContext::TxStart(const TxControlRequest* request)
 {
     INFO("ProxyContext: TxStart(const TxControlRequest* request)");
-    struct st20p_tx_ops opts = { 0 };
     dp_session_context_t* st_ctx = NULL;
     tx_session_context_t* tx_ctx = NULL;
+    struct st20p_tx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
-    if (mDevHandle == NULL) {
+    if (!mDevHandle) {
         struct mtl_init_params st_param = {};
         /* set default parameters */
         ParseStInitParam(request, &st_param);
 
         mDevHandle = inst_init(&st_param);
-        if (mDevHandle == NULL) {
-            INFO("%s, Fail to initialize MTL.", __func__);
+        if (!mDevHandle) {
+            INFO("%s, Failed to initialize MTL.", __func__);
             return -1;
         }
     }
@@ -783,7 +783,7 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 
     tx_ctx = mtl_st20p_tx_session_create(mDevHandle, &opts, &memif_ops);
     if (tx_ctx == NULL) {
-        INFO("%s, Fail to create TX session.", __func__);
+        INFO("%s, Failed to create TX session.", __func__);
         return -1;
     }
 
@@ -800,16 +800,17 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 }
 
 int ProxyContext::RxStart_rdma(const mcm_conn_param* request) {
-    rdma_s_ops_t opts = { 0 };
+    rx_rdma_session_context_t* rx_ctx = NULL;
     dp_session_context_t* dp_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
-    rx_rdma_session_context_t* rx_ctx = NULL;
+    rdma_s_ops_t opts = { 0 };
     int ret;
-    if (mDevHandle_rdma == NULL) {
+
+    if (!mDevHandle_rdma) {
         ret = rdma_init(&mDevHandle_rdma);
         if (ret) {
-            INFO("%s, Fail to initialize libfabric.\n", __func__);
-            return -1;
+            INFO("%s, Failed to initialize libfabric.", __func__);
+            return -EINVAL;
         }
     }
     dp_ctx = new (dp_session_context_t);
@@ -819,31 +820,31 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param* request) {
     memcpy(&opts.remote_addr, &request->remote_addr, sizeof(request->remote_addr));
     memcpy(&opts.local_addr, &request->local_addr, sizeof(request->local_addr));
     rx_ctx = rdma_rx_session_create(mDevHandle_rdma, &opts, &memif_ops);
-    if (rx_ctx == NULL) {
-        INFO("%s, Fail to create RDMA session.", __func__);
+    if (!rx_ctx) {
+        INFO("%s, Failed to create RDMA session.", __func__);
         delete dp_ctx;
-        return -1;
+        return -EINVAL;
     }
     dp_ctx->payload_type = request->payload_type;
     dp_ctx->rx_rdma_session = rx_ctx;
     dp_ctx->id = memif_ops.m_session_count;
-    std::cout << "session id: " << dp_ctx->id << std::endl;
+    INFO("%s, session id: %d", __func__, dp_ctx->id);
     dp_ctx->type = RX;
     mDpCtx.push_back(dp_ctx);
 
-    return (dp_ctx->id);
+    return dp_ctx->id;
 }
 
 int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
 {
     INFO("ProxyContext: RxStart(const mcm_conn_param* request)");
-    struct st20p_rx_ops opts = { 0 };
     dp_session_context_t* st_ctx = NULL;
+    struct st20p_rx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
     int ret;
 
     /*add lock to protect MTL library initialization to aviod being called by multi-session simultaneously*/
-    if (mDevHandle == NULL && imtl_init_preparing == false) {
+    if (!mDevHandle && imtl_init_preparing == false) {
 
         imtl_init_preparing = true;
         struct mtl_init_params st_param = { 0 };
@@ -853,7 +854,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
 
         mDevHandle = inst_init(&st_param);
         if (mDevHandle == NULL) {
-            ERROR("%s, Fail to initialize MTL.", __func__);
+            ERROR("%s, Failed to initialize MTL.", __func__);
             return -1;
         } else {
             /*udp pool*/
@@ -890,7 +891,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
     }
 
     if (mDevHandle == NULL) {
-        ERROR("%s, Fail to initialize MTL for RxStart function.\n", __func__);
+        ERROR("%s, Failed to initialize MTL for RxStart function.", __func__);
         return -1;
     }
 
@@ -905,7 +906,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
         ParseSt22RxOps(request, &opts);
         rx_ctx = mtl_st22p_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
-            INFO("%s, Fail to create RX session.", __func__);
+            INFO("%s, Failed to create RX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -920,7 +921,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
         ParseSt30RxOps(request, &opts);
         rx_ctx = mtl_st30_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
-            INFO("%s, Fail to create RX session.", __func__);
+            INFO("%s, Failed to create RX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -935,7 +936,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
         ParseSt40RxOps(request, &opts);
         rx_ctx = mtl_st40_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
-            INFO("%s, Fail to create RX session.", __func__);
+            INFO("%s, Failed to create RX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -949,7 +950,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
         /*udp poll*/
         rx_ctx = mtl_udp_h264_rx_session_create(mDevHandle, &local_addr, &memif_ops, schs);
         if (rx_ctx == NULL) {
-            INFO("%s, Fail to create UDP H264 TX session.", __func__);
+            INFO("%s, Failed to create UDP H264 TX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -965,7 +966,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
         ParseSt20RxOps(request, &opts);
         rx_ctx = mtl_st20p_rx_session_create(mDevHandle, &opts, &memif_ops);
         if (rx_ctx == NULL) {
-            INFO("%s, Fail to create RX session.\n", __func__);
+            INFO("%s, Failed to create RX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -978,6 +979,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
     st_ctx->payload_type = request->payload_type;
     st_ctx->id = memif_ops.m_session_count;
     std::cout << "session id: " << st_ctx->id << std::endl;
+    INFO("%s, session id: %d", __func__, st_ctx->id);
     st_ctx->type = RX;
     mDpCtx.push_back(st_ctx);
 
@@ -986,24 +988,24 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param* request)
 
 int ProxyContext::RxStart(const mcm_conn_param* request)
 {
-    if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO) {
+    if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO)
         return RxStart_rdma(request);
-    } else {
-        return RxStart_mtl(request);
-    }
+
+    return RxStart_mtl(request);
 }
 
 int ProxyContext::TxStart_rdma(const mcm_conn_param* request) {
-    rdma_s_ops_t opts = { 0 };
+    tx_rdma_session_context_t* tx_ctx = NULL;
     dp_session_context_t* dp_ctx = NULL;
     memif_ops_t memif_ops = { 0 };
-    tx_rdma_session_context_t* tx_ctx = NULL;
+    rdma_s_ops_t opts = { 0 };
     int ret;
-    if (mDevHandle_rdma == NULL) {
+
+    if (!mDevHandle_rdma) {
         ret = rdma_init(&mDevHandle_rdma);
         if (ret) {
-            INFO("%s, Fail to initialize libfabric.\n", __func__);
-            return -1;
+            INFO("%s, Failed to initialize libfabric.", __func__);
+            return -EINVAL;
         }
     }
     dp_ctx = new (dp_session_context_t);
@@ -1013,19 +1015,19 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param* request) {
     memcpy(&opts.remote_addr, &request->remote_addr, sizeof(request->remote_addr));
     memcpy(&opts.local_addr, &request->local_addr, sizeof(request->local_addr));
     tx_ctx = rdma_tx_session_create(mDevHandle_rdma, &opts, &memif_ops);
-    if (tx_ctx == NULL) {
-        INFO("%s, Fail to create RDMA session.", __func__);
+    if (!tx_ctx) {
+        INFO("%s, Failed to create RDMA session.", __func__);
         delete dp_ctx;
-        return -1;
+        return -EINVAL;
     }
     dp_ctx->payload_type = request->payload_type;
     dp_ctx->tx_rdma_session = tx_ctx;
     dp_ctx->id = memif_ops.m_session_count;
-    std::cout << "session id: " << dp_ctx->id << std::endl;
+    INFO("%s, session id: %d", __func__, dp_ctx->id);
     dp_ctx->type = TX;
     mDpCtx.push_back(dp_ctx);
 
-    return (dp_ctx->id);
+    return dp_ctx->id;
 }
 
 int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
@@ -1046,7 +1048,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
 
         mDevHandle = inst_init(&st_param);
         if (mDevHandle == NULL) {
-            ERROR("%s, Fail to initialize MTL.", __func__);
+            ERROR("%s, Failed to initialize MTL.", __func__);
             return -1;
         } else {
             imtl_init_preparing = false;
@@ -1054,7 +1056,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
     }
 
     if (mDevHandle == NULL) {
-        ERROR("%s, Fail to initialize MTL for TxStart function.\n", __func__);
+        ERROR("%s, Failed to initialize MTL for TxStart function.", __func__);
         return -1;
     }
 
@@ -1070,7 +1072,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
         ParseSt22TxOps(request, &opts);
         tx_ctx = mtl_st22p_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
-            INFO("%s, Fail to create TX session.", __func__);
+            INFO("%s, Failed to create TX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -1085,7 +1087,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
         ParseSt30TxOps(request, &opts);
         tx_ctx = mtl_st30_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
-            INFO("%s, Fail to create TX session.", __func__);
+            INFO("%s, Failed to create TX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -1100,7 +1102,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
         ParseSt40TxOps(request, &opts);
         tx_ctx = mtl_st40_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
-            INFO("%s, Fail to create TX session.", __func__);
+            INFO("%s, Failed to create TX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -1116,7 +1118,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
         ParseSt20TxOps(request, &opts);
         tx_ctx = mtl_st20p_tx_session_create(mDevHandle, &opts, &memif_ops);
         if (tx_ctx == NULL) {
-            INFO("%s, Fail to create TX session.", __func__);
+            INFO("%s, Failed to create TX session.", __func__);
             delete st_ctx;
             return -1;
         }
@@ -1135,11 +1137,10 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param* request)
 }
 
 int ProxyContext::TxStart(const mcm_conn_param* request) {
-    if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO) {
+    if (request->payload_type == PAYLOAD_TYPE_RDMA_VIDEO)
         return TxStart_rdma(request);
-    } else {
-        return TxStart_mtl(request);
-    }
+
+    return TxStart_mtl(request);
 }
 
 void ProxyContext::TxStop(const int32_t session_id)

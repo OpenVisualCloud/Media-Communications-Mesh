@@ -11,11 +11,14 @@
 extern "C" {
 #endif
 
-#include <mcm_dp.h>
+#include <rdma/fabric.h>
+#include <rdma/fi_rma.h>
+#include <rdma/fi_domain.h>
 
-#include "app_platform.h"
-#include "shm_memif.h" /* share memory */
 #include "utils.h"
+#include "app_platform.h"
+#include "mcm_dp.h"
+#include "shm_memif.h" /* share memory */
 
 #define RDMA_PRINTERR(call, retv)						\
 	do {								\

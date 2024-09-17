@@ -12,20 +12,24 @@
 #include "rdma_session.h"
 #include "shm_memif.h"
 
-/* informs user about connected status. private_ctx is used by user to identify
- * connection */
+/* rx_rdma_on_connect informs user about connected status.
+ * private_ctx is used by user to identify connection.
+ */
 int rx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
     rx_rdma_session_context_t* rx_ctx = (rx_rdma_session_context_t*)priv_data;
-    int err = 0;
+    int err;
 
-    INFO("RX memif connected!");
+    INFO("RX RDMA memif connected!");
 
-    // TODO: increase
-    rx_ctx->fb_count = 1;
+    rx_ctx->fb_count = 3;
 
     /* rx buffers */
     rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    if (!rx_ctx->shm_bufs){
+        ERROR("Failed to allocate memory");
+        return -ENOMEM;
+    }
     rx_ctx->shm_buf_num = rx_ctx->fb_count;
 
     err = memif_refill_queue(conn, 0, -1, 0);
@@ -45,17 +49,13 @@ int rx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
  * identify connection */
 int rx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
-    int err = 0;
     rx_rdma_session_context_t* rx_ctx = priv_data;
     memif_socket_handle_t socket;
-
-    if (conn == NULL) {
-        return 0;
-    }
+    int err;
 
     if (conn == NULL || priv_data == NULL) {
         INFO("Invalid Parameters.");
-        return -1;
+        return -EINVAL;
     }
 
     // release session
@@ -64,22 +64,18 @@ int rx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     }
     rx_ctx->shm_ready = 0;
 
-    // mtl_rdma_rx_session_destroy(&rx_ctx);
-
     /* stop event polling thread */
-    INFO("RX Stop poll event\n");
+    INFO("RX RDMA Stop poll event");
     socket = memif_get_socket_handle(conn);
     if (socket == NULL) {
-        INFO("Invalide socket handle.");
-        return -1;
+        INFO("Invalid socket handle.");
+        return -EINVAL;
     }
 
     err = memif_cancel_poll_event(socket);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("We are doomed...");
     }
-
-    // free(priv_data);
 
     return 0;
 }
@@ -108,14 +104,14 @@ int tx_rdma_on_connect(memif_conn_handle_t conn, void* priv_data)
  * identify connection */
 int tx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
-    static int counter = 0;
-    int err = 0;
     tx_rdma_session_context_t* tx_ctx = priv_data;
     memif_socket_handle_t socket;
+    static int counter = 0;
+    int err = 0;
 
     if (conn == NULL || priv_data == NULL) {
         INFO("Invalid Parameters.");
-        return -1;
+        return -EINVAL;
     }
 
     // release session
@@ -124,22 +120,18 @@ int tx_rdma_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     }
     tx_ctx->shm_ready = 0;
 
-    // mtl_rdma_tx_session_destroy(&tx_ctx);
-
     /* stop event polling thread */
     INFO("TX Stop poll event");
     socket = memif_get_socket_handle(conn);
     if (socket == NULL) {
         INFO("Invalide socket handle.");
-        return -1;
+        return -EINVAL;
     }
 
     err = memif_cancel_poll_event(socket);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("We are doomed...");
     }
-
-    // free(priv_data);
 
     return 0;
 }
@@ -153,7 +145,7 @@ int tx_rdma_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 
     if (tx_ctx->stop) {
         INFO("TX session already stopped.");
-        return -1;
+        return -EINVAL;
     }
 
     /* receive packets from the shared memory */

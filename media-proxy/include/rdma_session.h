@@ -24,8 +24,6 @@ typedef struct {
   size_t transfer_size;
   rdma_addr remote_addr;
   rdma_addr local_addr;
-  // uint32_t width;
-  // uint32_t height;
   enum direction dir;
 } rdma_s_ops_t;
 

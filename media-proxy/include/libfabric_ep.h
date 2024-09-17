@@ -15,11 +15,7 @@ extern "C" {
 #include <rdma/fi_rma.h>
 #include <rdma/fi_domain.h>
 #include "libfabric_dev.h"
-
-enum direction {
-    TX,
-    RX
-};
+#include "utils.h"
 
 typedef struct {
     char ip[46];

@@ -24,8 +24,6 @@
 #include "libfabric_cq.h"
 #include "libfabric_mr.h"
 
-#define RDMA_CTRL_MSG_LEN 1024
-
 
 static int enable_ep(ep_ctx_t* ep_ctx)
 {
@@ -86,7 +84,7 @@ int ep_init_av_addr(ep_ctx_t* ep_ctx, libfabric_ctx* rdma_ctx, struct fi_info* f
         if (ret)
             return ret;
 
-        addrlen = RDMA_CTRL_MSG_LEN;
+        addrlen = ep_ctx->data_buf_size;
         ret = fi_getname(&ep_ctx->ep->fid, (char *) ep_ctx->data_buf,
                  &addrlen);
         if (ret) {
@@ -101,7 +99,7 @@ int ep_init_av_addr(ep_ctx_t* ep_ctx, libfabric_ctx* rdma_ctx, struct fi_info* f
             return ret;
 
     } else {
-        ret = ep_recv_buf(ep_ctx, ep_ctx->data_buf, RDMA_CTRL_MSG_LEN);
+        ret = ep_recv_buf(ep_ctx, ep_ctx->data_buf, ep_ctx->data_buf_size);
         if (ret)
             return ret;
 
@@ -295,6 +293,9 @@ int ep_init(ep_ctx_t** ep_ctx, ep_cfg_t* cfg) {
 }
 
 int ep_destroy(ep_ctx_t** ep_ctx) {
+
+    if (!ep_ctx || !(*ep_ctx))
+        return -EINVAL;
 
     //TODO: make sure that you close everything inside ep_ctx
     RDMA_CLOSE_FID((*ep_ctx)->data_mr);

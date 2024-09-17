@@ -1,5 +1,6 @@
 #include <pthread.h>
 #include <sys/stat.h>
+#include <bsd/string.h>
 
 #include "libfabric_dev.h"
 #include "rdma_session.h"
@@ -7,8 +8,8 @@
 
 static void* rx_memif_event_loop(void* arg)
 {
-    int err = MEMIF_ERR_SUCCESS;
     memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
+    int err;
 
     do {
         // INFO("media-proxy waiting event.");
@@ -23,7 +24,7 @@ static void* rx_memif_event_loop(void* arg)
 
 int rx_rdma_shm_init(rx_rdma_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 {
-    int ret = 0;
+    int err;
     memif_ops_t default_memif_ops = { 0 };
 
     if (rx_ctx == NULL) {
@@ -35,29 +36,29 @@ int rx_rdma_shm_init(rx_rdma_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     bzero(rx_ctx->memif_socket_args.path, sizeof(rx_ctx->memif_socket_args.path));
 
     if (memif_ops == NULL) {
-        strncpy(default_memif_ops.app_name, "mcm_rx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_rx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strlcpy(default_memif_ops.app_name, "mcm_rx", sizeof(default_memif_ops.app_name));
+        strlcpy(default_memif_ops.interface_name, "mcm_rx", sizeof(default_memif_ops.interface_name));
+        strlcpy(default_memif_ops.socket_path, "/run/mcm/mcm_rx_memif.sock", sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
-    strncpy(rx_ctx->memif_socket_args.app_name, memif_ops->app_name,
+    strlcpy(rx_ctx->memif_socket_args.app_name, memif_ops->app_name,
         sizeof(rx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
-    strncpy(rx_ctx->memif_socket_args.path, memif_ops->socket_path,
+    strlcpy(rx_ctx->memif_socket_args.path, memif_ops->socket_path,
         sizeof(rx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && rx_ctx->memif_socket_args.path[0] != '@') {
         struct stat st = { 0 };
         if (stat("/run/mcm", &st) == -1) {
-            ret = mkdir("/run/mcm", 0666);
-            if (ret != 0) {
-                perror("Create directory for MemIF socket.");
+            err = mkdir("/run/mcm", 0666);
+            if (err != 0) {
+                ERROR("Create directory for MemIF socket.");
                 return -1;
             }
         }
@@ -65,9 +66,9 @@ int rx_rdma_shm_init(rx_rdma_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     }
 
     INFO("Create memif socket.");
-    ret = memif_create_socket(&rx_ctx->memif_socket, &rx_ctx->memif_socket_args, NULL);
-    if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create_socket: %s", memif_strerror(ret));
+    err = memif_create_socket(&rx_ctx->memif_socket, &rx_ctx->memif_socket_args, NULL);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("memif_create_socket: %s", memif_strerror(err));
         return -1;
     }
 
@@ -83,17 +84,17 @@ int rx_rdma_shm_init(rx_rdma_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
     INFO("create memif interface.");
-    ret = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args,
+    err = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args,
         rx_rdma_on_connect, rx_rdma_on_disconnect, rx_on_receive, rx_ctx);
-    if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create: %s", memif_strerror(ret));
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("memif_create: %s", memif_strerror(err));
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
-    if (ret < 0) {
-        printf("%s(%d), thread create fail\n", __func__, ret);
+    err = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    if (err < 0) {
+        printf("%s(%d), thread create fail\n", __func__, err);
         return -1;
     }
 
@@ -102,7 +103,7 @@ int rx_rdma_shm_init(rx_rdma_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 
 int tx_rdma_shm_init(tx_rdma_session_context_t* tx_ctx, memif_ops_t* memif_ops)
 {
-    int ret = 0;
+    int err;
     const uint16_t FRAME_COUNT = 4;
     memif_ops_t default_memif_ops = { 0 };
 
@@ -115,27 +116,27 @@ int tx_rdma_shm_init(tx_rdma_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     bzero(tx_ctx->memif_socket_args.path, sizeof(tx_ctx->memif_socket_args.path));
 
     if (memif_ops == NULL) {
-        strncpy(default_memif_ops.app_name, "mcm_tx", sizeof(default_memif_ops.app_name));
-        strncpy(default_memif_ops.interface_name, "mcm_tx", sizeof(default_memif_ops.interface_name));
-        strncpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock", sizeof(default_memif_ops.socket_path));
+        strlcpy(default_memif_ops.app_name, "mcm_tx", sizeof(default_memif_ops.app_name));
+        strlcpy(default_memif_ops.interface_name, "mcm_tx", sizeof(default_memif_ops.interface_name));
+        strlcpy(default_memif_ops.socket_path, "/run/mcm/mcm_tx_memif.sock", sizeof(default_memif_ops.socket_path));
 
         memif_ops = &default_memif_ops;
     }
 
     /* Set application name */
-    strncpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name, sizeof(tx_ctx->memif_socket_args.app_name) - 1);
+    strlcpy(tx_ctx->memif_socket_args.app_name, memif_ops->app_name, sizeof(tx_ctx->memif_socket_args.app_name) - 1);
 
     /* Create memif socket
      * Interfaces are internally stored in a database referenced by memif socket. */
-    strncpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path, sizeof(tx_ctx->memif_socket_args.path) - 1);
+    strlcpy(tx_ctx->memif_socket_args.path, memif_ops->socket_path, sizeof(tx_ctx->memif_socket_args.path) - 1);
 
     /* unlink socket file */
     if (memif_ops->is_master && tx_ctx->memif_socket_args.path[0] != '@') {
         struct stat st = { 0 };
         if (stat("/run/mcm", &st) == -1) {
-            ret = mkdir("/run/mcm", 0666);
-            if (ret != 0) {
-                perror("Create directory for MemIF socket.");
+            err = mkdir("/run/mcm", 0666);
+            if (err != 0) {
+                ERROR("Create directory for MemIF socket.");
                 return -1;
             }
         }
@@ -143,9 +144,9 @@ int tx_rdma_shm_init(tx_rdma_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     }
 
     INFO("Create memif socket.");
-    ret = memif_create_socket(&tx_ctx->memif_socket, &tx_ctx->memif_socket_args, NULL);
-    if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create_socket: %s", memif_strerror(ret));
+    err = memif_create_socket(&tx_ctx->memif_socket, &tx_ctx->memif_socket_args, NULL);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("memif_create_socket: %s", memif_strerror(err));
         return -1;
     }
 
@@ -164,17 +165,17 @@ int tx_rdma_shm_init(tx_rdma_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
-    ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_rdma_on_connect, tx_rdma_on_disconnect, tx_rdma_on_receive, tx_ctx);
-    if (ret != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create: %s", memif_strerror(ret));
+    err = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_rdma_on_connect, tx_rdma_on_disconnect, tx_rdma_on_receive, tx_ctx);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("memif_create: %s", memif_strerror(err));
         free(tx_ctx->shm_bufs);
         return -1;
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, rx_memif_event_loop, tx_ctx->memif_conn_args.socket);
-    if (ret < 0) {
-        printf("%s(%d), thread create fail\n", __func__, ret);
+    err = pthread_create(&tx_ctx->memif_event_thread, NULL, rx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    if (err < 0) {
+        printf("%s(%d), thread create fail\n", __func__, err);
         free(tx_ctx->shm_bufs);
         return -1;
     }
@@ -184,12 +185,18 @@ int tx_rdma_shm_init(tx_rdma_session_context_t* tx_ctx, memif_ops_t* memif_ops)
 
 static int rx_shm_deinit(rx_rdma_session_context_t* rx_ctx)
 {
+    int err;
+
     if (rx_ctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
         return -1;
     }
 
-    pthread_cancel(rx_ctx->memif_event_thread);
+    err = pthread_cancel(rx_ctx->memif_event_thread);
+    if (err) {
+        printf("%s: Error canceling thread: %s\n", __func__, strerror(err));
+        return -1;
+    }
 
     /* free-up resources */
     memif_delete(&rx_ctx->memif_conn);
@@ -210,12 +217,18 @@ static int rx_shm_deinit(rx_rdma_session_context_t* rx_ctx)
 
 static int tx_shm_deinit(tx_rdma_session_context_t* tx_ctx)
 {
+    int err;
+
     if (tx_ctx == NULL) {
         printf("%s, Illegal parameter.\n", __func__);
         return -1;
     }
 
     pthread_cancel(tx_ctx->memif_event_thread);
+    if (err) {
+        printf("%s: Error canceling thread: %s\n", __func__, strerror(err));
+        return -1;
+    }
 
     /* free-up resources */
     memif_delete(&tx_ctx->memif_conn);
@@ -236,7 +249,7 @@ static int tx_shm_deinit(tx_rdma_session_context_t* tx_ctx)
 
 /* TX: Create RDMA session */
 tx_rdma_session_context_t* rdma_tx_session_create(libfabric_ctx* dev_handle, rdma_s_ops_t* opts, memif_ops_t* memif_ops){
-    int ret = 0;
+    int err;
 	tx_rdma_session_context_t* tx_ctx;
 	tx_ctx = calloc(1, sizeof(tx_rdma_session_context_t));
     if (tx_ctx == NULL) {
@@ -248,8 +261,8 @@ tx_rdma_session_context_t* rdma_tx_session_create(libfabric_ctx* dev_handle, rdm
 
     tx_ctx->transfer_size = opts->transfer_size;
 
-    ret = tx_rdma_shm_init(tx_ctx, memif_ops);
-    if (ret < 0) {
+    err = tx_rdma_shm_init(tx_ctx, memif_ops);
+    if (err < 0) {
         printf("%s, fail to initialize share memory.\n", __func__);
         free(tx_ctx);
         return NULL;
@@ -269,8 +282,8 @@ tx_rdma_session_context_t* rdma_tx_session_create(libfabric_ctx* dev_handle, rdm
         return NULL;
     }
 
-    ret = ep_init(&tx_ctx->ep_ctx, &ep_cfg);
-    if (ret) {
+    err = ep_init(&tx_ctx->ep_ctx, &ep_cfg);
+    if (err) {
         printf("%s, fail to initialize libfabric's end point.\n", __func__);
         free(tx_ctx);
         return NULL;
@@ -281,7 +294,7 @@ tx_rdma_session_context_t* rdma_tx_session_create(libfabric_ctx* dev_handle, rdm
 
 static void rx_rdma_consume_frame(rx_rdma_session_context_t* s, char* frame)
 {
-    int err = 0;
+    int err;
     uint16_t qid = 0;
     mcm_buffer* rx_mcm_buff = NULL;
     memif_buffer_t* rx_bufs = NULL;
@@ -332,8 +345,10 @@ static void* rx_rdma_frame_thread(void* arg)
 
 /* RX: Create RDMA session */
 rx_rdma_session_context_t* rdma_rx_session_create(libfabric_ctx* dev_handle, rdma_s_ops_t* opts, memif_ops_t* memif_ops){
-    int ret = 0;
-	rx_rdma_session_context_t* rx_ctx;
+    rx_rdma_session_context_t* rx_ctx;
+    ep_cfg_t ep_cfg = {0};
+    int err;
+
     rx_ctx = calloc(1, sizeof(rx_rdma_session_context_t));
     if (rx_ctx == NULL) {
         printf("%s, TX session contex malloc fail\n", __func__);
@@ -344,37 +359,36 @@ rx_rdma_session_context_t* rdma_rx_session_create(libfabric_ctx* dev_handle, rdm
 
     rx_ctx->transfer_size = opts->transfer_size;
 
-    ret = rx_rdma_shm_init(rx_ctx, memif_ops);
+    err = rx_rdma_shm_init(rx_ctx, memif_ops);
 
-    if (ret < 0) {
+    if (err < 0) {
         printf("%s, fail to initialize share memory.\n", __func__);
         free(rx_ctx);
         return NULL;
     }
 
     // TODO: use memif buffer with correct size
-    ep_cfg_t ep_cfg = {
-        .rdma_ctx = rx_ctx->rdma_ctx,
-        .data_buf_size = rx_ctx->transfer_size,
-        .local_addr = opts->local_addr,
-        .remote_addr = opts->remote_addr,
-        .data_buf = malloc(rx_ctx->transfer_size),
-        .dir = opts->dir,
-    };
+    ep_cfg.rdma_ctx = rx_ctx->rdma_ctx;
+    ep_cfg.data_buf_size = rx_ctx->transfer_size;
+    ep_cfg.local_addr = opts->local_addr;
+    ep_cfg.remote_addr = opts->remote_addr;
+    ep_cfg.dir = opts->dir;
+    ep_cfg.data_buf = malloc(rx_ctx->transfer_size);
     if (!ep_cfg.data_buf) {
         printf("%s, session data buffer malloc fail\n", __func__);
         return NULL;
     }
-    ret = ep_init(&rx_ctx->ep_ctx, &ep_cfg);
-    if (ret) {
+
+    err = ep_init(&rx_ctx->ep_ctx, &ep_cfg);
+    if (err) {
         printf("%s, fail to initialize libfabric's end point.\n", __func__);
         free(rx_ctx);
         return NULL;
     }
 
-    ret = pthread_create(&rx_ctx->frame_thread, NULL, rx_rdma_frame_thread, rx_ctx);
-    if (ret < 0) {
-        printf("%s(%d), thread create fail %d\n", __func__, ret, rx_ctx->idx);
+    err = pthread_create(&rx_ctx->frame_thread, NULL, rx_rdma_frame_thread, rx_ctx);
+    if (err < 0) {
+        printf("%s(%d), thread create fail %d\n", __func__, err, rx_ctx->idx);
         free(rx_ctx);
         return NULL;
     }
@@ -384,6 +398,8 @@ rx_rdma_session_context_t* rdma_rx_session_create(libfabric_ctx* dev_handle, rdm
 
 void rdma_rx_session_stop(rx_rdma_session_context_t* rx_ctx)
 {
+    int err;
+
     if (rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
         return;
@@ -391,13 +407,16 @@ void rdma_rx_session_stop(rx_rdma_session_context_t* rx_ctx)
     // TODO: Add better synchronization
     rx_ctx->stop = true;
 
-    pthread_join(rx_ctx->frame_thread, NULL);
+    err = pthread_join(rx_ctx->frame_thread, NULL);
+    if (err) {
+        printf("%s: Error joining thread: %s\n", __func__, strerror(err));
+    }
 }
 
 void rdma_rx_session_destroy(rx_rdma_session_context_t** p_rx_ctx)
 {
     rx_rdma_session_context_t* rx_ctx = NULL;
-    int ret;
+    int err;
 
     if (p_rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -407,8 +426,8 @@ void rdma_rx_session_destroy(rx_rdma_session_context_t** p_rx_ctx)
     rx_ctx = *p_rx_ctx;
     // TODO: Remove free when memif buf will be used
     free(rx_ctx->ep_ctx->data_buf);
-    ret = ep_destroy(&rx_ctx->ep_ctx);
-    if (ret < 0) {
+    err = ep_destroy(&rx_ctx->ep_ctx);
+    if (err < 0) {
         printf("%s, ep free failed\n", __func__);
         return;
     }
@@ -421,23 +440,32 @@ void rdma_rx_session_destroy(rx_rdma_session_context_t** p_rx_ctx)
 
 void rdma_tx_session_stop(tx_rdma_session_context_t* tx_ctx)
 {
+    int err;
+
     if (tx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
         return;
     }
     if (!tx_ctx->shm_ready) {
-        pthread_cancel(tx_ctx->memif_event_thread);
+        err = pthread_cancel(tx_ctx->memif_event_thread);
+        if (err) {
+            printf("%s: Error canceling thread: %s\n", __func__, strerror(err));
+            return;
+        }
     }
 
     tx_ctx->stop = true;
 
-    pthread_join(tx_ctx->memif_event_thread, NULL);
+    err = pthread_join(tx_ctx->memif_event_thread, NULL);
+    if (err) {
+        printf("%s: Error joining thread: %s\n", __func__, strerror(err));
+    }
 }
 
 void rdma_tx_session_destroy(tx_rdma_session_context_t** p_tx_ctx)
 {
     tx_rdma_session_context_t* tx_ctx = NULL;
-    int ret;
+    int err;
 
     if (p_tx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -447,8 +475,8 @@ void rdma_tx_session_destroy(tx_rdma_session_context_t** p_tx_ctx)
     tx_ctx = *p_tx_ctx;
     // TODO: Remove free when memif buf will be used
     free(tx_ctx->ep_ctx->data_buf);
-    ret = ep_destroy(&tx_ctx->ep_ctx);
-    if (ret < 0) {
+    err = ep_destroy(&tx_ctx->ep_ctx);
+    if (err < 0) {
         printf("%s, ep free failed\n", __func__);
         return;
     }
