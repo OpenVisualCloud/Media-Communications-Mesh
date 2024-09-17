@@ -21,7 +21,7 @@ typedef struct _udp_context {
 } udp_context;
 
 /* Create MCM DP connect session for application. */
-udp_context* mcm_create_connection_udp(mcm_conn_param* param);
+udp_context* mcm_create_connection_udp(MeshConnectionConfig* param);
 
 /* Destroy MCM DP connection. */
 void mcm_destroy_connection_udp(udp_context* conn_ctx);

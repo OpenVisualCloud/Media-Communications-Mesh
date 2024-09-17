@@ -47,10 +47,10 @@ typedef struct {
 } memif_ops_t;
 
 /* Create memif connection . */
-mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_conn_param* memif_args);
+int mcm_create_connection_memif(MeshClient mc, MeshConnection conn, mcm_conn_param* svc_args, memif_conn_param* memif_args);
 
 /* Destroy memif connection. */
-void mcm_destroy_connection_memif(memif_conn_context* pctx);
+void mcm_destroy_connection_memif(MeshClient mc, memif_conn_context* pctx);
 
 /* Alloc buffer from queue. */
 // void* memif_alloc_buffer(void* conn_ctx, size_t size);
@@ -65,10 +65,10 @@ void mcm_destroy_connection_memif(memif_conn_context* pctx);
 // void memif_free_buffer(void* conn_ctx, mcm_buffer* buf);
 
 /* Alloc video frame buffer from buffer queue. */
-mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* error_code);
+int memif_dequeue_buffer(MeshClient mc, MeshConnection conn, mcm_buffer *buf, int timeout);
 
 /* Return video frame buffer to buffer queue. */
-int memif_enqueue_buffer(mcm_conn_context* conn_ctx, mcm_buffer* buf);
+int memif_enqueue_buffer(MeshClient mc, MeshConnection conn, mcm_buffer *buf, int timeout);
 
 #ifdef __cplusplus
 }

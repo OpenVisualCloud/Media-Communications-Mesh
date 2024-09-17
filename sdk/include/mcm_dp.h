@@ -18,8 +18,8 @@ extern "C" {
 #include "libmemif.h"
 
 /* Media proxy control commands. */
-#define MCM_CREATE_CONNECTION 1
-#define MCM_DELETE_CONNECTION 2
+#define MCM_CREATE_SESSION 1
+#define MCM_DESTROY_SESSION 2
 #define MCM_QUERY_MEMIF_PATH 3
 #define MCM_QUERY_MEMIF_ID 4
 #define MCM_QUERY_MEMIF_PARAM 5
@@ -83,10 +83,11 @@ typedef struct {
     struct {
         uint16_t seq_num; /* Sequence number */
         uint32_t timestamp; /* Timestamp */
-    } metadata;
-    size_t len;
+    } metadata; /**< filled by sender side */
+    size_t len; /**< size of data filled in "data" */
     void* data;
-} MeshBufferStruct;
+} mcm_buffer;
+
 
 /* Mesh client handle type */
 typedef void * MeshClient;
@@ -95,7 +96,7 @@ typedef void * MeshClient;
 typedef void * MeshConnection;
 
 /* Mesh shared memory buffer type */
-typedef void * MeshBuffer;
+typedef mcm_buffer * MeshBuffer;
 
 /* Mesh shared memory buffer information structure */
 typedef struct MeshBufferInfo {
@@ -122,14 +123,14 @@ typedef enum MeshLogLevel {
 } MeshLogLevel;
 
 /* Error codes */
-#define MCM_DP_SUCCESS                     (0)
-#define MESH_ERR_BAD_CLIENT_HANDLE         (1000)
-#define MESH_ERR_BAD_CONNECTION_HANDLE     (1001)
-#define MESH_ERR_BAD_BUFFER_HANDLE         (1002)
-#define MESH_ERR_CONNECTION_CLOSED         (1003)
-#define MESH_ERR_TIMEOUT                   (1004)
-#define MESH_CANNOT_CREATE_MESH_CLIENT     (1005)
-#define MESH_CANNOT_CREATE_MESH_CONNECTION (1006)
+#define MESH_ERR_BAD_CLIENT_HANDLE          (1000)
+#define MESH_ERR_BAD_CONNECTION_HANDLE      (1001)
+#define MESH_ERR_BAD_BUFFER_HANDLE          (1002)
+#define MESH_ERR_CONNECTION_CLOSED          (1003)
+#define MESH_ERR_TIMEOUT                    (1004)
+#define MESH_CANNOT_CREATE_MESH_CLIENT      (1005)
+#define MESH_CANNOT_CREATE_MESH_CONNECTION  (1006)
+#define MESH_CANNOT_CREATE_MEMIF_CONNECTION (1007)
 
 typedef enum {
     MCM_DP_SUCCESS = 0,
@@ -149,13 +150,7 @@ typedef struct MeshClientConfig {
     uint8_t mesh_version_minor;
     uint8_t mesh_version_hotfix;
 
-    mcm_dp_addr local_addr;
-    mcm_dp_addr remote_addr;
-
-    /* Media Proxy address */
-    mcm_dp_addr* proxy_addr;
-
-    /* Default timeout interval for any API call */
+   /* Default timeout interval for any API call */
     int timeout_ms;
 
     /* Max number of streams */
@@ -164,11 +159,8 @@ typedef struct MeshClientConfig {
     /* Log level */
     MeshLogLevel log_level;
 
-    /* table with pointers to Mesh Connections under this Mesh Client*/
-    MeshConnection *connections[MAX_NUMBER_OF_CONNECTIONS];
-
-    /* number of currently configured connections with this Mesh Client*/
-    int number_of_connections;
+    /* Log function*/
+    void *mesh_log_fun;    
     
 } MeshClientConfig;
 
@@ -292,6 +284,12 @@ typedef struct MeshConnectionConfig {
     transfer_type type;
     proto_type proto;
 
+    /* Media Proxy address */
+    mcm_dp_addr* proxy_addr;    
+
+    mcm_dp_addr local_addr;
+    mcm_dp_addr remote_addr;    
+
     /*used for memif sharing directly between two services in one node*/
     memif_interface_param memif_interface;
 
@@ -324,11 +322,40 @@ typedef struct MeshConnectionConfig {
     uint8_t payload_mtl_pacing;    
 } MeshConnectionConfig;
 
+typedef struct {
+    transfer_type type;
+    proto_type protocol;
+
+    mcm_dp_addr local_addr;
+    mcm_dp_addr remote_addr;
+
+    /*used for memif sharing directly between two services in one node*/
+    memif_interface_param memif_interface;
+
+    mcm_payload_type payload_type;
+    mcm_payload_codec payload_codec;
+    union {
+        mcm_video_args video_args;
+        mcm_audio_args audio_args;
+        mcm_anc_args anc_args;
+    } payload_args;
+
+    /* video format */
+    uint32_t width;
+    uint32_t height;
+    double fps;
+    video_pixel_format pix_fmt;
+
+    uint8_t payload_type_nr;
+    uint64_t payload_mtl_flags_mask;
+    uint8_t payload_mtl_pacing;
+} mcm_conn_param;
+
 /* Create a new mesh client */
-int mesh_create_client(MeshClient mc, MeshClientConfig cfg);
+int mesh_create_client(MeshClient *mc, MeshClientConfig *cfg);
 
 /* Delete mesh client */
-int mesh_delete_client(MeshClient mc);
+int mesh_delete_client(MeshClient *mc);
 
 /**
  * \brief Create session for MCM data plane connection.
@@ -336,17 +363,17 @@ int mesh_delete_client(MeshClient mc);
  * \return The context handler of created connect session.
  */
 /* Create a new mesh connection */
-int mesh_create_connection(MeshClient mc, MeshConnection conn, MeshConnectionConfig *cfg);
+int mesh_create_connection(MeshClient mc, MeshConnection conn, mcm_conn_param* param);
 
 /**
  * \brief Destroy MCM DP connection.
  * @param pctx The context handler of connection.
  */
 /* Delete mesh connection */
-int mesh_delete_connection(MeshConnection *conn);
+int mesh_delete_connection(MeshClient mc, MeshConnection conn);
 
 /* Get buffer from mesh connection */
-int mesh_get_buffer(MeshConnection conn, MeshBuffer buf, MeshBufferInfo *info, int timeout_ms);
+int mesh_get_buffer(MeshClient mc, MeshConnection conn, MeshBuffer buf, int timeout_ms);
 
 /**
  * Put buffer to buffer queue.
@@ -364,13 +391,14 @@ int mesh_get_buffer(MeshConnection conn, MeshBuffer buf, MeshBufferInfo *info, i
  */
 
 /* Put buffer to mesh connection */
-int mesh_put_buffer(MeshClient mc, MeshConnection conn, MeshBuffer *buf, int timeout_ms);
+int mesh_put_buffer(MeshClient mc, MeshConnection conn, MeshBuffer buf, int timeout_ms);
 
 /* Set length of data in the buffer */
 int mesh_set_buffer_len(MeshClient mc, MeshConnection conn, MeshBuffer buf, size_t new_len);
 
 /* Log a message */
 void mesh_log(MeshClient mc, int log_level, ...);
+
 
 #ifdef __cplusplus
 }

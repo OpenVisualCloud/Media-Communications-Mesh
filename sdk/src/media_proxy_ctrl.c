@@ -12,7 +12,7 @@
 #include "logger.h"
 #include "media_proxy_ctrl.h"
 
-int get_media_proxy_addr(mcm_dp_addr* proxy_addr)
+int get_media_proxy_addr(MeshClient mc, mcm_dp_addr* proxy_addr)
 {
     char* penv_val = NULL;
     const char DEFAULT_PROXY_IP[] = "127.0.0.1";
@@ -40,7 +40,7 @@ int get_media_proxy_addr(mcm_dp_addr* proxy_addr)
     return 0;
 }
 
-int open_socket(mcm_dp_addr* proxy_addr)
+int open_socket(MeshClient mc, mcm_dp_addr* proxy_addr)
 {
     int sockfd = -1;
     struct sockaddr_in srvaddr = {};
@@ -76,10 +76,11 @@ void close_socket(int sockfd)
     return;
 }
 
-int media_proxy_create_session(MeshClient *mc, MeshConnection* conn, int sockfd, uint32_t* session_id)
+int media_proxy_create_session(MeshClient mc, mcm_conn_param *param, int sockfd, uint32_t* session_id)
 {
     ssize_t ret = 0;
     mcm_proxy_ctl_msg msg = {};
+
 
     if (sockfd <= 0 || param == NULL || session_id == NULL) {
         mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameters.");
@@ -124,7 +125,7 @@ int media_proxy_create_session(MeshClient *mc, MeshConnection* conn, int sockfd,
     return 0;
 }
 
-int media_proxy_query_interface(MeshClient *mc, MeshConnection* conn, int sockfd, uint32_t session_id, mcm_conn_param* param, memif_conn_param* memif_conn_args)
+int media_proxy_query_interface(MeshClient mc, int sockfd, uint32_t session_id, mcm_conn_param* param, memif_conn_param* memif_conn_args)
 {
     ssize_t ret = 0;
     mcm_proxy_ctl_msg msg = {};
@@ -171,19 +172,20 @@ int media_proxy_query_interface(MeshClient *mc, MeshConnection* conn, int sockfd
     return 0;
 }
 
-void media_proxy_destroy_session(MeshClient *mc, MeshConnection *conn)
+void media_proxy_destroy_session(MeshClient mc, MeshConnection conn)
 {
     int sockfd = 0;
     uint32_t session_id = 0;
     mcm_proxy_ctl_msg msg = {};
+    MeshConnectionConfig *conn_conf= (MeshConnectionConfig*) conn;    
 
     if (conn == NULL) {
         mesh_log(mc, MESH_LOG_ERROR, "Illegal Parameters.");
         return;
     }
 
-    sockfd = conn->proxy_sockfd;
-    session_id = conn->session_id;
+    sockfd = conn_conf->proxy_sockfd;
+    session_id = conn_conf->session_id;
 
     /* intialize message header. */
     msg.header.magic_word = *(uint32_t*)HEADER_MAGIC_WORD;
