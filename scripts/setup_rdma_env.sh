@@ -101,16 +101,20 @@ set_mtu() {
 }
 
 run_perftest() {
-    sudo ip addr add 192.168.255.255/24 dev $1
+    # Usage: run_perftest <interface_name> [network_address] [network_mask]
+    interface_name="$1"
+    network_address="${2:-192.168.255.255}"
+    network_mask="${3:-24}"
+    sudo ip addr add ${network_address}/${network_mask} dev ${interface_name}
     taskset -c 1 ib_write_bw --qp=4 --report_gbit -D 60 --tos 96 -R &> "$WORKING_DIR"/perftest_server.log &
     server_pid=$!
-    ib_write_bw 192.168.255.255 --qp=4 --report_gbit -D 60 --tos 96 -R &> "$WORKING_DIR"/perftest_client.log &
+    ib_write_bw ${network_address} --qp=4 --report_gbit -D 60 --tos 96 -R &> "$WORKING_DIR"/perftest_client.log &
     client_pid=$!
     echo "perftest is running. Waiting 60 s..."
     wait $server_pid
     wait $client_pid
     echo "perftest completed. See results in $WORKING_DIR/perftest_server.log and $WORKING_DIR/perftest_client.log"
-    sudo ip addr del 192.168.255.255/24 dev $1
+    sudo ip addr del ${network_address}/${network_mask} dev ${interface_name}
 }
 
 if [[ "$1" == "install" ]]; then
