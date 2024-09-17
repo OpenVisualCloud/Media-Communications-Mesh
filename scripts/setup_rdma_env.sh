@@ -3,7 +3,8 @@
 set -eo pipefail
 
 WORKING_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")/rdma"
-
+IRDMA_DMID="832291"
+IRDMA_VER="1.15.11"
 if [[ ! -f $WORKING_DIR/.. ]]; then
     echo "Can't create rdma directory because of the rdma file $WORKING_DIR"
     exit 1
@@ -14,9 +15,9 @@ mkdir -p "$WORKING_DIR"
 install_irdma() {
     echo "Installing irdma driver..."
     pushd "$WORKING_DIR"
-    wget https://downloadmirror.intel.com/832291/irdma-1.15.11.tgz -O ./irdma.tar.gz
+    wget "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" -O ./irdma.tar.gz
     tar -xf ./irdma.tar.gz
-    pushd ./irdma-*
+    pushd "./irdma-${IRDMA_VER}"
     sudo ./build.sh
     popd
     popd
