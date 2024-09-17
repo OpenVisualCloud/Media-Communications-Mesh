@@ -168,10 +168,13 @@ int main(int argc, char** argv)
     video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
     uint32_t frame_size = 0;
 
-    mcm_conn_context* dp_ctx = NULL;
     mcm_conn_param param = { 0 };
-    mcm_buffer* buf = NULL;
     uint32_t total_num = 300;
+
+    MeshClient mc = NULL;
+    MeshClientConfig mc_conf = { 0 };
+    MeshBuffer buf = NULL;
+    MeshConnection conn = NULL;
 
     int help_flag = 0;
     int opt;
@@ -348,8 +351,16 @@ int main(int argc, char** argv)
     strlcpy(param.local_addr.port, send_port, sizeof(param.local_addr.port));
     frame_size = getFrameSize(pix_fmt, width, height, false);
 
-    dp_ctx = mcm_create_connection(&param);
-    if (dp_ctx == NULL) {
+    char* penv_val = NULL;
+
+    if ((penv_val = getenv("MCM_MEDIA_PROXY_IP")) != NULL) {
+        strlcpy(mc_conf.proxy_addr->ip, penv_val, sizeof(mc_conf.proxy_addr->ip) - 1);
+    }
+
+    mesh_create_client(&mc, mc_conf);
+    mesh_create_connection(mc, &conn, &param);
+
+    if (conn == NULL) {
         printf("Fail to connect to MCM data plane\n");
         exit(-1);
     }
@@ -382,7 +393,8 @@ int main(int argc, char** argv)
         /* Timestamp for frame start. */
         clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
 
-        buf = mcm_dequeue_buffer(dp_ctx, -1, NULL);
+        mesh_get_buffer(mc, conn, buf, -1);
+
         if (buf == NULL) {
             break;
         }
@@ -412,7 +424,7 @@ int main(int argc, char** argv)
             }
         }
 
-        if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
+        if (mesh_put_buffer(mc, conn, buf, -1) != 0) {
             break;
         }
 
@@ -448,7 +460,7 @@ int main(int argc, char** argv)
     sleep(2);
 
     /* Clean up */
-    mcm_destroy_connection(dp_ctx);
+    mesh_delete_connection(mc, &conn);
 
     if (input_fp != NULL) {
         fclose(input_fp);

@@ -380,7 +380,8 @@ int mcm_create_connection_memif(MeshClient mc, MeshConnection conn, mcm_conn_par
                 memif_conn->working_idx++;
                 memif_conn->buf_num--;
             } else { /* Timeout */
-                log_debug("Timeout to read buffer from memory queue.");
+                mesh_log(mc,MESH_LOG_DEBUG, "Timeout to read buffer from memory queue.");
+                err=MCM_DP_ERROR_TIMEOUT;
             }
         }
      }

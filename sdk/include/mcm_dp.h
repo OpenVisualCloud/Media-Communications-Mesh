@@ -123,33 +123,23 @@ typedef enum MeshLogLevel {
 } MeshLogLevel;
 
 /* Error codes */
-#define MESH_ERR_BAD_CLIENT_HANDLE          (1000)
-#define MESH_ERR_BAD_CONNECTION_HANDLE      (1001)
-#define MESH_ERR_BAD_BUFFER_HANDLE          (1002)
-#define MESH_ERR_CONNECTION_CLOSED          (1003)
-#define MESH_ERR_TIMEOUT                    (1004)
-#define MESH_CANNOT_CREATE_MESH_CLIENT      (1005)
-#define MESH_CANNOT_CREATE_MESH_CONNECTION  (1006)
-#define MESH_CANNOT_CREATE_MEMIF_CONNECTION (1007)
-
-typedef enum {
-    MCM_DP_SUCCESS = 0,
-    MCM_DP_ERROR_INVALID_PARAM,
-    MCM_DP_ERROR_CONNECTION_FAILED,
-    MCM_DP_ERROR_TIMEOUT,
-    MCM_DP_ERROR_MEMORY_ALLOCATION,
-    // Add more error codes as needed
-    MCM_DP_ERROR_UNKNOWN = -1
-} mcm_dp_error;
-/* Maximum number of connections maintained with a Mesh Client*/
-#define MAX_NUMBER_OF_CONNECTIONS 2048
+#define MCM_DP_SUCCESS 0
+#define MCM_DP_ERROR_UNKNOWN                (1000)
+#define MESH_ERR_BAD_CLIENT_HANDLE          (1001)
+#define MESH_ERR_BAD_CONNECTION_HANDLE      (1002)
+#define MESH_ERR_BAD_BUFFER_HANDLE          (1003)
+#define MESH_ERR_CONNECTION_CLOSED          (1004)
+#define MESH_ERR_TIMEOUT                    (1005)
+#define MESH_CANNOT_CREATE_MESH_CLIENT      (1006)
+#define MESH_CANNOT_CREATE_MESH_CONNECTION  (1007)
+#define MESH_CANNOT_CREATE_MEMIF_CONNECTION (1008)
+#define MCM_DP_ERROR_INVALID_PARAM          (1009)
+#define MCM_DP_ERROR_CONNECTION_FAILED      (1010)
+#define MCM_DP_ERROR_TIMEOUT                (1011)
+#define MCM_DP_ERROR_MEMORY_ALLOCATION      (1012)
 
 /* Mesh client configuration structure */
 typedef struct MeshClientConfig {
-    uint8_t mesh_version_major;
-    uint8_t mesh_version_minor;
-    uint8_t mesh_version_hotfix;
-
     /* Media Proxy address */
     mcm_dp_addr* proxy_addr;    
 
@@ -351,7 +341,7 @@ typedef struct {
 } mcm_conn_param;
 
 /* Create a new mesh client */
-int mesh_create_client(MeshClient *mc, MeshClientConfig *cfg);
+int mesh_create_client(MeshClient *mc, MeshClientConfig cfg);
 
 /* Delete mesh client */
 int mesh_delete_client(MeshClient *mc);
@@ -362,14 +352,14 @@ int mesh_delete_client(MeshClient *mc);
  * \return The context handler of created connect session.
  */
 /* Create a new mesh connection */
-int mesh_create_connection(MeshClient mc, MeshConnection conn, mcm_conn_param* param);
+int mesh_create_connection(MeshClient mc, MeshConnection *conn, mcm_conn_param *param);
 
 /**
  * \brief Destroy MCM DP connection.
  * @param pctx The context handler of connection.
  */
 /* Delete mesh connection */
-int mesh_delete_connection(MeshClient mc, MeshConnection conn);
+int mesh_delete_connection(MeshClient mc, MeshConnection *conn);
 
 /* Get buffer from mesh connection */
 int mesh_get_buffer(MeshClient mc, MeshConnection conn, MeshBuffer buf, int timeout_ms);

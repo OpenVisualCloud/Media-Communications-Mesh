@@ -14,12 +14,12 @@
 #include "media_proxy_ctrl.h"
 
 /* Create a new mesh client */
-int mesh_create_client(MeshClient *mc, MeshClientConfig *cfg)
+int mesh_create_client(MeshClient *mc, MeshClientConfig cfg)
 {
     mc = calloc(1, sizeof(MeshClientConfig));
     if (mc==NULL) return MESH_CANNOT_CREATE_MESH_CLIENT;
 
-    memcpy(mc, cfg, sizeof(MeshClientConfig));   
+    memcpy(mc, &cfg, sizeof(MeshClientConfig));   
     return 0;
 }
 
@@ -144,7 +144,7 @@ int mcm_create_connection_proxy(MeshClient mc, MeshConnection conn)
  ******************************************************/
 
 /* Create a new mesh connection */
-int mesh_create_connection(MeshClient mc, MeshConnection conn, mcm_conn_param* param)
+int mesh_create_connection(MeshClient mc, MeshConnection *conn, mcm_conn_param *param)
 {
     conn = calloc(1, sizeof(MeshConnectionConfig));
     if (mc==NULL) return MESH_CANNOT_CREATE_MESH_CONNECTION;
@@ -195,7 +195,7 @@ int mesh_create_connection(MeshClient mc, MeshConnection conn, mcm_conn_param* p
         break;
     case PROTO_MEMIF:
         memif_conn_param memif_param = {};
-        parse_memif_param(conn, &(memif_param.socket_args), &(memif_param.conn_args));
+        parse_memif_param(param, &(memif_param.socket_args), &(memif_param.conn_args));
         /* Connect memif connection. */
         if (mcm_create_connection_memif(mc, conn, param, &memif_param)) {
             mesh_log(mc, MESH_LOG_ERROR, "Failed to create memif connection.");
@@ -214,7 +214,7 @@ int mesh_create_connection(MeshClient mc, MeshConnection conn, mcm_conn_param* p
 }
 
 /* Destroy MCM DP connection. */
-int mesh_delete_connection(MeshClient mc, MeshConnection conn)
+int mesh_delete_connection(MeshClient mc, MeshConnection *conn)
 {
     MeshConnectionConfig *conn_conf= (MeshConnectionConfig*) conn;
 
@@ -255,6 +255,8 @@ int mesh_delete_connection(MeshClient mc, MeshConnection conn)
     }
 
     free(conn);
+    conn=NULL;
+    
     return MCM_DP_SUCCESS;
 }
 
