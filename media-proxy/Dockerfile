@@ -20,10 +20,12 @@ ARG GRPC_DIR="/opt/grpc"
 # JPEGXS_VER Release v0.9
 ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"
 ARG JPEGXS_DIR="/opt/jpegxs"
+ARG LIBFABRIC_DIR="/opt/libfabric"
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ="Europe/Warsaw"
 ENV PATH="${PREFIX_DIR}/bin:/root/.local/bin:/root/bin:/root/usr/bin:$PATH"
+ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig
 
 SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install package dependencies
@@ -35,7 +37,8 @@ RUN apt-get update --fix-missing && \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
         m4 clang llvm zlib1g-dev libelf-dev libcap-ng-dev \
-        gcc-multilib systemtap-sdt-dev librdmacm-dev && \
+        gcc-multilib systemtap-sdt-dev librdmacm-dev \
+        libfdt-dev autoconf automake autotools-dev libtool && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
@@ -47,15 +50,11 @@ RUN git config --global user.email "milosz.linkiewicz@intel.com" && \
     git -C ${MTL_DIR} checkout ${MTL_VER} && \
     git clone --branch v${DPDK_VER} --depth 1 https://github.com/DPDK/dpdk.git ${DPDK_DIR} && \
     git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git ${XDP_DIR} && \
+    git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric ${LIBFABRIC_DIR} && \
     git clone --branch ${GPRC_VER} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc ${GRPC_DIR} && \
     git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS ${JPEGXS_DIR} && \
     git -C ${JPEGXS_DIR} checkout ${JPEGXS_VER} && \
     git am ${MTL_DIR}/patches/dpdk/${DPDK_VER}/*.patch
-
-RUN meson setup build && \
-    ninja -C build && \
-    meson install -C build && \
-    DESTDIR="${PREFIX_DIR}" meson install -C build
 
 # Build the xdp-tools project
 WORKDIR ${XDP_DIR}
@@ -63,8 +62,23 @@ RUN ./configure && \
     make && \
     make install && \
     DESTDIR="${PREFIX_DIR}" make install && \
+    make -C "${XDP_DIR}/lib/libbpf/src" && \
     make -C "${XDP_DIR}/lib/libbpf/src" install && \
     DESTDIR="${PREFIX_DIR}" make -C "${XDP_DIR}/lib/libbpf/src" install
+
+WORKDIR ${LIBFABRIC_DIR}
+RUN ./autogen.sh && \
+    ./configure && \
+    make -j$(nproc) && \
+    make install && \
+    DESTDIR="${PREFIX_DIR}" make install
+
+# Build the DPDK
+WORKDIR ${DPDK_DIR}
+RUN meson setup build && \
+    ninja -C build && \
+    meson install -C build && \
+    DESTDIR="${PREFIX_DIR}" meson install -C build
 
 # Build MTL
 WORKDIR ${MTL_DIR}
@@ -97,10 +111,10 @@ WORKDIR ${MCM_DIR}
 COPY . ${MCM_DIR}
 RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh && \
     cp "${MTL_DIR}/build/manager/MtlManager" "${PREFIX_DIR}/usr/local/bin/" && \
+    cp -fR "/usr/local/lib/bpf/"* "${PREFIX_DIR}/usr/local/lib/bpf/" && \
     rm -rf "${PREFIX_DIR}/usr/lib64/"*.a && \
     rm -rf "${PREFIX_DIR}/usr/include" && \
     rm -rf "${PREFIX_DIR}/usr/local/share" && \
-    rm -rf "${PREFIX_DIR}/usr/local/lib/bpf" && \
     rm -rf "${PREFIX_DIR}/usr/local/lib/lib"*.a && \
     rm -rf "${PREFIX_DIR}/usr/local/lib/x86_64-linux-gnu/"*.a && \
     rm -rf "${PREFIX_DIR}/usr/local/bin/dpdk-"* && \
@@ -132,7 +146,7 @@ RUN apt-get update --fix-missing && \
     apt-get install -y --no-install-recommends \
        ca-certificates libbsd0 libnuma1 libjson-c5 libpcap0.8 libsdl2-2.0-0 libsdl2-ttf-2.0-0 \
        libssl3 zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap sudo \
-       librte-net-mlx4-22 librte-net-mlx5-22 ethtool && \
+       librte-net-mlx4-22 librte-net-mlx5-22 libfdt1 ethtool && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \

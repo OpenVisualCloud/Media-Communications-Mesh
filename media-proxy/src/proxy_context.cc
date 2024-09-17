@@ -225,14 +225,21 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->log_level = MTL_LOG_LEVEL_DEBUG;
     st_param->priv = NULL;
     st_param->ptp_get_time_fn = NULL;
-    st_param->rx_queues_cnt[MTL_PORT_P] = 128;
-    st_param->tx_queues_cnt[MTL_PORT_P] = 128;
+    // Native af_xdp have only 62 queues available
+    if(st_param->pmd[MTL_PORT_P] == MTL_PMD_NATIVE_AF_XDP) {
+      st_param->rx_queues_cnt[MTL_PORT_P] = 62;
+      st_param->tx_queues_cnt[MTL_PORT_P] = 62;
+    } else {
+      st_param->rx_queues_cnt[MTL_PORT_P] = 128;
+      st_param->tx_queues_cnt[MTL_PORT_P] = 128;
+    }
     st_param->lcores = NULL;
     st_param->memzone_max = 9000;
 
     INFO("ProxyContext: ParseStInitParam(const mcm_conn_param* request, struct mtl_init_params* st_param)");
     INFO("num_ports : '%d'", st_param->num_ports);
     INFO("port      : '%s'", st_param->port[MTL_PORT_P]);
+    INFO("port pmd  : '%d'", int(st_param->pmd[MTL_PORT_P]));
     INFO("sip_addr  : '%s'", getDataPlaneAddress().c_str());
     INFO("flags:    : '%ld'", st_param->flags);
     INFO("log_level : %d", st_param->log_level);

@@ -6,6 +6,7 @@
 #include <bsd/string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <errno.h>
 
 #include "memif_impl.h"
 #include "udp_impl.h"
@@ -35,10 +36,112 @@ int mesh_delete_client(MeshClient *mc)
         return MESH_ERR_BAD_CLIENT_HANDLE;
 }
 
+/* Calculate audio buffer size based on ST2110-30 related parameters */
+static int mcm_calc_audio_buffer_size(mcm_audio_args *params, uint32_t *size)
+{
+    uint32_t sample_size = 0;
+    uint32_t sample_num = 0;
+
+    switch (params->format) {
+    case AUDIO_FMT_PCM8:
+        sample_size = 1;
+        break;
+    case AUDIO_FMT_PCM16:
+        sample_size = 2;
+        break;
+    case AUDIO_FMT_PCM24:
+        sample_size = 3;
+        break;
+    case AUDIO_FMT_AM824:
+        sample_size = 4;
+        break;
+    default:
+        *size = 0;
+        return -EINVAL;
+    }
+
+    switch (params->sampling) {
+    case AUDIO_SAMPLING_48K:
+        switch (params->ptime) {
+        case AUDIO_PTIME_1MS:
+            sample_num = 48;
+            break;
+        case AUDIO_PTIME_125US:
+            sample_num = 6;
+            break;
+        case AUDIO_PTIME_250US:
+            sample_num = 12;
+            break;
+        case AUDIO_PTIME_333US:
+            sample_num = 16;
+            break;
+        case AUDIO_PTIME_4MS:
+            sample_num = 192;
+            break;
+        case AUDIO_PTIME_80US:
+            sample_num = 4;
+            break;
+        default:
+            *size = 0;
+            return -EINVAL;
+        }
+        break;
+    case AUDIO_SAMPLING_96K:
+        switch (params->ptime) {
+        case AUDIO_PTIME_1MS:
+            sample_num = 96;
+            break;
+        case AUDIO_PTIME_125US:
+            sample_num = 12;
+            break;
+        case AUDIO_PTIME_250US:
+            sample_num = 24;
+            break;
+        case AUDIO_PTIME_333US:
+            sample_num = 32;
+            break;
+        case AUDIO_PTIME_4MS:
+            sample_num = 384;
+            break;
+        case AUDIO_PTIME_80US:
+            sample_num = 8;
+            break;
+        default:
+            *size = 0;
+            return -EINVAL;
+        }
+        break;
+    case AUDIO_SAMPLING_44K:
+        switch (params->ptime) {
+        case AUDIO_PTIME_1_09MS:
+            sample_num = 48;
+            break;
+        case AUDIO_PTIME_0_14MS:
+            sample_num = 6;
+            break;
+        case AUDIO_PTIME_0_09MS:
+            sample_num = 4;
+            break;
+        default:
+            *size = 0;
+            return -EINVAL;
+        }
+        break;
+    default:
+        *size = 0;
+        return -EINVAL;
+    }
+
+    *size = sample_size * sample_num * params->channel;
+
+    return 0;
+}
+
 static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memif_socket_args, memif_conn_args_t* memif_conn_args)
 {
     char type_str[8] = "";
     char interface_name[32];
+    int err;
 
     if (request->type == is_tx) {
         strlcpy(type_str, "tx", sizeof(type_str));
@@ -58,7 +161,20 @@ static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memi
         strlcpy(memif_socket_args->path, request->memif_interface.socket_path, sizeof(memif_socket_args->path));
     }
 
-    memif_conn_args->buffer_size = request->payload_args.video_args.width * request->payload_args.video_args.height * 4;
+    switch (request->payload_type) {
+    case PAYLOAD_TYPE_ST30_AUDIO:
+        err = mcm_calc_audio_buffer_size(&request->payload_args.audio_args, &memif_conn_args->buffer_size);
+        if (err)
+            log_error("Invalid audio parameters.");
+        break;
+
+    case PAYLOAD_TYPE_ST20_VIDEO:
+    case PAYLOAD_TYPE_ST22_VIDEO:
+    case PAYLOAD_TYPE_RTSP_VIDEO:
+    default:
+        memif_conn_args->buffer_size = request->payload_args.video_args.width * request->payload_args.video_args.height * 4;
+    }
+
     memif_conn_args->log2_ring_size = 4;
 }
 

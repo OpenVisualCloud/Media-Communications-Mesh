@@ -8,6 +8,9 @@ on:
 env:
   BUILD_TYPE: Release
   MTL_BUILD_DISABLE_PCAPNG: true
+  LIBFABRIC_DIR: /tmp/libfabric
+  XDP_VERSION: 5c88569dd15e55db678b897b8ea2a73aeaf956f4
+  XDP_DIR: /tmp/xdp
   GRPC_VERSION: v1.58.0
   GRPC_DIR: /tmp/grpc
   PREFIX_DIR: /usr/local
@@ -41,11 +44,28 @@ jobs:
         sudo apt-get clean && \
         sudo rm -rf /var/lib/apt/lists/*
 
+    - name: 'Build and Install xdp and libbpf'
+      run: |
+        git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git "${XDP_DIR}" && \
+        pushd "${XDP_DIR}" && \
+        ./configure && \
+        make -j$(nproc) && \
+        sudo make install && \
+        make -j$(nproc) -C "${XDP_DIR}/lib/libbpf/src" && \
+        sudo make -C "${XDP_DIR}/lib/libbpf/src" install && popd
+
+    - name: 'Build and Install libfabric'
+      run: |
+        git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric "${LIBFABRIC_DIR}" && \
+        pushd "${LIBFABRIC_DIR}" && \
+        ./autogen.sh && ./configure && \
+        make -j$(nproc) && \
+        sudo make install && popd
+
     - name: 'Install MTL'
       run: |
         git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
-        cd imtl
-        ./build.sh
+        pushd imtl && ./build.sh && popd
 
     - name: 'Restore cached for gRPC build'
       id: grpc-cache-restore

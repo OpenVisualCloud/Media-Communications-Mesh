@@ -1566,7 +1566,7 @@ int rx_st30_shm_init(rx_st30_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     rx_ctx->memif_conn_args.socket = rx_ctx->memif_socket;
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->pkt_len;
-    rx_ctx->memif_conn_args.log2_ring_size = 2;
+    rx_ctx->memif_conn_args.log2_ring_size = 4;
     memcpy((char*)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
         sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
