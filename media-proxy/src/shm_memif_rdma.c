@@ -85,7 +85,7 @@ int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
     tx_rdma_session_context_t *tx_ctx = (tx_rdma_session_context_t *)priv_data;
     int err = 0;
 
-    INFO("TX memif connected!");
+    INFO("TX RDMA memif connected!");
 
     err = memif_refill_queue(conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {

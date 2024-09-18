@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/*
  * Copyright (c) 2013-2018 Intel Corporation.  All rights reserved.
  * Copyright (c) 2016 Cray Inc.  All rights reserved.
  * Copyright (c) 2014-2017, Cisco Systems, Inc. All rights reserved.
@@ -139,8 +145,8 @@ int ep_init_av_addr(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *f
 static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi,
                         size_t tx_cq_size, size_t rx_cq_size, size_t av_size)
 {
-    struct fi_av_attr av_attr = { 0 };
-    struct fi_cq_attr cq_attr = { 0 };
+    struct fi_cq_attr cq_attr = {.wait_obj = FI_WAIT_NONE};
+    struct fi_av_attr av_attr = {.type = FI_AV_MAP, .count = 1};
     int ret;
 
     ret = fi_endpoint(rdma_ctx->domain, fi, &ep_ctx->ep, NULL);
@@ -148,8 +154,6 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         RDMA_PRINTERR("fi_endpoint", ret);
         return ret;
     }
-
-    cq_attr.wait_obj = FI_WAIT_NONE;
 
     if (cq_attr.format == FI_CQ_FORMAT_UNSPEC) {
         cq_attr.format = FI_CQ_FORMAT_CONTEXT;
@@ -178,9 +182,6 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         RDMA_PRINTERR("fi_cq_open", ret);
         return ret;
     }
-
-    av_attr.type = FI_AV_MAP;
-    av_attr.count = 1;
 
     if (!ep_ctx->av && (rdma_ctx->info->ep_attr->type == FI_EP_RDM ||
                         rdma_ctx->info->ep_attr->type == FI_EP_DGRAM)) {

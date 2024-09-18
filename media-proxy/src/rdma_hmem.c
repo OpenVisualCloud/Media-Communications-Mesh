@@ -1,4 +1,10 @@
 /*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+/*
  * Copyright (c) 2020 Intel Corporation.  All rights reserved.
  * Copyright (c) 2021 Amazon.com, Inc. or its affiliates.
  *
