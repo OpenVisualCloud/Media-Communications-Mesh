@@ -60,7 +60,7 @@ Usage: sender_app [OPTION]
 -h, --height=<frame_height>             Height of test video frame (default: 1080)
 -f, --fps=<video_fps>                   Test video FPS (frame per second) (default: 30.00)
 -x, --pix_fmt=<pixel_format>            Pixel format (default: yuv422p10le)
--n, --number=<number_of_frames>         Total frame number to send (default = inf: 0)
+-n, --number=<number_of_frames>         Total frame number to send (default = infinite: 0)
 --------------------------------------   AUDIO (ST3x)   --------------------------------------
 -a, --audio_type=<audio_type>           Define audio type [frame|rtp] (default: frame)
 -j, --audio_format=<audio_format>       Define audio format [pcm8|pcm16|pcm24|am824] (default: pcm16)
