@@ -44,6 +44,10 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     /* rx buffers */
     rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    if (!rx_ctx->shm_bufs) {
+        ERROR("Failed to allocate memory");
+        return -ENOMEM;
+    }
     rx_ctx->shm_buf_num = rx_ctx->fb_count;
 
     err = memif_refill_queue(conn, 0, -1, 0);

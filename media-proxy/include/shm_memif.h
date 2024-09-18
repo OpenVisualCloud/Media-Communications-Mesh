@@ -13,7 +13,7 @@ extern "C" {
 
 #include <libmemif.h>
 
-#include "mtl.h"
+// #include "mtl.h"
 #include "utils.h"
 
 typedef struct {
@@ -40,6 +40,15 @@ typedef struct {
     uint16_t rx_buf_num;
 } shm_connection_t;
 
+typedef struct {
+    uint8_t is_master;
+    char app_name[32];
+    char interface_name[32];
+    uint32_t interface_id;
+    char socket_path[108];
+    uint32_t m_session_count;
+} memif_ops_t;
+
 void print_memif_details(memif_conn_handle_t conn);
 
 /* informs user about connected status. private_ctx is used by user to identify
@@ -58,6 +67,9 @@ int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
 int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
 int rx_udp_h264_on_connect(memif_conn_handle_t conn, void* priv_data);
 
+int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data);
+int rx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data);
+
 int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
 int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
 int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
@@ -69,6 +81,10 @@ int tx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
 int tx_st30_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
 int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
 int tx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
+
+int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data);
+int tx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data);
+int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
 
 #ifdef __cplusplus
 }

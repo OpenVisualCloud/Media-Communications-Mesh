@@ -144,6 +144,7 @@ typedef enum {
     PAYLOAD_TYPE_ST30_AUDIO,
     PAYLOAD_TYPE_ST40_ANCILLARY,
     PAYLOAD_TYPE_RTSP_VIDEO,
+    PAYLOAD_TYPE_RDMA_VIDEO,
 } mcm_payload_type;
 
 typedef enum {
@@ -203,6 +204,11 @@ typedef struct {
     double fps;
 } mcm_anc_args;
 
+/* rdma format */
+typedef struct {
+    size_t transfer_size;
+} mcm_rdma_args;
+
 typedef struct {
     transfer_type type;
     proto_type protocol;
@@ -219,6 +225,7 @@ typedef struct {
         mcm_video_args video_args;
         mcm_audio_args audio_args;
         mcm_anc_args anc_args;
+        mcm_rdma_args rdma_args;
     } payload_args;
 
     /* video format */
