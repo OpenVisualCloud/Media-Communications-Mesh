@@ -112,3 +112,7 @@ jobs:
             ${{ github.workspace }}/build.sh && \
             ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh && \
             ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh
+    - uses: actions/upload-artifact@v4
+      with:
+        name: coverity-reports
+        path: '${{ github.workspace }}/cov-int'
