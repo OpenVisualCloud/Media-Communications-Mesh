@@ -5,7 +5,7 @@
 #include "libfabric_dev.h"
 #include "rdma_session.h"
 
-static void *rx_memif_event_loop(void *arg)
+static void *memif_event_loop(void *arg)
 {
     memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
     int err;
@@ -93,7 +93,7 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    err = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop,
+    err = pthread_create(&rx_ctx->memif_event_thread, NULL, memif_event_loop,
                          rx_ctx->memif_conn_args.socket);
     if (err < 0) {
         printf("%s(%d), thread create fail\n", __func__, err);
@@ -181,7 +181,7 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    err = pthread_create(&tx_ctx->memif_event_thread, NULL, rx_memif_event_loop,
+    err = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop,
                          tx_ctx->memif_conn_args.socket);
     if (err < 0) {
         printf("%s(%d), thread create fail\n", __func__, err);
@@ -197,14 +197,18 @@ static int rx_shm_deinit(rx_rdma_session_context_t *rx_ctx)
     int err;
 
     if (rx_ctx == NULL) {
-        printf("%s, Illegal parameter.\n", __func__);
+        ERROR("%s, Illegal parameter.", __func__);
         return -1;
     }
 
     err = pthread_cancel(rx_ctx->memif_event_thread);
     if (err) {
-        printf("%s: Error canceling thread: %s\n", __func__, strerror(err));
-        return -1;
+        ERROR("%s: Error canceling thread: %s", __func__, strerror(err));
+    }
+
+    err = pthread_join(rx_ctx->memif_event_thread, NULL);
+    if (err) {
+        ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
     /* free-up resources */
@@ -229,14 +233,18 @@ static int tx_shm_deinit(tx_rdma_session_context_t *tx_ctx)
     int err;
 
     if (tx_ctx == NULL) {
-        printf("%s, Illegal parameter.\n", __func__);
+        ERROR("%s, Illegal parameter.", __func__);
         return -1;
     }
 
-    pthread_cancel(tx_ctx->memif_event_thread);
+    err = pthread_cancel(tx_ctx->memif_event_thread);
     if (err) {
-        printf("%s: Error canceling thread: %s\n", __func__, strerror(err));
-        return -1;
+        ERROR("%s: Error canceling thread: %s", __func__, strerror(err));
+    }
+
+    err = pthread_join(tx_ctx->memif_event_thread, NULL);
+    if (err) {
+        ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
     /* free-up resources */
@@ -417,7 +425,7 @@ void rdma_rx_session_stop(rx_rdma_session_context_t *rx_ctx)
         printf("%s: invalid parameter\n", __func__);
         return;
     }
-    /* TODO: Add better synchronization */
+
     rx_ctx->stop = true;
 
     err = pthread_join(rx_ctx->frame_thread, NULL);
@@ -456,23 +464,11 @@ void rdma_tx_session_stop(tx_rdma_session_context_t *tx_ctx)
     int err;
 
     if (tx_ctx == NULL) {
-        printf("%s: invalid parameter\n", __func__);
+        ERROR("%s: invalid parameter", __func__);
         return;
     }
-    if (!tx_ctx->shm_ready) {
-        err = pthread_cancel(tx_ctx->memif_event_thread);
-        if (err) {
-            printf("%s: Error canceling thread: %s\n", __func__, strerror(err));
-            return;
-        }
-    }
 
-    tx_ctx->stop = true;
-
-    err = pthread_join(tx_ctx->memif_event_thread, NULL);
-    if (err) {
-        printf("%s: Error joining thread: %s\n", __func__, strerror(err));
-    }
+    /* No thread to stop */
 }
 
 void rdma_tx_session_destroy(tx_rdma_session_context_t **p_tx_ctx)
