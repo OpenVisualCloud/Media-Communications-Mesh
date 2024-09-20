@@ -207,7 +207,7 @@ static int rx_shm_deinit(rx_rdma_session_context_t *rx_ctx)
     }
 
     err = pthread_join(rx_ctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -243,7 +243,7 @@ static int tx_shm_deinit(tx_rdma_session_context_t *tx_ctx)
     }
 
     err = pthread_join(tx_ctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -422,15 +422,15 @@ void rdma_rx_session_stop(rx_rdma_session_context_t *rx_ctx)
     int err;
 
     if (rx_ctx == NULL) {
-        printf("%s: invalid parameter\n", __func__);
+        ERROR("%s: invalid parameter\n", __func__);
         return;
     }
 
     rx_ctx->stop = true;
 
     err = pthread_join(rx_ctx->frame_thread, NULL);
-    if (err) {
-        printf("%s: Error joining thread: %s\n", __func__, strerror(err));
+    if (err && err != ESRCH) {
+        ERROR("%s: Error joining thread: %s\n", __func__, strerror(err));
     }
 }
 
