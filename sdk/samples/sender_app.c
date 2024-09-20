@@ -450,10 +450,6 @@ int main(int argc, char** argv)
         printf("pacing: %d\n", pacing);
         printf("spend: %d\n", spend);
 
-        /* TODO: This should not need to be here. BUT RDMA fails without it. */
-        if (param.payload_type == PAYLOAD_TYPE_RDMA_VIDEO && pacing > spend) {
-            usleep(pacing - spend);
-        }
     }
 
     sleep(2);

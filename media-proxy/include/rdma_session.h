@@ -44,7 +44,6 @@ typedef struct {
     size_t transfer_size;
     size_t pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* memif parameters */
     memif_ops_t memif_ops;
@@ -79,7 +78,6 @@ typedef struct {
     size_t transfer_size;
     int pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
