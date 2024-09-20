@@ -1060,7 +1060,7 @@ int rx_shm_deinit(rx_session_context_t* rx_ctx)
     }
 
     err = pthread_join(rx_ctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -1096,7 +1096,7 @@ int tx_shm_deinit(tx_session_context_t* tx_ctx)
     }
 
     err = pthread_join(tx_ctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -1132,7 +1132,7 @@ int rx_st22p_shm_deinit(rx_st22p_session_context_t* rx_ctx)
     }
 
     err = pthread_join(rx_ctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -1168,7 +1168,7 @@ int tx_st22p_shm_deinit(tx_st22p_session_context_t* tx_ctx)
     }
 
     err = pthread_join(tx_ctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -1204,7 +1204,7 @@ int rx_st30_shm_deinit(rx_st30_session_context_t* pctx)
     }
 
     err = pthread_join(pctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -1240,7 +1240,7 @@ int tx_st30_shm_deinit(tx_st30_session_context_t* pctx)
     }
 
     err = pthread_join(pctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -1281,7 +1281,7 @@ int rx_st40_shm_deinit(rx_st40_session_context_t* pctx)
     }
 
     err = pthread_join(pctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -1317,7 +1317,7 @@ int tx_st40_shm_deinit(tx_st40_session_context_t* pctx)
     }
 
     err = pthread_join(pctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
@@ -2946,7 +2946,7 @@ int rx_udp_h264_shm_deinit(rx_udp_h264_session_context_t* rx_ctx)
     }
 
     err = pthread_join(rx_ctx->memif_event_thread, NULL);
-    if (err) {
+    if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
     }
 
