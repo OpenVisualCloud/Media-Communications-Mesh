@@ -86,6 +86,10 @@ int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data);
 int tx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data);
 int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
 
+int memif_buffer_alloc_timeout(memif_conn_handle_t conn, uint16_t qid,
+                               memif_buffer_t * bufs, uint16_t count, uint16_t * count_out,
+                               uint32_t size, unsigned int timeout_ms);
+
 #ifdef __cplusplus
 }
 #endif

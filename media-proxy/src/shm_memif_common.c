@@ -196,3 +196,22 @@ int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 
     return 0;
 }
+
+int memif_buffer_alloc_timeout(memif_conn_handle_t conn, uint16_t qid,
+                               memif_buffer_t * bufs, uint16_t count, uint16_t * count_out,
+                               uint32_t size, unsigned int timeout_ms) {
+    unsigned int waited_half_ms = 0;
+    int err;
+
+    while (waited_half_ms < timeout_ms * 2) {
+        err = memif_buffer_alloc(conn, qid, bufs, count, count_out, size);
+        if (err == MEMIF_ERR_SUCCESS) {
+            return err;
+        } else if (err != MEMIF_ERR_NOBUF_RING) {
+            return err;
+        }
+        usleep(500);
+        waited_half_ms += 1;
+    }
+    return MEMIF_ERR_NOBUF_RING;
+}
