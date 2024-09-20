@@ -35,7 +35,7 @@ typedef struct {
     int frame_done_cnt;
     int packet_done_cnt;
 
-    bool stop;
+    volatile bool stop;
 
     int fb_send;
     pthread_cond_t wake_cond;
@@ -69,7 +69,7 @@ typedef struct {
     libfabric_ctx *rdma_ctx;
     ep_ctx_t *ep_ctx;
 
-    bool stop;
+    volatile bool stop;
     pthread_t frame_thread;
 
     int fb_recv;
