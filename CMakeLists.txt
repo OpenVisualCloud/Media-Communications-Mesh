@@ -45,4 +45,4 @@ if (BUILD_UNIT_TESTS)
 endif()
 
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
-target_link_libraries(media_proxy_lib PRIVATE mcm_dp_shared ${LIB_BSD})
+target_link_libraries(media_proxy_lib PRIVATE mcm_dp_static ${LIB_BSD})

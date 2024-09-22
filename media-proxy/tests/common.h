@@ -13,18 +13,13 @@
 
 #include "libmemif.h"
 #include "shm_memif.h"
+#include "utils.h"
 
 #define FRAME_SIZE 8294400 // yuv422p10le (1920*1080*4)
 #define FRAME_COUNT 1
 
 /* maximum tx/rx memif buffers */
 #define MAX_MEMIF_BUFS 256
-
-#define INFO(...)                     \
-    do {                              \
-        printf("INFO: " __VA_ARGS__); \
-        printf("\n");                 \
-    } while (0)
 
 void print_memif_details(memif_conn_handle_t conn)
 {

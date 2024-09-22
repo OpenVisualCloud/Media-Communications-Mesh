@@ -7,8 +7,8 @@
 script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 . "${script_dir}/test_memif.sh"
 . "${script_dir}/test_af_xdp.sh"
-bin_dir="$script_dir/../../out/bin"
-out_dir="$script_dir/out"
+bin_dir="$(readlink -f "${script_dir}/../../out/bin")"
+out_dir="$(readlink -f "${script_dir}/out")"
 
 # Test configuration
 test_option="$1"
@@ -18,7 +18,7 @@ rx_vf_number=1
 
 # Media file names
 input_file="$(realpath $3)"
-output_file="$out_dir/out_rx.bin"
+output_file="${out_dir}/out_rx.bin"
 
 # Video parameters
 duration="${4:-10}"
@@ -32,11 +32,11 @@ pixel_format="${9:-yuv422p10le}"
 wait_interval=$((duration + 5))
 
 # Stdout/stderr forwarded output file names
-mtl_manager_out="$out_dir/out_mtl_manager.txt"
-tx_media_proxy_out="$out_dir/out_tx_media_proxy.txt"
-rx_media_proxy_out="$out_dir/out_rx_media_proxy.txt"
-sender_app_out="$out_dir/out_sender_app.txt"
-recver_app_out="$out_dir/out_recver_app.txt"
+mtl_manager_out="${out_dir}/out_mtl_manager.txt"
+tx_media_proxy_out="${out_dir}/out_tx_media_proxy.txt"
+rx_media_proxy_out="${out_dir}/out_rx_media_proxy.txt"
+sender_app_out="${out_dir}/out_sender_app.txt"
+recver_app_out="${out_dir}/out_recver_app.txt"
 
 # Number of test repetitions
 repeat_number=3
@@ -61,14 +61,24 @@ function error() {
 }
 
 function cleanup() {
-    rm -rf "$out_dir" &>/dev/null
+    local buckup_after_error="${1:-0}"
+    if [ "${buckup_after_error}" == "0" ]; then
+        info "Cleanup"
+        rm -rf "$out_dir" &>/dev/null
+    else
+        error_our_dir="$script_dir/error_$(date +%F-%H_%M_%S)"
+        info "Cleanup. Output saved to $error_our_dir"
+        mv "$out_dir" "$error_our_dir" &>/dev/null
+    fi
 }
 
 function run_in_background() {
     # 1st argument is a command with arguments to be run in background
     # 2nd argument is a file for stdout/stderr to be redirected to
     # Returns PID of a spawned process
-    stdbuf -o0 -e0 $1 &>"$2" &
+    info "run: ${1}"
+    echo -e "${1}\n" > "${2}"
+    stdbuf -o0 -e0 $1 &>>"${2}" &
 }
 
 function wait_text() {
@@ -85,7 +95,7 @@ function wait_completion() {
     info "Waiting for transmission to complete (interval ${1}s)"
     timeout $1 tail --pid=$sender_app_pid --pid=$recver_app_pid -f /dev/null
     [ $? -eq 124 ] && error "timeout occurred" && return 1
-    info "Transmission completed" 
+    info "Transmission completed"
     return 0
 }
 
@@ -261,7 +271,7 @@ function run_test_memif() {
     local error=$?
 
     info "Cleanup"
-    cleanup
+    cleanup "${error}"
 
     return $(($error || $timeout))
 }
@@ -322,6 +332,9 @@ function run_test_stXX() {
     check_results
     local error=$?
 
+    info "Cleanup"
+    cleanup $error
+
     info "Tx media_proxy stats"
     local regex="throughput ([0-9]*\.[0-9]*) Mb/s: [0-9]*\.[0-9]* Mb/s, cpu busy ([0-9]*\.[0-9]*)"
     while IFS= read -r line; do
@@ -337,9 +350,6 @@ function run_test_stXX() {
             info "  Throughput ${BASH_REMATCH[1]} Mb/s, CPU busy ${BASH_REMATCH[2]}"
         fi
     done < "$rx_media_proxy_out"
-
-    info "Cleanup"
-    cleanup
 
     return $(($error || $timeout || $recver_app_timeout || $sender_app_timeout))
 }
@@ -375,26 +385,28 @@ do
 
     case $test_option in
         af_xdp)
-            run_test_af_xdp_rx
-            run_test_af_xdp_tx
+            run_test_af_xdp
+            error="$?"
             ;;
         memif)
-            run_test_memif
-            run_test_memif_tx
+            run_test_memif && \
+            run_test_memif_tx && \
             run_test_memif_rx
+            error="$?"
             ;;
         st20)
             run_test_stXX st20
+            error="$?"
             ;;
         st22)
             run_test_stXX st22
+            error="$?"
             ;;
         *)
             error "Unknown test option"
             exit 1
     esac
-
-    [ $? -ne 0 ] && error "Test failed" && exit 1
+    [ "${error}" -ne 0 ] && error "Test failed" && exit 1
 done
 
 deinitialize_nic "$nic_pf"
