@@ -67,17 +67,25 @@ function wait_text() {
     # 1st argument is a timeout interval
     # 2nd argument is a file to be monitored
     # 3rd argument is a text to be looked for in the file
-    timeout $1 grep -q "$3" <(tail -f "$2")
+    timeout $1 grep -q "$3" <(tail -n 100 -f "$2")
     [ $? -eq 124 ] && error "timeout occurred" && return 1
     return 0
 }
 
 function wait_completion() {
     # 1st argument is a timeout interval
-    info "Waiting for transmission to complete (interval ${1}s)"
-    timeout $1 tail --pid=$sender_app_pid --pid=$recver_app_pid -f /dev/null
-    [ $? -eq 124 ] && error "timeout occurred" && return 1
-    info "Transmission completed" 
+    info "Waiting for both sender and receiver to complete (interval ${1}s)"
+    local end_time=$((SECONDS + $1))
+
+    while kill -0 $sender_app_pid 2>/dev/null && kill -0 $recver_app_pid 2>/dev/null; do
+    if (( SECONDS >= end_time )); then
+         error "timeout occurred"
+         return 1
+    fi
+        sleep 1
+    done
+
+    info "Transmission completed"
     return 0
 }
 
@@ -136,14 +144,14 @@ function run_test_rdma() {
     info "Connection type: rdma"
 
     info "Starting Tx side media_proxy"
-    local tx_media_proxy_cmd="media_proxy -i 192.168.96.1 -t 8002"
+    local tx_media_proxy_cmd="media_proxy -t 8002"
     run_in_background "$bin_dir/$tx_media_proxy_cmd" "$tx_media_proxy_out"
     tx_media_proxy_pid=$!
 
     sleep 1
 
     info "Starting Rx side media_proxy"
-    local rx_media_proxy_cmd="media_proxy -i 192.168.96.2 -t 8003"
+    local rx_media_proxy_cmd="media_proxy -t 8003"
     run_in_background "$bin_dir/$rx_media_proxy_cmd" "$rx_media_proxy_out"
     rx_media_proxy_pid=$!
 
@@ -163,12 +171,12 @@ function run_test_rdma() {
     sender_app_pid=$!
 
     info "Waiting for recver_app to connect to Rx media_proxy"
-    wait_text 50 $recver_app_out "Success connect to MCM media-proxy"
+    wait_text 10 $recver_app_out "Success connect to MCM media-proxy"
     local recver_app_timeout=$?
     [ $recver_app_timeout -eq 0 ] && info "Connection established"
 
     info "Waiting for sender_app to connect to Tx media_proxy"
-    wait_text 100 $sender_app_out "Success connect to MCM media-proxy"
+    wait_text 10 $sender_app_out "Success connect to MCM media-proxy"
     local sender_app_timeout=$?
     [ $sender_app_timeout -eq 0 ] && info "Connection established"
 
