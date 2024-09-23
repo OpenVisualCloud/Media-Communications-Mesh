@@ -10,5 +10,5 @@ Version: @VERSION@
 Requires: libbsd @pc_req_public@
 Requires.private: @pc_req_private@
 Cflags: -I"${includedir}"
-Libs: -L"${libdir}" -l:libmcm_dp.a -l:libmemif.a
-Libs.private: -static
+Libs: -L"${libdir}" -lmcm_dp -lmemif
+Libs.private: -L"${libdir}" -lmcm_dp -lmemif -static

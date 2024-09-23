@@ -50,15 +50,15 @@ set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 set(CMAKE_INSTALL_IPATH ${CMAKE_INSTALL_PREFIX}/include)
 
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
-add_library(mcm_dp SHARED ${sdk_srcs})
+add_library(mcm_dp OBJECT ${sdk_srcs})
 set_target_properties(mcm_dp PROPERTIES VERSION ${VERSION})
 set_target_properties(mcm_dp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
 
-target_include_directories(mcm_dp PUBLIC
+target_include_directories(mcm_dp PRIVATE
     ${MCMDP_INCLUDE_DIR}
     ${MEMIF_DIR}/src)
-target_link_libraries(mcm_dp PUBLIC memif)
+target_link_libraries(mcm_dp PRIVATE memif_static ${LIB_BSD})
 
 add_subdirectory(${MCMDP_SAMPLE_DIR})
 
@@ -69,6 +69,7 @@ include(CPack)
 
 list(APPEND SDK_HEADERS
     include/mcm_dp.h
+    ${MEMIF_DIR}/src/libmemif.h
 )
 
 foreach(file ${SDK_HEADERS})
@@ -88,8 +89,23 @@ if (BUILD_SHARED_LIBS)
     set(LIB_PKG_CONFIG_EXTRA_CFLAGS " -DDEF_DLL")
 endif()
 
+configure_file(${MCM_TARGET}_dyn.pc.in ${CMAKE_BINARY_DIR}/${MCM_TARGET}_dyn.pc @ONLY)
 configure_file(${MCM_TARGET}.pc.in ${CMAKE_BINARY_DIR}/${MCM_TARGET}.pc @ONLY)
 
 # include(CMakePackageConfigHelpers)
-install(TARGETS mcm_dp DESTINATION ${CMAKE_INSTALL_RPATH} COMPONENT ${MCM_TARGET})
+add_library(mcm_dp_shared SHARED $<TARGET_OBJECTS:mcm_dp>)
+add_library(mcm_dp_static STATIC $<TARGET_OBJECTS:mcm_dp>)
+set_target_properties(mcm_dp_shared PROPERTIES OUTPUT_NAME mcm_dp)
+set_target_properties(mcm_dp_static PROPERTIES OUTPUT_NAME mcm_dp)
+
+# Set the VERSION and SOVERSION properties for the shared library
+set_target_properties(mcm_dp_shared PROPERTIES VERSION ${VERSION} SOVERSION ${MCM_VER_MAJOR})
+
+# Link dependencies to the shared and static libraries
+target_link_libraries(mcm_dp_shared PRIVATE memif_static ${LIB_BSD})
+target_link_libraries(mcm_dp_static PRIVATE memif_static ${LIB_BSD})
+
+install(TARGETS mcm_dp_shared LIBRARY DESTINATION ${CMAKE_INSTALL_RPATH} COMPONENT ${MCM_TARGET})
+install(TARGETS mcm_dp_static ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR} COMPONENT ${MCM_TARGET})
+install(FILES "${CMAKE_BINARY_DIR}/${MCM_TARGET}_dyn.pc" DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")
 install(FILES "${CMAKE_BINARY_DIR}/${MCM_TARGET}.pc" DESTINATION "${CMAKE_INSTALL_RPATH}/pkgconfig")

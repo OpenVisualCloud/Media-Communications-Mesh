@@ -2,6 +2,9 @@
 file(GLOB TEST_SOURCES "*.cc")
 
 set(MP_LIB media_proxy_lib)
+set(MCM_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../media-proxy)
+set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../../sdk)
+set(MEMIF_DIR ${SDK_DIR}/3rdparty/libmemif)
 
 # Add an executable for tests
 add_executable(mcm_unit_tests ${TEST_SOURCES})
@@ -10,6 +13,7 @@ add_executable(mcm_unit_tests ${TEST_SOURCES})
 target_link_libraries(mcm_unit_tests PRIVATE gtest gtest_main ${MP_LIB})
 target_include_directories(mcm_unit_tests PUBLIC
     ${CMAKE_SOURCE_DIR}/media-proxy/include
+    ${MEMIF_DIR}/src
     # Include generated *.pb.h files
     ${CMAKE_BINARY_DIR}/media-proxy/
 )

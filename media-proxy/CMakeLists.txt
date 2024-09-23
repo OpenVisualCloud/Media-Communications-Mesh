@@ -12,6 +12,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 set(protobuf_MODULE_COMPATIBLE TRUE)
 find_package(Protobuf CONFIG REQUIRED)
+find_library(LIBBPF libbpf.a PATHS /usr/lib64)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")
 
 set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
@@ -46,6 +47,10 @@ set(target media_proxy)
 set(MTL_LIB mtl)
 set(MEMIF_LIB memif)
 
+# setup components folders
+set(MCM_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../sdk)
+set(MEMIF_DIR ${SDK_DIR}/3rdparty/libmemif)
 # Get proto files
 get_filename_component(proto "./protos/${proto_name}.proto" ABSOLUTE)
 get_filename_component(proto_dir "${proto}" DIRECTORY)
@@ -83,14 +88,14 @@ ADD_DEFINITIONS(-DIMTL_CONFIG_PATH=\"${CMAKE_INSTALL_PREFIX}/etc/imtl.json\")
 ADD_DEFINITIONS(-D_GNU_SOURCE)
 
 # Include generated *.pb.h files
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ${LIBFABRIC_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ${LIBFABRIC_INCLUDE_DIR} ${MEMIF_DIR}/src)
 
-add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
+add_library(media_proxy_lib STATIC ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
 target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${_REFLECTION}
     ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB} ${LIBFABRIC})
 
 add_executable(media_proxy ${proxy_srcs})
-target_link_libraries(media_proxy PRIVATE media_proxy_lib)
+target_link_libraries(media_proxy PRIVATE media_proxy_lib -static-libgcc -static-libstdc++ -pthread -ldl ${LIBBPF})
 
 install(TARGETS media_proxy DESTINATION ${CMAKE_INSTALL_PATH} COMPONENT media_proxy)
 install(FILES imtl.json DESTINATION ${CMAKE_CONFIG_PATH} COMPONENT config)
