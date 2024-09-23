@@ -1164,12 +1164,12 @@ int tx_st22p_shm_deinit(tx_st22p_session_context_t* tx_ctx)
 
     err = pthread_cancel(tx_ctx->memif_event_thread);
     if (err) {
-        ERROR("%s: Error canceling thread: %s", __func__, strerror(err));
+        ERROR("%s: Error canceling thread: (%d) %s", __func__, err, strerror(err));
     }
 
     err = pthread_join(tx_ctx->memif_event_thread, NULL);
     if (err && err != ESRCH) {
-        ERROR("%s: Error joining thread: %s", __func__, strerror(err));
+        ERROR("%s: Error joining thread: (%d) %s", __func__, err, strerror(err));
     }
 
     /* free-up resources */
@@ -2712,22 +2712,16 @@ void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx)
 /* TX: Stop ST22P session */
 void mtl_st22p_tx_session_stop(tx_st22p_session_context_t* tx_ctx)
 {
-    if (tx_ctx == NULL) {
-        printf("%s: invalid parameter\n", __func__);
-        return;
-    }
+    int err;
 
-    if (!tx_ctx->shm_ready) {
-        pthread_cancel(tx_ctx->memif_event_thread);
+    if (tx_ctx == NULL) {
+        ERROR("%s: invalid parameter", __func__);
+        return;
     }
 
     tx_ctx->stop = true;
 
-    st_pthread_mutex_lock(&tx_ctx->st22p_wake_mutex);
-    st_pthread_cond_signal(&tx_ctx->st22p_wake_cond);
-    st_pthread_mutex_unlock(&tx_ctx->st22p_wake_mutex);
-
-    pthread_join(tx_ctx->memif_event_thread, NULL);
+    /* No thread to stop */
 }
 
 /* TX: Stop ST30 session */
