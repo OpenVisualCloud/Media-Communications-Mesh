@@ -59,26 +59,43 @@ Detailed information about MCM SDK can be found in [sdk](sdk) directory.
 
 ### Basic Installation
 
-0. **Install Dependencies**
+1. **Install Dependencies**
+
     - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation.
     - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
+    - Install required packages:
+        - Ubuntu/Debian
+        ```bash
+        sudo apt-get update
+        sudo apt-get install libbsd-dev
+        ```
+        - Centos stream
+        ```bash
+        sudo yum install -y libbsd-devel
+        ```
+    - Install Libfabric. Follow [libfabric documentation](https://github.com/ofiwg/libfabric#readme-ov-file) or simply use the following commands
+    ```bash
+    git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric libfabric-dir
+    && pushd libfabric-dir && ./autogen.sh && ./configure && make -j$(nproc)
+    && sudo make install && sudo ldconfig && popd
+    ```
 
-1. **Clone the repository**
+2. **Clone the repository**
    ```sh
    $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
-2. **Navigate to the Media-Communications-Mesh directory**
+3. **Navigate to the Media-Communications-Mesh directory**
     ```sh
     $ cd Media-Communications-Mesh
     ```
 
-3. **Build the Media Proxy binary (run on Host)**
+4. **Build the Media Proxy binary (run on Host)**
     ```sh
     $ ./build.sh
     ```
 
-4. **Build the Media Proxy Docker image (run in Container)**
+5. **Build the Media Proxy Docker image (run in Container)**
     ```sh
     $ ./build_docker.sh
     ```
