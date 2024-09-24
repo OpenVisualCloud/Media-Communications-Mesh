@@ -5,6 +5,7 @@
  */
 
 #include "common.h"
+#include <stdbool.h>
 
 #define APP_NAME "service-app-tx"
 #define SOCKET_PATH "/run/mcm/media-proxy-tx-shm.sock"

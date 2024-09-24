@@ -258,6 +258,8 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
     } else if (strncmp(payload_type, "rtsp", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
+    } else if (strncmp(payload_type, "rdma", sizeof(payload_type)) == 0) {
+        param.payload_type = PAYLOAD_TYPE_RDMA_VIDEO;
     } else {
         param.payload_type = PAYLOAD_TYPE_NONE;
     }
@@ -332,6 +334,9 @@ int main(int argc, char** argv)
         }
         param.payload_args.anc_args.fps = vid_fps;
         break;
+    case PAYLOAD_TYPE_RDMA_VIDEO:
+        param.payload_args.rdma_args.transfer_size =
+            getFrameSize(pix_fmt, width, height, false);
     case PAYLOAD_TYPE_ST22_VIDEO:
         if (strncmp(payload_codec, "jpegxs", sizeof(payload_codec)) == 0) {
             param.payload_codec = PAYLOAD_CODEC_JPEGXS;
@@ -352,8 +357,9 @@ int main(int argc, char** argv)
 
     strlcpy(param.remote_addr.ip, send_addr, sizeof(param.remote_addr.ip));
     strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
-    strlcpy(param.local_addr.ip, send_addr, sizeof(param.local_addr.ip));
-    strlcpy(param.local_addr.port, send_port, sizeof(param.local_addr.port));
+    strlcpy(param.local_addr.ip, recv_addr, sizeof(param.local_addr.ip));
+    strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
+
     printf("LOCAL: %s:%s\n", param.local_addr.ip, param.local_addr.port);
     printf("REMOTE: %s:%s\n", param.remote_addr.ip, param.remote_addr.port);
 
@@ -452,6 +458,7 @@ int main(int argc, char** argv)
         __useconds_t spend = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
         printf("pacing: %d\n", pacing);
         printf("spend: %d\n", spend);
+
     }
 
     sleep(2);

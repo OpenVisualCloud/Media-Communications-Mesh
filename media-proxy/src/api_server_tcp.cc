@@ -130,7 +130,7 @@ void* msg_loop(void* ptr)
                 break;
             }
             session_id = *(uint32_t*)buffer;
-            for (auto it : proxy_ctx->mStCtx) {
+            for (auto it : proxy_ctx->mDpCtx) {
                 if (it->id == session_id) {
                     /* return memif parameters. */
                     memif_conn_param param = { };
@@ -153,6 +153,12 @@ void* msg_loop(void* ptr)
                         case PAYLOAD_TYPE_ST20_VIDEO:
                             memcpy(&param.socket_args, &it->tx_session->memif_socket_args, sizeof(memif_socket_args_t));
                             memcpy(&param.conn_args, &it->tx_session->memif_conn_args, sizeof(memif_conn_args_t));
+                            break;
+                        case PAYLOAD_TYPE_RDMA_VIDEO:
+                            memcpy(&param.socket_args, &it->tx_rdma_session->memif_socket_args,
+                                   sizeof(memif_socket_args_t));
+                            memcpy(&param.conn_args, &it->tx_rdma_session->memif_conn_args,
+                                   sizeof(memif_conn_args_t));
                             break;
                         default:
                             INFO("Unknown session type.");
@@ -180,6 +186,12 @@ void* msg_loop(void* ptr)
                             memcpy(&param.socket_args, &it->rx_session->memif_socket_args, sizeof(memif_socket_args_t));
                             memcpy(&param.conn_args, &it->rx_session->memif_conn_args, sizeof(memif_conn_args_t));
                             break;
+                        case PAYLOAD_TYPE_RDMA_VIDEO:
+                            memcpy(&param.socket_args, &it->rx_rdma_session->memif_socket_args,
+                                   sizeof(memif_socket_args_t));
+                            memcpy(&param.conn_args, &it->rx_rdma_session->memif_conn_args,
+                                   sizeof(memif_conn_args_t));
+                            break;
                         default:
                             INFO("Unknown session type.");
                             break;
@@ -206,7 +218,7 @@ void* msg_loop(void* ptr)
                 break;
             }
             session_id = *(uint32_t*)buffer;
-            for (auto it : proxy_ctx->mStCtx) {
+            for (auto it : proxy_ctx->mDpCtx) {
                 if (it->id == session_id) {
                     if (it->type == TX) {
                         proxy_ctx->TxStop(session_id);
@@ -235,7 +247,7 @@ void* msg_loop(void* ptr)
         (int)((addr >> 16) & 0xff), (int)((addr >> 24) & 0xff));
 
     if(session_id > 0) {
-        for (auto it : proxy_ctx->mStCtx) {
+        for (auto it : proxy_ctx->mDpCtx) {
             if (it->id == session_id) {
                 if (it->type == TX) {
                     proxy_ctx->TxStop(session_id);
