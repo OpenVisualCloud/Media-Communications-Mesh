@@ -73,12 +73,11 @@ Detailed information about MCM SDK can be found in [sdk](sdk) directory.
         ```bash
         sudo yum install -y libbsd-devel
         ```
-    - Install Libfabric. Follow [libfabric documentation](https://github.com/ofiwg/libfabric#readme-ov-file) or simply use the following commands
+    - Install the irdma driver and libfabric
     ```bash
-    git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric libfabric-dir
-    && pushd libfabric-dir && ./autogen.sh && ./configure && make -j$(nproc)
-    && sudo make install && sudo ldconfig && popd
+    ./scripts/setup_rdma_env.sh install
     ```
+    - Reboot
 
 2. **Clone the repository**
    ```sh
