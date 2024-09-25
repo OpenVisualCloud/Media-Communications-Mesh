@@ -11,6 +11,7 @@
 #include "libavformat/mux.h"
 #include "libavdevice/mcm_common.h"
 #include <mcm_dp.h>
+#include <unistd.h>
 
 typedef struct McmAudioMuxerContext {
     const AVClass *class; /**< Class for private options. */
@@ -28,6 +29,8 @@ typedef struct McmAudioMuxerContext {
     char* ptime;
 
     mcm_conn_context *tx_handle;
+    mcm_buffer *unsent_mcm_buf;
+    int unsent_len;
 } McmAudioMuxerContext;
 
 static int mcm_audio_write_header(AVFormatContext* avctx)
@@ -114,29 +117,49 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
 static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
 {
     McmAudioMuxerContext *s = avctx->priv_data;
+    size_t frame_size = s->tx_handle->frame_size;
     const uint8_t *data = pkt->data;
-    mcm_buffer *buf = NULL;
     int size = pkt->size;
     int len, err = 0;
 
     while (size > 0) {
-        buf = mcm_dequeue_buffer(s->tx_handle, -1, &err);
-        if (buf == NULL) {
-            av_log(avctx, AV_LOG_ERROR, "Dequeue buffer error %d\n", err);
-            return AVERROR(EIO);
+        char *dest;
+
+        if (!s->unsent_mcm_buf) {
+            s->unsent_mcm_buf = mcm_dequeue_buffer(s->tx_handle, -1, &err);
+            if (s->unsent_mcm_buf == NULL) {
+                av_log(avctx, AV_LOG_ERROR, "Initial dequeue buffer error %d\n", err);
+                return AVERROR(EIO);
+            }
         }
 
-        len = FFMIN(buf->len, size);
-        memcpy(buf->data, data, len);
+        len = FFMIN(frame_size, size + s->unsent_len);
+
+        if (len < frame_size) {
+            memcpy((char *)s->unsent_mcm_buf->data + s->unsent_len, data, size);
+            s->unsent_len += size;
+            break;
+        }
+
+        dest = s->unsent_mcm_buf->data;
+
+        if (s->unsent_len) {
+            dest += s->unsent_len;
+            len -= s->unsent_len;
+            s->unsent_len = 0;
+        }
+
+        memcpy(dest, data, len);
         data += len;
         size -= len;
 
-        buf->len = len;
-
-        if ((err = mcm_enqueue_buffer(s->tx_handle, buf)) != 0) {
+        err = mcm_enqueue_buffer(s->tx_handle, s->unsent_mcm_buf);
+        if (err) {
             av_log(avctx, AV_LOG_ERROR, "Enqueue buffer error %d\n", err);
             return AVERROR(EIO);
         }
+
+        s->unsent_mcm_buf = NULL;
     }
 
     return 0;
@@ -145,6 +168,27 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
 static int mcm_audio_write_trailer(AVFormatContext* avctx)
 {
     McmAudioMuxerContext *s = avctx->priv_data;
+
+    if (s->unsent_mcm_buf) {
+        int err;
+
+        /* zero the unused rest of the buffer */
+        memset((char *)s->unsent_mcm_buf->data + s->unsent_len, 0,
+               s->unsent_mcm_buf->len - s->unsent_len);
+
+        err = mcm_enqueue_buffer(s->tx_handle, s->unsent_mcm_buf);
+        if (err) {
+            av_log(avctx, AV_LOG_ERROR, "Enqueue buffer error %d\n", err);
+            return AVERROR(EIO);
+        }
+    }
+
+    /* Delay for 50ms to allow Media Proxy to complete transmission of all
+     * buffers sitting in the memif queue before destroying the connection.
+     *
+     * TODO: Replace the delay with an API call when it is implemented in SDK.
+     */
+    usleep(50000);
 
     mcm_destroy_connection(s->tx_handle);
     return 0;

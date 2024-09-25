@@ -32,6 +32,7 @@
 #include <fcntl.h>
 #include <signal.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #ifndef __FAVOR_BSD
 #define __FAVOR_BSD
