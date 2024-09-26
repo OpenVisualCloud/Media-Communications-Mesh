@@ -35,7 +35,7 @@ typedef struct {
     int frame_done_cnt;
     int packet_done_cnt;
 
-    bool stop;
+    volatile bool stop;
 
     int fb_send;
     pthread_cond_t wake_cond;
@@ -44,7 +44,6 @@ typedef struct {
     size_t transfer_size;
     size_t pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* memif parameters */
     memif_ops_t memif_ops;
@@ -69,7 +68,7 @@ typedef struct {
     libfabric_ctx *rdma_ctx;
     ep_ctx_t *ep_ctx;
 
-    bool stop;
+    volatile bool stop;
     pthread_t frame_thread;
 
     int fb_recv;
@@ -79,7 +78,6 @@ typedef struct {
     size_t transfer_size;
     int pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
