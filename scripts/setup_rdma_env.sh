@@ -60,8 +60,22 @@ install_perftest() {
     pushd ./perftest-24.07.0
     ./autogen.sh
     ./configure
-    make
+    make -j$(nproc)
     sudo make install
+    popd
+    popd
+}
+
+install_libfabric() {
+    echo "Installing libfabric from the source..."
+    pushd "$WORKING_DIR"
+    git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric libfabric
+    pushd libfabric
+    ./autogen.sh
+    ./configure
+    make -j$(nproc)
+    sudo make install
+    sudo ldconfig
     popd
     popd
 }
@@ -125,8 +139,11 @@ if [[ "$1" == "install" ]]; then
     rm -rf "$WORKING_DIR"/*
     install_irdma
     configure_irdma
-    install_perftest
+    install_libfabric
     echo "Reboot required"
+elif [[ "$1" == "install_perftest" ]]; then
+    rm -rf "$WORKING_DIR"/*
+    install_perftest
 elif [[ "$1" == "check" ]]; then
     check_roce
     check_mtu
@@ -137,7 +154,8 @@ elif [[ "$1" == "perftest" ]] && [[ -n "$2" ]]; then
     run_perftest $2
 else
     echo -e "Usage\n"
-    echo -e "$0 install" "\n\t" "setup environment\n"
+    echo -e "$0 install" "\n\t" "setup irdma driver and libfabric\n"
+    echo -e "$0 install_perftest" "\n\t" "install perftest\n"
     echo -e "$0 check" "\n\t" "check environment\n"
     echo -e "$0 set_mtu <INTERFACE>" "\n\t" "temporarily set MTU to 9000 on given interface\n"
     echo -e "$0 perftest <INTERFACE>" "\n\t" "run perftest\n"
