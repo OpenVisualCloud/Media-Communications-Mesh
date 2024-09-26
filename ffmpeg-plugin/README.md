@@ -113,11 +113,11 @@ The table below shows a proper way to configure the sender and the receiver depe
 
 The next arguments are supported to configure an audio transmission
 
-| Argument      | Type    | Description                                                                                                                                                                                       | Default   |
-| ------------- | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------: |
-| `channels`    | Integer | Number of audio channels (`1`, `2`, etc.)                                                                                                                                                         | `2`       |
-| `sample_rate` | Integer | Audio sample rate (`44100`, `48000`, or `96000`)                                                                                                                                                  | `48000`   |
-| `ptime`       | String  | Audio packet time according to ST2110-30. For 48000 and 96000 sampling: `"1ms"`, `"125us"`, `"250us"`, `"333us"`, `"4ms"`, or `"80us"`. For 44100 sampling: `"1.09ms"`, `"0.14ms"`, or `"0.09ms"` | `"1ms"`   |
+| Argument      | Type    | Description                                                           | Default   |
+| ------------- | :-----: | --------------------------------------------------------------------- | :-------: |
+| `channels`    | Integer | Number of audio channels (`1`, `2`, etc.)                             | `2`       |
+| `sample_rate` | Integer | Audio sample rate (`48000` or `96000`)                                | `48000`   |
+| `ptime`       | String  | Audio packet time according to ST2110-30 (the only option is `"1ms"`) | `"1ms"`   |
 
 ## Example – Run audio transmission, PCM 24-bit
 
