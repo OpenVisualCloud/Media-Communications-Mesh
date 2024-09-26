@@ -295,7 +295,7 @@ static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
         return -1;
     }
 
-    err = memif_buffer_alloc_timeout(rx_ctx->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size, 10);
+    err = memif_buffer_alloc(rx_ctx->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("rx_st20p_query_ext_frame: Failed to alloc memif buffer: %s", memif_strerror(err));
         return -1;
@@ -343,7 +343,7 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
         return -1;
     }
 
-    err = memif_buffer_alloc_timeout(rx_ctx->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size, 10);
+    err = memif_buffer_alloc(rx_ctx->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("rx_st22p_query_ext_frame: Failed to alloc memif buffer: %s", memif_strerror(err));
         return -1;
@@ -524,7 +524,7 @@ static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* fra
     /* allocate memory */
     rx_bufs = s->shm_bufs;
 
-    err = memif_buffer_alloc_timeout(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size, 10);
+    err = memif_buffer_alloc(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("rx_st20p_consume_frame: Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
@@ -570,7 +570,7 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
     /* allocate memory */
     rx_bufs = s->shm_bufs;
 
-    err = memif_buffer_alloc_timeout(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size, 10);
+    err = memif_buffer_alloc(s->memif_conn, qid, rx_bufs, buf_num, &rx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("rx_st22p_consume_frame Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
@@ -620,7 +620,7 @@ static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame)
     /* allocate memory */
     tx_bufs = s->shm_bufs;
 
-    err = memif_buffer_alloc_timeout(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size, 10);
+    err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("rx_st30_consume_frame Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
@@ -659,7 +659,7 @@ static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, ui
     /* allocate memory */
     tx_bufs = s->shm_bufs;
 
-    err = memif_buffer_alloc_timeout(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size, 10);
+    err = memif_buffer_alloc(s->memif_conn, qid, tx_bufs, buf_num, &tx_buf_num, buf_size);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("rx_st40_consume_frame Failed to alloc memif buffer: %s", memif_strerror(err));
         return;
