@@ -202,14 +202,10 @@ static int rx_shm_deinit(rx_rdma_session_context_t *rx_ctx)
     }
 
     err = pthread_cancel(rx_ctx->memif_event_thread);
-    if (err) {
-        ERROR("%s: Error canceling thread: %s", __func__, strerror(err));
-    }
-
-    err = pthread_join(rx_ctx->memif_event_thread, NULL);
-    if (err && err != ESRCH) {
+    if (!err)
+        err = pthread_join(rx_ctx->memif_event_thread, NULL);
+    if (err && err != ESRCH)
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
-    }
 
     /* free-up resources */
     memif_delete(&rx_ctx->memif_conn);
@@ -238,14 +234,10 @@ static int tx_shm_deinit(tx_rdma_session_context_t *tx_ctx)
     }
 
     err = pthread_cancel(tx_ctx->memif_event_thread);
-    if (err) {
-        ERROR("%s: Error canceling thread: %s", __func__, strerror(err));
-    }
-
-    err = pthread_join(tx_ctx->memif_event_thread, NULL);
-    if (err && err != ESRCH) {
+    if (!err)
+        err = pthread_join(tx_ctx->memif_event_thread, NULL);
+    if (err && err != ESRCH)
         ERROR("%s: Error joining thread: %s", __func__, strerror(err));
-    }
 
     /* free-up resources */
     memif_delete(&tx_ctx->memif_conn);
