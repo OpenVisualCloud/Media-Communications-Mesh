@@ -10,6 +10,12 @@ script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 bin_dir="$(readlink -f "${script_dir}/../../out/bin")"
 out_dir="$(readlink -f "${script_dir}/out")"
 
+# Colors enablement
+highlight_msg_on="\e[38;05;33m"
+highlight_info_on='\e[38;05;45m'
+highlight_err_on='\e[38;05;9m'
+highlight_off="\e[m"
+
 # Test configuration
 test_option="$1"
 nic_pf="$2"
@@ -17,7 +23,7 @@ tx_vf_number=0
 rx_vf_number=1
 
 # Media file names
-input_file="$(realpath $3)"
+input_file="$(realpath "${3}")"
 output_file="${out_dir}/out_rx.bin"
 
 # Video parameters
@@ -42,27 +48,24 @@ recver_app_out="${out_dir}/out_recver_app.txt"
 repeat_number=3
 
 function message() {
+    local timestamp
     local type="$1"
     shift
-    local highlight_on="\e[38;05;33m"
-    local highlight_off="\e[m"
-    local timestamp="$(date +'%Y-%m-%d %H:%M:%S')"
-    echo -e "${highlight_on}$timestamp $type${highlight_off} $*"
+    timestamp="$(date +'%Y-%m-%d %H:%M:%S')"
+    echo -e "${highlight_msg_on}${timestamp} $type${highlight_off} $*"
 }
 
 function info() {
-    local highlight_on='\e[38;05;45m';
-    message "${highlight_on}[INFO]" "$*"
+    message "${highlight_info_on}[INFO]" "$*"
 }
 
 function error() {
-    local highlight_on='\e[38;05;9m';
-    message "${highlight_on}[ERRO]" "$*"
+    message "${highlight_err_on}[ERRO]" "$*"
 }
 
 function cleanup() {
-    local buckup_after_error="${1:-0}"
-    if [ "${buckup_after_error}" == "0" ]; then
+    local backup_after_error="${1:-0}"
+    if [ "${backup_after_error}" == "0" ]; then
         info "Cleanup"
         rm -rf "$out_dir" &>/dev/null
     else
@@ -76,9 +79,9 @@ function run_in_background() {
     # 1st argument is a command with arguments to be run in background
     # 2nd argument is a file for stdout/stderr to be redirected to
     # Returns PID of a spawned process
-    info "run: ${1}"
+    info "Run: ${1}"
     echo -e "${1}\n" > "${2}"
-    stdbuf -o0 -e0 $1 &>>"${2}" &
+    stdbuf -o0 -e0 "${1}" &>>"${2}" &
 }
 
 function wait_text() {
@@ -146,10 +149,12 @@ function check_results() {
 }
 
 function get_vf_bdf() {
+    local params
+    local regex
     local pf="$1"
     local vf="$2"
-    local params=$(cat "/sys/bus/pci/devices/$pf/virtfn$vf/uevent")
-    local regex="PCI_SLOT_NAME=([0-9a-f]{4}:[0-9a-f]{2,4}:[0-9a-f]{2}\.[0-9a-f])"
+    params="$(cat "/sys/bus/pci/devices/$pf/virtfn$vf/uevent")"
+    regex="PCI_SLOT_NAME=([0-9a-f]{4}:[0-9a-f]{2,4}:[0-9a-f]{2}\.[0-9a-f])"
     [[ ! $params =~ $regex ]] && error "Cannot get VF $vf bus device function" && return 1
     echo "${BASH_REMATCH[1]}"
     return 0
@@ -159,16 +164,17 @@ function initialize_nic() {
     local pf="$1"
     local tx_vf="$2"
     local rx_vf="$3"
+    local description
 
-    info "Checking PF $pf status"
+    info "Checking PF ${pf} status"
 
     # Check if PF exists
-    lspci -D | grep $pf &>/dev/null
+    lspci -D | grep "${pf}" &>/dev/null
     [ $? -ne 0 ] && error "PF not found" && return 1
 
     # Get network interface name of PF
-    local description="$(lshw -c network -businfo -quiet | grep "$pf")"
-    local regex="pci@$pf[[:space:]]+([a-zA-Z0-9\-]+)"
+    description="$(lshw -c network -businfo -quiet | grep "$pf")"
+    local regex="pci@${pf}[[:space:]]+([a-zA-Z0-9\-]+)"
     [[ ! $description =~ $regex ]] && error "Cannot get network interface name" && return 1
 
     # Check if network interface is up
@@ -233,14 +239,14 @@ function run_test_memif() {
     info "Starting Tx side media_proxy"
     local tx_media_proxy_cmd="media_proxy -d $tx_vf_bdf -i 192.168.96.1 -t 8002"
     run_in_background "$bin_dir/$tx_media_proxy_cmd" "$tx_media_proxy_out"
-    tx_media_proxy_pid=$!
+    tx_media_proxy_pid="$!"
 
     sleep 1
 
     info "Starting Rx side media_proxy"
     local rx_media_proxy_cmd="media_proxy -d $rx_vf_bdf -i 192.168.96.2 -t 8003"
     run_in_background "$bin_dir/$rx_media_proxy_cmd" "$rx_media_proxy_out"
-    rx_media_proxy_pid=$!
+    rx_media_proxy_pid="$!"
 
     sleep 1
 
@@ -248,7 +254,7 @@ function run_test_memif() {
     export MCM_MEDIA_PROXY_PORT=8002
     local sender_app_cmd="sender_app -s 192.168.96.2 -t st20 -w $width -h $height -f $fps -x $pixel_format -b $input_file -n $frames_number -o memif"
     run_in_background "$bin_dir/$sender_app_cmd" "$sender_app_out"
-    sender_app_pid=$!
+    sender_app_pid="$!"
 
     sleep 1
 
@@ -256,10 +262,10 @@ function run_test_memif() {
     export MCM_MEDIA_PROXY_PORT=8003
     local recver_app_cmd="recver_app -r 192.168.96.1 -t st20 -w $width -h $height -f $fps -x $pixel_format -b $output_file -o memif"
     run_in_background "$bin_dir/$recver_app_cmd" "$recver_app_out"
-    recver_app_pid=$!
+    recver_app_pid="$!"
 
     wait_completion "$wait_interval"
-    local timeout=$?
+    local timeout="$?"
 
     sleep 1
 
@@ -268,7 +274,7 @@ function run_test_memif() {
     sleep 1
 
     check_results
-    local error=$?
+    local error="$?"
 
     info "Cleanup"
     cleanup "${error}"
@@ -289,14 +295,14 @@ function run_test_stXX() {
     info "Starting Tx side media_proxy"
     local tx_media_proxy_cmd="media_proxy -d $tx_vf_bdf -i 192.168.96.1 -t 8002"
     run_in_background "$bin_dir/$tx_media_proxy_cmd" "$tx_media_proxy_out"
-    tx_media_proxy_pid=$!
+    tx_media_proxy_pid="$!"
 
     sleep 1
 
     info "Starting Rx side media_proxy"
     local rx_media_proxy_cmd="media_proxy -d $rx_vf_bdf -i 192.168.96.2 -t 8003"
     run_in_background "$bin_dir/$rx_media_proxy_cmd" "$rx_media_proxy_out"
-    rx_media_proxy_pid=$!
+    rx_media_proxy_pid="$!"
 
     sleep 1
 
@@ -304,33 +310,33 @@ function run_test_stXX() {
     export MCM_MEDIA_PROXY_PORT=8003
     local recver_app_cmd="recver_app -r 192.168.96.1 -t $1 -w $width -h $height -f $fps -x $pixel_format -b $output_file -o auto"
     run_in_background "$bin_dir/$recver_app_cmd" "$recver_app_out"
-    recver_app_pid=$!
+    recver_app_pid="$!"
 
     info "Waiting for recver_app to connect to Rx media_proxy"
     wait_text 50 $recver_app_out "Success connect to MCM media-proxy"
-    local recver_app_timeout=$?
+    local recver_app_timeout="$?"
     [ $recver_app_timeout -eq 0 ] && info "Connection established"
 
     info "Starting sender_app"
     export MCM_MEDIA_PROXY_PORT=8002
     local sender_app_cmd="sender_app -s 192.168.96.2 -t $1 -w $width -h $height -f $fps -x $pixel_format -b $input_file -n $frames_number -o auto"
     run_in_background "$bin_dir/$sender_app_cmd" "$sender_app_out"
-    sender_app_pid=$!
+    sender_app_pid="$!"
 
     info "Waiting for sender_app to connect to Tx media_proxy"
     wait_text 100 $sender_app_out "Success connect to MCM media-proxy"
-    local sender_app_timeout=$?
+    local sender_app_timeout="$?"
     [ $sender_app_timeout -eq 0 ] && info "Connection established"
 
     wait_completion "$wait_interval"
-    local timeout=$?
+    local timeout="$?"
 
     sleep 1
 
     shutdown_apps
 
     check_results
-    local error=$?
+    local error="$?"
 
     info "Tx media_proxy stats"
     local regex="throughput ([0-9]*\.[0-9]*) Mb/s: [0-9]*\.[0-9]* Mb/s, cpu busy ([0-9]*\.[0-9]*)"
@@ -349,16 +355,16 @@ function run_test_stXX() {
     done < "$rx_media_proxy_out"
 
     info "Cleanup"
-    cleanup $error
+    cleanup "${error}"
 
-    return $(($error || $timeout || $recver_app_timeout || $sender_app_timeout))
+    return $((error || timeout || recver_app_timeout || sender_app_timeout))
 }
 
 info "Test MCM Tx/Rx for Single Node"
-info "  Binary directory: $(realpath $bin_dir)"
-info "  Output directory: $(realpath $out_dir)"
+info "  Binary directory: $(realpath "${bin_dir}")"
+info "  Output directory: $(realpath "${out_dir}")"
 info "  Input file path: $input_file"
-info "  Input file size: $(stat -c%s $input_file) byte(s)"
+info "  Input file size: $(stat -c%s "${input_file}") byte(s)"
 info "  Frame size: $width x $height, FPS: $fps"
 info "  Pixel format: $pixel_format"
 info "  Duration: ${duration}s"
