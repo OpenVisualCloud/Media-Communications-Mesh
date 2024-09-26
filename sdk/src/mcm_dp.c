@@ -268,7 +268,7 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
         conn_ctx->session_id = 0;
         break;
     default:
-        log_warn("Unsupported protocol: %d", param->protocol);
+        log_warn("Unsupported protocol (%d)", param->protocol);
         break;
     }
 
@@ -315,7 +315,7 @@ void mcm_destroy_connection(mcm_conn_context* pctx)
         mcm_destroy_connection_udp((udp_context*)pctx->priv);
         break;
     default:
-        log_warn("Unsupported protocol: %d", pctx->proto);
+        log_warn("Unsupported protocol (%d)", pctx->proto);
         break;
     }
 
