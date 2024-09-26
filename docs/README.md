@@ -59,7 +59,12 @@ Detailed information about MCM SDK can be found in [sdk](sdk) directory.
 
 ### Basic Installation
 
-1. **Install Dependencies**
+1. **Install Dependencies**, choose between options `a)` or `b)`.
+
+    a) The `build_dep.sh` script can be used for all-in-one environment preparation. The script is designed for Debian and was tested under `Ubuntu 20.04`, `Ubuntu 22.04` and `Ubuntu 24.04` environments.
+   To use this option just run the script after cloning the repository by typing `build_dep.sh`
+
+    b) The following method is universal and should work for most Linux OS distributions.
 
     - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation.
     - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
