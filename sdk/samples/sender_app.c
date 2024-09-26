@@ -35,7 +35,9 @@ int read_test_data(FILE* fp, mcm_buffer* buf, uint32_t frame_size)
     assert(fp != NULL && buf != NULL);
     assert(buf->len >= frame_size);
 
-    if (fread(buf->data, frame_size, 1, fp) < 1) {
+    memset(buf->data, 0, buf->len);
+
+    if (fread(buf->data, 1, frame_size, fp) < 1) {
         ret = -1;
     }
     if(ret >= 0 ) {
