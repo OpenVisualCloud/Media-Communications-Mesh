@@ -364,8 +364,10 @@ int main(int argc, char** argv)
 
     FILE* input_fp = NULL;
     uint32_t frame_count = 0;
-    const uint32_t fps_interval = 30;
+    const uint32_t stat_interval = 10;
     double fps = 0.0;
+    double throughput_MB = 0;
+    double stat_period_s = 0;
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
 
@@ -422,19 +424,20 @@ int main(int argc, char** argv)
             break;
         }
 
-        if (frame_count % fps_interval == 0) {
+        if (frame_count % stat_interval == 0) {
             /* calculate FPS */
             clock_gettime(CLOCK_REALTIME, &ts_end);
 
-            fps = 1e9 * (ts_end.tv_sec - ts_begin.tv_sec);
-            fps += (ts_end.tv_nsec - ts_begin.tv_nsec);
-            fps /= 1e9;
-            fps = (double)fps_interval / fps;
+            stat_period_s = (ts_end.tv_sec - ts_begin.tv_sec);
+            stat_period_s += (ts_end.tv_nsec - ts_begin.tv_nsec) / 1e9;
+            fps = stat_interval / stat_period_s;
+            throughput_MB = fps * frame_size / 1000000;
 
             clock_gettime(CLOCK_REALTIME, &ts_begin);
         }
 
         printf("TX frames: [%d], FPS: %0.2f [%0.2f]\n", frame_count, fps, vid_fps);
+        printf("Throughput: %.2lf MB/s, %.2lf Gb/s \n", throughput_MB,  throughput_MB * 8 / 1000);
 
         frame_count++;
 
@@ -450,6 +453,7 @@ int main(int argc, char** argv)
         printf("pacing: %d\n", pacing);
         printf("spend: %d\n", spend);
 
+        printf("\n");
     }
 
     sleep(2);
