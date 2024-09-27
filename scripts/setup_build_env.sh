@@ -3,10 +3,11 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-REPO_DIR="${SCRIPT_DIR:-$(pwd)}"
+REPO_DIR="$(readlink -f "../${SCRIPT_DIR}")"
 
 . "${REPO_DIR}/common.sh"
 
+NPROC="$(nproc)"
 export MCM_DIR="${REPO_DIR}/build/mcm"
 export MTL_VER="d2515b90cc0ef651f6d0a6661d5a644490bfc3f3"
 export MTL_DIR="${REPO_DIR}/build/mtl"
@@ -120,7 +121,7 @@ popd
 pushd "${LIBFABRIC_DIR}"
 ./autogen.sh && \
 ./configure && \
-make -j$(nproc) && \
+make -j "${NPROC}" && \
 make install && \
 popd
 
@@ -143,10 +144,10 @@ popd
 mkdir -p "${GRPC_DIR}/cmake/build"
 pushd "${GRPC_DIR}/cmake/build"
 cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
-make -j $(nproc) && \
+make -j "${NPROC}" && \
 make install && \
 cmake -DgRPC_BUILD_TESTS=ON -DgRPC_INSTALL=ON ../.. && \
-make -j $(nproc) grpc_cli && \
+make -j "${NPROC}" grpc_cli && \
 cp grpc_cli "/usr/local/bin/"
 popd
 

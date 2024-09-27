@@ -146,14 +146,14 @@ function run_test_rdma() {
     info "Starting Tx side media_proxy"
     local tx_media_proxy_cmd="media_proxy -t 8002"
     run_in_background "$bin_dir/$tx_media_proxy_cmd" "$tx_media_proxy_out"
-    tx_media_proxy_pid=$!
+    tx_media_proxy_pid="$!"
 
     sleep 1
 
     info "Starting Rx side media_proxy"
     local rx_media_proxy_cmd="media_proxy -t 8003"
     run_in_background "$bin_dir/$rx_media_proxy_cmd" "$rx_media_proxy_out"
-    rx_media_proxy_pid=$!
+    rx_media_proxy_pid="$!"
 
     sleep 1
 
@@ -161,34 +161,34 @@ function run_test_rdma() {
     export MCM_MEDIA_PROXY_PORT=8003
     local recver_app_cmd="recver_app -r $rdma_iface_ip -t rdma -w $width -h $height -f $fps -x $pixel_format -b $output_file -o auto"
     run_in_background "$bin_dir/$recver_app_cmd" "$recver_app_out"
-    recver_app_pid=$!
+    recver_app_pid="$!"
 
 
     info "Starting sender_app"
     export MCM_MEDIA_PROXY_PORT=8002
     local sender_app_cmd="sender_app -s $rdma_iface_ip -t rdma -w $width -h $height -f $fps -x $pixel_format -b $input_file -n $frames_number -o auto"
     run_in_background "$bin_dir/$sender_app_cmd" "$sender_app_out"
-    sender_app_pid=$!
+    sender_app_pid="$!"
 
     info "Waiting for recver_app to connect to Rx media_proxy"
     wait_text 10 $recver_app_out "Success connect to MCM media-proxy"
-    local recver_app_timeout=$?
+    local recver_app_timeout="$?"
     [ $recver_app_timeout -eq 0 ] && info "Connection established"
 
     info "Waiting for sender_app to connect to Tx media_proxy"
     wait_text 10 $sender_app_out "Success connect to MCM media-proxy"
-    local sender_app_timeout=$?
+    local sender_app_timeout="$?"
     [ $sender_app_timeout -eq 0 ] && info "Connection established"
 
     wait_completion "$wait_interval"
-    local timeout=$?
+    local timeout="$?"
 
     sleep 1
 
     shutdown_apps
 
     check_results
-    local error=$?
+    local error="$?"
 
     info "Tx media_proxy stats"
     local regex="throughput ([0-9]*\.[0-9]*) Mb/s: [0-9]*\.[0-9]* Mb/s, cpu busy ([0-9]*\.[0-9]*)"
