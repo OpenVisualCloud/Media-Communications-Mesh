@@ -56,44 +56,75 @@ function get_user_input_def_no() {
 }
 
 function get_filename() {
-    local path=$1
+    local path="$1"
     echo ${path##*/}
 }
 
 function get_dirname() {
-    local path=$1
+    local path="$1"
     echo "${path%/*}/"
 }
 
 function get_extension() {
-    local filename=$(get_filename $1)
+    local filename
+    filename="$(get_filename "${1}")"
     echo "${filename#*.}"
 }
 
+function check_extension() {
+    local filename="$1"
+    local extension="$2"
+    if [ "${filename}" == "${filename%"${extension}"}" ]; then
+        echo "0"
+    else
+        echo "1"
+    fi
+}
+
 function get_basename() {
-    local filename=$(get_filename $1)
+    local filename
+    filename="$(get_filename "${1}")"
     echo "${filename%%.*}"
+}
+
+function get_github_elements() {
+    local full_url
+    local path_elements
+    full_url="$(get_dirname "$1")"
+    path_elements=($(tr '/' ' ' <<< "${full_url#*://github.com/}"))
+    echo "${path_elements[0]} ${path_elements[1]}"
+}
+
+function get_github_namespace() {
+    cut -d' ' -f1 <<< "$(get_github_elements "$1")"
+}
+
+function get_github_repo() {
+    cut -d' ' -f2 <<< "$(get_github_elements "$1")"
 }
 
 # Takes ID as first param and full path to output file as second for creating benchmark specific output file
 #  input: [path]/[file_base].[extension]
 # output: [path]/[file_base][id].[extension]
 function get_filepath_add_sufix() {
+    local dir_path
+    local file_base
+    local file_ext
     local file_sufix="${1}"
     local file_path="${2}"
-    local dir_path=$(get_dirname "${filepath}")
-    local file_base=$(get_basename "${filepath}")
-    local file_ext=$(get_extension "${filepath}")
-    echo "${dir_path}${file_base}${sufix}.${file_ext}"
+    dir_path="$(get_dirname "${file_path}")"
+    file_base="$(get_basename "${file_path}")"
+    file_ext="$(get_extension "${file_path}")"
+    echo "${dir_path}${file_base}${file_sufix}.${file_ext}"
 }
 
 function run_as_root_user()
 {
-    CMD_TO_EVALUATE="$@"
+    CMD_TO_EVALUATE="$*"
     if [ "${EUID:-$(id -u)}" -eq 0 ]; then
-        eval "${CMD_TO_EVALUATE[@]}"
+        eval "${CMD_TO_EVALUATE[*]}"
     else
-        eval "sudo ${CMD_TO_EVALUATE[@]}" || echo 'Must be run as root. No sudo found.'
+        eval "sudo ${CMD_TO_EVALUATE[*]}" || echo 'Must be run as root. No sudo found.'
     fi
 }
 

@@ -17,7 +17,7 @@ ARG MTL_DIR="/opt/mtl"
 ARG DPDK_VER="23.11"
 ARG DPDK_DIR="/opt/dpdk"
 ARG XDP_DIR="/opt/xdp"
-ARG GPRC_VER="v1.58.0"
+ARG GPRC_VER="v1.58.3"
 ARG GRPC_DIR="/opt/grpc"
 # JPEGXS_VER Release
 ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"

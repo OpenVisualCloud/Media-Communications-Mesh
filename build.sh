@@ -22,3 +22,4 @@ cmake --build "${SCRIPT_DIR}/out" -j
 
 # Install
 run_as_root_user cmake --install "${SCRIPT_DIR}/out"
+ldconfig
