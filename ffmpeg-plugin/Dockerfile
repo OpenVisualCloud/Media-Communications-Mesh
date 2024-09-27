@@ -13,6 +13,7 @@ ENV TZ=Europe/Warsaw
 
 ARG MCM_DIR=/opt/mcm
 ARG PREFIX_DIR="/install"
+ARG FFMPEG_VER="7.0"
 
 SHELL ["/bin/bash", "-exc"]
 RUN apt-get update && \

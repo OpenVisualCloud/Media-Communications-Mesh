@@ -8,16 +8,18 @@ ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
+ARG GITHUB_CREDENTIALS=""
 ARG PREFIX_DIR="/install"
 ARG MCM_DIR="/opt/mcm"
-ARG MTL_VER="9d87d0da3466bd88cdf3336844643882d272460b"
+ARG MTL_VER="maint-24.09"
+ARG MTL_REPO="OpenVisualCloud/Media-Transport-Library"
 ARG MTL_DIR="/opt/mtl"
 ARG DPDK_VER="23.11"
 ARG DPDK_DIR="/opt/dpdk"
 ARG XDP_DIR="/opt/xdp"
 ARG GPRC_VER="v1.58.0"
 ARG GRPC_DIR="/opt/grpc"
-# JPEGXS_VER Release v0.9
+# JPEGXS_VER Release
 ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"
 ARG JPEGXS_DIR="/opt/jpegxs"
 ARG LIBFABRIC_DIR="/opt/libfabric"
@@ -44,9 +46,7 @@ RUN apt-get update --fix-missing && \
 
 # Clone MTL, DPDK and xdp-tools repo
 WORKDIR ${DPDK_DIR}
-RUN git config --global user.email "milosz.linkiewicz@intel.com" && \
-    git config --global user.name "Milosz Linkiewicz" && \
-    git clone --branch main https://github.com/OpenVisualCloud/Media-Transport-Library ${MTL_DIR} && \
+RUN git clone --branch main https://${GITHUB_CREDENTIALS}github.com/${MTL_REPO} ${MTL_DIR} && \
     git -C ${MTL_DIR} checkout ${MTL_VER} && \
     git clone --branch v${DPDK_VER} --depth 1 https://github.com/DPDK/dpdk.git ${DPDK_DIR} && \
     git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git ${XDP_DIR} && \
@@ -54,7 +54,7 @@ RUN git config --global user.email "milosz.linkiewicz@intel.com" && \
     git clone --branch ${GPRC_VER} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc ${GRPC_DIR} && \
     git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS ${JPEGXS_DIR} && \
     git -C ${JPEGXS_DIR} checkout ${JPEGXS_VER} && \
-    git am ${MTL_DIR}/patches/dpdk/${DPDK_VER}/*.patch
+    patch -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
 
 # Build the xdp-tools project
 WORKDIR ${XDP_DIR}

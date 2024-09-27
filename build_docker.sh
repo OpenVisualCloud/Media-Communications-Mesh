@@ -5,19 +5,24 @@
 
 set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-. "${SCRIPT_DIR}/common.sh"
-
-# Read proxy variables from env to pass them to the builder
-BUILD_ARGUMENTS=$(compgen -e | sed -nE '/_(proxy|PROXY)$/{s/^/--build-arg /;p}')
+. "${SCRIPT_DIR}/scripts/common.sh"
 
 IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
-docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/sdk:${IMAGE_TAG}" -f "${SCRIPT_DIR}/sdk/Dockerfile" $@ "${SCRIPT_DIR}"
-docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/media-proxy:${IMAGE_TAG}" -f "${SCRIPT_DIR}/media-proxy/Dockerfile" $@ "${SCRIPT_DIR}"
-docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/ffmpeg:${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" $@ "${SCRIPT_DIR}"
+# Read proxy variables from env to pass them to the builder
+BUILD_ARGUMENTS=()
+BASIC_ARGUMENTS=("buildx" "build" "--progress=plain" "--network=host" "--build-arg=IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}")
+mapfile -t BUILD_ARGUMENTS < <(compgen -e | sed -nE '/^(.*)(_proxy|_PROXY)$/{s/^/--build-arg=/;p}')
+
+docker "${BASIC_ARGUMENTS[@]}" "${BUILD_ARGUMENTS[@]}" -t "${IMAGE_REGISTRY}/sdk:${IMAGE_TAG}" -f "${SCRIPT_DIR}/sdk/Dockerfile" "$@" "${SCRIPT_DIR}"
+docker "${BASIC_ARGUMENTS[@]}" "${BUILD_ARGUMENTS[@]}" -t "${IMAGE_REGISTRY}/media-proxy:${IMAGE_TAG}" -f "${SCRIPT_DIR}/media-proxy/Dockerfile" "$@" "${SCRIPT_DIR}"
+docker "${BASIC_ARGUMENTS[@]}" "${BUILD_ARGUMENTS[@]}" -t "${IMAGE_REGISTRY}/ffmpeg:7.0-${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" --build-arg FFMPEG_VER="7.0" "$@" "${SCRIPT_DIR}"
+docker "${BASIC_ARGUMENTS[@]}"  "${BUILD_ARGUMENTS[@]}" -t "${IMAGE_REGISTRY}/ffmpeg:6.1-${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" --build-arg FFMPEG_VER="6.1" "$@" "${SCRIPT_DIR}"
 
 docker tag "${IMAGE_REGISTRY}/sdk:${IMAGE_TAG}" "mcm/sample-app:${IMAGE_TAG}"
 docker tag "${IMAGE_REGISTRY}/media-proxy:${IMAGE_TAG}" "mcm/media-proxy:${IMAGE_TAG}"
-docker tag "${IMAGE_REGISTRY}/ffmpeg:${IMAGE_TAG}" "mcm/ffmpeg:${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/ffmpeg:7.0-${IMAGE_TAG}" "mcm/ffmpeg:${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/ffmpeg:7.0-${IMAGE_TAG}" "mcm/ffmpeg:7.0-${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/ffmpeg:6.1-${IMAGE_TAG}" "mcm/ffmpeg:6.1-${IMAGE_TAG}"
