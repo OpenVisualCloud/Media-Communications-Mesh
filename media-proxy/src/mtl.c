@@ -256,7 +256,7 @@ void st_tx_st22p_debug_dump(struct st22p_tx_ops ops)
 
 static int rx_st20p_frame_available(void* priv)
 {
-    rx_session_context_t* s = priv;
+    rx_st20p_session_context_t* s = priv;
 
     st_pthread_mutex_lock(&s->wake_mutex);
     st_pthread_cond_signal(&s->wake_cond);
@@ -280,7 +280,7 @@ static int rx_st22p_frame_available(void* priv)
 static int rx_st20p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     struct st20_rx_frame_meta* meta)
 {
-    rx_session_context_t* rx_ctx = priv;
+    rx_st20p_session_context_t* rx_ctx = priv;
     int err = 0;
 
     /* allocate memory */
@@ -498,7 +498,7 @@ static int tx_st22p_frame_done(void* priv, struct st_frame* frame)
     return err;
 }
 
-static void rx_st20p_consume_frame(rx_session_context_t* s, struct st_frame* frame)
+static void rx_st20p_consume_frame(rx_st20p_session_context_t* s, struct st_frame* frame)
 {
     int err = 0;
     uint16_t qid = 0;
@@ -729,7 +729,7 @@ static void rx_st40_handle_rtp(rx_st40_session_context_t* s, void* usrptr)
 
 static void* rx_st20p_frame_thread(void* arg)
 {
-    rx_session_context_t* s = (rx_session_context_t*)arg;
+    rx_st20p_session_context_t* s = (rx_st20p_session_context_t*)arg;
     st20p_rx_handle handle = s->handle;
     struct st_frame* frame;
 
@@ -887,7 +887,7 @@ static void* rx_memif_event_loop(void* arg)
     return NULL;
 }
 
-int rx_st20p_shm_init(rx_session_context_t* rx_ctx, memif_ops_t* memif_ops)
+int rx_st20p_shm_init(rx_st20p_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 {
     int ret = 0;
     memif_ops_t default_memif_ops = { 0 };
@@ -1045,7 +1045,7 @@ int rx_st22p_shm_init(rx_st22p_session_context_t* rx_ctx, memif_ops_t* memif_ops
     return 0;
 }
 
-int rx_shm_deinit(rx_session_context_t* rx_ctx)
+int rx_shm_deinit(rx_st20p_session_context_t* rx_ctx)
 {
     int err;
 
@@ -1803,19 +1803,19 @@ int rx_st40_shm_init(rx_st40_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 }
 
 /* Create new RX session */
-rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops)
+rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops)
 {
     int ret = 0;
     static int idx = 0;
     int fb_cnt = 4;
-    rx_session_context_t* rx_ctx = NULL;
+    rx_st20p_session_context_t* rx_ctx = NULL;
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
         return NULL;
     }
 
-    rx_ctx = calloc(1, sizeof(rx_session_context_t));
+    rx_ctx = calloc(1, sizeof(rx_st20p_session_context_t));
     if (rx_ctx == NULL) {
         printf("%s, RX session contex malloc fail\n", __func__);
         return NULL;
@@ -2329,7 +2329,7 @@ rx_st40_session_context_t* mtl_st40_rx_session_create(mtl_handle dev_handle, str
 }
 
 /* Stop RX ST20P session */
-void mtl_st20p_rx_session_stop(rx_session_context_t* rx_ctx)
+void mtl_st20p_rx_session_stop(rx_st20p_session_context_t* rx_ctx)
 {
     if (rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);
@@ -2363,10 +2363,10 @@ void mtl_st22p_rx_session_stop(rx_st22p_session_context_t* rx_ctx)
 }
 
 /* Destroy RX ST20P session */
-void mtl_st20p_rx_session_destroy(rx_session_context_t** p_rx_ctx)
+void mtl_st20p_rx_session_destroy(rx_st20p_session_context_t** p_rx_ctx)
 {
     int ret = 0;
-    rx_session_context_t* rx_ctx = NULL;
+    rx_st20p_session_context_t* rx_ctx = NULL;
 
     if (p_rx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);

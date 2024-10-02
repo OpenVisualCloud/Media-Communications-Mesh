@@ -18,7 +18,7 @@ static void tx_st20p_build_frame(memif_buffer_t shm_bufs, struct st_frame* frame
  * connection */
 int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
-    rx_session_context_t* rx_ctx = (rx_session_context_t*)priv_data;
+    rx_st20p_session_context_t* rx_ctx = (rx_st20p_session_context_t*)priv_data;
     int err = 0;
 
     INFO("RX memif connected!");
@@ -75,7 +75,7 @@ int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     int err = 0;
-    rx_session_context_t* rx_ctx = priv_data;
+    rx_st20p_session_context_t* rx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL) {

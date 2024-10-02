@@ -719,7 +719,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 {
     INFO("ProxyContext: RxStart(const RxControlRequest* request)");
     dp_session_context_t *st_ctx = NULL;
-    rx_session_context_t* rx_ctx = NULL;
+    rx_st20p_session_context_t* rx_ctx = NULL;
     struct st20p_rx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
@@ -961,7 +961,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
     case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_NONE:
     default: {
-        rx_session_context_t* rx_ctx = NULL;
+        rx_st20p_session_context_t* rx_ctx = NULL;
         struct st20p_rx_ops opts = {};
 
         ParseSt20RxOps(request, &opts);

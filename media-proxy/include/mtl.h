@@ -89,7 +89,7 @@ typedef struct {
     mtl_iova_t frames_begin_iova;
     size_t frames_iova_map_sz;
     struct st20_ext_frame* ext_frames;
-} rx_session_context_t;
+} rx_st20p_session_context_t;
 
 typedef struct {
     mtl_handle st;
@@ -479,19 +479,19 @@ void mtl_deinit(mtl_handle dev_handle);
 tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops);
 
 /* RX: Create ST20P session */
-rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
+rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
 
 /* TX: Stop ST20P session */
 void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx);
 
 /* RX: Stop ST20P session */
-void mtl_st20p_rx_session_stop(rx_session_context_t* rx_ctx);
+void mtl_st20p_rx_session_stop(rx_st20p_session_context_t* rx_ctx);
 
 /* TX: Destroy ST20P session */
 void mtl_st20p_tx_session_destroy(tx_session_context_t** p_tx_ctx);
 
 /* RX: Destroy ST20P session */
-void mtl_st20p_rx_session_destroy(rx_session_context_t** p_rx_ctx);
+void mtl_st20p_rx_session_destroy(rx_st20p_session_context_t** p_rx_ctx);
 
 /* TX: Create ST22P session */
 tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, struct st22p_tx_ops* opts, memif_ops_t* memif_ops);

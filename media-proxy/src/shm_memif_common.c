@@ -96,7 +96,7 @@ void print_memif_details(memif_conn_handle_t conn)
 int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     int err = 0;
-    rx_session_context_t* rx_ctx = priv_data;
+    rx_st20p_session_context_t* rx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL) {

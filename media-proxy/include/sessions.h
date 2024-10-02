@@ -22,7 +22,7 @@ typedef struct {
     mcm_payload_type payload_type;
     union {
         tx_session_context_t *tx_session;
-        rx_session_context_t *rx_session;
+        rx_st20p_session_context_t *rx_session;
         tx_st22p_session_context_t *tx_st22p_session;
         rx_st22p_session_context_t *rx_st22p_session;
         tx_st30_session_context_t *tx_st30_session;
