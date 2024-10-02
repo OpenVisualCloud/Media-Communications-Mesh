@@ -59,7 +59,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t *shm_bufs;
-    uint16_t shm_buf_num;
     atomic_bool shm_ready;
 
     memif_socket_args_t memif_socket_args;
@@ -93,7 +92,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t *shm_bufs;
-    uint16_t shm_buf_num;
     atomic_bool shm_ready;
 
     pthread_t memif_event_thread;

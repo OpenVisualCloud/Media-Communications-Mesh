@@ -23,8 +23,7 @@ int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
     INFO("RX RDMA memif connected!");
 
     /* rx buffers */
-    rx_ctx->shm_buf_num = 1;
-    rx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * rx_ctx->shm_buf_num);
+    rx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * 1);
     if (!rx_ctx->shm_bufs) {
         ERROR("Failed to allocate memory");
         return -ENOMEM;

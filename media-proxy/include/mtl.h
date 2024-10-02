@@ -76,7 +76,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     pthread_t memif_event_thread;
@@ -111,7 +110,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     memif_socket_args_t memif_socket_args;
@@ -148,7 +146,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     memif_socket_args_t memif_socket_args;
@@ -191,7 +188,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     pthread_t memif_event_thread;
@@ -232,7 +228,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     memif_socket_args_t memif_socket_args;
@@ -269,7 +264,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     pthread_t memif_event_thread;
@@ -313,7 +307,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     uint32_t memif_nalu_size;
@@ -366,7 +359,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     memif_socket_args_t memif_socket_args;
@@ -400,7 +392,6 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     pthread_t memif_event_thread;

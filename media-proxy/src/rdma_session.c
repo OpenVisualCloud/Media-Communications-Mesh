@@ -169,7 +169,6 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 
     /* TX buffers */
     tx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
-    tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
     err = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_rdma_on_connect,

@@ -1356,7 +1356,6 @@ int tx_st20p_shm_init(tx_st20p_session_context_t* tx_ctx, memif_ops_t* memif_ops
 
     /* TX buffers */
     tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
-    tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
     ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_st20p_on_connect, tx_st20p_on_disconnect, tx_st20p_on_receive, tx_ctx);
@@ -1441,7 +1440,6 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
 
     /* TX buffers */
     tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
-    tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
     ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,
@@ -1685,7 +1683,6 @@ int tx_st40_shm_init(tx_st40_session_context_t* tx_ctx, memif_ops_t* memif_ops)
 
     /* TX buffers */
     tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
-    tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
     ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,

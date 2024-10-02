@@ -55,7 +55,6 @@ int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
         ERROR("Failed to allocate memory");
         return -ENOMEM;
     }
-    rx_ctx->shm_buf_num = rx_ctx->fb_count;
 
     err = memif_refill_queue(conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
