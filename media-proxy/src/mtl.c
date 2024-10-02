@@ -414,10 +414,6 @@ static int rx_st30_frame_ready(void* priv, void* frame,
     if (!s->handle)
         return -1;
 
-    s->stat_frame_total_received++;
-    if (!s->stat_frame_first_rx_time)
-        s->stat_frame_first_rx_time = st_app_get_monotonic_time();
-
     rx_st30_consume_frame(s, frame);
 
     st30_rx_put_framebuff(s->handle, frame);
@@ -721,10 +717,6 @@ static void rx_st40_handle_rtp(rx_st40_session_context_t* s, void* usrptr)
         payload_len = sizeof(struct st40_rfc8331_payload_hdr) - 4 + total_size; // Full size of one ANC
         payload_hdr = (struct st40_rfc8331_payload_hdr*)((uint8_t*)payload_hdr + payload_len);
     }
-
-    s->stat_frame_total_received++;
-    if (!s->stat_frame_first_rx_time)
-        s->stat_frame_first_rx_time = st_app_get_monotonic_time();
 }
 
 static void* rx_st20p_frame_thread(void* arg)

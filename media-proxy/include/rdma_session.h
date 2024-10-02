@@ -99,10 +99,6 @@ typedef struct {
 
     char name[32];
     pthread_t memif_event_thread;
-
-    /* stat */
-    int stat_frame_total_received;
-    uint64_t stat_frame_first_rx_time;
 } rx_rdma_session_context_t;
 
 /* TX: Create RDMA session */

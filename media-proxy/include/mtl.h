@@ -287,10 +287,6 @@ typedef struct {
 
     char name[32];
     pthread_t memif_event_thread;
-
-    /* stat */
-    int stat_frame_total_received;
-    uint64_t stat_frame_first_rx_time;
 } rx_st30_session_context_t;
 
 enum sample_udp_mode {
@@ -431,10 +427,6 @@ typedef struct {
 
     char name[32];
     pthread_t memif_event_thread;
-
-    /* stat */
-    int stat_frame_total_received;
-    uint64_t stat_frame_first_rx_time;
 } rx_st40_session_context_t;
 
 /* Initialize MTL library */
