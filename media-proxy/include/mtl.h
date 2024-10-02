@@ -138,9 +138,6 @@ typedef struct {
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
-
-    void* ext_fb_malloc;
-    uint8_t* ext_fb;
 #endif
 
     /* memif parameters */
@@ -183,9 +180,6 @@ typedef struct {
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
-
-    void* ext_fb_malloc;
-    uint8_t* ext_fb;
 #endif
 
     /* share memory arguments */
