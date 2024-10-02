@@ -79,7 +79,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
 
 } rx_st20p_session_context_t;
@@ -115,7 +114,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -157,7 +155,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -205,7 +202,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
 
 } rx_st22p_session_context_t;
@@ -247,7 +243,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -285,7 +280,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
 } rx_st30_session_context_t;
 
@@ -332,7 +326,6 @@ typedef struct {
 
     uint32_t memif_nalu_size;
 
-    char name[32];
     pthread_t memif_event_thread;
 
     /*udp poll*/
@@ -384,7 +377,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -419,7 +411,6 @@ typedef struct {
     uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
 } rx_st40_session_context_t;
 
