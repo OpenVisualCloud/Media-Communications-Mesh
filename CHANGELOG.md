@@ -4,39 +4,46 @@
 
 ### 1. New Features:
 1.1 Support for RDMA data transfer between media proxies
-    * Added RDMA implementation and rdma_args in payload_args; Created script to prepare environment for RDMA (#187)
-
-* Added FFmpeg 7.0 support (#182) and set it as a default version (with a possibility to run 6.1)
-* Added throughput printing in sample apps
-* Updated readme with supported audio argument options (#208)
-* Updated README with libfabric dependencies
+* Added RDMA implementation and rdma_args in payload_args; Created script to prepare environment for RDMA (#187)
 * Build and install libfabric, libxdp and libbpf (#188) and updated codeql.yml, coverity.yml to include changes from ubuntu build: libfabric, libxdp and libbpf; Added LIBFABRIC_DIR to Media_Proxy Dockerfile
-* Added memif_buffer_alloc_timeout()
-* Updates to Dockerfile, packages: autoconf, automake, autotools-dev, libtool
-* Update documentation on audio ptime options
+* Updated README with libfabric dependencies
+* Added test-rdma.sh with RDMA functional tests
+
+1.2 FFmpeg plugin
+* Added FFmpeg 7.0 support (#182) and set it as a default version (with a possibility to run 6.1)
 * Add MTL audio ptime options and compatibility check in FFmpeg plugin
-* Run basic implementation of AF_XDP/eBPF (#180) using mtl native functions and MtlManager: The enablement of `native_af_xdp` for interfaces used in media-proxy workloads required minor impact changes in Dockerfile build sequence as well as adjustments to proxy_context.
 * Added FFmpeg MCM audio plugin with documentation and configuration arguments - number of audio channels (1, 2, etc.), sample rate (44.1, 48, or 96 kHz), MTL PCM format (16-bit or 24-bit Big Endian), MTL packet time
+
+1.3 Sample app
+* Added throughput printing in sample apps
+
+1.4 AF_XDP/eBPF
+* Run basic implementation of AF_XDP/eBPF (#180) using mtl native functions and MtlManager: The enablement of `native_af_xdp` for interfaces used in media-proxy workloads required minor impact changes in Dockerfile build sequence as well as adjustments to proxy_context
+
+1.5 Containers (Docker)
+* Dockerfile size shrink to 265MB + Mtl-Manager (#168) added by default to the container
+* Updates to Dockerfile, packages: autoconf, automake, autotools-dev, libtool
+
+1.6 Documentation and tests
+* Updated readme with supported audio argument options (#208)
+* Update documentation on audio ptime options
+* Added sequence diagrams of MCM FFmpeg plugin
 * Added option to conditionally build unit tests: To disable compilation of unit tests one can invoke "BUILD_UNIT_TESTS=OFF ./build.sh"
-* Added sketch for unit tests
 * Parameters guide and kubernetes readme modifications (#169)
 * Added Sphinx documentation and Github action automation to build it
-* Added sequence diagrams of MCM FFmpeg plugin
-* Dockerfile size shrink to 265MB + Mtl-Manager (#168) added by default to the container
+* Added sketch for unit tests
+* Update licenses and added copyright notices
+
+1.7 Other
+* Added memif_buffer_alloc_timeout()
 
 ### 2. Changes to Existing Features:
 
 * Changed how threads are cancelled: Resources may not have been deallocated at all or deallocated while the thread was still running
 * Not printing error if pthread_join() returns ESRCH: ESRCH means the thread has already exited
 * Removed unnecessary pacing from sender_app
-* Increased ring size for RDMA
-* Improved test-rdma.sh
-* Made memif_buffer_alloc_timeout() more readable
 * MCM st22 fix to media_proxy segfault: added fix for media_proxy exit with segfault
-* Reverted memif_buffer_alloc_timeout usage in mtl.c
 * Improved pthread_cancel() err handling: pthread_cancel can only return ESRCH or success. ESRCH means that the thread is not running, which is not an error for us.
-* Update licenses and added copyright notices
-* Corrected how frame size is calculated for RDMA in sender_app
 * Fixed error handling
 * Changed audio buffer size in memif protocol mode
 * Reworked PCM16/24 support (+FFmpeg plugin)
