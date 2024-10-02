@@ -82,7 +82,6 @@ typedef struct {
     char name[32];
     pthread_t memif_event_thread;
 
-    struct st20_ext_frame* ext_frames;
 } rx_st20p_session_context_t;
 
 typedef struct {
@@ -192,7 +191,6 @@ typedef struct {
     void* ext_fb_malloc;
     uint8_t* ext_fb;
     mtl_iova_t ext_fb_iova;
-    struct st20_ext_frame* ext_frames;
 #endif
 
     /* share memory arguments */

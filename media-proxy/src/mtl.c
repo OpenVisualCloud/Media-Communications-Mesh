@@ -1861,13 +1861,7 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
     bool equal = st_frame_fmt_equal_transport(ops_rx.output_fmt, ops_rx.transport_fmt);
     INFO("st_frame_fmt_equal_transport: %s", equal ? "true" : "false");
     if(equal) {
-        rx_ctx->ext_frames = (struct st20_ext_frame*)malloc(sizeof(*rx_ctx->ext_frames) * fb_cnt);
-        // TODO: Move allocation from query_ext_frame here.
-        // for (int i = 0; i < fb_cnt; i++) {
-        //     rx_ctx->ext_frames[i].buf_len = rx_ctx->frame_size;
-        // }
-          ops_rx.flags |= ST20P_RX_FLAG_EXT_FRAME;
-        // ops_rx.ext_frames = rx_ctx->ext_frames;
+        ops_rx.flags |= ST20P_RX_FLAG_EXT_FRAME;
         ops_rx.query_ext_frame = rx_st20p_query_ext_frame;
         ops_rx.flags |= ST20P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
     } else {
