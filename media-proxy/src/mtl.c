@@ -1867,8 +1867,7 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
         //     rx_ctx->ext_frames[i].buf_addr = rx_ctx->frames_begin_addr + i * rx_ctx->frame_size;
         //     rx_ctx->ext_frames[i].buf_len = rx_ctx->frame_size;
         // }
-        // rx_ctx->ext_idx = 0;
-        ops_rx.flags |= ST20P_RX_FLAG_EXT_FRAME;
+          ops_rx.flags |= ST20P_RX_FLAG_EXT_FRAME;
         // ops_rx.ext_frames = rx_ctx->ext_frames;
         ops_rx.query_ext_frame = rx_st20p_query_ext_frame;
         ops_rx.flags |= ST20P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;

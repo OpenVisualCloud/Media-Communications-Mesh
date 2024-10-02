@@ -148,8 +148,6 @@ typedef struct {
     void* ext_fb_malloc;
     uint8_t* ext_fb;
     mtl_iova_t ext_fb_iova;
-    int ext_idx;
-    bool ext_fb_in_use[3]; /* assume 3 framebuffer */
     mtl_dma_mem_handle dma_mem;
 #endif
 
@@ -200,8 +198,6 @@ typedef struct {
     uint8_t* ext_fb;
     mtl_iova_t ext_fb_iova;
     struct st20_ext_frame* ext_frames;
-    int ext_idx;
-    bool ext_fb_in_use[3]; /* assume 3 framebuffer */
     mtl_dma_mem_handle dma_mem;
 #endif
 
