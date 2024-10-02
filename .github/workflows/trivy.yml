@@ -40,7 +40,7 @@ jobs:
           scan-type: 'config'
           hide-progress: false
           ignore-unfixed: true
-          input: "./deployment/DaemonSet  ./deployment/Deployments ./deployment ./ffmpeg-plugin ./media-proxy ./sdk"
+          input: "."
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
