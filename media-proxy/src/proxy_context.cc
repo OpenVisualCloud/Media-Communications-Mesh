@@ -751,9 +751,6 @@ int ProxyContext::RxStart(const RxControlRequest* request)
     st_ctx->rx_session = rx_ctx;
     mDpCtx.push_back(st_ctx);
 
-    /* TODO: to be removed later. */
-    mRxCtx.push_back(rx_ctx);
-
     return (st_ctx->id);
 }
 
@@ -792,9 +789,6 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     st_ctx->type = TX;
     st_ctx->tx_session = tx_ctx;
     mDpCtx.push_back(st_ctx);
-
-    /* TODO: to be removed later. */
-    mTxCtx.push_back(tx_ctx);
 
     return (st_ctx->id);
 }
