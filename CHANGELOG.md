@@ -1,10 +1,11 @@
 # Changelog
 
-Summary of Changes:
+## Release version: 24.09
 
-## 1. New Features:
+### 1. New Features:
+1.1 Support for RDMA data transfer between media proxies
+    * Added RDMA implementation and rdma_args in payload_args; Created script to prepare environment for RDMA (#187)
 
-* Added RDMA implementation and rdma_args in payload_args; Created script to prepare environment for RDMA (#187)
 * Added FFmpeg 7.0 support (#182) and set it as a default version (with a possibility to run 6.1)
 * Added throughput printing in sample apps
 * Updated readme with supported audio argument options (#208)
@@ -14,7 +15,7 @@ Summary of Changes:
 * Updates to Dockerfile, packages: autoconf, automake, autotools-dev, libtool
 * Update documentation on audio ptime options
 * Add MTL audio ptime options and compatibility check in FFmpeg plugin
-* Run basic implementation of AF_XDP/eBPF (#180) using mtl native functions and MtlManager: The enablement of `native_af_xdp` for interfaces used in media-proxy workloads required minor impact changes in Dockerfile build sequence as well as adjustments to proxy_context.cc
+* Run basic implementation of AF_XDP/eBPF (#180) using mtl native functions and MtlManager: The enablement of `native_af_xdp` for interfaces used in media-proxy workloads required minor impact changes in Dockerfile build sequence as well as adjustments to proxy_context.
 * Added FFmpeg MCM audio plugin with documentation and configuration arguments - number of audio channels (1, 2, etc.), sample rate (44.1, 48, or 96 kHz), MTL PCM format (16-bit or 24-bit Big Endian), MTL packet time
 * Added option to conditionally build unit tests: To disable compilation of unit tests one can invoke "BUILD_UNIT_TESTS=OFF ./build.sh"
 * Added sketch for unit tests
@@ -23,7 +24,7 @@ Summary of Changes:
 * Added sequence diagrams of MCM FFmpeg plugin
 * Dockerfile size shrink to 265MB + Mtl-Manager (#168) added by default to the container
 
-## 2. Changes to Existing Features:
+### 2. Changes to Existing Features:
 
 * Changed how threads are cancelled: Resources may not have been deallocated at all or deallocated while the thread was still running
 * Not printing error if pthread_join() returns ESRCH: ESRCH means the thread has already exited
@@ -54,7 +55,7 @@ Summary of Changes:
 * Dockerfiles adjustments to meet Trivy requirements: ports exposed, default user, entrypoint, other minor
 * Various dependency bumps from Dependabot suggestions
 
-## 3. Fixed Issues:
+### 3. Fixed Issues:
 
 |              Title              |    Component  |                            Description                       |
 |---------------------------------|---------------|--------------------------------------------------------------|
@@ -65,7 +66,7 @@ Summary of Changes:
 | Frames sent with ext_frame feature are corrupted |  Media Communications Mesh  | Fixed. |
 | Media Proxy crashes with Segfault when closing st22 session |  Media Proxy  | Fixed. |
 
-## 4. Known Issues:
+### 4. Known Issues:
 
 |              Title              |             Component   |  Description |
 |-------------------------------------------|---------------|--------------|
@@ -78,6 +79,48 @@ Summary of Changes:
 | FFmpeg st30 audio 48K 1ms, received stream differ  |  FFmpeg plugin  | May be connected with length/ptime issues |
 
 
-## 5. Other:
+## Release version: 24.06
 
-Release version: 24.09
+### 1. New Features:
+
+#### 1.1. Media Communications Mesh FFmpeg plugin:
+
+- Video Input/output plugin for FFmpeg – video processing pipeline framework.
+- Single or multiple instances of FFmpeg with Media Communications Mesh Plugin connect to selected Media Proxy instance.
+- Supported video pixel formats:
+
+ - YUV 422, 8bit packed
+ - RGB 8 bit
+ - NV12 – YUV 420 planar 8 bit
+ - YUV 444 planar, 10 bit, little endian
+ - YUV 422 planar, 10 bit, little endian
+ - No support for audio streams
+
+#### 1.2. Enablement of PTP Time synchronization to Media Communications Mesh.
+
+This feature uses Media Transport Library PTP Time synchronization feature.
+
+#### 1.3. Added support to Media Proxy/SDK for changing input and output streams Payload ID.
+
+Payload IDs beside of having defined default values (according to RFC or SMPTE specification) are passed as parameters for each stream.
+
+#### 1.4. Added support to Media Proxy/SDK for receiving video stream from multicast group/publishing video stream to a multicast group
+
+Added parameter to stream configuration allowing to pass multicast group IP address.
+
+### 2. Changes to Existing Features:
+
+#### 2.1. Modified docker file to decrease docker image minimal runtime size.
+
+### 3. Fixed Issues:
+
+|              Title              |    Component  |                            Description                       |
+|---------------------------------|---------------|--------------------------------------------------------------|
+| Incorrect received frame number |  Media Proxy  | Fixed passing frame number to a structure passed to the SDK. |
+
+### 4. Known Issues:
+
+|              Title              |             Component   |  Description |
+|-------------------------------------------|---------------|--------------|
+| UDP packets are sent with TTL=1           |  Media Proxy  | In case of mapping Media Communications Mesh Media Proxy to Physical function all packets are sent with TTL=1 SDBQ-129 |
+| "Segmentation Fault” crash of Media Proxy |  Media Proxy  | In case of providing pixel format for a stream not aligned with real video stream pixel format there can happen “Segmentation Fault” crash of Media Proxy application SDBQ-409 |
