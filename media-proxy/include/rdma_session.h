@@ -38,9 +38,6 @@ typedef struct {
     libfabric_ctx *rdma_ctx;
     ep_ctx_t *ep_ctx;
 
-    int frame_done_cnt;
-    int packet_done_cnt;
-
     volatile bool stop;
 
     int fb_send;
