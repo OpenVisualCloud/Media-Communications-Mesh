@@ -103,7 +103,6 @@ typedef struct {
     /* stat */
     int stat_frame_total_received;
     uint64_t stat_frame_first_rx_time;
-    double expect_fps;
 } rx_rdma_session_context_t;
 
 /* TX: Create RDMA session */

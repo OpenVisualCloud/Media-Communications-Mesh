@@ -2120,7 +2120,6 @@ rx_st30_session_context_t* mtl_st30_rx_session_create(mtl_handle dev_handle, str
 
     rx_ctx->st30_frame_size = pkt_per_frame * rx_ctx->pkt_len;
     ops_rx.framebuff_size = rx_ctx->st30_frame_size;
-    rx_ctx->expect_fps = (double)NS_PER_S / st30_get_packet_time(opts->ptime) / pkt_per_frame;
 
     /* initialize share memory */
     ret = rx_st30_shm_init(rx_ctx, memif_ops);
