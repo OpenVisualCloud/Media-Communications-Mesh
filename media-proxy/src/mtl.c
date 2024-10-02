@@ -352,13 +352,13 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
     size_t pg_sz = mtl_page_size(rx_ctx->st);
     rx_ctx->ext_fb_malloc = rx_bufs->data;
     rx_ctx->ext_fb = (uint8_t*)MTL_ALIGN((uint64_t)rx_ctx->ext_fb_malloc, pg_sz);
-    rx_ctx->ext_fb_iova = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
+    mtl_iova_t ext_fb_iova = rx_ctx->source_begin_iova + ((uint8_t*)rx_bufs->data - rx_ctx->source_begin);
 
     for (uint8_t plane = 0; plane < planes; plane++) { /* assume planes continuous */
         ext_frame->linesize[plane] = st_frame_least_linesize(rx_ctx->output_fmt, width, plane);
         if (plane == 0) {
             ext_frame->addr[plane] = rx_bufs->data;
-            ext_frame->iova[plane] = rx_ctx->ext_fb_iova;
+            ext_frame->iova[plane] = ext_fb_iova;
         } else {
             ext_frame->addr[plane] = (uint8_t*)ext_frame->addr[plane - 1] + ext_frame->linesize[plane - 1] * height;
             ext_frame->iova[plane] = ext_frame->iova[plane - 1] + ext_frame->linesize[plane - 1] * height;

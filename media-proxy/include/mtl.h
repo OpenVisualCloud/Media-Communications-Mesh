@@ -141,7 +141,6 @@ typedef struct {
 
     void* ext_fb_malloc;
     uint8_t* ext_fb;
-    mtl_iova_t ext_fb_iova;
 #endif
 
     /* memif parameters */
@@ -187,7 +186,6 @@ typedef struct {
 
     void* ext_fb_malloc;
     uint8_t* ext_fb;
-    mtl_iova_t ext_fb_iova;
 #endif
 
     /* share memory arguments */
