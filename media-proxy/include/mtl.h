@@ -363,16 +363,12 @@ typedef struct {
     uint16_t framebuff_consumer_idx;
     struct st_tx_frame* framebuffs;
 
-    int st40_frame_done_cnt;
-    int st40_packet_done_cnt;
-
     bool stop;
 
     int fb_send;
     pthread_cond_t st40_wake_cond;
     pthread_mutex_t st40_wake_mutex;
 
-    int st40_frame_size;
     size_t pkt_len;
 
     uint32_t fb_count; /* Frame buffer count. */
@@ -404,11 +400,9 @@ typedef struct {
 
     int fb_recv;
 
-    pthread_t st40_app_thread;
     pthread_cond_t st40_wake_cond;
     pthread_mutex_t st40_wake_mutex;
 
-    int st40_frame_size;
     int pkt_len;
 
     uint32_t fb_count; /* Frame buffer count. */
