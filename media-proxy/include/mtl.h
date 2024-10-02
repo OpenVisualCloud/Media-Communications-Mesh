@@ -130,7 +130,6 @@ typedef struct {
     bool stop;
 
     int fb_cnt;
-    uint16_t fb_idx;
     int fb_send;
     pthread_cond_t st22p_wake_cond;
     pthread_mutex_t st22p_wake_mutex;
@@ -178,7 +177,6 @@ typedef struct {
     pthread_mutex_t st22p_wake_mutex;
 
     size_t frame_size; /* Size (Bytes) of single frame. */
-    uint16_t fb_idx;
     uint32_t fb_count; /* Frame buffer count. */
 
     uint32_t width;

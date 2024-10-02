@@ -1928,7 +1928,6 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     rx_ctx->st = dev_handle;
     rx_ctx->idx = idx;
     rx_ctx->stop = false;
-    rx_ctx->fb_idx = 0;
 
     st_pthread_mutex_init(&rx_ctx->st22p_wake_mutex, NULL);
     st_pthread_cond_init(&rx_ctx->st22p_wake_cond, NULL);
@@ -2546,7 +2545,6 @@ tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, s
     tx_ctx->idx = idx;
     tx_ctx->stop = false;
     tx_ctx->fb_cnt = 3;
-    tx_ctx->fb_idx = 0;
     st_pthread_mutex_init(&tx_ctx->st22p_wake_mutex, NULL);
     st_pthread_cond_init(&tx_ctx->st22p_wake_cond, NULL);
 
