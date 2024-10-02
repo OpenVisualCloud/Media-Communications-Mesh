@@ -80,6 +80,4 @@ Summary of Changes:
 
 ## 5. Other:
 
-* Removed 44.1K and all ptime options other than 1ms from the readme. Those options are subject to enable in the further releases.
-
 Release version: 24.09
