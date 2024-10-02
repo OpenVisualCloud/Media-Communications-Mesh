@@ -75,7 +75,6 @@ static int tx_st30_frame_done(void* priv, uint16_t frame_idx,
     st_pthread_cond_signal(&s->st30_wake_cond);
     st_pthread_mutex_unlock(&s->st30_wake_mutex);
 
-    s->st30_frame_done_cnt++;
     DEBUG("%s(%d), framebuffer index %d\n", __func__, s->idx, frame_idx);
     return ret;
 }
@@ -86,7 +85,6 @@ static int tx_st30_rtp_done(void* priv)
     st_pthread_mutex_lock(&s->st30_wake_mutex);
     st_pthread_cond_signal(&s->st30_wake_cond);
     st_pthread_mutex_unlock(&s->st30_wake_mutex);
-    s->st30_packet_done_cnt++;
     return 0;
 }
 

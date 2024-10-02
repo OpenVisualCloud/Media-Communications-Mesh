@@ -204,9 +204,6 @@ typedef struct {
     uint16_t framebuff_consumer_idx;
     struct st_tx_frame* framebuffs;
 
-    int st30_frame_done_cnt;
-    int st30_packet_done_cnt;
-
     enum st30_sampling sampling;
 
     bool stop;
