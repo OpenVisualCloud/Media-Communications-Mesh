@@ -50,7 +50,7 @@ public:
     // direction mDir;
     std::vector<dp_session_context_t *> mDpCtx;
     std::vector<rx_st20p_session_context_t*> mRxCtx;
-    std::vector<tx_session_context_t*> mTxCtx;
+    std::vector<tx_st20p_session_context_t*> mTxCtx;
     mtl_handle mDevHandle = NULL;
     libfabric_ctx *mDevHandle_rdma = NULL;
 

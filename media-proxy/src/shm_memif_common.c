@@ -163,7 +163,7 @@ int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     static int counter = 0;
     int err = 0;
-    tx_session_context_t* tx_ctx = priv_data;
+    tx_st20p_session_context_t* tx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     // if (tx_ctx == NULL) {

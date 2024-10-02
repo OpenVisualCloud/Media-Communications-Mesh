@@ -377,7 +377,7 @@ static int rx_st22p_query_ext_frame(void* priv, struct st_ext_frame* ext_frame,
 
 static int tx_st20p_frame_available(void* priv)
 {
-    tx_session_context_t* s = (tx_session_context_t*)priv;
+    tx_st20p_session_context_t* s = (tx_st20p_session_context_t*)priv;
 
     st_pthread_mutex_lock(&s->wake_mutex);
     st_pthread_cond_signal(&s->wake_cond);
@@ -453,7 +453,7 @@ static int tx_st20p_frame_done(void* priv, struct st_frame* frame)
     memif_conn_handle_t conn = NULL;
     uint16_t qid = 0;
     uint16_t buf_num = 1;
-    tx_session_context_t* tx_ctx = (tx_session_context_t*)priv;
+    tx_st20p_session_context_t* tx_ctx = (tx_st20p_session_context_t*)priv;
 
     if (tx_ctx == NULL || tx_ctx->handle == NULL) {
         return -1; /* not ready */
@@ -1077,7 +1077,7 @@ int rx_shm_deinit(rx_st20p_session_context_t* rx_ctx)
     return 0;
 }
 
-int tx_shm_deinit(tx_session_context_t* tx_ctx)
+int tx_shm_deinit(tx_st20p_session_context_t* tx_ctx)
 {
     int err;
 
@@ -1311,7 +1311,7 @@ int tx_st40_shm_deinit(tx_st40_session_context_t* pctx)
     return 0;
 }
 
-int tx_st20p_shm_init(tx_session_context_t* tx_ctx, memif_ops_t* memif_ops)
+int tx_st20p_shm_init(tx_st20p_session_context_t* tx_ctx, memif_ops_t* memif_ops)
 {
     int ret = 0;
     const uint16_t FRAME_COUNT = 4;
@@ -2432,14 +2432,14 @@ void mtl_deinit(mtl_handle dev_handle)
 }
 
 /* TX: Create ST20P session */
-tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops)
+tx_st20p_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops)
 {
     static int idx = 0;
 
     /* dst ip address for tx video session */
     const int fb_cnt = 4;
 
-    tx_session_context_t* tx_ctx = NULL;
+    tx_st20p_session_context_t* tx_ctx = NULL;
     int ret = 0;
 
     if (dev_handle == NULL) {
@@ -2447,7 +2447,7 @@ tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct 
         return NULL;
     }
 
-    tx_ctx = calloc(1, sizeof(tx_session_context_t));
+    tx_ctx = calloc(1, sizeof(tx_st20p_session_context_t));
     if (tx_ctx == NULL) {
         printf("%s, TX session contex malloc fail\n", __func__);
         return NULL;
@@ -2593,9 +2593,9 @@ tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, s
 }
 
 /* TX: Destroy ST20P session */
-void mtl_st20p_tx_session_destroy(tx_session_context_t** p_tx_ctx)
+void mtl_st20p_tx_session_destroy(tx_st20p_session_context_t** p_tx_ctx)
 {
-    tx_session_context_t* tx_ctx = NULL;
+    tx_st20p_session_context_t* tx_ctx = NULL;
 
     if (p_tx_ctx == NULL) {
         printf("%s:%d Invalid parameter\n", __func__, __LINE__);
@@ -2657,7 +2657,7 @@ void mtl_st22p_tx_session_destroy(tx_st22p_session_context_t** p_tx_ctx)
 }
 
 /* TX: Stop ST20P session */
-void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx)
+void mtl_st20p_tx_session_stop(tx_st20p_session_context_t* tx_ctx)
 {
     if (tx_ctx == NULL) {
         printf("%s: invalid parameter\n", __func__);

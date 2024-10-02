@@ -121,7 +121,7 @@ int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 
 int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
-    tx_session_context_t* tx_ctx = (tx_session_context_t*)priv_data;
+    tx_st20p_session_context_t* tx_ctx = (tx_st20p_session_context_t*)priv_data;
     int err = 0;
 
     INFO("TX memif connected!");
@@ -168,7 +168,7 @@ int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     static int counter = 0;
     int err = 0;
-    tx_session_context_t* tx_ctx = priv_data;
+    tx_st20p_session_context_t* tx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL || priv_data == NULL) {
@@ -211,7 +211,7 @@ int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 {
     int err = 0;
-    tx_session_context_t* tx_ctx = (tx_session_context_t*)priv_data;
+    tx_st20p_session_context_t* tx_ctx = (tx_st20p_session_context_t*)priv_data;
     memif_buffer_t shm_bufs = { 0 };
     uint16_t buf_num = 0;
 

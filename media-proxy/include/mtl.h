@@ -128,7 +128,7 @@ typedef struct {
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
-} tx_session_context_t;
+} tx_st20p_session_context_t;
 
 typedef struct {
     mtl_handle st;
@@ -476,19 +476,19 @@ mtl_handle inst_init(struct mtl_init_params* st_param);
 void mtl_deinit(mtl_handle dev_handle);
 
 /* TX: Create ST20P session */
-tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops);
+tx_st20p_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops);
 
 /* RX: Create ST20P session */
 rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
 
 /* TX: Stop ST20P session */
-void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx);
+void mtl_st20p_tx_session_stop(tx_st20p_session_context_t* tx_ctx);
 
 /* RX: Stop ST20P session */
 void mtl_st20p_rx_session_stop(rx_st20p_session_context_t* rx_ctx);
 
 /* TX: Destroy ST20P session */
-void mtl_st20p_tx_session_destroy(tx_session_context_t** p_tx_ctx);
+void mtl_st20p_tx_session_destroy(tx_st20p_session_context_t** p_tx_ctx);
 
 /* RX: Destroy ST20P session */
 void mtl_st20p_rx_session_destroy(rx_st20p_session_context_t** p_rx_ctx);

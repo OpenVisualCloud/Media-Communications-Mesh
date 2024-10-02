@@ -761,7 +761,7 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 {
     INFO("ProxyContext: TxStart(const TxControlRequest* request)");
     dp_session_context_t *st_ctx = NULL;
-    tx_session_context_t* tx_ctx = NULL;
+    tx_st20p_session_context_t* tx_ctx = NULL;
     struct st20p_tx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
@@ -1114,7 +1114,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
     }
     case PAYLOAD_TYPE_ST20_VIDEO:
     default: {
-        tx_session_context_t* tx_ctx = NULL;
+        tx_st20p_session_context_t* tx_ctx = NULL;
         struct st20p_tx_ops opts = {};
 
         ParseSt20TxOps(request, &opts);
