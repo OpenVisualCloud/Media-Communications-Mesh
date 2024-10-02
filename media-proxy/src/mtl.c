@@ -1865,7 +1865,6 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
         // TODO: Move allocation from query_ext_frame here.
         // for (int i = 0; i < fb_cnt; i++) {
         //     rx_ctx->ext_frames[i].buf_addr = rx_ctx->frames_begin_addr + i * rx_ctx->frame_size;
-        //     rx_ctx->ext_frames[i].buf_iova = rx_ctx->frames_begin_iova + i * rx_ctx->frame_size;
         //     rx_ctx->ext_frames[i].buf_len = rx_ctx->frame_size;
         // }
         // rx_ctx->ext_idx = 0;

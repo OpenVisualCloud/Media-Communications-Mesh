@@ -84,8 +84,6 @@ typedef struct {
 
     void* frames_malloc_addr;
     void* frames_begin_addr;
-    mtl_iova_t frames_begin_iova;
-    size_t frames_iova_map_sz;
     struct st20_ext_frame* ext_frames;
 } rx_st20p_session_context_t;
 
@@ -228,8 +226,6 @@ typedef struct {
 
     void* frames_malloc_addr;
     void* frames_begin_addr;
-    mtl_iova_t frames_begin_iova;
-    size_t frames_iova_map_sz;
 } rx_st22p_session_context_t;
 
 typedef struct {
