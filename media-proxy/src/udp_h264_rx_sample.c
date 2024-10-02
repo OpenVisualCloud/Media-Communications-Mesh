@@ -449,7 +449,6 @@ rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_han
     ctx->udp_port = atoi(dp_addr->port);
     ctx->payload_type = 112;
     snprintf(ctx->param.port[MTL_PORT_P], sizeof(ctx->param.port[MTL_PORT_P]), "%s", "0000:4b:01.3");
-    ctx->udp_mode = SAMPLE_UDP_TRANSPORT_H264;
 
     ctx->st = dev_handle;
     ctx->stop = false;

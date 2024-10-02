@@ -266,10 +266,6 @@ typedef struct {
     pthread_t memif_event_thread;
 } rx_st30_session_context_t;
 
-enum sample_udp_mode {
-    SAMPLE_UDP_TRANSPORT_H264,
-};
-
 typedef struct {
     mtl_handle st;
     struct mtl_init_params param;
@@ -279,14 +275,9 @@ typedef struct {
     uint8_t payload_type;
     // uint32_t sessions; /* number of sessions */
     bool ext_frame;
-    bool hdr_split;
-    bool rx_dump;
     uint32_t fb_count; /* Frame buffer count. */
-    enum sample_udp_mode udp_mode;
-    uint64_t udp_tx_bps;
     int udp_len;
     bool exit;
-    bool has_user_meta; /* if provide user meta data with the st2110-20 frame */
     pthread_t thread;
     pthread_cond_t wake_cond;
     pthread_mutex_t wake_mutex;
@@ -323,9 +314,6 @@ typedef struct {
     uint16_t tx_buf_num;
     char* dst;
     char* dst_nalu_size_point;
-    //int sch_idx;
-    //int tasklet_idx;
-
 } rx_udp_h264_session_context_t;
 
 typedef struct {
