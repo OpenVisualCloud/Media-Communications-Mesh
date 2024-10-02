@@ -62,8 +62,6 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
@@ -106,8 +104,6 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
@@ -147,8 +143,6 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
@@ -202,8 +196,6 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
