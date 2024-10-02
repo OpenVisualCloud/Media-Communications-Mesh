@@ -82,8 +82,6 @@ typedef struct {
     char name[32];
     pthread_t memif_event_thread;
 
-    void* frames_malloc_addr;
-    void* frames_begin_addr;
     struct st20_ext_frame* ext_frames;
 } rx_st20p_session_context_t;
 
@@ -148,7 +146,6 @@ typedef struct {
     void* ext_fb_malloc;
     uint8_t* ext_fb;
     mtl_iova_t ext_fb_iova;
-    mtl_dma_mem_handle dma_mem;
 #endif
 
     /* memif parameters */
@@ -198,7 +195,6 @@ typedef struct {
     uint8_t* ext_fb;
     mtl_iova_t ext_fb_iova;
     struct st20_ext_frame* ext_frames;
-    mtl_dma_mem_handle dma_mem;
 #endif
 
     /* share memory arguments */
@@ -216,8 +212,6 @@ typedef struct {
     char name[32];
     pthread_t memif_event_thread;
 
-    void* frames_malloc_addr;
-    void* frames_begin_addr;
 } rx_st22p_session_context_t;
 
 typedef struct {

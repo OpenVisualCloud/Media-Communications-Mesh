@@ -1864,7 +1864,6 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
         rx_ctx->ext_frames = (struct st20_ext_frame*)malloc(sizeof(*rx_ctx->ext_frames) * fb_cnt);
         // TODO: Move allocation from query_ext_frame here.
         // for (int i = 0; i < fb_cnt; i++) {
-        //     rx_ctx->ext_frames[i].buf_addr = rx_ctx->frames_begin_addr + i * rx_ctx->frame_size;
         //     rx_ctx->ext_frames[i].buf_len = rx_ctx->frame_size;
         // }
           ops_rx.flags |= ST20P_RX_FLAG_EXT_FRAME;
