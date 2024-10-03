@@ -315,11 +315,6 @@ int main(int argc, char** argv)
     strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
     strlcpy(param.local_addr.ip, recv_addr, sizeof(param.local_addr.ip));
 
-    dp_ctx = mcm_create_connection(&param);
-    if (dp_ctx == NULL) {
-        printf("Fail to connect to MCM data plane\n");
-        exit(-1);
-    }
     signal(SIGINT, intHandler);
 
     uint32_t frame_count = 0;
@@ -340,6 +335,12 @@ int main(int argc, char** argv)
 
     if (strlen(file_name) > 0) {
         dump_fp = fopen(file_name, "wb");
+    }
+
+    dp_ctx = mcm_create_connection(&param);
+    if (dp_ctx == NULL) {
+        printf("Fail to connect to MCM data plane\n");
+        exit(-1);
     }
 
     while (keepRunning) {
