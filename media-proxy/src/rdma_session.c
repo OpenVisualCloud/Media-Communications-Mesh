@@ -75,7 +75,7 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 
     /* Create memif interfaces
      * Both interaces are assigned the same socket and same id to create a loopback. */
-    rx_ctx->shm_ready = 0;
+    rx_ctx->shm_ready = ATOMIC_VAR_INIT(false);
     rx_ctx->memif_conn_args.socket = rx_ctx->memif_socket;
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->transfer_size;
@@ -158,7 +158,7 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 
     /* Create memif interfaces
      * Both interaces are assigned the same socket and same id to create a loopback. */
-    tx_ctx->shm_ready = 0;
+    tx_ctx->shm_ready = ATOMIC_VAR_INIT(false);
     tx_ctx->memif_conn_args.socket = tx_ctx->memif_socket;
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->transfer_size;
@@ -314,7 +314,7 @@ static void rx_rdma_consume_frame(rx_rdma_session_context_t *s, char *frame)
     uint32_t buf_size = s->transfer_size;
     uint16_t rx_buf_num = 0, rx = 0;
 
-    if (!s->shm_ready) {
+    if (!atomic_load(&s->shm_ready)) {
         INFO("%s memif not ready\n", __func__);
         return;
     }
@@ -344,6 +344,11 @@ static void *rx_rdma_frame_thread(void *arg)
     rx_rdma_session_context_t *s_ctx = (rx_rdma_session_context_t *)arg;
     libfabric_ctx *rdma_ctx = s_ctx->rdma_ctx;
     ep_ctx_t *cp_ctx = s_ctx->ep_ctx;
+
+    while (!atomic_load(&s_ctx->shm_ready) && !s_ctx->stop) {
+        INFO("%s memif not ready\n", __func__);
+        usleep(1000);
+    }
 
     printf("%s(%d), start\n", __func__, s_ctx->idx);
     while (!s_ctx->stop) {

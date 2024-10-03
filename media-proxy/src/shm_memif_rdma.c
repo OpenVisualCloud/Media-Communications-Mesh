@@ -38,7 +38,7 @@ int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
 
     print_memif_details(conn);
 
-    rx_ctx->shm_ready = 1;
+    atomic_store(&rx_ctx->shm_ready, true);
 
     return 0;
 }
@@ -57,10 +57,10 @@ int rx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
     }
 
     // release session
-    if (!rx_ctx->shm_ready) {
+    if (!atomic_load(&rx_ctx->shm_ready)) {
         return 0;
     }
-    rx_ctx->shm_ready = 0;
+    atomic_store(&rx_ctx->shm_ready, false);
 
     /* stop event polling thread */
     INFO("RX RDMA Stop poll event");
@@ -91,7 +91,7 @@ int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
         return err;
     }
 
-    tx_ctx->shm_ready = 1;
+    atomic_store(&tx_ctx->shm_ready, true);
 
     print_memif_details(conn);
 
@@ -113,10 +113,10 @@ int tx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
     }
 
     // release session
-    if (!tx_ctx->shm_ready) {
+    if (!atomic_load(&tx_ctx->shm_ready)) {
         return 0;
     }
-    tx_ctx->shm_ready = 0;
+    atomic_store(&tx_ctx->shm_ready, false);
 
     /* stop event polling thread */
     INFO("TX Stop poll event");
