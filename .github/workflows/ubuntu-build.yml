@@ -2,9 +2,9 @@ name: Ubuntu Build
 
 on:
   push:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "maint-*" ]
   pull_request:
-    branches: [ "main", "dev" ]
+    branches: [ "main", "dev", "maint-*" ]
 
 env:
   BUILD_TYPE: Release
