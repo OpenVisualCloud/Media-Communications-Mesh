@@ -314,11 +314,6 @@ static void rx_rdma_consume_frame(rx_rdma_session_context_t *s, char *frame)
     uint32_t buf_size = s->transfer_size;
     uint16_t rx_buf_num = 0, rx = 0;
 
-    if (!atomic_load(&s->shm_ready)) {
-        INFO("%s memif not ready\n", __func__);
-        return;
-    }
-
     rx_bufs = s->shm_bufs;
 
     /* allocate memory */
@@ -345,14 +340,15 @@ static void *rx_rdma_frame_thread(void *arg)
     libfabric_ctx *rdma_ctx = s_ctx->rdma_ctx;
     ep_ctx_t *cp_ctx = s_ctx->ep_ctx;
 
-    while (!atomic_load(&s_ctx->shm_ready) && !s_ctx->stop) {
-        INFO("%s memif not ready\n", __func__);
+    while (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire) && !s_ctx->stop)
         usleep(1000);
-    }
 
-    printf("%s(%d), start\n", __func__, s_ctx->idx);
+    printf("%s(%d), RX RDMA thread started\n", __func__, s_ctx->idx);
     while (!s_ctx->stop) {
         ep_recv_buf(cp_ctx, cp_ctx->data_buf, s_ctx->transfer_size);
+        if (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire))
+            continue;
+
         rx_rdma_consume_frame(s_ctx, cp_ctx->data_buf);
     }
 
