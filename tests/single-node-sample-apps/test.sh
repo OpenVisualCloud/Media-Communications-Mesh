@@ -81,7 +81,7 @@ function run_in_background() {
     # Returns PID of a spawned process
     info "Run: ${1}"
     echo -e "${1}\n" > "${2}"
-    stdbuf -o0 -e0 "${1}" &>>"${2}" &
+    stdbuf -o0 -e0 $1 &>>"${2}" &
 }
 
 function wait_text() {
