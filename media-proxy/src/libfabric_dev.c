@@ -101,7 +101,7 @@ int rdma_init(libfabric_ctx **ctx)
         return -ENOMEM;
     }
 
-    (*ctx)->comp_method = RDMA_COMP_SPIN;
+    (*ctx)->comp_method = RDMA_COMP_SREAD;
 
     hints = fi_allocinfo();
     if (!hints) {

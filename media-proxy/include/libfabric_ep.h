@@ -34,8 +34,6 @@ typedef struct {
     fi_addr_t dest_av_entry;
 
     struct fid_wait *waitset;
-    struct fi_context *recv_ctx;
-    struct fi_context *send_ctx;
     uint64_t tx_cq_cntr;
     uint64_t rx_cq_cntr;
 
@@ -51,9 +49,16 @@ typedef struct {
     enum direction dir;
 } ep_cfg_t;
 
-int ep_send_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size);
+typedef struct {
+    ep_cfg_t *ep_cfg;
+    void *s_ctx;
+} ep_thread_arg_t;
+
+int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size);
 // *buf has to point to registered memory
-int ep_recv_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size);
+int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx);
+int ep_rxcq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
+int ep_txcq_read(ep_ctx_t *ep_ctx, int timeout);
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
 int ep_destroy(ep_ctx_t **ep_ctx);
 

@@ -79,16 +79,24 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
     rx_ctx->memif_conn_args.socket = rx_ctx->memif_socket;
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->transfer_size;
-    rx_ctx->memif_conn_args.log2_ring_size = 4;
+    rx_ctx->memif_conn_args.log2_ring_size = 2;
     memcpy((char *)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
            sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
+
+    rx_ctx->shm_buf_num = 1 << rx_ctx->memif_conn_args.log2_ring_size;
+    rx_ctx->shm_bufs = (shm_buf_info_t *)calloc(rx_ctx->shm_buf_num, sizeof(shm_buf_info_t));
+    if (!rx_ctx->shm_bufs) {
+        ERROR("%s Fail to malloc shared memory buffers", __func__);
+        return -ENOMEM;
+    }
 
     INFO("create memif interface.");
     err = memif_create(&rx_ctx->memif_conn, &rx_ctx->memif_conn_args, rx_rdma_on_connect,
                        rx_rdma_on_disconnect, rx_on_receive, rx_ctx);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(err));
+        free(rx_ctx->shm_bufs);
         return -1;
     }
 
@@ -97,6 +105,7 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
                          rx_ctx->memif_conn_args.socket);
     if (err < 0) {
         printf("%s(%d), thread create fail\n", __func__, err);
+        free(rx_ctx->shm_bufs);
         return -1;
     }
 
@@ -106,7 +115,6 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
 {
     memif_ops_t default_memif_ops = { 0 };
-    const uint16_t FRAME_COUNT = 1;
     struct stat st = { 0 };
     int err;
 
@@ -162,21 +170,16 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
     tx_ctx->memif_conn_args.socket = tx_ctx->memif_socket;
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->transfer_size;
-    tx_ctx->memif_conn_args.log2_ring_size = 4;
+    tx_ctx->memif_conn_args.log2_ring_size = 2;
     snprintf((char *)tx_ctx->memif_conn_args.interface_name,
              sizeof(tx_ctx->memif_conn_args.interface_name), "%s", memif_ops->interface_name);
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
-
-    /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
-    tx_ctx->shm_buf_num = FRAME_COUNT;
 
     INFO("Create memif interface.");
     err = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_rdma_on_connect,
                        tx_rdma_on_disconnect, tx_rdma_on_receive, tx_ctx);
     if (err != MEMIF_ERR_SUCCESS) {
-        INFO("memif_create: %s", memif_strerror(err));
-        free(tx_ctx->shm_bufs);
+        ERROR("memif_create: %s", memif_strerror(err));
         return -1;
     }
 
@@ -184,8 +187,7 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
     err = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop,
                          tx_ctx->memif_conn_args.socket);
     if (err < 0) {
-        printf("%s(%d), thread create fail\n", __func__, err);
-        free(tx_ctx->shm_bufs);
+        ERROR("%s(%d), thread create fail\n", __func__, err);
         return -1;
     }
 
@@ -248,108 +250,225 @@ static int tx_shm_deinit(tx_rdma_session_context_t *tx_ctx)
         unlink(tx_ctx->memif_socket_args.path);
     }
 
-    if (tx_ctx->shm_bufs) {
-        free(tx_ctx->shm_bufs);
-        tx_ctx->shm_bufs = NULL;
+    return 0;
+}
+
+static void handle_sent_buffers(tx_rdma_session_context_t *s)
+{
+    shm_buf_info_t *buf_info;
+    uint16_t bursted_buf_num;
+    int err;
+
+    err = ep_txcq_read(s->ep_ctx, 1);
+    if (err) {
+        if (err != -EAGAIN)
+            INFO("%s ep_txcq_read: %s", __func__, strerror(err));
+        return;
+    }
+    s->fb_send++;
+
+    err = memif_refill_queue(s->memif_conn, 0, 1, 0);
+    if (err != MEMIF_ERR_SUCCESS)
+        INFO("memif_refill_queue: %s", memif_strerror(err));
+}
+
+static void *tx_rdma_ep_thread(void *arg)
+{
+    ep_thread_arg_t *ep_thread_arg = (ep_thread_arg_t *)arg;
+    ep_cfg_t *ep_cfg = ep_thread_arg->ep_cfg;
+    tx_rdma_session_context_t *s_ctx = (tx_rdma_session_context_t *)ep_thread_arg->s_ctx;
+    memif_region_details_t region;
+    int err = 0;
+
+    free(ep_thread_arg);
+
+    while (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire) && !s_ctx->stop)
+        usleep(1000);
+
+    err = memif_get_buffs_region(s_ctx->memif_conn, &region);
+    if (err) {
+        ERROR("%s, Getting memory buffers from memif failed. \n", __func__);
+        return NULL;
+    }
+    ep_cfg->data_buf_size = region.size;
+    ep_cfg->data_buf = region.addr;
+
+    err = ep_init(&s_ctx->ep_ctx, ep_cfg);
+    free(ep_cfg);
+    if (err) {
+        ERROR("%s, fail to initialize libfabric's end point.\n", __func__);
+        return NULL;
+    }
+    atomic_store_explicit(&s_ctx->ep_ready, true, memory_order_release);
+
+
+    INFO("%s(%d), TX RDMA thread started\n", __func__, s_ctx->idx);
+    while (!s_ctx->stop) {
+        if (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire))
+            continue;
+        handle_sent_buffers(s_ctx);
     }
 
-    return 0;
+    return NULL;
 }
 
 /* TX: Create RDMA session */
 tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdma_s_ops_t *opts,
                                                   memif_ops_t *memif_ops)
 {
+    tx_rdma_session_context_t *tx_ctx = NULL;
+    ep_thread_arg_t *ep_th_arg = NULL;
+    ep_cfg_t *ep_cfg = NULL;
     int err;
-    tx_rdma_session_context_t *tx_ctx;
+
+    ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
+    if (!ep_th_arg) {
+        printf("%s, Endpoint thread arguments malloc fail\n", __func__);
+        goto exit_dealloc;
+    }
     tx_ctx = calloc(1, sizeof(tx_rdma_session_context_t));
     if (tx_ctx == NULL) {
         printf("%s, TX session contex malloc fail\n", __func__);
-        return NULL;
+        goto exit_dealloc;
     }
-    tx_ctx->rdma_ctx = dev_handle;
-    tx_ctx->stop = false;
+    ep_cfg= calloc(1, sizeof(ep_cfg_t));
+    if (!ep_cfg) {
+        printf("%s, RDMA endpoint config malloc fail\n", __func__);
+        goto exit_dealloc;
+    }
 
     tx_ctx->transfer_size = opts->transfer_size;
+    tx_ctx->rdma_ctx = dev_handle;
+    tx_ctx->stop = false;
+    tx_ctx->ep_ready = ATOMIC_VAR_INIT(false);
 
     err = tx_rdma_shm_init(tx_ctx, memif_ops);
     if (err < 0) {
         printf("%s, fail to initialize share memory.\n", __func__);
-        free(tx_ctx);
-        return NULL;
+        goto exit_dealloc;
     }
 
-    /* TODO: use memif buffer with correct size */
-    ep_cfg_t ep_cfg = {
-        .rdma_ctx = tx_ctx->rdma_ctx,
-        .data_buf_size = tx_ctx->transfer_size,
-        .local_addr = opts->local_addr,
-        .remote_addr = opts->remote_addr,
-        .data_buf = malloc(tx_ctx->transfer_size),
-        .dir = opts->dir,
-    };
-    if (!ep_cfg.data_buf) {
-        printf("%s, session data buffer malloc fail\n", __func__);
-        return NULL;
+
+    ep_cfg->rdma_ctx = tx_ctx->rdma_ctx;
+    ep_cfg->local_addr = opts->local_addr;
+    ep_cfg->remote_addr = opts->remote_addr;
+    ep_cfg->dir = opts->dir;
+
+    ep_th_arg->ep_cfg = ep_cfg; // maybe I should use rdma_s_ops_t directly?
+    ep_th_arg->s_ctx = tx_ctx;
+    err = pthread_create(&tx_ctx->ep_thread, NULL, tx_rdma_ep_thread, ep_th_arg);
+    if (err < 0) {
+        printf("%s(%d), thread create fail %d\n", __func__, err, tx_ctx->idx);
+        goto exit_deinit_shm;
     }
 
-    err = ep_init(&tx_ctx->ep_ctx, &ep_cfg);
-    if (err) {
-        printf("%s, fail to initialize libfabric's end point.\n", __func__);
-        free(tx_ctx);
-        return NULL;
-    }
 
     return tx_ctx;
+
+exit_deinit_shm:
+    tx_shm_deinit(tx_ctx);
+exit_dealloc:
+    free(ep_cfg);
+    free(tx_ctx);
+    free(ep_th_arg);
+    return NULL;
 }
 
-static void rx_rdma_consume_frame(rx_rdma_session_context_t *s, char *frame)
+static shm_buf_info_t *get_free_shm_buf(rx_rdma_session_context_t *s)
+{
+    uint32_t i = 0;
+    for (; i < s->shm_buf_num; i++) {
+        if (!s->shm_bufs[i].used) {
+            return &s->shm_bufs[i];
+        }
+    }
+    
+    return NULL;
+}
+
+
+static int pass_empty_buf_to_libfabric(rx_rdma_session_context_t *s)
 {
     int err;
-    uint16_t qid = 0;
-    mcm_buffer *rx_mcm_buff = NULL;
-    memif_buffer_t *rx_bufs = NULL;
-    uint16_t buf_num = 1;
-    memif_conn_handle_t conn;
+    shm_buf_info_t *buf_info = NULL;
     uint32_t buf_size = s->transfer_size;
-    uint16_t rx_buf_num = 0, rx = 0;
+    uint16_t rx_buf_num = 0;
 
-    rx_bufs = s->shm_bufs;
+    buf_info = get_free_shm_buf(s);
+    if (!buf_info)
+        return -ENOMEM;
 
-    /* allocate memory */
-    err = memif_buffer_alloc_timeout(s->memif_conn, qid, rx_bufs, 1, &rx_buf_num, buf_size, 10);
-    if (err != MEMIF_ERR_SUCCESS) {
-        INFO("rx_rdma_consume_frame: Failed to alloc memif buffer: %s", memif_strerror(err));
-        return;
+    err = memif_buffer_alloc(s->memif_conn, 0, &buf_info->shm_buf, 1, &rx_buf_num, buf_size);
+    if (err != MEMIF_ERR_SUCCESS)
+        return -ENOMEM;
+
+    buf_info->used = true;
+
+    err = ep_recv_buf(s->ep_ctx, buf_info->shm_buf.data, buf_size, buf_info);
+    if (err) {
+        ERROR("%s ep_recv_buf failed with errno: %s", __func__, fi_strerror(err));
+        return err;
     }
-
-    memcpy(rx_bufs->data, frame, s->transfer_size);
-
-    /* Send to microservice application. */
-    err = memif_tx_burst(s->memif_conn, qid, rx_bufs, rx_buf_num, &rx);
-    if (err != MEMIF_ERR_SUCCESS) {
-        INFO("rx_rdma_consume_frame memif_tx_burst: %s", memif_strerror(err));
-    }
-
-    s->fb_recv++;
+    return 0;
 }
 
-static void *rx_rdma_frame_thread(void *arg)
+static void handle_received_buffers(rx_rdma_session_context_t *s)
 {
-    rx_rdma_session_context_t *s_ctx = (rx_rdma_session_context_t *)arg;
-    libfabric_ctx *rdma_ctx = s_ctx->rdma_ctx;
-    ep_ctx_t *cp_ctx = s_ctx->ep_ctx;
+    shm_buf_info_t *buf_info;
+    int err;
+    uint16_t bursted_buf_num;
+
+    err = ep_rxcq_read(s->ep_ctx, (void **)&buf_info, 1);
+    if (err) {
+        if (err != -EAGAIN)
+            INFO("%s ep_rxcq_read: %s", __func__, strerror(err));
+        return;
+    }
+    s->fb_recv++;
+
+    err = memif_tx_burst(s->memif_conn, 0, &buf_info->shm_buf, 1, &bursted_buf_num);
+    if (err != MEMIF_ERR_SUCCESS && bursted_buf_num != 1) {
+        INFO("%s memif_tx_burst: %s", __func__,  memif_strerror(err));
+        return;
+    }
+    buf_info->used = false;
+
+}
+
+static void *rx_rdma_ep_thread(void *arg)
+{
+    ep_thread_arg_t *ep_thread_arg = (ep_thread_arg_t *)arg;
+    ep_cfg_t *ep_cfg = ep_thread_arg->ep_cfg;
+    rx_rdma_session_context_t *s_ctx = (rx_rdma_session_context_t *)ep_thread_arg->s_ctx;
+    memif_region_details_t region;
+    int err = 0;
+
+    free(ep_thread_arg);
 
     while (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire) && !s_ctx->stop)
         usleep(1000);
 
-    printf("%s(%d), RX RDMA thread started\n", __func__, s_ctx->idx);
+    err = memif_get_buffs_region(s_ctx->memif_conn, &region);
+    if (err) {
+        ERROR("%s, Getting memory buffers from memif failed. \n", __func__);
+        return NULL;
+    }
+    ep_cfg->data_buf_size = region.size;
+    ep_cfg->data_buf = region.addr;
+
+    err = ep_init(&s_ctx->ep_ctx, ep_cfg);
+    free(ep_cfg);
+    if (err) {
+        ERROR("%s, fail to initialize libfabric's end point.\n", __func__);
+        return NULL;
+    }
+
+    INFO("%s(%d), RX RDMA thread started\n", __func__, s_ctx->idx);
     while (!s_ctx->stop) {
-        ep_recv_buf(cp_ctx, cp_ctx->data_buf, s_ctx->transfer_size);
         if (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire))
             continue;
-
-        rx_rdma_consume_frame(s_ctx, cp_ctx->data_buf);
+        while(!pass_empty_buf_to_libfabric(s_ctx));
+        handle_received_buffers(s_ctx);
     }
 
     return NULL;
@@ -359,14 +478,26 @@ static void *rx_rdma_frame_thread(void *arg)
 rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdma_s_ops_t *opts,
                                                   memif_ops_t *memif_ops)
 {
-    rx_rdma_session_context_t *rx_ctx;
-    ep_cfg_t ep_cfg = { 0 };
+    rx_rdma_session_context_t *rx_ctx = NULL;
+    ep_thread_arg_t *ep_th_arg = NULL;
+    ep_cfg_t *ep_cfg = NULL;
     int err;
 
+    ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
+    if (!ep_th_arg) {
+        printf("%s, Endpoint thread arguments malloc fail\n", __func__);
+        goto exit_dealloc;
+    }
+
     rx_ctx = calloc(1, sizeof(rx_rdma_session_context_t));
-    if (rx_ctx == NULL) {
+    if (!rx_ctx) {
         printf("%s, TX session contex malloc fail\n", __func__);
-        return NULL;
+        goto exit_dealloc;
+    }
+    ep_cfg = calloc(1, sizeof(ep_cfg_t));
+    if (!ep_cfg) {
+        printf("%s, RDMA endpoint config malloc fail\n", __func__);
+        goto exit_dealloc;
     }
     rx_ctx->rdma_ctx = dev_handle;
     rx_ctx->stop = false;
@@ -374,40 +505,33 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
     rx_ctx->transfer_size = opts->transfer_size;
 
     err = rx_rdma_shm_init(rx_ctx, memif_ops);
-
     if (err < 0) {
         printf("%s, fail to initialize share memory.\n", __func__);
-        free(rx_ctx);
-        return NULL;
+        goto exit_dealloc;
     }
 
-    /* TODO: use memif buffer with correct size */
-    ep_cfg.rdma_ctx = rx_ctx->rdma_ctx;
-    ep_cfg.data_buf_size = rx_ctx->transfer_size;
-    ep_cfg.local_addr = opts->local_addr;
-    ep_cfg.remote_addr = opts->remote_addr;
-    ep_cfg.dir = opts->dir;
-    ep_cfg.data_buf = malloc(rx_ctx->transfer_size);
-    if (!ep_cfg.data_buf) {
-        printf("%s, session data buffer malloc fail\n", __func__);
-        return NULL;
-    }
+    ep_cfg->rdma_ctx = rx_ctx->rdma_ctx;
+    ep_cfg->local_addr = opts->local_addr;
+    ep_cfg->remote_addr = opts->remote_addr;
+    ep_cfg->dir = opts->dir;
 
-    err = ep_init(&rx_ctx->ep_ctx, &ep_cfg);
-    if (err) {
-        printf("%s, fail to initialize libfabric's end point.\n", __func__);
-        free(rx_ctx);
-        return NULL;
-    }
-
-    err = pthread_create(&rx_ctx->frame_thread, NULL, rx_rdma_frame_thread, rx_ctx);
+    ep_th_arg->ep_cfg = ep_cfg;
+    ep_th_arg->s_ctx = rx_ctx;
+    err = pthread_create(&rx_ctx->ep_thread, NULL, rx_rdma_ep_thread, ep_th_arg);
     if (err < 0) {
         printf("%s(%d), thread create fail %d\n", __func__, err, rx_ctx->idx);
-        free(rx_ctx);
-        return NULL;
+        goto exit_deinit_shm;
     }
 
     return rx_ctx;
+
+exit_deinit_shm:
+    rx_shm_deinit(rx_ctx);
+exit_dealloc:
+    free(ep_cfg);
+    free(rx_ctx);
+    free(ep_th_arg);
+    return NULL;
 }
 
 void rdma_rx_session_stop(rx_rdma_session_context_t *rx_ctx)
@@ -421,7 +545,7 @@ void rdma_rx_session_stop(rx_rdma_session_context_t *rx_ctx)
 
     rx_ctx->stop = true;
 
-    err = pthread_join(rx_ctx->frame_thread, NULL);
+    err = pthread_join(rx_ctx->ep_thread, NULL);
     if (err && err != ESRCH) {
         ERROR("%s: Error joining thread: %s\n", __func__, strerror(err));
     }
@@ -438,8 +562,6 @@ void rdma_rx_session_destroy(rx_rdma_session_context_t **p_rx_ctx)
     }
 
     rx_ctx = *p_rx_ctx;
-    /* TODO: Remove free when memif buf will be used */
-    free(rx_ctx->ep_ctx->data_buf);
     err = ep_destroy(&rx_ctx->ep_ctx);
     if (err < 0) {
         printf("%s, ep free failed\n", __func__);
@@ -461,7 +583,12 @@ void rdma_tx_session_stop(tx_rdma_session_context_t *tx_ctx)
         return;
     }
 
-    /* No thread to stop */
+    tx_ctx->stop = true;
+
+    err = pthread_join(tx_ctx->ep_thread, NULL);
+    if (err && err != ESRCH) {
+        ERROR("%s: Error joining thread: %s\n", __func__, strerror(err));
+    }
 }
 
 void rdma_tx_session_destroy(tx_rdma_session_context_t **p_tx_ctx)
@@ -475,13 +602,12 @@ void rdma_tx_session_destroy(tx_rdma_session_context_t **p_tx_ctx)
     }
 
     tx_ctx = *p_tx_ctx;
-    /* TODO: Remove free when memif buf will be used */
-    free(tx_ctx->ep_ctx->data_buf);
     err = ep_destroy(&tx_ctx->ep_ctx);
     if (err < 0) {
         printf("%s, ep free failed\n", __func__);
         return;
     }
+    atomic_store_explicit(&tx_ctx->ep_ready, false, memory_order_relaxed);
 
     tx_shm_deinit(tx_ctx);
 
