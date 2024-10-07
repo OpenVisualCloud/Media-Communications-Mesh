@@ -7,11 +7,10 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/internal.h"
-#include "libavutil/pixdesc.h"
 #include "libavformat/avformat.h"
 #include "libavformat/mux.h"
+#include "libavutil/pixdesc.h"
 #include "libavdevice/mcm_common.h"
-#include <mcm_dp.h>
 
 typedef struct McmVideoMuxerContext {
     const AVClass *class; /**< Class for private options. */
@@ -29,60 +28,66 @@ typedef struct McmVideoMuxerContext {
     enum AVPixelFormat pixel_format;
     AVRational frame_rate;
 
-    mcm_conn_context *tx_handle;
-} McmVideoMuxerContext;
+    MeshClient *mc;
+    MeshConnection *conn;
+
+ } McmVideoMuxerContext;
 
 static int mcm_video_write_header(AVFormatContext* avctx)
 {
     McmVideoMuxerContext *s = avctx->priv_data;
-    mcm_conn_param param = { 0 };
+    int kind = MESH_CONN_KIND_SENDER;
+    MeshConfig_Video cfg;
     int err;
 
-    err = mcm_parse_conn_param(avctx, &param, is_tx, s->ip_addr, s->port,
-                               s->protocol_type, s->payload_type, s->socket_name,
-                               s->interface_id);
+    /* video format */
+    cfg.width = s->width;
+    cfg.height = s->height;
+    cfg.fps = av_q2d(s->frame_rate);
+
+    err = mcm_parse_video_pix_fmt(avctx, &cfg.pixel_format, s->pixel_format);
     if (err)
         return err;
 
-    switch (param.payload_type) {
-    case PAYLOAD_TYPE_RTSP_VIDEO:
-    case PAYLOAD_TYPE_ST20_VIDEO:
-    case PAYLOAD_TYPE_ST22_VIDEO:
-        /* video format */
-        param.payload_args.video_args.width   = param.width = s->width;
-        param.payload_args.video_args.height  = param.height = s->height;
-        param.payload_args.video_args.fps     = param.fps = av_q2d(s->frame_rate);
-
-        switch (s->pixel_format) {
-        case AV_PIX_FMT_NV12:
-            param.pix_fmt = PIX_FMT_NV12;
-            break;
-        case AV_PIX_FMT_YUV422P:
-            param.pix_fmt = PIX_FMT_YUV422P;
-            break;
-        case AV_PIX_FMT_YUV444P10LE:
-            param.pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-            break;
-        case AV_PIX_FMT_RGB24:
-            param.pix_fmt = PIX_FMT_RGB8;
-            break;
-        case AV_PIX_FMT_YUV422P10LE:
-        default:
-            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-        }
-
-        param.payload_args.video_args.pix_fmt = param.pix_fmt;
-        break;
-
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown payload type\n");
+    err = mcm_get_client(&s->mc);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Get mesh client failed: %s (%d)\n",
+               mesh_err2str(err), err);
         return AVERROR(EINVAL);
     }
 
-    s->tx_handle = mcm_create_connection(&param);
-    if (!s->tx_handle) {
-        av_log(avctx, AV_LOG_ERROR, "Create connection failed\n");
-        return AVERROR(EIO);
+    err = mesh_create_connection(s->mc, &s->conn);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Create connection failed: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EIO);
+        goto exit_put_client;
+    }
+
+    err = mcm_parse_conn_param(avctx, s->conn, kind, s->ip_addr, s->port,
+                                  s->protocol_type, s->payload_type,
+                                  s->socket_name, s->interface_id);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Configuration parsing failed: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EINVAL);
+        goto exit_delete_conn;
+    }
+
+    err = mesh_apply_connection_config_video(s->conn, &cfg);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to apply connection config: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EIO);
+        goto exit_delete_conn;
+    }
+
+    err = mesh_establish_connection(s->conn, kind);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot establish connection: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EIO);
+        goto exit_delete_conn;
     }
 
     av_log(avctx, AV_LOG_INFO,
@@ -90,24 +95,35 @@ static int mcm_video_write_header(AVFormatContext* avctx)
            s->width, s->height, av_get_pix_fmt_name(s->pixel_format),
            (int)av_q2d(s->frame_rate));
     return 0;
+
+exit_delete_conn:
+    mesh_delete_connection(&s->conn);
+
+exit_put_client:
+    mcm_put_client(&s->mc);
+    return err;
 }
 
 static int mcm_video_write_packet(AVFormatContext* avctx, AVPacket* pkt)
 {
     McmVideoMuxerContext *s = avctx->priv_data;
-    mcm_buffer *buf = NULL;
-    int err = 0;
+    MeshBuffer *buf;
+    int err;
 
-    buf = mcm_dequeue_buffer(s->tx_handle, -1, &err);
-    if (buf == NULL) {
-        av_log(avctx, AV_LOG_ERROR, "Dequeue buffer error %d\n", err);
+    err = mesh_get_buffer(s->conn, &buf);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
+               mesh_err2str(err), err);
         return AVERROR(EIO);
     }
 
-    memcpy(buf->data, pkt->data, pkt->size <= buf->len ? pkt->size : buf->len);
+    memcpy(buf->data, pkt->data,
+           pkt->size <= buf->data_len ? pkt->size : buf->data_len);
 
-    if ((err = mcm_enqueue_buffer(s->tx_handle, buf)) != 0) {
-        av_log(avctx, AV_LOG_ERROR, "Enqueue buffer error %d\n", err);
+    err = mesh_put_buffer(&buf);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
+                mesh_err2str(err), err);
         return AVERROR(EIO);
     }
 
@@ -117,8 +133,17 @@ static int mcm_video_write_packet(AVFormatContext* avctx, AVPacket* pkt)
 static int mcm_video_write_trailer(AVFormatContext* avctx)
 {
     McmVideoMuxerContext *s = avctx->priv_data;
+    int err;
 
-    mcm_destroy_connection(s->tx_handle);
+    err = mesh_delete_connection(&s->conn);
+    if (err)
+        av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
+               mesh_err2str(err), err);
+
+    err = mcm_put_client(&s->mc);
+    if (err)
+        av_log(avctx, AV_LOG_ERROR, "Put mesh client failed (%d)\n", err);
+
     return 0;
 }
 
