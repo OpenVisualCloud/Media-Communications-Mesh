@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  packages: write
 
 jobs:
   docker:
@@ -44,28 +45,28 @@ jobs:
         uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
         with:
           file: sdk/Dockerfile
-          tags: "mcm/sdk:${{ github.sha }}"
+          tags: "ghcr.io/openvisualcloud/media-communications-mesh/sdk:${{ github.sha }}"
           context: .
           push: true
-          cache-from: type=registry,ref=mcm/sdk:buildcache
-          cache-to: type=registry,ref=mcm/sdk:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/sdk:buildcache
+          cache-to: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/sdk:buildcache,mode=max
 
       - name: Build and push ffmpeg and plugins
         uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
         with:
           file: ffmpeg-plugin/Dockerfile
-          tags: "mcm/ffmpeg:${{ github.sha }}"
+          tags: "ghcr.io/openvisualcloud/media-communications-mesh/ffmpeg:${{ github.sha }}"
           context: .
           push: true
-          cache-from: type=registry,ref=mcm/ffmpeg:buildcache
-          cache-to: type=registry,ref=mcm/ffmpeg:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/ffmpeg:buildcache
+          cache-to: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/ffmpeg:buildcache,mode=max
 
       - name: Build and push media proxy application
         uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
         with:
           file: media-proxy/Dockerfile
-          tags: "mcm/media-proxy:${{ github.sha }}"
+          tags: "ghcr.io/openvisualcloud/media-communications-mesh/media-proxy:${{ github.sha }}"
           context: .
           push: true
-          cache-from: type=registry,ref=mcm/media-proxy:buildcache
-          cache-to: type=registry,ref=mcm/media-proxy:buildcache,mode=max
+          cache-from: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/media-proxy:buildcache
+          cache-to: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/media-proxy:buildcache,mode=max
