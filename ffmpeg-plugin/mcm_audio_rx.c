@@ -34,6 +34,7 @@ typedef struct McmAudioDemuxerContext {
     MeshClient *mc;
     MeshConnection *conn;
     bool first_frame;
+
 } McmAudioDemuxerContext;
 
 static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id)

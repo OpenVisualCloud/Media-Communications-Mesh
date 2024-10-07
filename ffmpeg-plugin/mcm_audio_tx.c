@@ -32,6 +32,7 @@ typedef struct McmAudioMuxerContext {
     MeshConnection *conn;
     MeshBuffer *unsent_buf;
     int unsent_len;
+
 } McmAudioMuxerContext;
 
 static int mcm_audio_write_header(AVFormatContext* avctx)
