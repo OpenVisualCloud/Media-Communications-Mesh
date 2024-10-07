@@ -5,18 +5,17 @@
 
 set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-. "${SCRIPT_DIR}/common.sh"
-
-# Read proxy variables from env to pass them to the builder
-BUILD_ARGUMENTS=$(compgen -e | sed -nE '/_(proxy|PROXY)$/{s/^/--build-arg /;p}')
+. "${SCRIPT_DIR}/scripts/common.sh"
 
 IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY:-docker.io}"
 IMAGE_REGISTRY="${IMAGE_REGISTRY:-docker.io}"
 IMAGE_TAG="${IMAGE_TAG:-latest}"
 
-docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/sdk:${IMAGE_TAG}" -f "${SCRIPT_DIR}/sdk/Dockerfile" $@ "${SCRIPT_DIR}"
-docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/media-proxy:${IMAGE_TAG}" -f "${SCRIPT_DIR}/media-proxy/Dockerfile" $@ "${SCRIPT_DIR}"
-docker buildx build --progress=plain --network=host ${BUILD_ARGUMENTS} --build-arg IMAGE_CACHE_REGISTRY="${IMAGE_CACHE_REGISTRY}" -t "${IMAGE_REGISTRY}/ffmpeg:${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" $@ "${SCRIPT_DIR}"
+# Read proxy variables from env to pass them to the builder
+BUILD_ARGUMENTS=()
+BASIC_ARGUMENTS=("buildx" "build" "--progress=plain" "--network=host" "--build-arg=IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}")
+mapfile -t BUILD_ARGUMENTS < <(compgen -e | sed -nE '/^(.*)(_proxy|_PROXY)$/{s/^/--build-arg=/;p}')
+
 
 docker tag "${IMAGE_REGISTRY}/sdk:${IMAGE_TAG}" "mcm/sample-app:${IMAGE_TAG}"
 docker tag "${IMAGE_REGISTRY}/media-proxy:${IMAGE_TAG}" "mcm/media-proxy:${IMAGE_TAG}"

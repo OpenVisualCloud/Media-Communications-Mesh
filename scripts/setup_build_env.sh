@@ -3,9 +3,11 @@
 set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-REPO_DIR="$(readlink -f "../${SCRIPT_DIR}")"
+REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
+BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/build}"
+DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
 
-. "${REPO_DIR}/common.sh"
+. "${SCRIPT_DIR}/common.sh"
 
 NPROC="$(nproc)"
 export MCM_DIR="${REPO_DIR}/build/mcm"
