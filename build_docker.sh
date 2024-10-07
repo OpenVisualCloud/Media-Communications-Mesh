@@ -14,7 +14,7 @@ IMAGE_TAG="${IMAGE_TAG:-latest}"
 # Read proxy variables from env to pass them to the builder
 BUILD_ARGUMENTS=()
 mapfile -t BUILD_ARGUMENTS < <(compgen -e | sed -nE '/^(.*)(_proxy|_PROXY)$/{s/^/--build-arg=/;p}')
-BUILD_ARGUMENTS+=( "--progress=plain" "--network=host" "--build-arg IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}" )
+BUILD_ARGUMENTS+=( "--progress=plain" "--network=host" "--build-arg" "IMAGE_CACHE_REGISTRY=${IMAGE_CACHE_REGISTRY}" )
 
 docker buildx build "${BUILD_ARGUMENTS[@]}" -t "${IMAGE_REGISTRY}/mcm/sdk:${IMAGE_TAG}" -f "${SCRIPT_DIR}/sdk/Dockerfile" "$@" "${SCRIPT_DIR}"
 docker buildx build "${BUILD_ARGUMENTS[@]}" -t "${IMAGE_REGISTRY}/mcm/media-proxy:${IMAGE_TAG}" -f "${SCRIPT_DIR}/media-proxy/Dockerfile" "$@" "${SCRIPT_DIR}"
