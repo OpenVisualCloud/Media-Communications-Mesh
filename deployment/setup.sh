@@ -5,7 +5,7 @@
 
 set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-. "${SCRIPT_DIR}/../common.sh"
+. "${SCRIPT_DIR}/../scripts/common.sh"
 
 # Function to display execution step log
 display_step_info() {

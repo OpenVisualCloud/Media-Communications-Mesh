@@ -7,7 +7,7 @@ set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build}"
-. "${SCRIPT_DIR}/../common.sh"
+. "${SCRIPT_DIR}/../scripts/common.sh"
 
 cp -f "${SCRIPT_DIR}/mcm_"* "${BUILD_DIR}/FFmpeg/libavdevice/"
 

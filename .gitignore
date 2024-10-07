@@ -13,6 +13,9 @@ ffmpeg-plugin/FFmpeg/*
 # for debug dump
 dump_*
 
+# for irdma
+irdma/
+
 # for gRPC protos
 media-proxy/protos/controller.grpc.pb.cc
 media-proxy/protos/controller.grpc.pb.h
