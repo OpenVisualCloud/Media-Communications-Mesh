@@ -17,9 +17,8 @@ duration="${2:-10}"
 frames_number="${3:-300}"
 width="${4:-640}"
 height="${5:-360}"
-fps="${6:-60}"
-pixel_format="${7:-yuv422p10le}"
-rdma_iface_ip="${8:-127.0.0.1}"
+pixel_format="${6:-yuv422p10le}"
+rdma_iface_ip="${7:-127.0.0.1}"
 
 # Test configuration (cont'd)
 wait_interval=$((duration + 5))
@@ -159,14 +158,14 @@ function run_test_rdma() {
 
     info "Starting recver_app"
     export MCM_MEDIA_PROXY_PORT=8003
-    local recver_app_cmd="recver_app -r $rdma_iface_ip -t rdma -w $width -h $height -f $fps -x $pixel_format -b $output_file -o auto"
+    local recver_app_cmd="recver_app -r $rdma_iface_ip -t rdma -w $width -h $height -x $pixel_format -b $output_file -o auto"
     run_in_background "$bin_dir/$recver_app_cmd" "$recver_app_out"
     recver_app_pid="$!"
 
 
     info "Starting sender_app"
     export MCM_MEDIA_PROXY_PORT=8002
-    local sender_app_cmd="sender_app -s $rdma_iface_ip -t rdma -w $width -h $height -f $fps -x $pixel_format -b $input_file -n $frames_number -o auto"
+    local sender_app_cmd="sender_app -s $rdma_iface_ip -t rdma -w $width -h $height -x $pixel_format -b $input_file -n $frames_number -o auto"
     run_in_background "$bin_dir/$sender_app_cmd" "$sender_app_out"
     sender_app_pid="$!"
 
@@ -217,7 +216,7 @@ info "  Binary directory: $(realpath $bin_dir)"
 info "  Output directory: $(realpath $out_dir)"
 info "  Input file path: $input_file"
 info "  Input file size: $(stat -c%s $input_file) byte(s)"
-info "  Frame size: $width x $height, FPS: $fps"
+info "  Frame size: $width x $height"
 info "  Pixel format: $pixel_format"
 info "  Duration: ${duration}s"
 info "  Frames number: $frames_number"
