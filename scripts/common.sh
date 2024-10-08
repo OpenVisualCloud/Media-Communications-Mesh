@@ -251,3 +251,32 @@ function print_logo_anim()
         print_logo_sequence ${wait_between_frames};
     done
 }
+
+function config_intel_rdma_driver() {
+    prompt "Configuration of iRDMA starting."
+    prompt "Enabling RoCE."
+
+    # enable RoCE
+    roce_ena_val=$(grep "options irdma roce_ena=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
+    if [[ -z "$roce_ena_val" ]]; then
+        echo "options irdma roce_ena=1" | sudo tee -a /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    elif [[ "$roce_ena_val" != "1" ]]; then
+        sudo sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    fi
+    prompt "RoCE enabled."
+
+    prompt "Increasing Queue Pair limit."
+    # increase irdma Queue Pair limit
+    limits_sel_val=$(grep "options irdma limits_sel=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
+    if [[ -z "$limits_sel_val" ]]; then
+        echo "options irdma limits_sel=5" | sudo tee -a /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    elif [[ "$limits_sel_val" != "5" ]]; then
+        sudo sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    fi
+    prompt "Queue Pair limits_sel set to 5."
+    prompt "Configuration of iRDMA finished."
+}

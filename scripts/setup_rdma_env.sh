@@ -2,12 +2,17 @@
 
 set -eo pipefail
 
-WORKING_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")/rdma"
+SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
+WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
+
+. "${SCRIPT_DIR}/common.sh"
+
 IRDMA_DMID="832291"
 IRDMA_VER="1.15.11"
 
 if [[ -f $WORKING_DIR ]]; then
-    echo "Can't create rdma directory because of the rdma file $WORKING_DIR"
+    error "Can't create rdma directory because of the rdma file $WORKING_DIR"
     exit 1
 fi
 
@@ -23,30 +28,6 @@ install_irdma() {
     popd
     popd
     modprobe irdma
-}
-
-configure_irdma() {
-    echo "Configuring irdma driver..."
-
-    # enable RoCE
-    roce_ena_val=$(grep "options irdma roce_ena=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
-    if [[ -z "$roce_ena_val" ]]; then
-        echo "options irdma roce_ena=1" | sudo tee -a /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    elif [[ "$roce_ena_val" != "1" ]]; then
-        sudo sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    fi
-
-    # increase irdma Queue Pair limit
-    limits_sel_val=$(grep "options irdma limits_sel=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
-    if [[ -z "$limits_sel_val" ]]; then
-        echo "options irdma limits_sel=5" | sudo tee -a /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    elif [[ "$limits_sel_val" != "5" ]]; then
-        sudo sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    fi
 }
 
 install_perftest() {
@@ -138,7 +119,7 @@ run_perftest() {
 if [[ "$1" == "install" ]]; then
     rm -rf "$WORKING_DIR"/*
     install_irdma
-    configure_irdma
+    config_intel_rdma_driver
     install_libfabric
     echo "Reboot required"
 elif [[ "$1" == "install_perftest" ]]; then

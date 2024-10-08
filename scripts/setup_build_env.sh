@@ -91,13 +91,14 @@ function get_and_patch_intel_drivers()
     popd
 }
 
-function build_and_install_intel_drivers()
+function build_install_and_config_intel_drivers()
 {
     pushd "${IRDMA_DIR}"
     ./build.sh
     popd
-    make -C "${IAVF_DIR}/src" install
-    make -C "${ICE_DIR}/src" install
+    make -j "${NPROC}" -C "${IAVF_DIR}/src" install
+    make -j "${NPROC}" -C "${ICE_DIR}/src" install
+    config_intel_rdma_driver
 }
 
 function install_ubuntu_package_dependencies()
@@ -186,15 +187,21 @@ function lib_install_mtl_and_dpdk()
 # Build and install gRPC from source
 function lib_install_grpc()
 {
-    git_download_strip_unpack "grpc/grpc" "${GPRC_VER}" "${GRPC_DIR}"
+    mkdir -p "${GRPC_DIR}"
+    git clone --branch "${GPRC_VER}" \
+        --recurse-submodules --depth 1 \
+        --shallow-submodules \
+        https://github.com/grpc/grpc "${GRPC_DIR}"
 
     mkdir -p "${GRPC_DIR}/cmake/build"
     pushd "${GRPC_DIR}/cmake/build"
+
     cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
     make -j "${NPROC}" && \
-    make install && \
+    make -j "${NPROC}" install && \
     cmake -DgRPC_BUILD_TESTS=ON -DgRPC_INSTALL=ON ../.. && \
     make -j "${NPROC}" grpc_cli && \
+
     cp grpc_cli "/usr/local/bin/"
     popd
 }
@@ -230,12 +237,29 @@ function full_build_and_install_workflow()
     lib_install_grpc
     lib_install_jpeg_xs
     lib_install_mtl_jpeg_xs_plugin
-    "${REPO_DIR}/ffmpeg-plugin/clone-and-patch-ffmpeg.sh"
 }
 
-# get_and_patch_intel_drivers
-# build_and_install_intel_drivers
+if [ "${UID}" != "0" ]; then
+    error This script must be run only as a root user.
+    exit 1
+fi
+
 # cp -f "${REPO_DIR}/media-proxy/imtl.json" "/usr/local/etc/imtl.json"
 # export KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"
 
+print_logo_anim
+sleep 1
+prompt Starting: Dependencies build, install and configation.
 full_build_and_install_workflow
+prompt Finished: Dependencies build, install and configation.
+prompt Starting: Intel drivers download and patch apply.
+get_and_patch_intel_drivers
+prompt Finished: Intel drivers download and patch apply.
+prompt Starting: Build, install and configuration of Intel drivers.
+build_install_and_config_intel_drivers
+prompt Finished: Build, install and configuration of Intel drivers.
+prompt All tasks compleated successfully. Reboot required.
+warning ""
+warning OS reboot is required for all of the changes to take place.
+sleep 2
+exit 0
