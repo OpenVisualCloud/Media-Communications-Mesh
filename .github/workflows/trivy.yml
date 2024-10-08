@@ -1,4 +1,4 @@
-name: Trivy
+name: Scan Trivy Config
 on:
   push:
     branches:
@@ -10,6 +10,7 @@ on:
         description: 'branch to run scans on'
         default: 'main'
         type: string
+
 permissions:
   contents: read
 
@@ -43,10 +44,12 @@ jobs:
           format: 'sarif'
           output: 'trivy-results.sarif'
           severity: 'CRITICAL,HIGH,MEDIUM'
+
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@b611370bb5703a7efb587f9d136a52ea24c5c38c # v3.25.11
         with:
           sarif_file: 'trivy-results.sarif'
+
       - uses: actions/upload-artifact@v4
         with:
           name: trivy-results

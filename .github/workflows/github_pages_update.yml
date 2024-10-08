@@ -1,9 +1,13 @@
 
-name: Publish Github Pages Template
+name: Docs Build and Publish
 on:
   workflow_call:
   workflow_dispatch:
-    branches: [main]
+  push:
+    branches: [ "main" ]
+
+permissions:
+  contents: read
 
 jobs:
   publishGitHubPages:
