@@ -8,102 +8,102 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenVisualCloud/Media-Communications-Mesh/badge)](https://securityscorecards.dev/viewer/?uri=github.com/OpenVisualCloud/Media-Communications-Mesh)
 [![BSD 3-Clause][license-img]][license]
 
-## Table of Contents
-- [Intel® Media Communications Mesh](#intel-media-communications-mesh)
-  - [Table of Contents](#table-of-contents)
-  - [Introduction](#introduction)
-  - [Media Proxy](#media-proxy)
-    - [Key Features](#key-features)
-    - [MemIF](#memif)
-  - [MCM SDK](#mcm-sdk)
-  - [Getting Started](#getting-started)
-    - [Prerequisites](#prerequisites)
-    - [Basic Installation](#basic-installation)
-  - [Usage](#usage)
-  - [Known Issues](#known-issues)
-  - [Support](#support)
-  - [Note](#note)
+![Media-Communication-Mesh](./img/media-communications-mesh-proto-1.webp)
 
 ## Introduction
 
 The Media Communications Mesh (MCM) enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
 
-## Media Proxy
 
-The Media Proxy component in this project is responsible for transporting audio and video stream media data. It handles the routing and forwarding of media data between mesh nodes, ensuring low latency and efficient resource utilization.
+## 1. Media Communications Mesh:
+•	Framework Introduction (MCM): is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
+•	Purpose: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
+•	Technological Basis: The Media Transport Library (MTL) helps form the media data plane, and a control-plane communications infrastructure adds support for media control protocols.
 
-It serves as a Data Plane component in a media application's Service Mesh. Media Proxy provides Shared Memory APIs to abstract the complexity of media transport.
+✅ Key point: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
 
-More information about the Media Proxy component can be found in the [media-proxy](media-proxy) subdirectory.
+## 2. Media Proxy Introduction:
+•	Core Functionality: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
+•	Low Latency & Efficiency: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
+•	Service Mesh Role: It acts as a Data Plane component within a larger service mesh for media applications, utilizing Shared Memory APIs to abstract the complexities involved in media transport.
 
-### Key Features
+✅ Key point: Media Proxy handles the data transport layer of media streams, focusing on real-time efficiency and ensuring media routing between microservices in the mesh.
+✅ More information about the Media Proxy component can be found in the [media-proxy](media-proxy) subdirectory.
 
-- Enables zero memory copy and ultra-low-latency media transfers between containers.
-- Supports transport of video streams via compressed (JPEG XS) or RAW (uncompressed) protocols.
-- Offers compatibility with multiple media transport protocols (SMPTE ST 2110, RTSP, ...).
+## 3. SDK and FFmpeg plugins:
+•	Key Features: Zero Memory Copy, uses a zero-copy memory techniques for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
+•	Media Stream Compatibility: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
+•	Multiple Protocols: Works with protocols such as SMPTE ST 2110 and RTSP, enhancing its versatility in different media service setups.
 
-### MemIF
-
-The Media Proxy leverages the [MemIF](https://s3-docs.fd.io/vpp/24.02/interfacing/libmemif/index.html) protocol for implementing shared memory buffer communications.
-
-## MCM SDK
-
-The MCM SDK library is designed for microservice applications to offload media transport functionalities. By abstracting network transport functions for media data and wrapping the "libmemif" APIs, MCM SDK facilitates communication with "Media Proxy".
-
-Detailed information about MCM SDK can be found in [sdk](sdk) directory.
+✅ Key point: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
+✅ Detailed information about MCM SDK can be found in [sdk](sdk) directory.
 
 ## Getting Started
 
 ### Prerequisites
 
-- Linux server (Intel Xeon processor recommended)
-- Network Interface Card (NIC) compatible with DPDK
-- Docker installed
+- Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
+- Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
+- Docker engine (recommended with Buildx toolkit) configured and installed.
+- (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
 
 ### Basic Installation
 
 1. **Install Dependencies**, choose between options `a)` or `b)`.
 
-    a) The `setup_build_env.sh` script located in the `scripts` folder can be used for all-in-one environment preparation. The script is designed for Debian and was tested under `Ubuntu 20.04`, `Ubuntu 22.04` and `Ubuntu 24.04` environments.
-   To use this option just run the script after cloning the repository by typing `./scripts/setup_build_env.sh`
+    a) The `setup_build_env.sh` script located in the `scripts` folder can be used for all-in-one environment preparation. The script is designed for Debian and was tested under `Ubuntu 20.04` and `Ubuntu 22.04`, kernel version 5.15 environments.
+
+    To use this option, follow the steps `2.` and `3.`, and then run the following command:
+
+    ```bash
+    ./scripts/setup_build_env.sh
+    ```
 
     b) The following method is universal and should work for most Linux OS distributions.
 
+    - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation.
+    - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation.
     - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation.
     - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
     - Install required packages:
+
         - Ubuntu/Debian
         ```bash
         sudo apt-get update
-        sudo apt-get install libbsd-dev
+        sudo apt-get install libbsd-dev cmake make
         ```
         - Centos stream
         ```bash
-        sudo yum install -y libbsd-devel
+        sudo yum install -y libbsd-devel cmake make
         ```
+
     - Install the irdma driver and libfabric
+
     ```bash
     ./scripts/setup_rdma_env.sh install
     ```
+
     - Reboot
 
 2. **Clone the repository**
-   ```sh
+
+   ```bash
    $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
 3. **Navigate to the Media-Communications-Mesh directory**
-    ```sh
+
+    ```bash
     $ cd Media-Communications-Mesh
     ```
 
 4. **Build the Media Proxy binary (run on Host)**
-    ```sh
+    ```bash
     $ ./build.sh
     ```
 
 5. **Build the Media Proxy Docker image (run in Container)**
-    ```sh
+    ```bash
     $ ./build_docker.sh
     ```
 

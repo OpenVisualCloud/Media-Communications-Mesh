@@ -2,7 +2,8 @@
 
 Diagrams in this document show interaction between FFmpeg and the MCM plugin when FFmpeg is streaming a video file over MCM.
 
-### Simplified FFmpeg Tx flow
+## Simplified FFmpeg Tx flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -17,7 +18,8 @@ sequenceDiagram
    ffmpeg ->> ffmpeg: Close video file
 ```
 
-### FFmpeg Write Header flow
+## FFmpeg Write Header flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -48,7 +50,8 @@ sequenceDiagram
    mux ->>- ffmpeg: Success
 ```
 
-### FFmpeg Write Packet flow
+## FFmpeg Write Packet flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -78,7 +81,8 @@ sequenceDiagram
    mtl ->>- network: Transmit data
 ```
 
-### FFmpeg Write Trailer flow
+## FFmpeg Write Trailer flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
