@@ -17,7 +17,7 @@ import sys
 project = 'Intel® Media Communications Mesh'
 copyright = '2024, Intel Corporation'
 author = 'Intel Corporation'
-release = '1.0'
+release = '24.09'
 
 extensions = [
     'myst_parser',
@@ -45,7 +45,7 @@ language = "en_US"
 
 myst_html_meta = {
     "description lang=en": "Intel® Media Communications Mesh",
-    "keywords": "Intel®, Intel, Media Communications Mesh, MCM, mtl, Tiber, st20, st22",
+    "keywords": "Intel®, Intel, Media Communications Mesh, MCM, MTL, Tiber, st20, st22, ST 2110",
     "property=og:locale":  "en_US"
 }
 myst_enable_extensions = [ "strikethrough" ]

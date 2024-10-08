@@ -1,4 +1,7 @@
-# <img align="center" src="img/logo.png" alt="drawing" height="50"/> Media Communications Mesh
+# Intel® Media Communications Mesh
+
+> [!TIP]
+> [Full Documentation](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html) for [Intel®](https://intel.com) [Media Communications Mesh](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html).
 
 [![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml)
 [![Coverity status](https://scan.coverity.com/projects/30272/badge.svg?flat=1)](https://scan.coverity.com/projects/media-communications-mesh)
@@ -6,7 +9,7 @@
 [![BSD 3-Clause][license-img]][license]
 
 ## Table of Contents
-- [ Media Communications Mesh](#-media-communications-mesh)
+- [Intel® Media Communications Mesh](#intel-media-communications-mesh)
   - [Table of Contents](#table-of-contents)
   - [Introduction](#introduction)
   - [Media Proxy](#media-proxy)

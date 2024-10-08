@@ -30,15 +30,27 @@ Contents
    docs/run
    media-proxy/README
 
-Plugins
+FFmpeg-plugin
 --------
 
 .. toctree::
    :maxdepth: 2
-   :caption: Plugins:
+   :caption: FFmpeg-plugin:
 
-   ffmpeg-plugin/README
-   docs/ffmpeg-params-guide
+   Introduction <ffmpeg-plugin/README>
+   Rx Flow Diagrams<ffmpeg-plugin/RX_FLOW>
+   Tx Flow Diagrams<ffmpeg-plugin/TX_FLOW>
+
+LibMemIF
+--------
+
+.. toctree::
+   :maxdepth: 4
+   :caption: LibMemIF:
+
+   Introduction <sdk/3rdparty/libmemif/libmemif_doc>
+   Standalone Build <sdk/3rdparty/libmemif/docs/buildinstructions_doc>
+   Getting Started <sdk/3rdparty/libmemif/docs/gettingstarted_doc>
 
 Security
 --------
@@ -57,6 +69,6 @@ Other
    :maxdepth: 2
    :caption: Other:
 
-   License (LICENSE)
-   Contributing (CONTRIBUTING)
-   Changelog (CHANGELOG)
+   License <LICENSE>
+   Contributing <CONTRIBUTING>
+   Changelog <CHANGELOG>
