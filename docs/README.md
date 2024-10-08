@@ -91,11 +91,11 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
         - Ubuntu/Debian
         ```bash
         sudo apt-get update
-        sudo apt-get install libbsd-dev cmake make libibverbs-dev librdmacm-dev dracut
+        sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
         ```
         - Centos stream
         ```bash
-        sudo yum install -y libbsd-devel cmake make libibverbs-devel librdmacm-devel dracut
+        sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
         ```
 
     - Install the irdma driver and libfabric
