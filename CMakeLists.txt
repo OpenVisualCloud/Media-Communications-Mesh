@@ -26,6 +26,9 @@ set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 set(TESTS_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/unit)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
 
+find_library(LIB_BSD bsd)
+add_compile_definitions(HAS_LIB_BSD)
+
 # Setup output folder
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -42,4 +45,4 @@ if (BUILD_UNIT_TESTS)
 endif()
 
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
-target_link_libraries(media_proxy_lib PUBLIC mcm_dp)
+target_link_libraries(media_proxy_lib PRIVATE mcm_dp_static ${LIB_BSD})
