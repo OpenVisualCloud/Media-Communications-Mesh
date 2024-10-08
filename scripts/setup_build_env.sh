@@ -121,6 +121,7 @@ function install_ubuntu_package_dependencies()
         libelf-dev \
         libfdt-dev \
         libgtest-dev \
+        rdma-core \
         libibverbs-dev \
         libjson-c-dev \
         libnuma-dev \
