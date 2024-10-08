@@ -8,12 +8,14 @@ on:
 
 permissions:
   contents: read
-  packages: write
 
 jobs:
   docker:
     runs-on: ubuntu-latest
     timeout-minutes: 120
+    permissions:
+      contents: read
+      packages: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -38,8 +40,8 @@ jobs:
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
           registry: ghcr.io
-          username: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_USER }}
-          password: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_KEY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push SDK sample apps
         uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
@@ -47,7 +49,7 @@ jobs:
           file: sdk/Dockerfile
           tags: "ghcr.io/openvisualcloud/media-communications-mesh/sdk:${{ github.sha }}"
           context: .
-          push: true
+          push: false
           cache-from: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/sdk:buildcache
           cache-to: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/sdk:buildcache,mode=max
 
@@ -57,7 +59,7 @@ jobs:
           file: ffmpeg-plugin/Dockerfile
           tags: "ghcr.io/openvisualcloud/media-communications-mesh/ffmpeg:${{ github.sha }}"
           context: .
-          push: true
+          push: false
           cache-from: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/ffmpeg:buildcache
           cache-to: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/ffmpeg:buildcache,mode=max
 
@@ -67,6 +69,6 @@ jobs:
           file: media-proxy/Dockerfile
           tags: "ghcr.io/openvisualcloud/media-communications-mesh/media-proxy:${{ github.sha }}"
           context: .
-          push: true
+          push: false
           cache-from: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/media-proxy:buildcache
           cache-to: type=registry,ref=ghcr.io/openvisualcloud/media-communications-mesh/media-proxy:buildcache,mode=max
