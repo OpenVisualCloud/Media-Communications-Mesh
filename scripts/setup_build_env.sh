@@ -123,6 +123,7 @@ function install_ubuntu_package_dependencies()
         gcc-multilib \
         systemtap-sdt-dev \
         librdmacm-dev \
+        libibverbs-dev \
         libfdt-dev \
         autoconf \
         automake \
@@ -130,7 +131,9 @@ function install_ubuntu_package_dependencies()
         libtool \
         grpc-proto \
         protobuf-compiler-grpc \
-        libgrpc10
+        libgrpc10 \
+        dracut \
+        linux-headers-"$(uname -r)"
 }
 
 # Build the xdp-tools project with ebpf
@@ -155,7 +158,7 @@ function lib_install_fabrics()
 
     pushd "${LIBFABRIC_DIR}"
     ./autogen.sh && \
-    ./configure && \
+    ./configure --enable-verbs && \
     make -j "${NPROC}" && \
     make install
     popd
