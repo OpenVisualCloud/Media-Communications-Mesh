@@ -21,7 +21,7 @@ docker buildx build "${BUILD_ARGUMENTS[@]}" -t "${IMAGE_REGISTRY}/mcm/media-prox
 docker buildx build "${BUILD_ARGUMENTS[@]}" --build-arg FFMPEG_VER="7.0" -t "${IMAGE_REGISTRY}/mcm/ffmpeg:${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" "$@" "${SCRIPT_DIR}"
 docker buildx build "${BUILD_ARGUMENTS[@]}" --build-arg FFMPEG_VER="6.1" -t "${IMAGE_REGISTRY}/mcm/ffmpeg:6.1-${IMAGE_TAG}" -f "${SCRIPT_DIR}/ffmpeg-plugin/Dockerfile" "$@" "${SCRIPT_DIR}"
 
-docker tag "${IMAGE_REGISTRY}/mcm/sdk:${IMAGE_TAG}" "mcm/sample-app:${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/mcm/sdk:${IMAGE_TAG}"         "mcm/sample-app:${IMAGE_TAG}"
 docker tag "${IMAGE_REGISTRY}/mcm/media-proxy:${IMAGE_TAG}" "mcm/media-proxy:${IMAGE_TAG}"
-docker tag "${IMAGE_REGISTRY}/mcm/ffmpeg:${IMAGE_TAG}" "mcm/ffmpeg:${IMAGE_TAG}"
-docker tag "${IMAGE_REGISTRY}/mcm/ffmpeg:6.1-${IMAGE_TAG}" "mcm/ffmpeg:6.1-${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/mcm/ffmpeg:${IMAGE_TAG}"      "mcm/ffmpeg:${IMAGE_TAG}"
+docker tag "${IMAGE_REGISTRY}/mcm/ffmpeg:6.1-${IMAGE_TAG}"  "mcm/ffmpeg:6.1-${IMAGE_TAG}"

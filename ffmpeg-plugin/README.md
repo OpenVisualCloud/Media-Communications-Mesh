@@ -1,6 +1,6 @@
 # FFmpeg plugin for MCM
 
-![MCM FFmpeg Plugins](../docs/img/ffmpeg-plugins-media-communications-mesh-1.webp)
+![MCM FFmpeg Plugins](../docs/_static/ffmpeg-plugins-media-communications-mesh-1.webp)
 
 ## Build
 

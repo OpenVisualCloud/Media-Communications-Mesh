@@ -1,6 +1,6 @@
 # MCM Media Proxy
 
-![Media Proxy](../docs/img/media-proxy-media-communications-mesh-1.png)
+![Media Proxy](../docs/_static/media-proxy-media-communications-mesh-1.png)
 
 [![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml)
 [![BSD 3-Clause][license-img]][license]
