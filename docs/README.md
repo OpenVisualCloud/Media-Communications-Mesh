@@ -84,17 +84,18 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
     - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation.
     - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation.
     - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation.
+    - E810 driver: Follow The [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md)
     - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
     - Install required packages:
 
         - Ubuntu/Debian
         ```bash
         sudo apt-get update
-        sudo apt-get install libbsd-dev cmake make
+        sudo apt-get install libbsd-dev cmake make libibverbs-dev librdmacm-dev dracut
         ```
         - Centos stream
         ```bash
-        sudo yum install -y libbsd-devel cmake make
+        sudo yum install -y libbsd-devel cmake make libibverbs-devel librdmacm-devel dracut
         ```
 
     - Install the irdma driver and libfabric

@@ -53,7 +53,7 @@ install_libfabric() {
     git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric libfabric
     pushd libfabric
     ./autogen.sh
-    ./configure
+    ./configure --enable-verbs
     make -j$(nproc)
     sudo make install
     sudo ldconfig
