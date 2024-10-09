@@ -53,11 +53,11 @@ function git_download_strip_unpack()
     name="${1}"
     version="${2}"
     dest_dir="${3}"
-    filename="$(get_filename ${version})"
+    filename="$(get_filename "${version}")"
     [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
 
     mkdir -p "${dest_dir}"
-    curl -Lf https://${creds}github.com/${name}/archive/${version}.tar.gz -o "${dest_dir}/${filename}.tar.gz"
+    curl -Lf "https://${creds}github.com/${name}/archive/${version}.tar.gz" -o "${dest_dir}/${filename}.tar.gz"
     tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
     rm -f "${dest_dir}/${filename}.tar.gz"
 }

@@ -54,7 +54,7 @@ language = "en_US"
 
 myst_html_meta = {
     "description lang=en": "Intel® Media Communications Mesh",
-    "keywords": "Intel®, Intel, Media Communications Mesh, MCM, MTL, Tiber, st20, st22, ST 2110",
+    "keywords": "Intel®, Intel, Media Communications Mesh, MCM, MTL, Tiber, st20, st22, ST 2110, ST2110",
     "property=og:locale":  "en_US"
 }
 myst_enable_extensions = [ "strikethrough" ]
