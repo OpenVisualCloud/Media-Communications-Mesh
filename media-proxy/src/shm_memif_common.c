@@ -147,21 +147,7 @@ int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     static int counter = 0;
     int err = 0;
-    tx_st20p_session_context_t* tx_ctx = priv_data;
     memif_socket_handle_t socket;
-
-    // if (tx_ctx == NULL) {
-    //     INFO("Invalid Parameters.");
-    //     return -1;
-    // }
-
-    // // release session
-    // if (tx_ctx->shm_ready == 0) {
-    //     return 0;
-    // }
-    // tx_ctx->shm_ready = 0;
-
-    // mtl_st20p_tx_session_destroy(&tx_ctx);
 
     /* stop event polling thread */
     INFO("TX Stop poll event");
@@ -175,8 +161,6 @@ int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("We are doomed...");
     }
-
-    // free(priv_data);
 
     return 0;
 }
