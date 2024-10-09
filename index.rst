@@ -15,6 +15,7 @@ Intel® Media Communications Mesh
    :maxdepth: 2
 
    Introduction <docs/README>
+   License <LICENSE>
 
 Contents
 ---------
@@ -72,6 +73,5 @@ Other
    :caption: Other:
 
    Sphinx Build <docs/sphinx/build_docs>
-   License <LICENSE>
    Contributing <CONTRIBUTING>
    Changelog <CHANGELOG>

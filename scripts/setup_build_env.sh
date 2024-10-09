@@ -105,7 +105,6 @@ function install_ubuntu_package_dependencies()
 {
     # Install package dependencies
     apt-get update --fix-missing && \
-    apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
         wget \
         nasm cmake \

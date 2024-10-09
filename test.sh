@@ -7,4 +7,4 @@ set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 
 # Run all tests verbosely
-ctest --test-dir ${SCRIPT_DIR}/out --verbose
+ctest --test-dir "${SCRIPT_DIR}/out" --verbose

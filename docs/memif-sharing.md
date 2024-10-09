@@ -2,7 +2,7 @@
 
 The micro-services running in one node can share memory to transfer data directly. The following is the SW stack architecture and user interface API.
 
-![instance](img/memif-sharing-in-one-node.png)
+![instance](_static/memif-sharing-in-one-node.png)
 
 For detailed information on api calls and structures please refer to ``mcm_dp.h``.
  

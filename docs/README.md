@@ -8,7 +8,7 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenVisualCloud/Media-Communications-Mesh/badge)](https://securityscorecards.dev/viewer/?uri=github.com/OpenVisualCloud/Media-Communications-Mesh)
 [![BSD 3-Clause][license-img]][license]
 
-![Media-Communication-Mesh](./img/media-communications-mesh-proto-1.webp)
+![Media-Communication-Mesh](./_static/media-communications-mesh-proto-1.webp)
 
 ## Introduction
 
@@ -16,6 +16,7 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
 
 ## 1. Media Communications Mesh:
+
 -	Framework Introduction (MCM): is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
 -	Purpose: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
 -	Technological Basis: The Media Transport Library (MTL) helps form the media data plane, and a control-plane communications infrastructure adds support for media control protocols.
@@ -23,40 +24,59 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 ✅ Key point: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
 
 ## 2. Media Proxy Introduction:
+
 -	Core Functionality: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
 -	Low Latency & Efficiency: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
 -	Service Mesh Role: It acts as a Data Plane component within a larger service mesh for media applications, utilizing Shared Memory APIs to abstract the complexities involved in media transport.
 
 ✅ Key point: Media Proxy handles the data transport layer of media streams, focusing on real-time efficiency and ensuring media routing between microservices in the mesh.
-✅ More information about the Media Proxy component can be found in the [media-proxy](media-proxy) subdirectory.
+
+✅ More information about the Media Proxy component can be found in the [media-proxy](../media-proxy/README.md) subdirectory.
 
 ## 3. SDK and FFmpeg plugins:
+
 -	Key Features: Zero Memory Copy, uses a zero-copy memory techniques for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
 -	Media Stream Compatibility: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
 -	Multiple Protocols: Works with protocols such as SMPTE ST 2110 and RTSP, enhancing its versatility in different media service setups.
 
 ✅ Key point: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
-✅ Detailed information about MCM SDK can be found in [sdk](sdk) directory.
+
+✅ Detailed information about MCM SDK can be found in [sdk](../sdk/README.md) directory.
+
+✅ Detailed information about FFmpeg with MCM plugin can be found in [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
 
 ## Getting Started
 
-### Prerequisites
+### Basic build and installation
+
+#### Prerequisites
 
 - Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
 - Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
-- Docker engine (recommended with Buildx toolkit) configured and installed.
 - (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
 
-### Basic Installation
+#### Steps
 
-1. **Install Dependencies**, choose between options `a)` or `b)`.
+1. **Clone the repository**
 
-    a) The `setup_build_env.sh` script located in the `scripts` folder can be used for all-in-one environment preparation. The script is designed for Debian and was tested under `Ubuntu 20.04` and `Ubuntu 22.04`, kernel version 5.15 environments.
+   ```bash
+   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
+   ```
 
-    To use this option, follow the steps `2.` and `3.`, and then run the following command:
+2. **Navigate to the Media-Communications-Mesh directory**
 
     ```bash
-    ./scripts/setup_build_env.sh
+    $ cd Media-Communications-Mesh
+    ```
+
+3. **Install Dependencies**, choose between options `a)` or `b)`.
+
+    a) Use all-in-one environment preparation script. The script is designed for Debian and was tested under `Ubuntu 20.04` and `Ubuntu 22.04`, kernel version 5.15 environments.
+
+    To use this option run the following command:
+
+    ```bash
+    sudo ./scripts/setup_build_env.sh
     ```
 
     b) The following method is universal and should work for most Linux OS distributions.
@@ -85,34 +105,83 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
     - Reboot
 
-2. **Clone the repository**
+4. **Build the Media Proxy binary**
+
+    To build Media Communications Mesh and make SDK available for development, run:
+
+    ```bash
+    $ ./build.sh
+    ```
+
+    By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
+
+### Basic usage
+
+The program "media_proxy" and SDK library will be installed on system, after the "build.sh" script run successfully. To run "Media Proxy" execute below command:
+
+```bash
+$ media_proxy
+INFO: TCP Server listening on 0.0.0.0:8002
+INFO: gRPC Server listening on 0.0.0.0:8001
+```
+
+This will start the media proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+
+### Dockerfiles build
+
+#### Prerequisites
+
+- Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
+- Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
+- (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
+- Docker engine (recommended with Buildx toolkit) configured and installed.
+
+#### Build the Docker images
+
+1. **Clone the repository**
 
    ```bash
    $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
-3. **Navigate to the Media-Communications-Mesh directory**
+2. **Navigate to the Media-Communications-Mesh directory**
 
     ```bash
     $ cd Media-Communications-Mesh
     ```
 
-4. **Build the Media Proxy binary (run on Host)**
-    ```bash
-    $ ./build.sh
-    ```
+3. **Build the Dockerfiles**
 
-5. **Build the Media Proxy Docker image (run in Container)**
+> [!WARNING]
+> Depending on your docker installation, this step may require being run as `root`.
+
+    run bellow command from the root directory of the repository to build all of the Dockerfiles:
+
     ```bash
     $ ./build_docker.sh
     ```
 
-By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
+### Basic usage
 
-## Usage
+After running the `build_docker.sh` the following docker images will be available in current docker context if the script run successfully:
+- `mcm/sample-app:latest`
+- `mcm/media-proxy:latest`
+- `mcm/ffmpeg:latest`
+- `mcm/ffmpeg:6.1-latest`
 
-The program "media_proxy" and SDK library can be installed on system, after the "build.sh" script run successfully.
-And the "Media Proxy" can be run with below command.
+Now the "Media Proxy" can be run inside the container. To check it, execute bellow command:
+
+```bash
+$ docker run --privileged -it -v /var/run/mcm:/run/mcm -v /dev/hugepages:/dev/hugepages mcm/media-proxy:latest
+INFO: TCP Server listening on 0.0.0.0:8002
+INFO: gRPC Server listening on 0.0.0.0:8001
+```
+
+This will start the media proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+
+## Parameters breakdown and ports
+
+Run the media proxy:
 
 ```bash
 $ media_proxy
