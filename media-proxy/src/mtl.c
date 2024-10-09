@@ -387,15 +387,6 @@ static int tx_st22p_frame_available(void* priv)
     return 0;
 }
 
-/* Monotonic time (in nanoseconds) since some unspecified starting point. */
-static inline uint64_t st_app_get_monotonic_time()
-{
-    struct timespec ts;
-
-    clock_gettime(ST_CLOCK_MONOTONIC_ID, &ts);
-    return ((uint64_t)ts.tv_sec * NS_PER_S) + ts.tv_nsec;
-}
-
 static int rx_st30_frame_ready(void* priv, void* frame,
     struct st30_rx_frame_meta* meta)
 {
@@ -664,51 +655,6 @@ static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, ui
     return;
 }
 
-static void rx_st40_handle_rtp(rx_st40_session_context_t* s, void* usrptr)
-{
-    struct st40_rfc8331_rtp_hdr* hdr = (struct st40_rfc8331_rtp_hdr*)usrptr;
-    struct st40_rfc8331_payload_hdr* payload_hdr = (struct st40_rfc8331_payload_hdr*)(&hdr[1]);
-    int anc_count = hdr->anc_count;
-    int idx, total_size, payload_len;
-
-    for (idx = 0; idx < anc_count; idx++) {
-        payload_hdr->swaped_first_hdr_chunk = ntohl(payload_hdr->swaped_first_hdr_chunk);
-        payload_hdr->swaped_second_hdr_chunk = ntohl(payload_hdr->swaped_second_hdr_chunk);
-        if (!st40_check_parity_bits(payload_hdr->second_hdr_chunk.did) || !st40_check_parity_bits(payload_hdr->second_hdr_chunk.sdid) || !st40_check_parity_bits(payload_hdr->second_hdr_chunk.data_count)) {
-            ERROR("anc RTP checkParityBits error\n");
-            return;
-        }
-        int udw_size = payload_hdr->second_hdr_chunk.data_count & 0xff;
-
-        // verify checksum
-        uint16_t checksum = 0;
-        checksum = st40_get_udw(udw_size + 3, (uint8_t*)&payload_hdr->second_hdr_chunk);
-        payload_hdr->swaped_second_hdr_chunk = htonl(payload_hdr->swaped_second_hdr_chunk);
-        if (checksum != st40_calc_checksum(3 + udw_size, (uint8_t*)&payload_hdr->second_hdr_chunk)) {
-            ERROR("anc frame checksum error\n");
-            return;
-        }
-        // get payload
-#ifdef DEBUG
-        uint16_t data;
-        for (int i = 0; i < udw_size; i++) {
-            data = st40_get_udw(i + 3, (uint8_t*)&payload_hdr->second_hdr_chunk);
-            if (!st40_check_parity_bits(data))
-                ERROR("anc udw checkParityBits error\n");
-            DEBUG("%c", data & 0xff);
-        }
-        DEBUG("\n");
-#endif
-        total_size = ((3 + udw_size + 1) * 10) / 8; // Calculate size of the
-                                                    // 10-bit words: DID, SDID, DATA_COUNT
-                                                    // + size of buffer with data + checksum
-        total_size = (4 - total_size % 4) + total_size; // Calculate word align to the 32-bit
-                                                        // word of ANC data packet
-        payload_len = sizeof(struct st40_rfc8331_payload_hdr) - 4 + total_size; // Full size of one ANC
-        payload_hdr = (struct st40_rfc8331_payload_hdr*)((uint8_t*)payload_hdr + payload_len);
-    }
-}
-
 static void* rx_st20p_frame_thread(void* arg)
 {
     rx_st20p_session_context_t* s = (rx_st20p_session_context_t*)arg;
@@ -785,7 +731,6 @@ static void* rx_st40_frame_thread(void* arg)
             continue;
         }
         /* parse the packet */
-        // rx_st40_handle_rtp(s, usrptr);
         rx_st40_consume_frame(s, usrptr, len);
         st40_rx_put_mbuf(s->handle, mbuf);
     }
