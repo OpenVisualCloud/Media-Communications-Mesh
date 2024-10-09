@@ -1809,6 +1809,9 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
     struct st20p_rx_ops ops_rx = { 0 };
     if (opts) {
         mtl_memcpy(&ops_rx, opts, sizeof(struct st20p_rx_ops));
+    }else{
+        printf("%s, st20p_rx_ops is NULL.\n", __func__);
+        return NULL;
     }
     ops_rx.priv = rx_ctx; // app handle register to lib
     ops_rx.notify_frame_available = rx_st20p_frame_available;
@@ -1885,7 +1888,6 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     int ret = 0;
     static int idx = 0;
     rx_st22p_session_context_t* rx_ctx = NULL;
-    struct st22p_rx_ops ops_rx = { 0 };
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -1905,7 +1907,13 @@ rx_st22p_session_context_t* mtl_st22p_rx_session_create(mtl_handle dev_handle, s
     st_pthread_mutex_init(&rx_ctx->st22p_wake_mutex, NULL);
     st_pthread_cond_init(&rx_ctx->st22p_wake_cond, NULL);
 
-    mtl_memcpy(&ops_rx, opts, sizeof(struct st22p_rx_ops));
+    struct st22p_rx_ops ops_rx = { 0 };
+    if(opts){
+        mtl_memcpy(&ops_rx, opts, sizeof(struct st22p_rx_ops));
+    }else{
+        printf("%s, st22p_rx_ops is NULL.\n", __func__);
+        return NULL;
+    }
 
     ops_rx.priv = rx_ctx; // app handle register to lib
     ops_rx.notify_frame_available = rx_st22p_frame_available;
@@ -1969,7 +1977,6 @@ tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, str
 {
     int ret = 0;
     tx_st30_session_context_t* tx_ctx = NULL;
-    struct st30_tx_ops ops_tx = {};
     static int idx = 0;
     const int fb_cnt = 4;
 
@@ -2002,7 +2009,13 @@ tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, str
     st_pthread_mutex_init(&tx_ctx->st30_wake_mutex, NULL);
     st_pthread_cond_init(&tx_ctx->st30_wake_cond, NULL);
 
-    mtl_memcpy(&ops_tx, opts, sizeof(struct st30_tx_ops));
+    struct st30_tx_ops ops_tx = { 0 };
+    if(opts){
+        mtl_memcpy(&ops_tx, opts, sizeof(struct st30_tx_ops));
+    }else{
+        printf("%s, st30_tx_ops is NULL.\n", __func__);
+        return NULL;
+    }
 
     ops_tx.priv = tx_ctx; // app handle register to lib
 
@@ -2062,7 +2075,6 @@ rx_st30_session_context_t* mtl_st30_rx_session_create(mtl_handle dev_handle, str
     int ret = 0;
     static int idx = 0;
     rx_st30_session_context_t* rx_ctx = NULL;
-    struct st30_rx_ops ops_rx = { 0 };
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -2081,7 +2093,13 @@ rx_st30_session_context_t* mtl_st30_rx_session_create(mtl_handle dev_handle, str
     st_pthread_mutex_init(&rx_ctx->st30_wake_mutex, NULL);
     st_pthread_cond_init(&rx_ctx->st30_wake_cond, NULL);
 
-    mtl_memcpy(&ops_rx, opts, sizeof(struct st30_rx_ops));
+    struct st30_rx_ops ops_rx = { 0 };
+    if(opts){
+        mtl_memcpy(&ops_rx, opts, sizeof(struct st30_rx_ops));
+    }else{
+        printf("%s, st30_rx_ops is NULL.\n", __func__);
+        return NULL;
+    }
 
     ops_rx.priv = rx_ctx; // app handle register to lib
     ops_rx.notify_frame_ready = rx_st30_frame_ready;
@@ -2149,7 +2167,6 @@ tx_st40_session_context_t* mtl_st40_tx_session_create(mtl_handle dev_handle, str
 {
     int ret = 0;
     tx_st40_session_context_t* tx_ctx = NULL;
-    struct st40_tx_ops ops_tx = {};
     static int idx = 0;
     const int fb_cnt = 4;
 
@@ -2182,7 +2199,13 @@ tx_st40_session_context_t* mtl_st40_tx_session_create(mtl_handle dev_handle, str
     st_pthread_mutex_init(&tx_ctx->st40_wake_mutex, NULL);
     st_pthread_cond_init(&tx_ctx->st40_wake_cond, NULL);
 
-    mtl_memcpy(&ops_tx, opts, sizeof(struct st40_tx_ops));
+    struct st40_tx_ops ops_tx = { 0 };
+    if(opts){
+        mtl_memcpy(&ops_tx, opts, sizeof(struct st40_tx_ops));
+    }else{
+        printf("%s, st40_tx_ops is NULL.\n", __func__);
+        return NULL;
+    }
 
     ops_tx.priv = tx_ctx; // app handle register to lib
 
@@ -2228,7 +2251,7 @@ rx_st40_session_context_t* mtl_st40_rx_session_create(mtl_handle dev_handle, str
     int ret = 0;
     static int idx = 0;
     rx_st40_session_context_t* rx_ctx = NULL;
-    struct st40_rx_ops ops_rx = { 0 };
+
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -2247,7 +2270,13 @@ rx_st40_session_context_t* mtl_st40_rx_session_create(mtl_handle dev_handle, str
     st_pthread_mutex_init(&rx_ctx->st40_wake_mutex, NULL);
     st_pthread_cond_init(&rx_ctx->st40_wake_cond, NULL);
 
-    mtl_memcpy(&ops_rx, opts, sizeof(struct st40_rx_ops));
+    struct st40_rx_ops ops_rx = { 0 };
+    if(opts){
+        mtl_memcpy(&ops_rx, opts, sizeof(struct st40_rx_ops));
+    }else{
+        printf("%s, st40_rx_ops is NULL.\n", __func__);
+        return NULL;
+    }
 
     ops_rx.priv = rx_ctx; // app handle register to lib
     ops_rx.notify_rtp_ready = rx_st40_rtp_ready;
@@ -2428,29 +2457,11 @@ tx_st20p_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, s
     st_pthread_cond_init(&tx_ctx->wake_cond, NULL);
 
     struct st20p_tx_ops ops_tx = { 0 };
-    if (opts == NULL) { /* set parameters to default */
-        const char TX_ST20_PORT_BDF[] = "0000:31:00.0";
-        static uint8_t g_tx_st20_dst_ip[MTL_IP_ADDR_LEN] = { 192, 168, 96, 2 };
-        const uint16_t TX_ST20_UDP_PORT = 20000 + idx;
-        const uint8_t TX_ST20_PAYLOAD_TYPE = 112;
-
-        ops_tx.name = strdup("mcm_tx_session");
-        ops_tx.port.num_port = 1;
-        // tx src ip like 239.0.0.1
-        memcpy(ops_tx.port.dip_addr[MTL_PORT_P], g_tx_st20_dst_ip, MTL_IP_ADDR_LEN);
-        // send port interface like 0000:af:00.0
-        strncpy(ops_tx.port.port[MTL_PORT_P], TX_ST20_PORT_BDF, MTL_PORT_MAX_LEN);
-        ops_tx.port.payload_type = TX_ST20_PAYLOAD_TYPE;
-        ops_tx.width = 1920;
-        ops_tx.height = 1080;
-        ops_tx.fps = ST_FPS_P60;
-        ops_tx.input_fmt = ST_FRAME_FMT_YUV420CUSTOM8;
-        ops_tx.transport_fmt = ST20_FMT_YUV_422_10BIT;
-        ops_tx.device = ST_PLUGIN_DEVICE_AUTO;
-        ops_tx.port.udp_port[MTL_PORT_P] = TX_ST20_UDP_PORT;
-        ops_tx.framebuff_cnt = fb_cnt;
-    } else {
+    if(opts){
         mtl_memcpy(&ops_tx, opts, sizeof(struct st20p_tx_ops));
+    }else{
+        printf("%s, st20p_tx_ops is NULL.\n", __func__);
+        return NULL;
     }
 
     ops_tx.priv = tx_ctx; // app handle register to lib
@@ -2493,7 +2504,6 @@ tx_st20p_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, s
 /* TX: Create ST22P session */
 tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, struct st22p_tx_ops* opts, memif_ops_t* memif_ops)
 {
-    struct st22p_tx_ops ops_tx = { 0 };
     static int idx = 0;
 
     /* dst ip address for tx video session */
@@ -2520,7 +2530,13 @@ tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, s
     st_pthread_mutex_init(&tx_ctx->st22p_wake_mutex, NULL);
     st_pthread_cond_init(&tx_ctx->st22p_wake_cond, NULL);
 
-    mtl_memcpy(&ops_tx, opts, sizeof(struct st22p_tx_ops));
+    struct st22p_tx_ops ops_tx = { 0 };
+    if(opts){
+        mtl_memcpy(&ops_tx, opts, sizeof(struct st22p_tx_ops));
+    }else{
+        printf("%s, st22p_tx_ops is NULL.\n", __func__);
+        return NULL;
+    }
 
     ops_tx.priv = tx_ctx; // app handle register to lib
     ops_tx.notify_frame_available = tx_st22p_frame_available;
