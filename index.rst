@@ -52,6 +52,7 @@ SDK
    MemIF Introduction <sdk/3rdparty/libmemif/libmemif_doc>
    MemIF Standalone Build <sdk/3rdparty/libmemif/docs/buildinstructions_doc>
    MemIF Getting Started <sdk/3rdparty/libmemif/docs/gettingstarted_doc>
+   MemIF Examples <sdk/3rdparty/libmemif/examples/examples_doc>
    Security <sdk/SECURITY>
    License <sdk/LICENSE>
 

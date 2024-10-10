@@ -11,11 +11,13 @@ To set up your Minikube cluster and deploy resources, please ensure that the fol
 
 ### Scripted build
 
-To build Media-Proxy, FFmpeg and SDK use `./build_docker.sh`. Sample applications, can be found in SDK Dockerimage at [/opt/mcm/recver_app](../sdk/samples/recver_app.c) and [/opt/mcm/sender_app](../sdk/samples/sender_app.c), but we encourage you to use the FFmpeg based workflow, either minimalistic version from this repository or full-capabilities one, the [Intel® Tiber™ Broadcast Suite](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite).
+To build Dockerfiles Media-Proxy, FFmpeg and SDK follow the guide [](./README.md#build-the-docker-images). Sample applications will be available inside `mcm/SDK:latest` Docker image at `/opt/mcm` path. For more information refer to [sample applications](../sdk/README.md#sample-applications). For more advanced and/or production environment usage, we encourage use the FFmpeg based workflow, either minimalistic [MCM FFmpeg plugin](../ffmpeg-plugin/README.md) version or full-capabilities all-in-one [Intel® Tiber™ Broadcast Suite](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite).
 
 ```bash
 # Bellow script accept all docker build parameters, for example fresh rebuild:
 # ./build_docker.sh --no-cache
+# This depending on your Docker installation type may require using sudo:
+# sudo ./build_docker.sh
 ./build_docker.sh
 ```
 
