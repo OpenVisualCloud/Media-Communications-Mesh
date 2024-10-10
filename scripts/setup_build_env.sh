@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -exo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
@@ -53,11 +53,11 @@ function git_download_strip_unpack()
     name="${1}"
     version="${2}"
     dest_dir="${3}"
-    filename="$(get_filename ${version})"
+    filename="$(get_filename "${version}")"
     [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
 
     mkdir -p "${dest_dir}"
-    curl -Lf https://${creds}github.com/${name}/archive/${version}.tar.gz -o "${dest_dir}/${filename}.tar.gz"
+    curl -Lf "https://${creds}github.com/${name}/archive/${version}.tar.gz" -o "${dest_dir}/${filename}.tar.gz"
     tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
     rm -f "${dest_dir}/${filename}.tar.gz"
 }
@@ -91,46 +91,58 @@ function get_and_patch_intel_drivers()
     popd
 }
 
-function build_and_install_intel_drivers()
+function build_install_and_config_intel_drivers()
 {
     pushd "${IRDMA_DIR}"
     ./build.sh
     popd
-    make -C "${IAVF_DIR}/src" install
-    make -C "${ICE_DIR}/src" install
+    make -j "${NPROC}" -C "${IAVF_DIR}/src" install
+    make -j "${NPROC}" -C "${ICE_DIR}/src" install
+    config_intel_rdma_driver
 }
 
 function install_ubuntu_package_dependencies()
 {
+    APT_LINUX_HEADERS="linux-headers-$(uname -r)"
     # Install package dependencies
     apt-get update --fix-missing && \
-    apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        wget \
-        nasm cmake \
-        libbsd-dev \
-        build-essential \
-        sudo git \
-        meson \
-        python3-dev python3-pyelftools \
-        pkg-config \
-        libnuma-dev libjson-c-dev \
-        libpcap-dev libgtest-dev \
-        libsdl2-dev libsdl2-ttf-dev \
-        libssl-dev ca-certificates \
-        m4 clang llvm zlib1g-dev \
-        libelf-dev libcap-ng-dev \
-        gcc-multilib \
-        systemtap-sdt-dev \
-        librdmacm-dev \
-        libfdt-dev \
+        apt-transport-https \
         autoconf \
         automake \
         autotools-dev \
+        build-essential \
+        ca-certificates \
+        clang \
+        dracut \
+        gcc-multilib \
+        libbsd-dev \
+        libcap-ng-dev \
+        libelf-dev \
+        libfdt-dev \
+        libgtest-dev \
+        libibverbs-dev \
+        libjson-c-dev \
+        libnuma-dev \
+        libpcap-dev \
+        librdmacm-dev \
+        libsdl2-dev \
+        libsdl2-ttf-dev \
+        libssl-dev \
         libtool \
-        grpc-proto \
-        protobuf-compiler-grpc \
-        libgrpc10
+        llvm \
+        m4 \
+        meson \
+        nasm cmake \
+        pkg-config \
+        python3-dev \
+        python3-pyelftools \
+        software-properties-common \
+        sudo git \
+        systemtap-sdt-dev \
+        wget \
+        zlib1g-dev \
+        "${APT_LINUX_HEADERS}"
 }
 
 # Build the xdp-tools project with ebpf
@@ -155,7 +167,7 @@ function lib_install_fabrics()
 
     pushd "${LIBFABRIC_DIR}"
     ./autogen.sh && \
-    ./configure && \
+    ./configure --enable-verbs && \
     make -j "${NPROC}" && \
     make install
     popd
@@ -186,15 +198,21 @@ function lib_install_mtl_and_dpdk()
 # Build and install gRPC from source
 function lib_install_grpc()
 {
-    git_download_strip_unpack "grpc/grpc" "${GPRC_VER}" "${GRPC_DIR}"
+    mkdir -p "${GRPC_DIR}"
+    git clone --branch "${GPRC_VER}" \
+        --recurse-submodules --depth 1 \
+        --shallow-submodules \
+        https://github.com/grpc/grpc "${GRPC_DIR}"
 
     mkdir -p "${GRPC_DIR}/cmake/build"
     pushd "${GRPC_DIR}/cmake/build"
+
     cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
     make -j "${NPROC}" && \
-    make install && \
+    make -j "${NPROC}" install && \
     cmake -DgRPC_BUILD_TESTS=ON -DgRPC_INSTALL=ON ../.. && \
     make -j "${NPROC}" grpc_cli && \
+
     cp grpc_cli "/usr/local/bin/"
     popd
 }
@@ -230,12 +248,31 @@ function full_build_and_install_workflow()
     lib_install_grpc
     lib_install_jpeg_xs
     lib_install_mtl_jpeg_xs_plugin
-    "${REPO_DIR}/ffmpeg-plugin/clone-and-patch-ffmpeg.sh"
+    chmod -R a+r "${BUILD_DIR}"
 }
 
-# get_and_patch_intel_drivers
-# build_and_install_intel_drivers
+if [ "${EUID}" != "1" ]; then
+    error "Must be run as root. Try running bellow command:"
+    error "sudo \"${BASH_SOURCE[0]}\""
+    exit 1
+fi
+
 # cp -f "${REPO_DIR}/media-proxy/imtl.json" "/usr/local/etc/imtl.json"
 # export KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"
 
+print_logo_anim
+sleep 1
+prompt Starting: Dependencies build, install and configation.
 full_build_and_install_workflow
+prompt Finished: Dependencies build, install and configation.
+prompt Starting: Intel drivers download and patch apply.
+get_and_patch_intel_drivers
+prompt Finished: Intel drivers download and patch apply.
+prompt Starting: Build, install and configuration of Intel drivers.
+build_install_and_config_intel_drivers
+prompt Finished: Build, install and configuration of Intel drivers.
+prompt All tasks compleated successfully. Reboot required.
+warning ""
+warning OS reboot is required for all of the changes to take place.
+sleep 2
+exit 0

@@ -2,7 +2,7 @@
 # by a third-party and are governed by separate terms of service, privacy
 # policy, and support documentation.
 
-name: Scorecard supply-chain security
+name: Scan Scorecard Security
 on:
   # For Branch-Protection check. Only the default branch is supported. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
@@ -15,8 +15,8 @@ on:
   push:
     branches: [ "main" ]
 
-# Declare default permissions as read only.
-permissions: read-all
+permissions:
+  contents: read
 
 jobs:
   analysis:
@@ -52,14 +52,6 @@ jobs:
           # - you are installing Scorecards on a *private* repository
           # To create the PAT, follow the steps in https://github.com/ossf/scorecard-action#authentication-with-pat.
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-
-          # Public repositories:
-          #   - Publish results to OpenSSF REST API for easy access by consumers
-          #   - Allows the repository to include the Scorecard badge.
-          #   - See https://github.com/ossf/scorecard-action#publishing-results.
-          # For private repositories:
-          #   - `publish_results` will always be set to `false`, regardless
-          #     of the value entered here.
           publish_results: true
 
       # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF

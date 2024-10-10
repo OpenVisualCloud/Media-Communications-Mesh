@@ -1,21 +1,35 @@
 # Build documentation guide
 
-## 1. Prerequisites
+## 1. Prerequisites (Debian)
+
+Download and install dependencies:
 
 ```
-apt install make python3 python3-pip python3-sphinx
+sudo apt-get update --fix-missing
+sudo apt-get install -y \
+        --no-install-recommends -y \
+        python3-sphinx \
+        python3-pip \
+        python3 \
+        make
 ```
+
+Download and install python3 pip dependencies:
+
 ```
-python -m pip install sphinx_book_theme myst_parser sphinxcontrib.mermaid sphinx-copybutton
+python3 -m pip install        \
+        sphinx_book_theme     \
+        myst_parser           \
+        sphinxcontrib.mermaid \
+        sphinx-copybutton
 ```
 
 ## 2. Build documentation (html)
 
+Execute make build command to build html option
+
 ```
-cd {project_dir}/docs/sphinx
-```
-```
-make html
+make -C {project_dir}/docs/sphinx html
 ```
 
 ## 3.1 Open built documentation (html)

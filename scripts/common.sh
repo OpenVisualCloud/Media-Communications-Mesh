@@ -10,54 +10,52 @@ function message() {
 }
 
 function prompt() {
-    local PomptHBlue='\e[38;05;33m';
-    local PomptTBlue='\e[38;05;45m';
-    message "${PomptHBlue}INFO${PomptTBlue}" "$*\e[m"
+    local PromptHBlue='\e[38;05;33m';
+    local PromptTBlue='\e[38;05;45m';
+    message "${PromptHBlue}INFO${PromptTBlue}" "$*\e[m"
 }
 
 function error() {
     local ErrorHRed='\e[38;05;1m'
-    local PomptTBlue='\e[38;05;45m';
-    message "${ErrorHRed}ERROR${PomptTBlue}" "$*\e[m"
+    local PromptTBlue='\e[38;05;45m';
+    message "${ErrorHRed}ERROR${PromptTBlue}" "$*\e[m"
 }
 
 function warning() {
     local WarningHPurple='\e[38;05;61m';
-    local PomptTBlue='\e[38;05;45m';
-    message "${WarningHPurple}WARN${PomptTBlue}" "$*\e[m"
+    local PromptTBlue='\e[38;05;45m';
+    message "${WarningHPurple}WARN${PromptTBlue}" "$*\e[m"
 }
 
 function get_user_input_confirm() {
+    local confirm
+    local confirm_string
     local confirm_default="${1:-0}"
-    shift
-    local confirm=""
-    local PomptHBlue='\e[38;05;33m';
-    local PomptTBlue='\e[38;05;45m';
+    local PromptHBlue='\e[38;05;33m';
+    local PromptTBlue='\e[38;05;45m';
+    confirm_string=( "(N)o" "(Y)es" )
 
-    prompt "$@"
-    echo -en "${PomptHBlue}CHOOSE:  YES / NO   (Y/N) [default: " >&2
-    [[ "$confirm_default" == "1" ]] && echo -en 'YES]: \e[m' >&2 || echo -en 'NO]: \e[m' >&2
-    read confirm
-    if [[ -z "$confirm" ]]
-    then
+    echo -en "${PromptHBlue}CHOOSE:${PromptTBlue} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: \e[m" >&2
+    read -r confirm
+    if [[ -z "$confirm" ]]; then
         confirm="$confirm_default"
     else
-        ( [[ $confirm == [yY] ]] || [[ $confirm == [yY][eE][sS] ]] ) && confirm="1" || confirm="0"
+        { [[ $confirm == [yY] ]] || [[ $confirm == [yY][eE][sS] ]]; } && confirm="1" || confirm="0"
     fi
     echo "${confirm}"
 }
 
 function get_user_input_def_yes() {
-    get_user_input_confirm 1 "$@"
+    get_user_input_confirm 1
 }
 
 function get_user_input_def_no() {
-    get_user_input_confirm 0 "$@"
+    get_user_input_confirm 0
 }
 
 function get_filename() {
     local path="$1"
-    echo ${path##*/}
+    echo "${path##*/}"
 }
 
 function get_dirname() {
@@ -87,11 +85,18 @@ function get_basename() {
     echo "${filename%%.*}"
 }
 
+# Extracts namespace and repository part from valid GitHub URL passed as argument.
+#  input: valid GitHub repository URL
+# output: two element string array, space separated
 function get_github_elements() {
-    local full_url
+    local path_part
     local path_elements
-    full_url="$(get_dirname "$1")"
-    path_elements=($(tr '/' ' ' <<< "${full_url#*://github.com/}"))
+    path_part="${1#*://github.com/}"
+    mapfile -t -d'/' path_elements <<< "${path_part}"
+    if [[ "${#path_elements[@]}" -lt "2" ]]; then
+        error "Invalid link passed to get_github_elements method."
+        return 1
+    fi
     echo "${path_elements[0]} ${path_elements[1]}"
 }
 
@@ -103,9 +108,10 @@ function get_github_repo() {
     cut -d' ' -f2 <<< "$(get_github_elements "$1")"
 }
 
-# Takes ID as first param and full path to output file as second for creating benchmark specific output file
-#  input: [path]/[file_base].[extension]
-# output: [path]/[file_base][id].[extension]
+# Adds sufix to base of filename from full path.
+# input[1]: string sufix to be added
+# input[2]: path string to be modified
+#   output: [path]/[file_base][id].[extension]
 function get_filepath_add_sufix() {
     local dir_path
     local file_base
@@ -243,11 +249,107 @@ function print_logo_sequence()
 
 function print_logo_anim()
 {
-    local number_of_sequences="${1:-3}"
+    local number_of_sequences="${1:-2}"
     local wait_between_frames="${2:-0.025}"
     clear
-    for (( pt=0; pt<${number_of_sequences}; pt++ ))
+    for (( pt=0; pt<number_of_sequences; pt++ ))
     do
-        print_logo_sequence ${wait_between_frames};
+        print_logo_sequence "${wait_between_frames}"
     done
+}
+
+function config_intel_rdma_driver() {
+    prompt "Configuration of iRDMA starting."
+    prompt "Enabling RoCE."
+
+    # enable RoCE
+    roce_ena_val=$(grep "options irdma roce_ena=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
+    if [[ -z "$roce_ena_val" ]]; then
+        echo "options irdma roce_ena=1" | sudo tee -a /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    elif [[ "$roce_ena_val" != "1" ]]; then
+        sudo sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    fi
+    prompt "RoCE enabled."
+
+    prompt "Increasing Queue Pair limit."
+    # increase irdma Queue Pair limit
+    limits_sel_val=$(grep "options irdma limits_sel=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
+    if [[ -z "$limits_sel_val" ]]; then
+        echo "options irdma limits_sel=5" | sudo tee -a /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    elif [[ "$limits_sel_val" != "5" ]]; then
+        sudo sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
+        sudo dracut -f
+    fi
+    prompt "Queue Pair limits_sel set to 5."
+    prompt "Configuration of iRDMA finished."
+}
+
+function exec_command()
+{
+    # One of: yes|no|accept-new
+    SSH_STRICT_HOST_KEY_CHECKING="accept-new"
+    SSH_CMD="ssh -oStrictHostKeyChecking=${SSH_STRICT_HOST_KEY_CHECKING} -t -o"
+
+    local values_returned=""
+    local user_at_address=""
+    [[ "$#" -eq "2" ]] && user_at_address="${2}"
+    [[ "$#" -eq "3" ]] && user_at_address="${3}@${2}"
+
+    if [ "$#" -eq "1" ]; then
+        values_returned="$(eval "${1}")"
+    elif [[ "$#" -eq "2" ]] || [[ "$#" -eq "3" ]]; then
+        values_returned="$($SSH_CMD "RemoteCommand=eval \"${1}\"" "${user_at_address}" 2>/dev/null)"
+    else
+        error "Wrong arguments for exec_command(). Valid number is one of [1 2 3], got $#"
+        return 1
+    fi
+
+    if [ -z "$values_returned" ]; then
+        error "Unable to collect results or results are empty."
+        return 1
+    else
+        echo "${values_returned}"
+        return 0
+    fi
+}
+
+function get_hostname() {
+    exec_command 'hostname' "$@"
+}
+
+function get_intel_nic_device() {
+    exec_command "lspci | grep 'Intel Corporation.*\(810\|X722\)'" "$@"
+}
+
+function get_default_route_nic() {
+    exec_command "ip -json r show default | jq '.[0].dev' -r" "$@"
+}
+
+function get_cpu_arch() {
+    local arch=""
+
+    if ! arch="$(exec_command 'cat /sys/devices/cpu/caps/pmu_name' "$@")"; then echo "Got: $arch" && return 1; fi
+
+    case $arch in
+        icelake)
+            prompt "Xeon IceLake CPU (icx)" 1>&2
+            echo "icx"
+            ;;
+        sapphire_rapids)
+            prompt "Xeon Sapphire Rapids CPU (spr)" 1>&2
+            echo "spr"
+            ;;
+        skylake)
+            prompt "Xeon SkyLake"
+            echo "skl"
+            ;;
+        *)
+            error "Unsupported architecture: ${arch}. Please edit the script or setup the architecture manually."
+            return 1
+            ;;
+    esac
+    return 0
 }

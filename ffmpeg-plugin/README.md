@@ -1,8 +1,10 @@
 # FFmpeg plugin for MCM
 
+![MCM FFmpeg Plugins](../docs/_static/ffmpeg-plugins-media-communications-mesh-1.webp)
+
 ## Build
 
-### Prerequitites
+### Prerequisites
 
 Install dependencies and build MCM as described in the top level README.md, paragraph "Basic Installation".
 
@@ -64,6 +66,7 @@ TBD
    ```bash
    sudo media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8002
    ```
+
 2. Start FFmpeg to receive frames from MCM and stream to a remote machine via UDP
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm \
@@ -83,6 +86,7 @@ TBD
    ```bash
    sudo media_proxy -d 0000:32:11.0 -i 192.168.96.1 -t 8001
    ```
+
 2. Start FFmpeg to stream a video file to the receiver via MCM
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <video-file-path> -f mcm \
@@ -130,11 +134,13 @@ TBD
 ### Receiver side setup
 
 1. Start media_proxy
+
    ```bash
    sudo media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8002
    ```
+
 2. Start FFmpeg to receive packets from MCM and store on the disk
-   
+
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm_audio_pcm24 \
       -channels 2 \
