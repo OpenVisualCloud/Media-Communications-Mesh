@@ -11,6 +11,7 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
 #include <mcm_dp.h>
 
 #include "app_platform.h"

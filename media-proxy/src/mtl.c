@@ -9,6 +9,7 @@
 #include <string.h>
 #include <strings.h>
 #include <sys/stat.h>
+#include <arpa/inet.h>
 
 #include "mtl.h"
 #include "shm_memif.h"
@@ -1913,7 +1914,6 @@ tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, str
 
     for (uint16_t j = 0; j < tx_ctx->framebuff_cnt; j++) {
         tx_ctx->framebuffs[j].stat = ST_TX_FRAME_FREE;
-        tx_ctx->framebuffs[j].lines_ready = 0;
     }
 
     tx_ctx->st = dev_handle;
@@ -2103,7 +2103,6 @@ tx_st40_session_context_t* mtl_st40_tx_session_create(mtl_handle dev_handle, str
 
     for (uint16_t j = 0; j < tx_ctx->framebuff_cnt; j++) {
         tx_ctx->framebuffs[j].stat = ST_TX_FRAME_FREE;
-        tx_ctx->framebuffs[j].lines_ready = 0;
     }
 
     tx_ctx->st = dev_handle;

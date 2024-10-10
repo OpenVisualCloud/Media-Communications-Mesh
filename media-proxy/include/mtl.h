@@ -16,6 +16,7 @@ extern "C" {
 #include <mtl/st40_api.h> /* st2110-40 */
 #include <mtl/st_pipeline_api.h> /* st2110 pipeline */
 #include <errno.h>
+#include <stdlib.h>
 
 #include <mcm_dp.h>
 
@@ -23,6 +24,7 @@ extern "C" {
 #include "shm_memif.h" /* share memory */
 #include "utils.h"
 /*used by UDP H264*/
+#include <netinet/in.h>
 #include <mtl/mudp_api.h>
 #include <mtl/mtl_sch_api.h>
 
