@@ -4,12 +4,9 @@ set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
-BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/build}"
-DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
 
 . "${SCRIPT_DIR}/common.sh"
 
-NPROC="$(nproc)"
 export MCM_DIR="${BUILD_DIR}/mcm"
 export MTL_VER="${MTL_VER:-maint-24.09}" # maint-24.09
 export MTL_DIR="${BUILD_DIR}/mtl"
@@ -27,55 +24,6 @@ export JPEGXS_DIR="${BUILD_DIR}/jpegxs"
 export LIBFABRIC_VER="${LIBFABRIC_VER:-v1.22.0}"
 export LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
 
-export ICE_VER="${ICE_VER:-1.14.9}"
-export ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
-export IAVF_VER="${IAVF_VER:-4.12.5}"
-export IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
-export IRDMA_DMID="${IRDMA_DMID:-832291}"
-export IRDMA_VER="${IRDMA_VER:-1.15.11}"
-export IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
-
-export TZ="Europe/Warsaw"
-export DEBIAN_FRONTEND="noninteractive"
-export PATH="/root/.local/bin:/root/bin:/root/usr/bin:$PATH"
-export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig"
-
-# GITHUB_CREDENTIALS="username:password"
-# URL construction: https://${GITHUB_CREDENTIALS}@github.com/${name}/archive/${version}.tar.gz
-# $1 - name
-# $2 - version
-# $3 - dest_dir
-function git_download_strip_unpack()
-{
-    # Version can be commit sha or tag, examples:
-    # version=d2515b90cc0ef651f6d0a6661d5a644490bfc3f3
-    # version=refs/tags/v${JPEG_XS_VER}
-    name="${1}"
-    version="${2}"
-    dest_dir="${3}"
-    filename="$(get_filename "${version}")"
-    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
-
-    mkdir -p "${dest_dir}"
-    curl -Lf "https://${creds}github.com/${name}/archive/${version}.tar.gz" -o "${dest_dir}/${filename}.tar.gz"
-    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
-    rm -f "${dest_dir}/${filename}.tar.gz"
-}
-
-function wget_download_strip_unpack()
-{
-    local filename
-    local source_url="${1}"
-    local dest_dir="${2}"
-    filename="$(get_filename "${source_url}")"
-    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
-
-    mkdir -p "${dest_dir}"
-    curl -Lf "${source_url}" -o "${dest_dir}/${filename}.tar.gz"
-    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
-    rm -f "${dest_dir}/${filename}.tar.gz"
-}
-
 function get_and_patch_intel_drivers()
 {
     set -x
@@ -83,7 +31,7 @@ function get_and_patch_intel_drivers()
         error "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
-    NO_PROXY="" no_proxy="" wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
+    wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
@@ -96,19 +44,19 @@ function get_and_patch_intel_drivers()
 function build_install_and_config_intel_drivers()
 {
     set -x
+    make -j "${NPROC}" -C "${IAVF_DIR}/src" install
+    make -j "${NPROC}" -C "${ICE_DIR}/src" install
     pushd "${IRDMA_DIR}"
     ./build.sh
     popd
-    make -j "${NPROC}" -C "${IAVF_DIR}/src" install
-    make -j "${NPROC}" -C "${ICE_DIR}/src" install
     config_intel_rdma_driver
     set +x
 }
 
 function install_ubuntu_package_dependencies()
 {
+    set -x
     APT_LINUX_HEADERS="linux-headers-$(uname -r)"
-    # Install package dependencies
     apt-get update --fix-missing && \
     apt-get install --no-install-recommends -y \
         apt-transport-https \
@@ -148,6 +96,8 @@ function install_ubuntu_package_dependencies()
         wget \
         zlib1g-dev \
         "${APT_LINUX_HEADERS}"
+    set +x
+    return 0
 }
 
 # Build the xdp-tools project with ebpf
@@ -175,15 +125,20 @@ function lib_install_fabrics()
     ./configure --enable-verbs && \
     make -j "${NPROC}" && \
     make install
+    ldconfig
     popd
+}
+
+# Download the MTL and DPDK source code
+function lib_download_mtl_and_dpdk()
+{
+    git_download_strip_unpack "${MTL_REPO}" "${MTL_VER}" "${MTL_DIR}"
+    git_download_strip_unpack "dpdk/dpdk" "refs/tags/v${DPDK_VER}" "${DPDK_DIR}"
 }
 
 # Build and install the MTL and DPDK
 function lib_install_mtl_and_dpdk()
 {
-    git_download_strip_unpack "${MTL_REPO}" "${MTL_VER}" "${MTL_DIR}"
-    git_download_strip_unpack "dpdk/dpdk" "refs/tags/v${DPDK_VER}" "${DPDK_DIR}"
-
     # Patch and build the DPDK
     pushd "${DPDK_DIR}"
     patch -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
@@ -197,6 +152,7 @@ function lib_install_mtl_and_dpdk()
     ./build.sh && \
     meson install -C build
     install script/nicctl.sh /usr/bin
+    ldconfig
     popd
 }
 
@@ -232,6 +188,7 @@ function lib_install_jpeg_xs()
     mkdir -p "${JPEGXS_DIR}/Build/linux" "${JPEGXS_DIR}/imtl-plugin"
     pushd "${JPEGXS_DIR}/Build/linux"
     ./build.sh release install
+    ldconfig
     popd
 }
 
@@ -249,7 +206,6 @@ function lib_install_mtl_jpeg_xs_plugin()
 function full_build_and_install_workflow()
 {
     set -x
-    install_ubuntu_package_dependencies
     lib_install_xdp_bpf_tools
     lib_install_fabrics
     lib_install_mtl_and_dpdk
@@ -273,15 +229,19 @@ print_logo_anim "2" "0.04"
 sleep 1
 trap_error_print_debug
 sleep 1
-prompt Starting: Dependencies build, install and configation.
-full_build_and_install_workflow
-prompt Finished: Dependencies build, install and configation.
+prompt Starting: OS packages installation, MTL and DPDK download.
+install_ubuntu_package_dependencies
+lib_download_mtl_and_dpdk
+prompt Finished: OS packages installation, MTL and DPDK download.
 prompt Starting: Intel drivers download and patch apply.
 get_and_patch_intel_drivers
 prompt Finished: Intel drivers download and patch apply.
 prompt Starting: Build, install and configuration of Intel drivers.
 build_install_and_config_intel_drivers
 prompt Finished: Build, install and configuration of Intel drivers.
+prompt Starting: Dependencies build, install and configation.
+full_build_and_install_workflow
+prompt Finished: Dependencies build, install and configation.
 prompt All tasks compleated successfully. Reboot required.
 warning ""
 warning OS reboot is required for all of the changes to take place.
