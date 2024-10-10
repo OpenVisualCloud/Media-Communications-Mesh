@@ -9,15 +9,11 @@
 
 static volatile bool keepRunning = true;
 
-typedef struct {
+typedef struct _control_context {
+    ProxyContext* proxy_ctx;
     int sock;
     struct sockaddr address;
     int addr_len;
-} connection_t;
-
-typedef struct _control_context {
-    ProxyContext* proxy_ctx;
-    connection_t* conn;
 } control_context;
 
 void* msg_loop(void* ptr)
@@ -27,7 +23,6 @@ void* msg_loop(void* ptr)
     char* buffer = NULL;
     bool sessionKeepRunning = true;
     control_context* ctl_ctx = NULL;
-    connection_t* conn = NULL;
     ProxyContext* proxy_ctx = NULL;
     long addr = 0;
     mcm_proxy_ctl_msg msg = {};
@@ -40,13 +35,12 @@ void* msg_loop(void* ptr)
     }
 
     ctl_ctx = (control_context*)ptr;
-    conn = ctl_ctx->conn;
     proxy_ctx = ctl_ctx->proxy_ctx;
 
     /* infinite loop */
     do {
         /* read control message header */
-        ret = read(conn->sock, &msg.header, sizeof(msg.header));
+        ret = read(ctl_ctx->sock, &msg.header, sizeof(msg.header));
         if (ret <= 0) {
             break;
         }
@@ -61,7 +55,7 @@ void* msg_loop(void* ptr)
         }
 
         /* control command */
-        ret = read(conn->sock, &msg.command, sizeof(msg.command));
+        ret = read(ctl_ctx->sock, &msg.command, sizeof(msg.command));
         if (ret <= 0) {
             INFO("Failed to read control command.");
             break;
@@ -77,7 +71,7 @@ void* msg_loop(void* ptr)
                 ret = 0;
                 int bytesRead = 0;
                 while (bytesRead < msg.command.data_len && ret >= 0) {
-                    ret = read(conn->sock, buffer + bytesRead, msg.command.data_len - bytesRead);
+                    ret = read(ctl_ctx->sock, buffer + bytesRead, msg.command.data_len - bytesRead);
                     if (ret >= 0) bytesRead += ret;
                 }
                 if (bytesRead < msg.command.data_len) {
@@ -108,7 +102,7 @@ void* msg_loop(void* ptr)
 
             if (ret >= 0) {
                 session_id = (uint32_t)ret;
-                if (write(conn->sock, &session_id, sizeof(session_id)) <= 0) {
+                if (write(ctl_ctx->sock, &session_id, sizeof(session_id)) <= 0) {
                     ERROR("MCM_CREATE_SESSION: Return session id error, failed to write socket.");
                 }
             } else {
@@ -204,7 +198,7 @@ void* msg_loop(void* ptr)
                         param.conn_args.is_master = 1;
                     }
 
-                    if (write(conn->sock, &param, sizeof(memif_conn_param)) <= 0) {
+                    if (write(ctl_ctx->sock, &param, sizeof(memif_conn_param)) <= 0) {
                         INFO("Fail to return path length.");
                     }
                     break;
@@ -241,7 +235,7 @@ void* msg_loop(void* ptr)
         }
     } while (keepRunning && sessionKeepRunning);
 
-    addr = (long)((struct sockaddr_in*)&conn->address)->sin_addr.s_addr;
+    addr = (long)((struct sockaddr_in*)&ctl_ctx->address)->sin_addr.s_addr;
     INFO("Disconnect with %d.%d.%d.%d",
         (int)((addr)&0xff), (int)((addr >> 8) & 0xff),
         (int)((addr >> 16) & 0xff), (int)((addr >> 24) & 0xff));
@@ -260,8 +254,7 @@ void* msg_loop(void* ptr)
     }
 
     /* close socket and clean up */
-    close(conn->sock);
-    free(conn);
+    close(ctl_ctx->sock);
     free(ctl_ctx);
 
     pthread_exit(0);
@@ -285,8 +278,6 @@ void RunTCPServer(ProxyContext* ctx)
     int sock = -1;
     struct sockaddr_in address;
     int port = 0;
-    connection_t* connection = NULL;
-    control_context* ctl_ctx = NULL;
     pthread_t thread;
     const int enable = 1;
 
@@ -329,33 +320,28 @@ void RunTCPServer(ProxyContext* ctx)
     INFO("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
     registerSignals();
 
+    control_context* ctl_ctx = NULL;
     do {
-        /* accept incoming connections */
-        connection = (connection_t*)malloc(sizeof(connection_t));
-        if (connection) {
-            memset(connection, 0x0, sizeof(connection_t));
-            connection->sock = accept(sock, &connection->address, (socklen_t*)&connection->addr_len);
-            if (connection->sock > 0) {
-                /* start a new thread but do not wait for it */
-                ctl_ctx = (control_context*)malloc(sizeof(control_context));
-                if (ctl_ctx) {
-                    memset(ctl_ctx, 0x0, sizeof(control_context));
-                    ctl_ctx->proxy_ctx = ctx;
-                    ctl_ctx->conn = connection;
-                    if (pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0) {
-                        pthread_detach(thread);
-                    } else {
-                        free(connection);
-                        free(ctl_ctx);
-                    }
-                } else {
-                    free(connection);
-                }
-            } else {
-                free(connection);
+        if (ctl_ctx) {
+            /* accept incoming connections */
+            ctl_ctx->sock = accept(sock, &ctl_ctx->address, (socklen_t*)&ctl_ctx->addr_len);
+            if ((ctl_ctx->sock > 0) && (pthread_create(&thread, 0, msg_loop, (void*)ctl_ctx) == 0)) {
+                pthread_detach(thread);
+                ctl_ctx = NULL;
+                continue;
+            }
+            //connection established, pthread_create() fails
+            if (ctl_ctx->sock > 0){
+                close(ctl_ctx->sock);
             }
         }
+        else {
+            ctl_ctx = (control_context*)calloc(1, sizeof(control_context));
+            ctl_ctx->proxy_ctx = ctx;
+        }
     } while (keepRunning);
+
+    free(ctl_ctx);
 
     INFO("TCP Server Quit: %s", ctx->getTCPListenAddress().c_str());
 
