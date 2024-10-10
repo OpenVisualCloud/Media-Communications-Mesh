@@ -49,6 +49,7 @@ typedef struct {
     uint32_t m_session_count;
 } memif_ops_t;
 
+void* memif_event_loop(void* arg);
 void print_memif_details(memif_conn_handle_t conn);
 
 /* informs user about connected status. private_ctx is used by user to identify
