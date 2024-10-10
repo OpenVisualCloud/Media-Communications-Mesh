@@ -782,38 +782,6 @@ mtl_handle inst_init(struct mtl_init_params* st_param)
     return dev_handle;
 }
 
-static void* tx_memif_event_loop(void* arg)
-{
-    int err = MEMIF_ERR_SUCCESS;
-    memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
-
-    do {
-        // INFO("media-proxy waiting event.");
-        err = memif_poll_event(memif_socket, -1);
-        // INFO("media-proxy received event.");
-    } while (err == MEMIF_ERR_SUCCESS);
-
-    INFO("MEMIF DISCONNECTED.");
-
-    return NULL;
-}
-
-static void* rx_memif_event_loop(void* arg)
-{
-    int err = MEMIF_ERR_SUCCESS;
-    memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
-
-    do {
-        // INFO("media-proxy waiting event.");
-        err = memif_poll_event(memif_socket, -1);
-        // INFO("media-proxy received event.");
-    } while (err == MEMIF_ERR_SUCCESS);
-
-    INFO("MEMIF DISCONNECTED.");
-
-    return NULL;
-}
-
 int rx_st20p_shm_init(rx_st20p_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 {
     int ret = 0;
@@ -884,7 +852,7 @@ int rx_st20p_shm_init(rx_st20p_session_context_t* rx_ctx, memif_ops_t* memif_ops
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, memif_event_loop, rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -963,7 +931,7 @@ int rx_st22p_shm_init(rx_st22p_session_context_t* rx_ctx, memif_ops_t* memif_ops
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, memif_event_loop, rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -1309,7 +1277,7 @@ int tx_st20p_shm_init(tx_st20p_session_context_t* tx_ctx, memif_ops_t* memif_ops
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop, tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         free(tx_ctx->shm_bufs);
@@ -1394,7 +1362,7 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop, tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         free(tx_ctx->shm_bufs);
@@ -1474,7 +1442,7 @@ int tx_st30_shm_init(tx_st30_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop, tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -1553,7 +1521,7 @@ int rx_st30_shm_init(rx_st30_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, memif_event_loop, rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
@@ -1637,7 +1605,7 @@ int tx_st40_shm_init(tx_st40_session_context_t* tx_ctx, memif_ops_t* memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, tx_memif_event_loop, tx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop, tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         free(tx_ctx->shm_bufs);
@@ -1717,7 +1685,7 @@ int rx_st40_shm_init(rx_st40_session_context_t* rx_ctx, memif_ops_t* memif_ops)
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, memif_event_loop, rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;

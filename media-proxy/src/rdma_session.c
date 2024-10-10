@@ -5,22 +5,6 @@
 #include "libfabric_dev.h"
 #include "rdma_session.h"
 
-static void *memif_event_loop(void *arg)
-{
-    memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
-    int err;
-
-    do {
-        // INFO("media-proxy waiting event.");
-        err = memif_poll_event(memif_socket, -1);
-        // INFO("media-proxy received event.");
-    } while (err == MEMIF_ERR_SUCCESS);
-
-    INFO("MEMIF DISCONNECTED.");
-
-    return NULL;
-}
-
 int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
 {
     memif_ops_t default_memif_ops = { 0 };

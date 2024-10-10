@@ -9,6 +9,22 @@
 #include "mtl.h"
 #include "shm_memif.h"
 
+void* memif_event_loop(void* arg)
+{
+    int err;
+    memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
+
+    do {
+        // INFO("media-proxy waiting event.");
+        err = memif_poll_event(memif_socket, -1);
+        // INFO("media-proxy received event.");
+    } while (err == MEMIF_ERR_SUCCESS);
+
+    INFO("MEMIF DISCONNECTED.");
+
+    return NULL;
+}
+
 void print_memif_details(memif_conn_handle_t conn)
 {
     printf("MEMIF DETAILS\n");

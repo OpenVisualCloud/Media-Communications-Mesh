@@ -16,21 +16,6 @@
 #include <bsd/string.h>
 #include <errno.h>
 
-static void* rx_memif_event_loop(void* arg)
-{
-    int err = MEMIF_ERR_SUCCESS;
-    memif_socket_handle_t memif_socket = (memif_socket_handle_t)arg;
-
-    do {
-        INFO("media-proxy waiting event.");
-        err = memif_poll_event(memif_socket, -1);
-    } while (err == MEMIF_ERR_SUCCESS);
-
-    INFO("MEMIF DISCONNECTED.");
-
-    return NULL;
-}
-
 int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* memif_ops)
 {
     int ret = 0;
@@ -99,7 +84,7 @@ int rx_udp_h264_shm_init(rx_udp_h264_session_context_t* rx_ctx, memif_ops_t* mem
     }
 
     /* Start the MemIF event loop. */
-    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, rx_memif_event_loop, rx_ctx->memif_conn_args.socket);
+    ret = pthread_create(&rx_ctx->memif_event_thread, NULL, memif_event_loop, rx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
         return -1;
