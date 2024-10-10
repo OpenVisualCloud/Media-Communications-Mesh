@@ -3,6 +3,11 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
+export PromptTBlue='\e[38;05;45m'
+export PromptHBlue='\e[38;05;33m'
+export ErrorHRed='\e[38;05;1m'
+export WarningHPurple='\e[38;05;61m'
+
 function message() {
     local type=$1
     shift
@@ -10,20 +15,14 @@ function message() {
 }
 
 function prompt() {
-    local PromptHBlue='\e[38;05;33m';
-    local PromptTBlue='\e[38;05;45m';
     message "${PromptHBlue}INFO${PromptTBlue}" "$*\e[m"
 }
 
 function error() {
-    local ErrorHRed='\e[38;05;1m'
-    local PromptTBlue='\e[38;05;45m';
     message "${ErrorHRed}ERROR${PromptTBlue}" "$*\e[m"
 }
 
 function warning() {
-    local WarningHPurple='\e[38;05;61m';
-    local PromptTBlue='\e[38;05;45m';
     message "${WarningHPurple}WARN${PromptTBlue}" "$*\e[m"
 }
 
@@ -31,8 +30,6 @@ function get_user_input_confirm() {
     local confirm
     local confirm_string
     local confirm_default="${1:-0}"
-    local PromptHBlue='\e[38;05;33m';
-    local PromptTBlue='\e[38;05;45m';
     confirm_string=( "(N)o" "(Y)es" )
 
     echo -en "${PromptHBlue}CHOOSE:${PromptTBlue} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: \e[m" >&2
@@ -127,11 +124,22 @@ function get_filepath_add_sufix() {
 function run_as_root_user()
 {
     CMD_TO_EVALUATE="$*"
-    if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    EFECTIVE_USER_ID="${EUID:-$(id -u)}"
+
+    if [ "${EFECTIVE_USER_ID}" -eq 0 ]; then
         eval "${CMD_TO_EVALUATE[*]}"
     else
-        eval "sudo ${CMD_TO_EVALUATE[*]}" || echo 'Must be run as root. No sudo found.'
+        if which sudo 1>/dev/null; then
+            eval "sudo ${CMD_TO_EVALUATE[*]}"
+        else
+            error "This command must be run as root [EUID=0] ${CMD_TO_EVALUATE[*]}."
+            error "- current [EUID=${EFECTIVE_USER_ID}]."
+            error "- sudo was not found in PATH."
+            error "Re-run the script as sudo or install sudo pkg. Exiting."
+            exit 1
+        fi
     fi
+    return 0
 }
 
 function github_api_call() {
@@ -258,31 +266,69 @@ function print_logo_anim()
     done
 }
 
+function catch_error_print_debug() {
+    local _last_command_height=""
+    local -n _lineno="${1:-LINENO}"
+    local -n _bash_lineno="${2:-BASH_LINENO}"
+    local _last_command="${3:-${BASH_COMMAND}}"
+    local _code="${4:-0}"
+    local -a _output_array=()
+    _last_command_height="$(wc -l <<<"${_last_command}")"
+
+    _output_array+=(
+        '---'
+        "lines_history: [${_lineno} ${_bash_lineno[*]}]"
+        "function_trace: [${FUNCNAME[*]}]"
+        "exit_code: ${_code}"
+    )
+
+    if [[ "${#BASH_SOURCE[@]}" -gt '1' ]]; then
+        _output_array+=('source_trace:')
+        for _item in "${BASH_SOURCE[@]}"; do
+            _output_array+=("  - ${_item}")
+        done
+    else
+        _output_array+=("source_trace: [${BASH_SOURCE[*]}]")
+    fi
+
+    if [[ "${_last_command_height}" -gt '1' ]]; then
+        _output_array+=(
+            'last_command: ->'
+            "${_last_command}"
+        )
+    else
+        _output_array+=("last_command: ${_last_command}")
+    fi
+
+    _output_array+=('---')
+    error "${_output_array[@]}"
+}
+
+function trap_error_print_debug() {
+    prompt "Setting trap for errors handling"
+    trap 'catch_error_print_debug "LINENO" "BASH_LINENO" "${BASH_COMMAND}" "${?}"; exit 1' SIGINT ERR
+    prompt "Trap set successfuly."
+}
+
 function config_intel_rdma_driver() {
     prompt "Configuration of iRDMA starting."
-    prompt "Enabling RoCE."
+    touch "/etc/modprobe.d/irdma.conf"
 
-    # enable RoCE
-    roce_ena_val=$(grep "options irdma roce_ena=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
-    if [[ -z "$roce_ena_val" ]]; then
+    prompt "Enabling RoCE."
+    if grep -e "^\s*options\s\+irdma\s\+roce_ena=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
+        sudo sed -i "s/^\s*options\s\+irdma\s\+roce_ena=\(0\|1\)/options\ irdma\ roce_ena=1/g" /etc/modprobe.d/irdma.conf
+    else
         echo "options irdma roce_ena=1" | sudo tee -a /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    elif [[ "$roce_ena_val" != "1" ]]; then
-        sudo sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
-        sudo dracut -f
     fi
     prompt "RoCE enabled."
 
     prompt "Increasing Queue Pair limit."
-    # increase irdma Queue Pair limit
-    limits_sel_val=$(grep "options irdma limits_sel=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
-    if [[ -z "$limits_sel_val" ]]; then
+    if grep -e "^\s*options\s\+irdma\s\+limits_sel=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
+        sudo sed -i "s/^\s*options\s\+irdma\s\+limits_sel=\d/options\ irdma\ limits_sel=5/g" /etc/modprobe.d/irdma.conf
+    else
         echo "options irdma limits_sel=5" | sudo tee -a /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    elif [[ "$limits_sel_val" != "5" ]]; then
-        sudo sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
-        sudo dracut -f
     fi
+    sudo dracut -f
     prompt "Queue Pair limits_sel set to 5."
     prompt "Configuration of iRDMA finished."
 }

@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -exo pipefail
+set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
@@ -78,27 +78,31 @@ function wget_download_strip_unpack()
 
 function get_and_patch_intel_drivers()
 {
+    set -x
     if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
         error "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
-    wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
+    NO_PROXY="" no_proxy="" wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
     pushd "${ICE_DIR}"
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch)
     popd
+    set +x
 }
 
 function build_install_and_config_intel_drivers()
 {
+    set -x
     pushd "${IRDMA_DIR}"
     ./build.sh
     popd
     make -j "${NPROC}" -C "${IAVF_DIR}/src" install
     make -j "${NPROC}" -C "${ICE_DIR}/src" install
     config_intel_rdma_driver
+    set +x
 }
 
 function install_ubuntu_package_dependencies()
@@ -199,9 +203,11 @@ function lib_install_mtl_and_dpdk()
 # Build and install gRPC from source
 function lib_install_grpc()
 {
+    rm -rf "${GRPC_DIR}"
     mkdir -p "${GRPC_DIR}"
     git clone --branch "${GPRC_VER}" \
-        --recurse-submodules --depth 1 \
+        --depth 1 \
+        --recurse-submodules \
         --shallow-submodules \
         https://github.com/grpc/grpc "${GRPC_DIR}"
 
@@ -242,6 +248,7 @@ function lib_install_mtl_jpeg_xs_plugin()
 
 function full_build_and_install_workflow()
 {
+    set -x
     install_ubuntu_package_dependencies
     lib_install_xdp_bpf_tools
     lib_install_fabrics
@@ -250,6 +257,7 @@ function full_build_and_install_workflow()
     lib_install_jpeg_xs
     lib_install_mtl_jpeg_xs_plugin
     chmod -R a+r "${BUILD_DIR}"
+    set +x
 }
 
 if [ "${EUID}" != "0" ]; then
@@ -261,7 +269,9 @@ fi
 # cp -f "${REPO_DIR}/media-proxy/imtl.json" "/usr/local/etc/imtl.json"
 # export KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"
 
-print_logo_anim
+print_logo_anim "2" "0.04"
+sleep 1
+trap_error_print_debug
 sleep 1
 prompt Starting: Dependencies build, install and configation.
 full_build_and_install_workflow
