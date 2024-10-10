@@ -82,7 +82,7 @@ function get_and_patch_intel_drivers()
         error "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
-    wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
+    NO_PROXY="" no_proxy="" wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
@@ -198,6 +198,7 @@ function lib_install_mtl_and_dpdk()
 # Build and install gRPC from source
 function lib_install_grpc()
 {
+    rm -rf "${GRPC_DIR}"
     mkdir -p "${GRPC_DIR}"
     git clone --branch "${GPRC_VER}" \
         --recurse-submodules --depth 1 \
@@ -260,16 +261,25 @@ fi
 # cp -f "${REPO_DIR}/media-proxy/imtl.json" "/usr/local/etc/imtl.json"
 # export KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"
 
+set +x
 print_logo_anim
 sleep 1
+trap_error_print_debug
+sleep 1
 prompt Starting: Dependencies build, install and configation.
+set -x
 full_build_and_install_workflow
+set +x
 prompt Finished: Dependencies build, install and configation.
 prompt Starting: Intel drivers download and patch apply.
+set -x
 get_and_patch_intel_drivers
+set +x
 prompt Finished: Intel drivers download and patch apply.
 prompt Starting: Build, install and configuration of Intel drivers.
+set -x
 build_install_and_config_intel_drivers
+set +x
 prompt Finished: Build, install and configuration of Intel drivers.
 prompt All tasks compleated successfully. Reboot required.
 warning ""
