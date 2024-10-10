@@ -1125,7 +1125,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
     }
 
     st_ctx->payload_type = request->payload_type;
-    st_ctx->id = incrementMSessionCount();
+    st_ctx->id = memif_ops.m_session_count;
     st_ctx->type = TX;
     mDpCtx.push_back(st_ctx);
 
