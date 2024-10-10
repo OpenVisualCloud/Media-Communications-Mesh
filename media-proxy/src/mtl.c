@@ -156,7 +156,7 @@ static int tx_st40_rtp_done(void* priv)
     return 0;
 }
 
-void st_rx_debug_dump(struct st20p_rx_ops ops)
+void rx_st20p_debug_dump(struct st20p_rx_ops ops)
 {
     INFO("Parse RX Session Ops ...");
     INFO("name          : %s", ops.name);
@@ -203,7 +203,7 @@ void st_rx_st22p_debug_dump(struct st22p_rx_ops ops)
     INFO("framebuff_cnt : %d", ops.framebuff_cnt);
 }
 
-void st_tx_debug_dump(struct st20p_tx_ops ops)
+void tx_st20p_debug_dump(struct st20p_tx_ops ops)
 {
     INFO("Parse TX Session Ops ...");
     INFO("name          : %s", ops.name);
@@ -1798,7 +1798,7 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
 #endif
 
     /* dump out parameters for debugging. */
-    st_rx_debug_dump(ops_rx);
+    rx_st20p_debug_dump(ops_rx);
 
     st20p_rx_handle rx_handle = st20p_rx_create(dev_handle, &ops_rx);
     if (!rx_handle) {
@@ -2418,7 +2418,7 @@ tx_st20p_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, s
 #endif
 
     /* dump out parameters for debugging. */
-    st_tx_debug_dump(ops_tx);
+    tx_st20p_debug_dump(ops_tx);
 
     st20p_tx_handle tx_handle = st20p_tx_create(dev_handle, &ops_tx);
     if (!tx_handle) {
