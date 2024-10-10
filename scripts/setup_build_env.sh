@@ -251,7 +251,7 @@ function full_build_and_install_workflow()
     chmod -R a+r "${BUILD_DIR}"
 }
 
-if [ "${EUID}" != "1" ]; then
+if [ "${EUID}" != "0" ]; then
     error "Must be run as root. Try running bellow command:"
     error "sudo \"${BASH_SOURCE[0]}\""
     exit 1
