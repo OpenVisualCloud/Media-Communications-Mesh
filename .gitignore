@@ -2,6 +2,7 @@
 __pycache__/
 
 # for compilation
+_build
 build
 out/*
 build/*
