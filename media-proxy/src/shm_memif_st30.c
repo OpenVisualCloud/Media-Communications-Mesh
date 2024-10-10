@@ -51,6 +51,44 @@ int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
+int tx_st30_on_connect(memif_conn_handle_t conn, void* priv_data)
+{
+    tx_st30_session_context_t* tx_ctx = (tx_st30_session_context_t*)priv_data;
+    int err = 0;
+
+    INFO("TX memif connected!");
+
+    err = memif_refill_queue(conn, 0, -1, 0);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("memif_refill_queue: %s", memif_strerror(err));
+        return err;
+    }
+
+    memif_details_t md = { 0 };
+    ssize_t buflen = 2048;
+    char* buf = (char*)calloc(1, buflen);
+
+    err = memif_get_details(conn, &md, buf, buflen);
+    if (err != MEMIF_ERR_SUCCESS) {
+        INFO("%s", memif_strerror(err));
+        free(buf);
+        return err;
+    }
+
+    tx_ctx->fb_count = md.tx_queues[0].ring_size;
+
+    free(buf);
+
+    /* TX buffers */
+    tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * tx_ctx->fb_count);
+
+    tx_ctx->shm_ready = 1;
+
+    print_memif_details(conn);
+
+    return 0;
+}
+
 static void tx_st30_build_frame(memif_buffer_t shm_bufs, void* frame, size_t frame_size)
 {
     mtl_memcpy(frame, shm_bufs.data, frame_size);
@@ -111,44 +149,6 @@ int tx_st30_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
         producer_idx = 0;
     tx_ctx->framebuff_producer_idx = producer_idx;
     st_pthread_mutex_unlock(&tx_ctx->st30_wake_mutex);
-
-    return 0;
-}
-
-int tx_st30_on_connect(memif_conn_handle_t conn, void* priv_data)
-{
-    tx_st30_session_context_t* tx_ctx = (tx_st30_session_context_t*)priv_data;
-    int err = 0;
-
-    INFO("TX memif connected!");
-
-    err = memif_refill_queue(conn, 0, -1, 0);
-    if (err != MEMIF_ERR_SUCCESS) {
-        INFO("memif_refill_queue: %s", memif_strerror(err));
-        return err;
-    }
-
-    memif_details_t md = { 0 };
-    ssize_t buflen = 2048;
-    char* buf = (char*)calloc(1, buflen);
-
-    err = memif_get_details(conn, &md, buf, buflen);
-    if (err != MEMIF_ERR_SUCCESS) {
-        INFO("%s", memif_strerror(err));
-        free(buf);
-        return err;
-    }
-
-    tx_ctx->fb_count = md.tx_queues[0].ring_size;
-
-    free(buf);
-
-    /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * tx_ctx->fb_count);
-
-    tx_ctx->shm_ready = 1;
-
-    print_memif_details(conn);
 
     return 0;
 }

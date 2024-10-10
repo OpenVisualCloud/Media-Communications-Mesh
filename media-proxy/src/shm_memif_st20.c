@@ -9,11 +9,6 @@
 #include "mtl.h"
 #include "shm_memif.h"
 
-static void tx_st20p_build_frame(memif_buffer_t shm_bufs, struct st_frame* frame)
-{
-    mtl_memcpy(frame->addr[0], shm_bufs.data, shm_bufs.len);
-}
-
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
 int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
@@ -205,6 +200,11 @@ int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     // free(priv_data);
 
     return 0;
+}
+
+static void tx_st20p_build_frame(memif_buffer_t shm_bufs, struct st_frame* frame)
+{
+    mtl_memcpy(frame->addr[0], shm_bufs.data, shm_bufs.len);
 }
 
 int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)

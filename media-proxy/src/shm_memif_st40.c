@@ -51,22 +51,6 @@ int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
-static void tx_st40_build_frame(memif_buffer_t shm_bufs, struct st40_frame* dst)
-{
-    dst->meta[0].c = 0;
-    dst->meta[0].line_number = 10;
-    dst->meta[0].hori_offset = 0;
-    dst->meta[0].s = 0;
-    dst->meta[0].stream_num = 0;
-    dst->meta[0].did = 0x43;
-    dst->meta[0].sdid = 0x02;
-    dst->meta[0].udw_size = shm_bufs.len;
-    dst->meta[0].udw_offset = 0;
-    dst->meta_num = 1;
-    dst->data = shm_bufs.data;
-    dst->data_size = shm_bufs.len;
-}
-
 int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
     tx_st40_session_context_t* tx_ctx = (tx_st40_session_context_t*)priv_data;
@@ -100,6 +84,22 @@ int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
     print_memif_details(conn);
 
     return 0;
+}
+
+static void tx_st40_build_frame(memif_buffer_t shm_bufs, struct st40_frame* dst)
+{
+    dst->meta[0].c = 0;
+    dst->meta[0].line_number = 10;
+    dst->meta[0].hori_offset = 0;
+    dst->meta[0].s = 0;
+    dst->meta[0].stream_num = 0;
+    dst->meta[0].did = 0x43;
+    dst->meta[0].sdid = 0x02;
+    dst->meta[0].udw_size = shm_bufs.len;
+    dst->meta[0].udw_offset = 0;
+    dst->meta_num = 1;
+    dst->data = shm_bufs.data;
+    dst->data_size = shm_bufs.len;
 }
 
 int tx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
