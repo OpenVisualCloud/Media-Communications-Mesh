@@ -304,10 +304,50 @@ function catch_error_print_debug() {
     error "${_output_array[@]}"
 }
 
+# Calling this function executes ERR and SIGINT signals trapping. Triggered trap calls catch_error_print_debug and exit 1
 function trap_error_print_debug() {
     prompt "Setting trap for errors handling"
     trap 'catch_error_print_debug "LINENO" "BASH_LINENO" "${BASH_COMMAND}" "${?}"; exit 1' SIGINT ERR
     prompt "Trap set successfuly."
+}
+
+# GITHUB_CREDENTIALS="username:password"
+# URL construction: https://${GITHUB_CREDENTIALS}@github.com/${name}/archive/${version}.tar.gz
+# $1 - name
+# $2 - version
+# $3 - dest_dir
+function git_download_strip_unpack()
+{
+    # Version can be commit sha or tag, examples:
+    # version=d2515b90cc0ef651f6d0a6661d5a644490bfc3f3
+    # version=refs/tags/v${JPEG_XS_VER}
+    name="${1}"
+    version="${2}"
+    dest_dir="${3}"
+    filename="$(get_filename "${version}")"
+    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
+
+    mkdir -p "${dest_dir}"
+    curl -Lf "https://${creds}github.com/${name}/archive/${version}.tar.gz" -o "${dest_dir}/${filename}.tar.gz"
+    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
+    rm -f "${dest_dir}/${filename}.tar.gz"
+}
+
+# Downloads and strip unpack a file from URL ($1) to a target directory ($2)
+# $1 - URL to download
+# $2 - destination directory to strip unpack the tar.gz
+function wget_download_strip_unpack()
+{
+    local filename
+    local source_url="${1}"
+    local dest_dir="${2}"
+    filename="$(get_filename "${source_url}")"
+    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
+
+    mkdir -p "${dest_dir}"
+    curl -Lf "${source_url}" -o "${dest_dir}/${filename}.tar.gz"
+    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
+    rm -f "${dest_dir}/${filename}.tar.gz"
 }
 
 function config_intel_rdma_driver() {
