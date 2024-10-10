@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eo pipefail
+set -exo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
@@ -103,37 +103,46 @@ function build_install_and_config_intel_drivers()
 
 function install_ubuntu_package_dependencies()
 {
+    APT_LINUX_HEADERS="linux-headers-$(uname -r)"
     # Install package dependencies
     apt-get update --fix-missing && \
     apt-get install --no-install-recommends -y \
-        wget \
-        nasm cmake \
-        libbsd-dev \
-        build-essential \
-        sudo git \
-        meson \
-        python3-dev python3-pyelftools \
-        pkg-config \
-        libnuma-dev libjson-c-dev \
-        libpcap-dev libgtest-dev \
-        libsdl2-dev libsdl2-ttf-dev \
-        libssl-dev ca-certificates \
-        m4 clang llvm zlib1g-dev \
-        libelf-dev libcap-ng-dev \
-        gcc-multilib \
-        systemtap-sdt-dev \
-        librdmacm-dev \
-        libibverbs-dev \
-        libfdt-dev \
+        apt-transport-https \
         autoconf \
         automake \
         autotools-dev \
-        libtool \
-        grpc-proto \
-        protobuf-compiler-grpc \
-        libgrpc10 \
+        build-essential \
+        ca-certificates \
+        clang \
         dracut \
-        linux-headers-"$(uname -r)"
+        gcc-multilib \
+        libbsd-dev \
+        libcap-ng-dev \
+        libelf-dev \
+        libfdt-dev \
+        libgtest-dev \
+        libibverbs-dev \
+        libjson-c-dev \
+        libnuma-dev \
+        libpcap-dev \
+        librdmacm-dev \
+        libsdl2-dev \
+        libsdl2-ttf-dev \
+        libssl-dev \
+        libtool \
+        llvm \
+        m4 \
+        meson \
+        nasm cmake \
+        pkg-config \
+        python3-dev \
+        python3-pyelftools \
+        software-properties-common \
+        sudo git \
+        systemtap-sdt-dev \
+        wget \
+        zlib1g-dev \
+        "${APT_LINUX_HEADERS}"
 }
 
 # Build the xdp-tools project with ebpf
@@ -239,10 +248,12 @@ function full_build_and_install_workflow()
     lib_install_grpc
     lib_install_jpeg_xs
     lib_install_mtl_jpeg_xs_plugin
+    chmod -R a+r "${BUILD_DIR}"
 }
 
-if [ "${UID}" != "0" ]; then
-    error This script must be run only as a root user.
+if [ "${EUID}" != "1" ]; then
+    error "Must be run as root. Try running bellow command:"
+    error "sudo \"${BASH_SOURCE[0]}\""
     exit 1
 fi
 

@@ -1,10 +1,13 @@
 
-name: Docs Build and Publish
+name: Documentation Build and Publish
 on:
   workflow_call:
   workflow_dispatch:
   push:
     branches: [ "main" ]
+
+env:
+  DEBIAN_FRONTEND: noninteractive
 
 permissions:
   contents: read
