@@ -27,7 +27,7 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
 - Core Functionality: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
 - Low Latency & Efficiency: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
-- Service Mesh Role: It acts as a Data Plane component within a larger service mesh for media applications, utilizing Shared Memory APIs to abstract the complexities involved in media transport.
+- Service Mesh Role: It acts as a Data Plane component within a larger service mesh for media applications, utilizing `MTL` `ST 2110` API, `libfabric` for `RDMA` API, `MemIF` shared memory APIs, and many more, to abstract the complexities involved in efficient media transport.
 
 ✅ Key point: Media Proxy handles the data transport layer of media streams, focusing on real-time efficiency and ensuring media routing between microservices in the mesh.
 
@@ -81,10 +81,10 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
     b) The following method is universal and should work for most Linux OS distributions.
 
-    - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation.
-    - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation.
-    - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation.
-    - E810 driver: Follow The [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md)
+    - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
+    - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation instructions.
+    - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation instructions.
+    - E810 driver: Follow the [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md) for installation instructions.
     - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
     - Install required packages:
 
