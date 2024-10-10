@@ -38,7 +38,6 @@ jobs:
         uses: aquasecurity/trivy-action@7c2007bcb556501da015201bcba5aa14069b74e2 # v0.23.0
         with:
           scan-type: config
-          scanners: 'vuln,secret,misconfig'
           exit-code: '1'
           format: 'sarif'
           output: 'trivy-results.sarif'
@@ -47,6 +46,7 @@ jobs:
         with:
           sarif_file: 'trivy-results.sarif'
       - uses: actions/upload-artifact@v4
+        if: always()
         with:
           name: trivy-results
           path: 'trivy-results.sarif'
