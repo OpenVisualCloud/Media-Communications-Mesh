@@ -118,7 +118,6 @@ typedef struct {
 
     bool stop;
 
-    int fb_cnt;
     int fb_send;
     pthread_cond_t st22p_wake_cond;
     pthread_mutex_t st22p_wake_mutex;

@@ -1700,7 +1700,6 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
 {
     int ret = 0;
     static int idx = 0;
-    int fb_cnt = 4;
     rx_st20p_session_context_t* rx_ctx = NULL;
 
     if (dev_handle == NULL) {
@@ -1751,7 +1750,6 @@ rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, s
     // while (!rx_ctx->shm_ready) {
     //     sleep(1);
     // }
-    fb_cnt = rx_ctx->fb_count;
 
 #if defined(ZERO_COPY)
     bool equal = st_frame_fmt_equal_transport(ops_rx.output_fmt, ops_rx.transport_fmt);
@@ -1892,7 +1890,6 @@ tx_st30_session_context_t* mtl_st30_tx_session_create(mtl_handle dev_handle, str
     int ret = 0;
     tx_st30_session_context_t* tx_ctx = NULL;
     static int idx = 0;
-    const int fb_cnt = 4;
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -2081,7 +2078,6 @@ tx_st40_session_context_t* mtl_st40_tx_session_create(mtl_handle dev_handle, str
     int ret = 0;
     tx_st40_session_context_t* tx_ctx = NULL;
     static int idx = 0;
-    const int fb_cnt = 4;
 
     if (dev_handle == NULL) {
         printf("%s, Invalid parameter.\n", __func__);
@@ -2345,9 +2341,6 @@ tx_st20p_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, s
 {
     static int idx = 0;
 
-    /* dst ip address for tx video session */
-    const int fb_cnt = 4;
-
     tx_st20p_session_context_t* tx_ctx = NULL;
     int ret = 0;
 
@@ -2418,9 +2411,6 @@ tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, s
 {
     static int idx = 0;
 
-    /* dst ip address for tx video session */
-    const int fb_cnt = 4;
-
     tx_st22p_session_context_t* tx_ctx = NULL;
     int ret = 0;
 
@@ -2438,7 +2428,6 @@ tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, s
     tx_ctx->st = dev_handle;
     tx_ctx->idx = idx;
     tx_ctx->stop = false;
-    tx_ctx->fb_cnt = 3;
     st_pthread_mutex_init(&tx_ctx->st22p_wake_mutex, NULL);
     st_pthread_cond_init(&tx_ctx->st22p_wake_cond, NULL);
 
