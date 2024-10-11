@@ -347,8 +347,6 @@ typedef struct {
 
     int pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
-
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
     memif_conn_args_t memif_conn_args;
