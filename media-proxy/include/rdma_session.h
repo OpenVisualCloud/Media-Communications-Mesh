@@ -18,6 +18,12 @@ extern "C" {
 #include "shm_memif.h"
 #include "utils.h"
 #include "libfabric_ep.h"
+#ifdef __cplusplus
+#include <atomic>
+using namespace std;
+#else
+#include <stdatomic.h>
+#endif
 
 typedef struct {
     size_t transfer_size;
@@ -35,7 +41,7 @@ typedef struct {
     int frame_done_cnt;
     int packet_done_cnt;
 
-    bool stop;
+    volatile bool stop;
 
     int fb_send;
     pthread_cond_t wake_cond;
@@ -44,7 +50,6 @@ typedef struct {
     size_t transfer_size;
     size_t pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* memif parameters */
     memif_ops_t memif_ops;
@@ -55,7 +60,7 @@ typedef struct {
 
     memif_buffer_t *shm_bufs;
     uint16_t shm_buf_num;
-    uint8_t shm_ready;
+    atomic_bool shm_ready;
 
     char name[32];
     memif_socket_args_t memif_socket_args;
@@ -69,7 +74,7 @@ typedef struct {
     libfabric_ctx *rdma_ctx;
     ep_ctx_t *ep_ctx;
 
-    bool stop;
+    volatile bool stop;
     pthread_t frame_thread;
 
     int fb_recv;
@@ -79,7 +84,6 @@ typedef struct {
     size_t transfer_size;
     int pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
@@ -91,7 +95,7 @@ typedef struct {
 
     memif_buffer_t *shm_bufs;
     uint16_t shm_buf_num;
-    uint8_t shm_ready;
+    atomic_bool shm_ready;
 
     char name[32];
     pthread_t memif_event_thread;

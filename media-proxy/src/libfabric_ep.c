@@ -36,17 +36,12 @@
  */
 
 #include <assert.h>
-#include <fcntl.h>
-#include <netdb.h>
-#include <poll.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <unistd.h>
 #include <sched.h>
-#include <sys/wait.h>
 #include <sys/types.h>
-#include <sys/socket.h>
 
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
@@ -107,39 +102,6 @@ static int ep_av_insert(libfabric_ctx *rdma_ctx, struct fid_av *av, void *addr, 
     }
 
     return 0;
-}
-
-int ep_init_av_addr(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi)
-{
-    struct sockaddr_in *insert_addr_p;
-    size_t addrlen;
-    int ret;
-
-    if (fi->dest_addr) {
-        ret = ep_av_insert(rdma_ctx, ep_ctx->av, fi->dest_addr, 1, &ep_ctx->dest_av_entry, 0, NULL);
-        if (ret)
-            return ret;
-
-        addrlen = ep_ctx->data_buf_size;
-        ret = fi_getname(&ep_ctx->ep->fid, (char *)ep_ctx->data_buf, &addrlen);
-        if (ret) {
-            RDMA_PRINTERR("fi_getname", ret);
-            return ret;
-        }
-        insert_addr_p = (struct sockaddr_in *)ep_ctx->data_buf;
-        memset(insert_addr_p->sin_zero, 0, sizeof(insert_addr_p->sin_zero));
-
-        ret = ep_send_buf(ep_ctx, ep_ctx->data_buf, addrlen);
-        return ret;
-
-    } else {
-        ret = ep_recv_buf(ep_ctx, ep_ctx->data_buf, ep_ctx->data_buf_size);
-        if (ret)
-            return ret;
-
-        return ep_av_insert(rdma_ctx, ep_ctx->av, ep_ctx->data_buf, 1, &ep_ctx->dest_av_entry, 0,
-                           NULL);
-    }
 }
 
 static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi,
@@ -296,9 +258,12 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         return ret;
     }
 
-    ret = ep_init_av_addr((*ep_ctx), (*ep_ctx)->rdma_ctx, fi);
-    if (ret)
-        return ret;
+    if (fi->dest_addr) {
+        ret = ep_av_insert((*ep_ctx)->rdma_ctx, (*ep_ctx)->av, fi->dest_addr, 1,
+                           &(*ep_ctx)->dest_av_entry, 0, NULL);
+        if (ret)
+            return ret;
+    }
 
     fi_freeinfo(fi);
 

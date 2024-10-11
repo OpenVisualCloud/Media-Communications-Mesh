@@ -1,5 +1,7 @@
 # Test Single Node Sample Apps
 
+Functional test performed on single baremetal node environment. Tested on `Ubuntu 20.04` and `Ubuntu 22.04` with kernel version `5.15`.
+
 ## Prerequisites
 1. The platform should have an MTL-compatible NIC installed (e.g. E810-C).
 2. Clone the [MTL repository](https://github.com/OpenVisualCloud/Media-Transport-Library).
@@ -21,6 +23,12 @@
 14. In case of success, repeat 3 times from Step 3.
 15. Deinitialize NIC PF.
 
+## Additional Notes
+
+Ensure that all environment variables are set correctly before running the tests.
+Refer to the specific test scripts for more detailed instructions and configurations.
+If any issues arise during the tests, refer to the logs for detailed error messages and troubleshooting steps.
+
 ## Usage
 
 ```bash
@@ -29,8 +37,8 @@ sudo ./test.sh <test-option> <pf-bdf> <input-file> <duration> <frames_number> <w
 
 * `test-option`
    * `memif` – use a memif direct connection
-   * `st20` – use an ST20 connection via media proxy
-   * `st22` – use an ST22 connection via media proxy
+   * `st20` – use an ST 2110-20 connection via media proxy
+   * `st22` – use an ST 2110-22 connection via media proxy using JPEG XS compression.
    * `af_xdp` - use a native_af_xdp connection for media proxy. MtlManager is required to be available in $PATH.
 
 * `pf-bdf` – NIC PF bus device function, default `0000:32:00.1`. VFs will be created on top of this PF.
@@ -40,6 +48,10 @@ sudo ./test.sh <test-option> <pf-bdf> <input-file> <duration> <frames_number> <w
 * `width` `height` – frame size, default `640` x `360`
 * `fps` – frames per second, default `60`
 * `pixel-format` – pixel format, default `yuv422p10le`
+
+## Expected outcome
+
+Each test should complete without errors. If any errors were encountered, the logs files will be created and saved in `tests/single-node-sample-apps`.
 
 ## Run test – memif
 
@@ -120,7 +132,15 @@ TBD
 ## Run test – af_xdp
 
 ### Prerequisites
-1. Build and install MtlManager from [MTL repository](https://github.com/OpenVisualCloud/Media-Transport-Library/tree/main/manager).
+
+1. MtlManager from [MTL repository](https://github.com/OpenVisualCloud/Media-Transport-Library/tree/main/manager) must be running.
+It is installed in framework pre-required steps and can be run by:
+
+```bash
+sudo MtlManager
+```
+
+### Running test
 
 ```bash
 sudo ./test.sh af_xdp 0000:32:00.1 video.yuv 30 300 640 360 60 yuv422p10le

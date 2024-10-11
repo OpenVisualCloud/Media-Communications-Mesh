@@ -2,7 +2,7 @@
 
 The  micro-services and Media Proxy running in different node can share memory to transfer RTP payload (h264 NALU) data directly. The following is the SW stack architecture.
 
-![instance](img/IPC-RTP-memif.png)
+![instance](_static/IPC-RTP-memif.png)
 
 Media Proxy provides an efficient user-space RTP H264 NALU payload transfer to VA uService that enables users to adopt it without any changes to their code logic. The MTL stack features an LD preload layer that intercepts UDP socket API calls and replaces them with our UDP implementation. VA uService call MCM DP SDK to setup RTP H264 NALU payload transfer connection session and get the payload from the buf queue based on MemIF sharing.
 

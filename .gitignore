@@ -13,6 +13,9 @@ ffmpeg-plugin/FFmpeg/*
 # for debug dump
 dump_*
 
+# for irdma
+irdma/
+
 # for gRPC protos
 media-proxy/protos/controller.grpc.pb.cc
 media-proxy/protos/controller.grpc.pb.h
@@ -20,8 +23,7 @@ media-proxy/protos/controller.pb.cc
 media-proxy/protos/controller.pb.h
 
 # for VS Code settings
-.vscode/c_cpp_properties.json
-.vscode/settings.json
+.vscode/*
 
 # For FFmpeg plugin
 ffmpeg-plugin/FFmpeg/
@@ -30,3 +32,5 @@ docs/_build
 media-proxy/tests/test.yuv
 media-proxy/tests/memif_test_rx
 media-proxy/tests/memif_test_tx
+tests/single-node-sample-apps/error_*
+tests/single-node-sample-apps/out

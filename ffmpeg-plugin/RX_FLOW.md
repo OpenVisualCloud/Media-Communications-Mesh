@@ -2,7 +2,8 @@
 
 Diagrams in this document show interaction between FFmpeg and the MCM plugin when FFmpeg is receiving a video stream over MCM.
 
-### Simplified FFmpeg Rx flow
+## Simplified FFmpeg Rx flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -17,7 +18,8 @@ sequenceDiagram
    ffmpeg ->> mux: Read close
 ```
 
-### FFmpeg Read Header flow
+## FFmpeg Read Header flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -47,7 +49,8 @@ sequenceDiagram
    mux ->>- ffmpeg: Success
 ```
 
-### FFmpeg Read Packet flow
+## FFmpeg Read Packet flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
@@ -79,7 +82,8 @@ sequenceDiagram
    mux ->>- ffmpeg: Success
 ```
 
-### FFmpeg Read Close flow
+## FFmpeg Read Close flow
+
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg

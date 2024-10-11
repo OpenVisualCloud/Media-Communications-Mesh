@@ -1,4 +1,4 @@
-name: Coverity Scan
+name: Scan Coverity Ubuntu Scan
 
 on:
   schedule:

@@ -315,19 +315,16 @@ int main(int argc, char** argv)
     strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
     strlcpy(param.local_addr.ip, recv_addr, sizeof(param.local_addr.ip));
 
-    dp_ctx = mcm_create_connection(&param);
-    if (dp_ctx == NULL) {
-        printf("Fail to connect to MCM data plane\n");
-        exit(-1);
-    }
     signal(SIGINT, intHandler);
 
     uint32_t frame_count = 0;
     // uint32_t frm_size = width * height * 3 / 2; //TODO:assume it's NV12
     uint32_t frm_size = getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height, false);
 
-    const uint32_t fps_interval = 30;
+    const uint32_t stat_interval = 10;
     double fps = 0.0;
+    double throughput_MB = 0;
+    double stat_period_s = 0;
     void *ptr = NULL;
     int timeout = -1;
     bool first_frame = true;
@@ -338,6 +335,12 @@ int main(int argc, char** argv)
 
     if (strlen(file_name) > 0) {
         dump_fp = fopen(file_name, "wb");
+    }
+
+    dp_ctx = mcm_create_connection(&param);
+    if (dp_ctx == NULL) {
+        printf("Fail to connect to MCM data plane\n");
+        exit(-1);
     }
 
     while (keepRunning) {
@@ -382,22 +385,9 @@ int main(int argc, char** argv)
                 ptr += sizeof(frame_count);
                 ts_send = *(struct timespec *)ptr;
 
-                if (frame_count % fps_interval == 0) {
-                    /* calculate FPS */
-                    clock_gettime(CLOCK_REALTIME, &ts_end);
-
-                    fps = 1e9 * (ts_end.tv_sec - ts_begin.tv_sec);
-                    fps += (ts_end.tv_nsec - ts_begin.tv_nsec);
-                    fps /= 1e9;
-                    fps = (double)fps_interval / fps;
-
-                    clock_gettime(CLOCK_REALTIME, &ts_begin);
-                }
-
                 latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
                 latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
 
-                printf("RX frames: [%u], latency: %0.1f ms, FPS: %0.3f\n", frame_count, latency, fps);
             }
         } else { //TODO: rtsp receiver side test code
             if (dump_fp) {
@@ -406,12 +396,27 @@ int main(int argc, char** argv)
             printf("RX package number:%d   seq_num: %d, timestamp: %u, RX H264 NALU: %ld\n", frame_count, buf->metadata.seq_num, buf->metadata.timestamp, buf->len);
         }
 
+        if (frame_count % stat_interval == 0) {
+            /* calculate FPS */
+            clock_gettime(CLOCK_REALTIME, &ts_end);
+
+            stat_period_s = (ts_end.tv_sec - ts_begin.tv_sec);
+            stat_period_s += (ts_end.tv_nsec - ts_begin.tv_nsec) / 1e9;
+            fps = stat_interval / stat_period_s;
+            throughput_MB = fps * frm_size / 1000000;
+
+            clock_gettime(CLOCK_REALTIME, &ts_begin);
+        }
+        printf("RX frames: [%u], latency: %0.1f ms, FPS: %0.3f\n", frame_count, latency, fps);
+        printf("Throughput: %.2lf MB/s, %.2lf Gb/s \n", throughput_MB,  throughput_MB * 8 / 1000);
+
         frame_count++;
 
         /* enqueue buffer */
         if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
             break;
         }
+        printf("\n");
     }
 
     /* Clean up */

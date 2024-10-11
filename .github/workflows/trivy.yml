@@ -1,8 +1,8 @@
-name: Trivy
+name: Scan Trivy Config
 on:
   push:
     branches:
-      - main
+    - main
   pull_request:
   workflow_dispatch:
     inputs:
@@ -10,6 +10,7 @@ on:
         description: 'branch to run scans on'
         default: 'main'
         type: string
+
 permissions:
   contents: read
 
@@ -21,6 +22,7 @@ jobs:
     runs-on: ubuntu-22.04
     name: Checkout code
     steps:
+
       - name: Harden Runner
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
         with:

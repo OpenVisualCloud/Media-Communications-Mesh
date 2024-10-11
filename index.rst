@@ -15,9 +15,10 @@ Intel® Media Communications Mesh
    :maxdepth: 2
 
    Introduction <docs/README>
+   License <LICENSE>
 
 Contents
---------
+---------
 
 .. toctree::
    :maxdepth: 2
@@ -27,27 +28,42 @@ Contents
    docs/IPCamera-RTP-Memif
    docs/memif-sharing
    docs/setup-mcm-with-k8s
-   docs/run
    media-proxy/README
 
-Plugins
---------
+FFmpeg-plugin
+--------------
 
 .. toctree::
    :maxdepth: 2
-   :caption: Plugins:
+   :caption: FFmpeg-plugin:
 
-   ffmpeg-plugin/README
-   docs/ffmpeg-params-guide
+   Introduction <ffmpeg-plugin/README>
+   Rx Flow Diagrams<ffmpeg-plugin/RX_FLOW>
+   Tx Flow Diagrams<ffmpeg-plugin/TX_FLOW>
+
+SDK
+----
+
+.. toctree::
+   :maxdepth: 2
+   :caption: SDK:
+
+   DataPlane SDK <sdk/README>
+   MemIF Introduction <sdk/3rdparty/libmemif/libmemif_doc>
+   MemIF Standalone Build <sdk/3rdparty/libmemif/docs/buildinstructions_doc>
+   MemIF Getting Started <sdk/3rdparty/libmemif/docs/gettingstarted_doc>
+   MemIF Examples <sdk/3rdparty/libmemif/examples/examples_doc>
+   Security <sdk/SECURITY>
+   License <sdk/LICENSE>
 
 Security
---------
+---------
 
 .. toctree::
    :maxdepth: 2
    :caption: Security:
 
-   Security (SECURITY)
+   Security <SECURITY>
    media-proxy/SECURITY
 
 Other
@@ -57,6 +73,6 @@ Other
    :maxdepth: 2
    :caption: Other:
 
-   License (LICENSE)
-   Contributing (CONTRIBUTING)
-   Changelog (CHANGELOG)
+   Sphinx Build <docs/sphinx/build_docs>
+   Contributing <CONTRIBUTING>
+   Changelog <CHANGELOG>

@@ -15,9 +15,9 @@ import os
 import sys
 
 project = 'Intel® Media Communications Mesh'
-copyright = '2024, Intel Corporation'
+copyright = '2023-2024, Intel Corporation'
 author = 'Intel Corporation'
-release = '1.0'
+version = release = '24.09'
 
 extensions = [
     'myst_parser',
@@ -32,20 +32,29 @@ inline_highlight_respect_highlight = False
 inline_highlight_literals = False
 
 templates_path = ['_templates']
-exclude_patterns = ['_build/*', 'tests/*', 'patches/*', 'Thumbs.db', '.DS_Store']
+exclude_patterns = [
+    '_build/*',
+    'tests/*',
+    'patches/*',
+    'Thumbs.db',
+    '.DS_Store',
+    '**/CMakeLists.txt',
+    '*CMakeLists.txt',
+    '**/requirements.txt'
+]
 
 # -- Options for HTML output -------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#options-for-html-output
 
 html_theme = 'sphinx_book_theme'
-html_static_path = ['../images']
+html_static_path = ['../_static']
 language = "en_US"
 
 # Options for myst_html_meta output -------------------------------------------------
 
 myst_html_meta = {
     "description lang=en": "Intel® Media Communications Mesh",
-    "keywords": "Intel®, Intel, Media Communications Mesh, MCM, mtl, Tiber, st20, st22",
+    "keywords": "Intel®, Intel, Media Communications Mesh, MCM, MTL, Tiber, st20, st22, ST 2110, ST2110",
     "property=og:locale":  "en_US"
 }
 myst_enable_extensions = [ "strikethrough" ]
@@ -55,7 +64,6 @@ suppress_warnings = ["myst.xref_missing", "myst.strikethrough"]
 
 source_suffix = {
     '.rst': 'restructuredtext',
-    '.txt': 'restructuredtext',
     '.md': 'markdown',
 }
 

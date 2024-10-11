@@ -1,8 +1,10 @@
 # FFmpeg plugin for MCM
 
+![MCM FFmpeg Plugins](../docs/_static/ffmpeg-plugins-media-communications-mesh-1.webp)
+
 ## Build
 
-### Prerequitites
+### Prerequisites
 
 Install dependencies and build MCM as described in the top level README.md, paragraph "Basic Installation".
 
@@ -64,6 +66,7 @@ TBD
    ```bash
    sudo media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8002
    ```
+
 2. Start FFmpeg to receive frames from MCM and stream to a remote machine via UDP
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm \
@@ -83,6 +86,7 @@ TBD
    ```bash
    sudo media_proxy -d 0000:32:11.0 -i 192.168.96.1 -t 8001
    ```
+
 2. Start FFmpeg to stream a video file to the receiver via MCM
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <video-file-path> -f mcm \
@@ -113,11 +117,11 @@ The table below shows a proper way to configure the sender and the receiver depe
 
 The next arguments are supported to configure an audio transmission
 
-| Argument      | Type    | Description                                                                                                                                                                                       | Default   |
-| ------------- | :-----: | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | :-------: |
-| `channels`    | Integer | Number of audio channels (`1`, `2`, etc.)                                                                                                                                                         | `2`       |
-| `sample_rate` | Integer | Audio sample rate (`44100`, `48000`, or `96000`)                                                                                                                                                  | `48000`   |
-| `ptime`       | String  | Audio packet time according to ST2110-30. For 48000 and 96000 sampling: `"1ms"`, `"125us"`, `"250us"`, `"333us"`, `"4ms"`, or `"80us"`. For 44100 sampling: `"1.09ms"`, `"0.14ms"`, or `"0.09ms"` | `"1ms"`   |
+| Argument      | Type    | Description                                                           | Default   |
+| ------------- | :-----: | --------------------------------------------------------------------- | :-------: |
+| `channels`    | Integer | Number of audio channels (`1`, `2`, etc.)                             | `2`       |
+| `sample_rate` | Integer | Audio sample rate (`48000` or `96000`)                                | `48000`   |
+| `ptime`       | String  | Audio packet time according to ST2110-30 (the only option is `"1ms"`) | `"1ms"`   |
 
 ## Example – Run audio transmission, PCM 24-bit
 
@@ -130,11 +134,13 @@ TBD
 ### Receiver side setup
 
 1. Start media_proxy
+
    ```bash
    sudo media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8002
    ```
+
 2. Start FFmpeg to receive packets from MCM and store on the disk
-   
+
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm_audio_pcm24 \
       -channels 2 \
