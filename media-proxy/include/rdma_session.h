@@ -72,8 +72,6 @@ typedef struct {
 
     int fb_recv;
 
-    pthread_t app_thread;
-
     size_t transfer_size;
 
     /* share memory arguments */

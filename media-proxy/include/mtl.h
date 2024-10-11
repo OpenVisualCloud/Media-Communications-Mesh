@@ -228,10 +228,8 @@ typedef struct {
 
     int fb_recv;
 
-    pthread_t st30_app_thread;
     pthread_cond_t st30_wake_cond;
     pthread_mutex_t st30_wake_mutex;
-    bool st30_app_thread_stop;
 
     int st30_frame_size;
     int pkt_len;
