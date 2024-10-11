@@ -27,12 +27,12 @@ int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data)
         return err;
     }
 
-    rx_ctx->fb_count = md.rx_queues[0].ring_size;
+    uint32_t fb_count = md.rx_queues[0].ring_size;
 
     free(buf);
 
     /* RX buffers */
-    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * fb_count);
     if (!rx_ctx->shm_bufs) {
         ERROR("Failed to allocate memory");
         return -ENOMEM;
