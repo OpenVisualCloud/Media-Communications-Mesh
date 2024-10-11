@@ -46,8 +46,6 @@ typedef struct {
     pthread_mutex_t wake_mutex;
 
     size_t transfer_size;
-    size_t pkt_len;
-
 
     /* memif parameters */
     memif_ops_t memif_ops;
@@ -77,8 +75,6 @@ typedef struct {
     pthread_t app_thread;
 
     size_t transfer_size;
-    int pkt_len;
-
 
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
