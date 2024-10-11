@@ -157,7 +157,6 @@ typedef struct {
     pthread_mutex_t st22p_wake_mutex;
 
     size_t frame_size; /* Size (Bytes) of single frame. */
-    uint32_t fb_count; /* Frame buffer count. */
 
     uint32_t width;
     uint32_t height;

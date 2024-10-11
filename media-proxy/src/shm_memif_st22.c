@@ -16,6 +16,7 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     INFO("RX memif connected!");
 
+    uint32_t fb_count = 3; 
 #if defined(ZERO_COPY)
     memif_details_t md = { 0 };
     ssize_t buflen = 2048;
@@ -28,7 +29,7 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
         return err;
     }
 
-    rx_ctx->fb_count = md.rx_queues[0].ring_size;
+    fb_count = md.rx_queues[0].ring_size;
     rx_ctx->source_begin = md.regions[1].addr;
     rx_ctx->source_begin_iova_map_sz = md.regions[1].size;
     rx_ctx->source_begin_iova = mtl_dma_map(rx_ctx->st, rx_ctx->source_begin, md.regions[1].size);
@@ -38,12 +39,10 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data)
     }
 
     free(buf);
-#else
-    rx_ctx->fb_count = 3;
 #endif
 
     /* rx buffers */
-    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * fb_count);
     if (!rx_ctx->shm_bufs) {
         ERROR("Failed to allocate memory");
         return -ENOMEM;
