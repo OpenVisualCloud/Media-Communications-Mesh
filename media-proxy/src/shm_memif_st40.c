@@ -64,21 +64,6 @@ int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data)
         return err;
     }
 
-    memif_details_t md = { 0 };
-    ssize_t buflen = 2048;
-    char* buf = (char*)calloc(1, buflen);
-
-    err = memif_get_details(conn, &md, buf, buflen);
-    if (err != MEMIF_ERR_SUCCESS) {
-        INFO("%s", memif_strerror(err));
-        free(buf);
-        return err;
-    }
-
-    tx_ctx->fb_count = md.tx_queues[0].ring_size;
-
-    free(buf);
-
     tx_ctx->shm_ready = 1;
 
     print_memif_details(conn);
