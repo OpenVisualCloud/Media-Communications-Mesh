@@ -483,7 +483,6 @@ static void rx_st20p_consume_frame(rx_st20p_session_context_t* s, struct st_fram
     mcm_buffer* rx_mcm_buff = NULL;
     memif_buffer_t* rx_bufs = NULL;
     uint16_t buf_num = 1;
-    memif_conn_handle_t conn;
     uint32_t buf_size = s->frame_size;
     uint16_t rx_buf_num = 0, rx = 0;
 
@@ -491,8 +490,6 @@ static void rx_st20p_consume_frame(rx_st20p_session_context_t* s, struct st_fram
         INFO("%s memif not ready\n", __func__);
         return;
     }
-
-    conn = s->memif_conn;
 
 #if defined(ZERO_COPY)
     rx_bufs = (memif_buffer_t*)frame->opaque;
@@ -529,7 +526,6 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
     mcm_buffer* rx_mcm_buff = NULL;
     memif_buffer_t* rx_bufs = NULL;
     uint16_t buf_num = 1;
-    memif_conn_handle_t conn;
     uint32_t buf_size = s->frame_size;
     uint16_t rx_buf_num = 0, rx = 0;
 
@@ -537,8 +533,6 @@ static void rx_st22p_consume_frame(rx_st22p_session_context_t* s, struct st_fram
         INFO("%s memif not ready\n", __func__);
         return;
     }
-
-    conn = s->memif_conn;
 
 #if defined(ZERO_COPY)
     rx_bufs = (memif_buffer_t*)frame->opaque;
@@ -584,7 +578,6 @@ static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame)
     uint16_t qid = 0;
     memif_buffer_t* tx_bufs = NULL;
     uint16_t buf_num = 1;
-    memif_conn_handle_t conn;
     uint32_t buf_size = s->pkt_len;
     uint16_t tx_buf_num = 0, tx = 0;
 
@@ -592,8 +585,6 @@ static void rx_st30_consume_frame(rx_st30_session_context_t* s, void* frame)
         INFO("%s memif not ready\n", __func__);
         return;
     }
-
-    conn = s->memif_conn;
 
     /* allocate memory */
     tx_bufs = s->shm_bufs;
@@ -623,7 +614,6 @@ static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, ui
     uint16_t qid = 0;
     memif_buffer_t* tx_bufs = NULL;
     uint16_t buf_num = 1;
-    memif_conn_handle_t conn;
     uint32_t buf_size = s->pkt_len;
     uint16_t tx_buf_num = 0, tx = 0;
 
@@ -631,8 +621,6 @@ static void rx_st40_consume_frame(rx_st40_session_context_t* s, void* usrptr, ui
         INFO("%s memif not ready\n", __func__);
         return;
     }
-
-    conn = s->memif_conn;
 
     /* allocate memory */
     tx_bufs = s->shm_bufs;
