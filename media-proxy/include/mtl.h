@@ -208,8 +208,6 @@ typedef struct {
     int st30_frame_size;
     size_t pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
-
     /* memif parameters */
     memif_ops_t memif_ops;
     /* share memory arguments */
