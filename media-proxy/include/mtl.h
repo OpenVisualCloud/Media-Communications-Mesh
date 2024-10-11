@@ -137,7 +137,6 @@ typedef struct {
     /* memif conenction handle */
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t* shm_bufs;
     uint8_t shm_ready;
 
     memif_socket_args_t memif_socket_args;

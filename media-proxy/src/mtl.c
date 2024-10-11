@@ -1056,11 +1056,6 @@ int tx_st22p_shm_deinit(tx_st22p_session_context_t* tx_ctx)
         unlink(tx_ctx->memif_socket_args.path);
     }
 
-    if (tx_ctx->shm_bufs) {
-        free(tx_ctx->shm_bufs);
-        tx_ctx->shm_bufs = NULL;
-    }
-
     return 0;
 }
 
@@ -1331,15 +1326,11 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
         sizeof(tx_ctx->memif_conn_args.interface_name));
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
-    /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
-
     INFO("Create memif interface.");
     ret = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args,
         tx_st22p_on_connect, tx_st22p_on_disconnect, tx_st22p_on_receive, tx_ctx);
     if (ret != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(ret));
-        free(tx_ctx->shm_bufs);
         return -1;
     }
 
@@ -1347,7 +1338,6 @@ int tx_st22p_shm_init(tx_st22p_session_context_t* tx_ctx, memif_ops_t* memif_ops
     ret = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop, tx_ctx->memif_conn_args.socket);
     if (ret < 0) {
         printf("%s(%d), thread create fail\n", __func__, ret);
-        free(tx_ctx->shm_bufs);
         return -1;
     }
 
