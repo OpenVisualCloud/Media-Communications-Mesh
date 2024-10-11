@@ -151,15 +151,11 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
              sizeof(tx_ctx->memif_conn_args.interface_name), "%s", memif_ops->interface_name);
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
 
-    /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * FRAME_COUNT);
-
     INFO("Create memif interface.");
     err = memif_create(&tx_ctx->memif_conn, &tx_ctx->memif_conn_args, tx_rdma_on_connect,
                        tx_rdma_on_disconnect, tx_rdma_on_receive, tx_ctx);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("memif_create: %s", memif_strerror(err));
-        free(tx_ctx->shm_bufs);
         return -1;
     }
 
@@ -168,7 +164,6 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
                          tx_ctx->memif_conn_args.socket);
     if (err < 0) {
         printf("%s(%d), thread create fail\n", __func__, err);
-        free(tx_ctx->shm_bufs);
         return -1;
     }
 
@@ -229,11 +224,6 @@ static int tx_shm_deinit(tx_rdma_session_context_t *tx_ctx)
     /* unlink socket file */
     if (tx_ctx->memif_conn_args.is_master && tx_ctx->memif_socket_args.path[0] != '@') {
         unlink(tx_ctx->memif_socket_args.path);
-    }
-
-    if (tx_ctx->shm_bufs) {
-        free(tx_ctx->shm_bufs);
-        tx_ctx->shm_bufs = NULL;
     }
 
     return 0;
