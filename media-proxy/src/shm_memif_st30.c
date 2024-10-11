@@ -79,9 +79,6 @@ int tx_st30_on_connect(memif_conn_handle_t conn, void* priv_data)
 
     free(buf);
 
-    /* TX buffers */
-    tx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * tx_ctx->fb_count);
-
     tx_ctx->shm_ready = 1;
 
     print_memif_details(conn);

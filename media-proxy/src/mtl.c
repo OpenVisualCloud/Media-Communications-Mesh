@@ -1097,6 +1097,7 @@ int rx_st30_shm_deinit(rx_st30_session_context_t* pctx)
         free(pctx->shm_bufs);
         pctx->shm_bufs = NULL;
     }
+    
 
     return 0;
 }
@@ -1125,14 +1126,9 @@ int tx_st30_shm_deinit(tx_st30_session_context_t* pctx)
         unlink(pctx->memif_socket_args.path);
     }
 
-    if (pctx->shm_bufs) {
-        free(pctx->shm_bufs);
-        pctx->shm_bufs = NULL;
-    }
-
     if (pctx->framebuffs) {
-        free(pctx->shm_bufs);
-        pctx->shm_bufs = NULL;
+        free(pctx->framebuffs);
+        pctx->framebuffs = NULL;
     }
 
     return 0;
