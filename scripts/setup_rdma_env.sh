@@ -11,13 +11,6 @@ WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
 IRDMA_DMID="832291"
 IRDMA_VER="1.15.11"
 
-if [[ -f $WORKING_DIR ]]; then
-    error "Can't create rdma directory because of the rdma file $WORKING_DIR"
-    exit 1
-fi
-
-mkdir -p "$WORKING_DIR"
-
 install_irdma() {
     echo "Installing irdma driver..."
     pushd "$WORKING_DIR"
@@ -117,13 +110,15 @@ run_perftest() {
 }
 
 if [[ "$1" == "install" ]]; then
-    rm -rf "$WORKING_DIR"/*
+    rm -rf "$WORKING_DIR"
+    mkdir -p "$WORKING_DIR"
     install_irdma
     config_intel_rdma_driver
     install_libfabric
     echo "Reboot required"
 elif [[ "$1" == "install_perftest" ]]; then
-    rm -rf "$WORKING_DIR"/*
+    rm -rf "$WORKING_DIR"
+    mkdir -p "$WORKING_DIR"
     install_perftest
 elif [[ "$1" == "check" ]]; then
     check_roce
