@@ -11,6 +11,7 @@
 #include <string>
 #include <string_view>
 #include <vector>
+#include <arpa/inet.h>
 
 #include "controller.grpc.pb.h"
 #include "mtl.h"
@@ -49,8 +50,6 @@ public:
 
     // direction mDir;
     std::vector<dp_session_context_t *> mDpCtx;
-    std::vector<rx_session_context_t*> mRxCtx;
-    std::vector<tx_session_context_t*> mTxCtx;
     mtl_handle mDevHandle = NULL;
     libfabric_ctx *mDevHandle_rdma = NULL;
 

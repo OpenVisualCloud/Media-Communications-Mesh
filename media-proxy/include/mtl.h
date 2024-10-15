@@ -16,6 +16,7 @@ extern "C" {
 #include <mtl/st40_api.h> /* st2110-40 */
 #include <mtl/st_pipeline_api.h> /* st2110 pipeline */
 #include <errno.h>
+#include <stdlib.h>
 
 #include <mcm_dp.h>
 
@@ -23,16 +24,9 @@ extern "C" {
 #include "shm_memif.h" /* share memory */
 #include "utils.h"
 /*used by UDP H264*/
+#include <netinet/in.h>
 #include <mtl/mudp_api.h>
 #include <mtl/mtl_sch_api.h>
-
-#ifndef NS_PER_S
-#define NS_PER_S (1000000000)
-#endif
-
-#ifndef NS_PER_US
-#define NS_PER_US (1000)
-#endif
 
 #ifndef NS_PER_MS
 #define NS_PER_MS (1000 * 1000)
@@ -54,7 +48,6 @@ typedef struct {
     pthread_mutex_t wake_mutex;
 
     size_t frame_size; /* Size (Bytes) of single frame. */
-    uint32_t fb_count; /* Frame buffer count. */
 
     uint32_t width;
     uint32_t height;
@@ -62,8 +55,6 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
@@ -78,18 +69,11 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
 
-    void* frames_malloc_addr;
-    void* frames_begin_addr;
-    mtl_iova_t frames_begin_iova;
-    size_t frames_iova_map_sz;
-    struct st20_ext_frame* ext_frames;
-} rx_session_context_t;
+} rx_st20p_session_context_t;
 
 typedef struct {
     mtl_handle st;
@@ -106,8 +90,6 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
@@ -120,15 +102,12 @@ typedef struct {
     /* memif conenction handle */
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
-} tx_session_context_t;
+} tx_st20p_session_context_t;
 
 typedef struct {
     mtl_handle st;
@@ -137,8 +116,6 @@ typedef struct {
 
     bool stop;
 
-    int fb_cnt;
-    uint16_t fb_idx;
     int fb_send;
     pthread_cond_t st22p_wake_cond;
     pthread_mutex_t st22p_wake_mutex;
@@ -147,20 +124,9 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
-
-    void* ext_fb_malloc;
-    uint8_t* ext_fb;
-    mtl_iova_t ext_fb_iova;
-    size_t ext_fb_iova_map_sz;
-    struct st_ext_frame* p_ext_frames;
-    int ext_idx;
-    bool ext_fb_in_use[3]; /* assume 3 framebuffer */
-    mtl_dma_mem_handle dma_mem;
 #endif
 
     /* memif parameters */
@@ -170,11 +136,8 @@ typedef struct {
     /* memif conenction handle */
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -193,8 +156,6 @@ typedef struct {
     pthread_mutex_t st22p_wake_mutex;
 
     size_t frame_size; /* Size (Bytes) of single frame. */
-    uint16_t fb_idx;
-    uint32_t fb_count; /* Frame buffer count. */
 
     uint32_t width;
     uint32_t height;
@@ -202,21 +163,9 @@ typedef struct {
 
 #if defined(ZERO_COPY)
     uint8_t* source_begin;
-    uint8_t* source_end;
-    uint8_t* frame_cursor;
 
     mtl_iova_t source_begin_iova;
     size_t source_begin_iova_map_sz;
-
-    void* ext_fb_malloc;
-    uint8_t* ext_fb;
-    mtl_iova_t ext_fb_iova;
-    size_t ext_fb_iova_map_sz;
-    struct st20_ext_frame* ext_frames;
-    struct st_ext_frame* p_ext_frames;
-    int ext_idx;
-    bool ext_fb_in_use[3]; /* assume 3 framebuffer */
-    mtl_dma_mem_handle dma_mem;
 #endif
 
     /* share memory arguments */
@@ -228,16 +177,10 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
 
-    void* frames_malloc_addr;
-    void* frames_begin_addr;
-    mtl_iova_t frames_begin_iova;
-    size_t frames_iova_map_sz;
 } rx_st22p_session_context_t;
 
 typedef struct {
@@ -250,9 +193,6 @@ typedef struct {
     uint16_t framebuff_consumer_idx;
     struct st_tx_frame* framebuffs;
 
-    int st30_frame_done_cnt;
-    int st30_packet_done_cnt;
-
     enum st30_sampling sampling;
 
     bool stop;
@@ -264,8 +204,6 @@ typedef struct {
     int st30_frame_size;
     size_t pkt_len;
 
-    uint32_t fb_count; /* Frame buffer count. */
-
     /* memif parameters */
     memif_ops_t memif_ops;
     /* share memory arguments */
@@ -273,11 +211,8 @@ typedef struct {
     /* memif conenction handle */
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -293,15 +228,11 @@ typedef struct {
 
     int fb_recv;
 
-    pthread_t st30_app_thread;
     pthread_cond_t st30_wake_cond;
     pthread_mutex_t st30_wake_mutex;
-    bool st30_app_thread_stop;
 
     int st30_frame_size;
     int pkt_len;
-
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
@@ -312,21 +243,10 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
-
-    /* stat */
-    int stat_frame_total_received;
-    uint64_t stat_frame_first_rx_time;
-    double expect_fps;
 } rx_st30_session_context_t;
-
-enum sample_udp_mode {
-    SAMPLE_UDP_TRANSPORT_H264,
-};
 
 typedef struct {
     mtl_handle st;
@@ -337,14 +257,9 @@ typedef struct {
     uint8_t payload_type;
     // uint32_t sessions; /* number of sessions */
     bool ext_frame;
-    bool hdr_split;
-    bool rx_dump;
     uint32_t fb_count; /* Frame buffer count. */
-    enum sample_udp_mode udp_mode;
-    uint64_t udp_tx_bps;
     int udp_len;
     bool exit;
-    bool has_user_meta; /* if provide user meta data with the st2110-20 frame */
     pthread_t thread;
     pthread_cond_t wake_cond;
     pthread_mutex_t wake_mutex;
@@ -362,12 +277,10 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
     uint32_t memif_nalu_size;
 
-    char name[32];
     pthread_t memif_event_thread;
 
     /*udp poll*/
@@ -383,9 +296,6 @@ typedef struct {
     uint16_t tx_buf_num;
     char* dst;
     char* dst_nalu_size_point;
-    //int sch_idx;
-    //int tasklet_idx;
-
 } rx_udp_h264_session_context_t;
 
 typedef struct {
@@ -398,19 +308,13 @@ typedef struct {
     uint16_t framebuff_consumer_idx;
     struct st_tx_frame* framebuffs;
 
-    int st40_frame_done_cnt;
-    int st40_packet_done_cnt;
-
     bool stop;
 
     int fb_send;
     pthread_cond_t st40_wake_cond;
     pthread_mutex_t st40_wake_mutex;
 
-    int st40_frame_size;
     size_t pkt_len;
-
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* memif parameters */
     memif_ops_t memif_ops;
@@ -419,11 +323,8 @@ typedef struct {
     /* memif conenction handle */
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -439,14 +340,10 @@ typedef struct {
 
     int fb_recv;
 
-    pthread_t st40_app_thread;
     pthread_cond_t st40_wake_cond;
     pthread_mutex_t st40_wake_mutex;
 
-    int st40_frame_size;
     int pkt_len;
-
-    uint32_t fb_count; /* Frame buffer count. */
 
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
@@ -457,16 +354,9 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
     uint8_t shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
-
-    /* stat */
-    int stat_frame_total_received;
-    uint64_t stat_frame_first_rx_time;
-    double expect_fps;
 } rx_st40_session_context_t;
 
 /* Initialize MTL library */
@@ -476,22 +366,22 @@ mtl_handle inst_init(struct mtl_init_params* st_param);
 void mtl_deinit(mtl_handle dev_handle);
 
 /* TX: Create ST20P session */
-tx_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops);
+tx_st20p_session_context_t* mtl_st20p_tx_session_create(mtl_handle dev_handle, struct st20p_tx_ops* opts, memif_ops_t* memif_ops);
 
 /* RX: Create ST20P session */
-rx_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
+rx_st20p_session_context_t* mtl_st20p_rx_session_create(mtl_handle dev_handle, struct st20p_rx_ops* opts, memif_ops_t* memif_ops);
 
 /* TX: Stop ST20P session */
-void mtl_st20p_tx_session_stop(tx_session_context_t* tx_ctx);
+void mtl_st20p_tx_session_stop(tx_st20p_session_context_t* tx_ctx);
 
 /* RX: Stop ST20P session */
-void mtl_st20p_rx_session_stop(rx_session_context_t* rx_ctx);
+void mtl_st20p_rx_session_stop(rx_st20p_session_context_t* rx_ctx);
 
 /* TX: Destroy ST20P session */
-void mtl_st20p_tx_session_destroy(tx_session_context_t** p_tx_ctx);
+void mtl_st20p_tx_session_destroy(tx_st20p_session_context_t** p_tx_ctx);
 
 /* RX: Destroy ST20P session */
-void mtl_st20p_rx_session_destroy(rx_session_context_t** p_rx_ctx);
+void mtl_st20p_rx_session_destroy(rx_st20p_session_context_t** p_rx_ctx);
 
 /* TX: Create ST22P session */
 tx_st22p_session_context_t* mtl_st22p_tx_session_create(mtl_handle dev_handle, struct st22p_tx_ops* opts, memif_ops_t* memif_ops);

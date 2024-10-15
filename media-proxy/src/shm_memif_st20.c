@@ -9,20 +9,16 @@
 #include "mtl.h"
 #include "shm_memif.h"
 
-static void tx_st20p_build_frame(memif_buffer_t shm_bufs, struct st_frame* frame)
-{
-    mtl_memcpy(frame->addr[0], shm_bufs.data, shm_bufs.len);
-}
-
 /* informs user about connected status. private_ctx is used by user to identify
  * connection */
 int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
-    rx_session_context_t* rx_ctx = (rx_session_context_t*)priv_data;
+    rx_st20p_session_context_t* rx_ctx = (rx_st20p_session_context_t*)priv_data;
     int err = 0;
 
     INFO("RX memif connected!");
 
+    uint32_t fb_count = 3;
 #if defined(ZERO_COPY)
     memif_details_t md = { 0 };
     ssize_t buflen = 2048;
@@ -35,7 +31,7 @@ int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
         return err;
     }
 
-    rx_ctx->fb_count = md.tx_queues[0].ring_size;
+    fb_count = md.tx_queues[0].ring_size;
     rx_ctx->source_begin = md.regions[1].addr;
     rx_ctx->source_begin_iova_map_sz = md.regions[1].size;
     rx_ctx->source_begin_iova = mtl_dma_map(rx_ctx->st, rx_ctx->source_begin, md.regions[1].size);
@@ -45,17 +41,14 @@ int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
     }
 
     free(buf);
-#else
-    rx_ctx->fb_count = 3;
 #endif
 
     /* rx buffers */
-    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * rx_ctx->fb_count);
+    rx_ctx->shm_bufs = (memif_buffer_t*)malloc(sizeof(memif_buffer_t) * fb_count);
     if (!rx_ctx->shm_bufs) {
         ERROR("Failed to allocate memory");
         return -ENOMEM;
     }
-    rx_ctx->shm_buf_num = rx_ctx->fb_count;
 
     err = memif_refill_queue(conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -75,7 +68,7 @@ int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     int err = 0;
-    rx_session_context_t* rx_ctx = priv_data;
+    rx_st20p_session_context_t* rx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL) {
@@ -121,7 +114,7 @@ int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 
 int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data)
 {
-    tx_session_context_t* tx_ctx = (tx_session_context_t*)priv_data;
+    tx_st20p_session_context_t* tx_ctx = (tx_st20p_session_context_t*)priv_data;
     int err = 0;
 
     INFO("TX memif connected!");
@@ -168,7 +161,7 @@ int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
 {
     static int counter = 0;
     int err = 0;
-    tx_session_context_t* tx_ctx = priv_data;
+    tx_st20p_session_context_t* tx_ctx = priv_data;
     memif_socket_handle_t socket;
 
     if (conn == NULL || priv_data == NULL) {
@@ -208,10 +201,15 @@ int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data)
     return 0;
 }
 
+static void tx_st20p_build_frame(memif_buffer_t shm_bufs, struct st_frame* frame)
+{
+    mtl_memcpy(frame->addr[0], shm_bufs.data, shm_bufs.len);
+}
+
 int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
 {
     int err = 0;
-    tx_session_context_t* tx_ctx = (tx_session_context_t*)priv_data;
+    tx_st20p_session_context_t* tx_ctx = (tx_st20p_session_context_t*)priv_data;
     memif_buffer_t shm_bufs = { 0 };
     uint16_t buf_num = 0;
 

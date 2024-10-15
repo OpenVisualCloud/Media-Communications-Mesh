@@ -719,7 +719,7 @@ int ProxyContext::RxStart(const RxControlRequest* request)
 {
     INFO("ProxyContext: RxStart(const RxControlRequest* request)");
     dp_session_context_t *st_ctx = NULL;
-    rx_session_context_t* rx_ctx = NULL;
+    rx_st20p_session_context_t* rx_ctx = NULL;
     struct st20p_rx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
@@ -751,9 +751,6 @@ int ProxyContext::RxStart(const RxControlRequest* request)
     st_ctx->rx_session = rx_ctx;
     mDpCtx.push_back(st_ctx);
 
-    /* TODO: to be removed later. */
-    mRxCtx.push_back(rx_ctx);
-
     return (st_ctx->id);
 }
 
@@ -761,7 +758,7 @@ int ProxyContext::TxStart(const TxControlRequest* request)
 {
     INFO("ProxyContext: TxStart(const TxControlRequest* request)");
     dp_session_context_t *st_ctx = NULL;
-    tx_session_context_t* tx_ctx = NULL;
+    tx_st20p_session_context_t* tx_ctx = NULL;
     struct st20p_tx_ops opts = { 0 };
     memif_ops_t memif_ops = { 0 };
 
@@ -792,9 +789,6 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     st_ctx->type = TX;
     st_ctx->tx_session = tx_ctx;
     mDpCtx.push_back(st_ctx);
-
-    /* TODO: to be removed later. */
-    mTxCtx.push_back(tx_ctx);
 
     return (st_ctx->id);
 }
@@ -961,7 +955,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
     case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_NONE:
     default: {
-        rx_session_context_t* rx_ctx = NULL;
+        rx_st20p_session_context_t* rx_ctx = NULL;
         struct st20p_rx_ops opts = {};
 
         ParseSt20RxOps(request, &opts);
@@ -1114,7 +1108,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
     }
     case PAYLOAD_TYPE_ST20_VIDEO:
     default: {
-        tx_session_context_t* tx_ctx = NULL;
+        tx_st20p_session_context_t* tx_ctx = NULL;
         struct st20p_tx_ops opts = {};
 
         ParseSt20TxOps(request, &opts);
@@ -1131,7 +1125,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
     }
 
     st_ctx->payload_type = request->payload_type;
-    st_ctx->id = incrementMSessionCount();
+    st_ctx->id = memif_ops.m_session_count;
     st_ctx->type = TX;
     mDpCtx.push_back(st_ctx);
 

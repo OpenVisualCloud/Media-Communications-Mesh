@@ -11,6 +11,7 @@
 extern "C" {
 #endif
 
+#include <stdlib.h>
 #include <mcm_dp.h>
 
 #include "app_platform.h"
@@ -38,9 +39,6 @@ typedef struct {
     libfabric_ctx *rdma_ctx;
     ep_ctx_t *ep_ctx;
 
-    int frame_done_cnt;
-    int packet_done_cnt;
-
     volatile bool stop;
 
     int fb_send;
@@ -48,8 +46,6 @@ typedef struct {
     pthread_mutex_t wake_mutex;
 
     size_t transfer_size;
-    size_t pkt_len;
-
 
     /* memif parameters */
     memif_ops_t memif_ops;
@@ -58,11 +54,8 @@ typedef struct {
     /* memif conenction handle */
     memif_conn_handle_t memif_conn;
 
-    memif_buffer_t *shm_bufs;
-    uint16_t shm_buf_num;
     atomic_bool shm_ready;
 
-    char name[32];
     memif_socket_args_t memif_socket_args;
     memif_socket_handle_t memif_socket;
     pthread_t memif_event_thread;
@@ -79,11 +72,7 @@ typedef struct {
 
     int fb_recv;
 
-    pthread_t app_thread;
-
     size_t transfer_size;
-    int pkt_len;
-
 
     /* share memory arguments */
     memif_socket_args_t memif_socket_args;
@@ -94,16 +83,9 @@ typedef struct {
     memif_conn_handle_t memif_conn;
 
     memif_buffer_t *shm_bufs;
-    uint16_t shm_buf_num;
     atomic_bool shm_ready;
 
-    char name[32];
     pthread_t memif_event_thread;
-
-    /* stat */
-    int stat_frame_total_received;
-    uint64_t stat_frame_first_rx_time;
-    double expect_fps;
 } rx_rdma_session_context_t;
 
 /* TX: Create RDMA session */
