@@ -71,3 +71,6 @@ private:
 };
 
 void RunRPCServer(ProxyContext* ctx);
+
+std::string gRPC_RegisterConnection();
+void gRPC_UnregisterConnection(const std::string& id);

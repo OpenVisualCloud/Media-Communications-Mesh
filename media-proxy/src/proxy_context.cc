@@ -10,6 +10,7 @@
 
 #include "proxy_context.h"
 #include <mtl/mtl_sch_api.h>
+#include "api_server_grpc.h"
 
 ProxyContext::ProxyContext(void)
     : mRpcCtrlAddr("0.0.0.0:8001")
@@ -749,6 +750,9 @@ int ProxyContext::RxStart(const RxControlRequest* request)
     st_ctx->id = incrementMSessionCount();
     st_ctx->type = RX;
     st_ctx->rx_session = rx_ctx;
+
+    st_ctx->registry_id = gRPC_RegisterConnection();
+
     mDpCtx.push_back(st_ctx);
 
     /* TODO: to be removed later. */
@@ -791,6 +795,9 @@ int ProxyContext::TxStart(const TxControlRequest* request)
     st_ctx->id = incrementMSessionCount();
     st_ctx->type = TX;
     st_ctx->tx_session = tx_ctx;
+
+    st_ctx->registry_id = gRPC_RegisterConnection();
+
     mDpCtx.push_back(st_ctx);
 
     /* TODO: to be removed later. */
@@ -831,6 +838,9 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param *request)
     dp_ctx->id = memif_ops.m_session_count;
     INFO("%s, session id: %d", __func__, dp_ctx->id);
     dp_ctx->type = RX;
+
+    dp_ctx->registry_id = gRPC_RegisterConnection();
+
     mDpCtx.push_back(dp_ctx);
 
     return dp_ctx->id;
@@ -982,6 +992,9 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
     std::cout << "session id: " << st_ctx->id << std::endl;
     INFO("%s, session id: %d", __func__, st_ctx->id);
     st_ctx->type = RX;
+
+    st_ctx->registry_id = gRPC_RegisterConnection();
+
     mDpCtx.push_back(st_ctx);
 
     return (st_ctx->id);
@@ -1027,6 +1040,9 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param *request)
     dp_ctx->id = memif_ops.m_session_count;
     INFO("%s, session id: %d", __func__, dp_ctx->id);
     dp_ctx->type = TX;
+
+    dp_ctx->registry_id = gRPC_RegisterConnection();
+
     mDpCtx.push_back(dp_ctx);
 
     return dp_ctx->id;
@@ -1133,6 +1149,9 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
     st_ctx->payload_type = request->payload_type;
     st_ctx->id = incrementMSessionCount();
     st_ctx->type = TX;
+
+    st_ctx->registry_id = gRPC_RegisterConnection();
+
     mDpCtx.push_back(st_ctx);
 
     return (st_ctx->id);
@@ -1177,6 +1196,8 @@ void ProxyContext::TxStop(const int32_t session_id)
             mtl_st20p_tx_session_destroy(&(*ctx)->tx_session);
             break;
         }
+
+        gRPC_UnregisterConnection((*ctx)->registry_id);
 
         mDpCtx.erase(ctx);
         delete (*ctx);
@@ -1229,6 +1250,9 @@ void ProxyContext::RxStop(const int32_t session_id)
             mtl_st20p_rx_session_destroy(&(*it)->rx_session);
             break;
         }
+
+        gRPC_UnregisterConnection((*it)->registry_id);
+
         mDpCtx.erase(it);
         delete (ctx);
 

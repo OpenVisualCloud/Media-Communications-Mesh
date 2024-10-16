@@ -15,11 +15,13 @@ extern "C" {
 #include "mtl.h"
 #include "libfabric_dev.h"
 #include "rdma_session.h"
+#include <string>
 
 typedef struct {
     uint32_t id;
     enum direction type;
     mcm_payload_type payload_type;
+    std::string registry_id;
     union {
         tx_session_context_t *tx_session;
         rx_session_context_t *rx_session;

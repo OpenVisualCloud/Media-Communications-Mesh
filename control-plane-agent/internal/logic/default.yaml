@@ -1,0 +1,34 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Default Manifest of Business Logic - Mesh Control Plane Agent
+
+logic:
+
+  on-request-register-connection:
+    registry-add-connection:
+    if-multipoint-group-exists:
+      false:
+        all-proxy-create-multipoint-group:
+        registry-add-multipoint-group:
+    registry-update-multipoint-group-add-connection:
+
+  on-external-request-create-multipoint-group:
+    if-multipoint-group-exists:
+      false:
+        all-proxy-create-multipoint-group:
+        registry-add-multipoint-group:
+
+  on-request-register-proxy:
+    registry-add-proxy:
+
+  on-request-unregister-proxy:
+    registry-delete-proxy:
+
+  on-request-unregister-connection:
+    registry-delete-connection:
+
+  on-proxy-disconnected:
+    registry-delete-proxy:
