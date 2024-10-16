@@ -7,6 +7,7 @@
 #include <math.h>
 #include <charconv>
 #include <bsd/string.h>
+#include <algorithm>
 
 #include "proxy_context.h"
 #include <mtl/mtl_sch_api.h>

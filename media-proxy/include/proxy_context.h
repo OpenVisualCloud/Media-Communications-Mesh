@@ -12,7 +12,6 @@
 #include <string_view>
 #include <vector>
 
-#include "controller.grpc.pb.h"
 #include "mtl.h"
 #include "libfabric_dev.h"
 #include "rdma_session.h"
