@@ -274,32 +274,12 @@ static void handle_sent_buffers(tx_rdma_session_context_t *s)
 
 static void *tx_rdma_ep_thread(void *arg)
 {
-    ep_thread_arg_t *ep_thread_arg = (ep_thread_arg_t *)arg;
-    ep_cfg_t *ep_cfg = ep_thread_arg->ep_cfg;
-    tx_rdma_session_context_t *s_ctx = (tx_rdma_session_context_t *)ep_thread_arg->s_ctx;
+    tx_rdma_session_context_t *s_ctx = (tx_rdma_session_context_t *)arg;
     memif_region_details_t region;
     int err = 0;
 
-    free(ep_thread_arg);
-
     while (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire) && !s_ctx->stop)
         usleep(1000);
-
-    err = memif_get_buffs_region(s_ctx->memif_conn, &region);
-    if (err) {
-        ERROR("%s, Getting memory buffers from memif failed. \n", __func__);
-        return NULL;
-    }
-    ep_cfg->data_buf_size = region.size;
-    ep_cfg->data_buf = region.addr;
-
-    err = ep_init(&s_ctx->ep_ctx, ep_cfg);
-    free(ep_cfg);
-    if (err) {
-        ERROR("%s, failed to initialize libfabric's end point.\n", __func__);
-        return NULL;
-    }
-    atomic_store_explicit(&s_ctx->ep_ready, true, memory_order_release);
 
     INFO("%s(%d), TX RDMA thread started\n", __func__, s_ctx->idx);
     while (!s_ctx->stop) {
@@ -316,8 +296,7 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
                                                   memif_ops_t *memif_ops)
 {
     tx_rdma_session_context_t *tx_ctx = NULL;
-    ep_thread_arg_t *ep_th_arg = NULL;
-    ep_cfg_t *ep_cfg = NULL;
+    ep_cfg_t ep_cfg = { 0 };
     int err;
 
     if (!dev_handle || !opts || !memif_ops) {
@@ -325,41 +304,34 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
         return NULL;
     }
 
-    ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
-    if (!ep_th_arg) {
-        ERROR("%s, Endpoint thread arguments allocation failed\n", __func__);
-        goto exit_dealloc;
-    }
     tx_ctx = calloc(1, sizeof(tx_rdma_session_context_t));
     if (tx_ctx == NULL) {
         ERROR("%s, TX session contex allocation failed\n", __func__);
-        goto exit_dealloc;
-    }
-    ep_cfg = calloc(1, sizeof(ep_cfg_t));
-    if (!ep_cfg) {
-        ERROR("%s, RDMA endpoint config allocation failed\n", __func__);
-        goto exit_dealloc;
+        return NULL;
     }
 
     tx_ctx->transfer_size = opts->transfer_size;
     tx_ctx->rdma_ctx = dev_handle;
     tx_ctx->stop = false;
-    tx_ctx->ep_ready = ATOMIC_VAR_INIT(false);
+
+    ep_cfg.rdma_ctx = tx_ctx->rdma_ctx;
+    ep_cfg.local_addr = opts->local_addr;
+    ep_cfg.remote_addr = opts->remote_addr;
+    ep_cfg.dir = opts->dir;
+
+    err = ep_init(&tx_ctx->ep_ctx, &ep_cfg);
+    if (err) {
+        ERROR("%s, failed to initialize libfabric's end point.\n", __func__);
+        goto exit_dealloc;
+    }
 
     err = tx_rdma_shm_init(tx_ctx, memif_ops);
     if (err < 0) {
         ERROR("%s, failed to initialize share memory.\n", __func__);
-        goto exit_dealloc;
+        goto exit_deinit_ep;
     }
 
-    ep_cfg->rdma_ctx = tx_ctx->rdma_ctx;
-    ep_cfg->local_addr = opts->local_addr;
-    ep_cfg->remote_addr = opts->remote_addr;
-    ep_cfg->dir = opts->dir;
-
-    ep_th_arg->ep_cfg = ep_cfg; // maybe I should use rdma_s_ops_t directly?
-    ep_th_arg->s_ctx = tx_ctx;
-    err = pthread_create(&tx_ctx->ep_thread, NULL, tx_rdma_ep_thread, ep_th_arg);
+    err = pthread_create(&tx_ctx->ep_thread, NULL, tx_rdma_ep_thread, tx_ctx);
     if (err < 0) {
         ERROR("%s, Endpoint thread %d create failed: %s\n", __func__, tx_ctx->idx, strerror(err));
         goto exit_deinit_shm;
@@ -369,10 +341,10 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
 
 exit_deinit_shm:
     tx_shm_deinit(tx_ctx);
+exit_deinit_ep:
+    ep_destroy(&tx_ctx->ep_ctx);
 exit_dealloc:
-    free(ep_cfg);
     free(tx_ctx);
-    free(ep_th_arg);
     return NULL;
 }
 
@@ -436,31 +408,12 @@ static void handle_received_buffers(rx_rdma_session_context_t *s)
 
 static void *rx_rdma_ep_thread(void *arg)
 {
-    ep_thread_arg_t *ep_thread_arg = (ep_thread_arg_t *)arg;
-    ep_cfg_t *ep_cfg = ep_thread_arg->ep_cfg;
-    rx_rdma_session_context_t *s_ctx = (rx_rdma_session_context_t *)ep_thread_arg->s_ctx;
+    rx_rdma_session_context_t *s_ctx = (rx_rdma_session_context_t *)arg;
     memif_region_details_t region;
     int err = 0;
 
-    free(ep_thread_arg);
-
     while (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire) && !s_ctx->stop)
         usleep(1000);
-
-    err = memif_get_buffs_region(s_ctx->memif_conn, &region);
-    if (err) {
-        ERROR("%s, Getting memory buffers from memif failed. \n", __func__);
-        return NULL;
-    }
-    ep_cfg->data_buf_size = region.size;
-    ep_cfg->data_buf = region.addr;
-
-    err = ep_init(&s_ctx->ep_ctx, ep_cfg);
-    free(ep_cfg);
-    if (err) {
-        ERROR("%s, failed to initialize libfabric's end point.\n", __func__);
-        return NULL;
-    }
 
     INFO("%s(%d), RX RDMA thread started\n", __func__, s_ctx->idx);
     while (!s_ctx->stop) {
@@ -478,8 +431,7 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
                                                   memif_ops_t *memif_ops)
 {
     rx_rdma_session_context_t *rx_ctx = NULL;
-    ep_thread_arg_t *ep_th_arg = NULL;
-    ep_cfg_t *ep_cfg = NULL;
+    ep_cfg_t ep_cfg = { 0 };
     int err;
 
     if (!dev_handle || !opts || !memif_ops) {
@@ -487,41 +439,34 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
         return NULL;
     }
 
-    ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
-    if (!ep_th_arg) {
-        ERROR("%s, Endpoint thread arguments allocation failed\n", __func__);
-        goto exit_dealloc;
-    }
-
     rx_ctx = calloc(1, sizeof(rx_rdma_session_context_t));
     if (!rx_ctx) {
         ERROR("%s, TX session contex allocation failed\n", __func__);
-        goto exit_dealloc;
+        return NULL;
     }
-    ep_cfg = calloc(1, sizeof(ep_cfg_t));
-    if (!ep_cfg) {
-        ERROR("%s, RDMA endpoint config allocation failed\n", __func__);
-        goto exit_dealloc;
-    }
+
+    rx_ctx->transfer_size = opts->transfer_size;
     rx_ctx->rdma_ctx = dev_handle;
     rx_ctx->stop = false;
 
-    rx_ctx->transfer_size = opts->transfer_size;
+    ep_cfg.rdma_ctx = rx_ctx->rdma_ctx;
+    ep_cfg.local_addr = opts->local_addr;
+    ep_cfg.remote_addr = opts->remote_addr;
+    ep_cfg.dir = opts->dir;
+
+    err = ep_init(&rx_ctx->ep_ctx, &ep_cfg);
+    if (err) {
+        ERROR("%s, failed to initialize libfabric's end point.\n", __func__);
+        goto exit_dealloc;
+    }
 
     err = rx_rdma_shm_init(rx_ctx, memif_ops);
     if (err < 0) {
         ERROR("%s, Failed to initialize share memory.\n", __func__);
-        goto exit_dealloc;
+        goto exit_deinit_ep;
     }
 
-    ep_cfg->rdma_ctx = rx_ctx->rdma_ctx;
-    ep_cfg->local_addr = opts->local_addr;
-    ep_cfg->remote_addr = opts->remote_addr;
-    ep_cfg->dir = opts->dir;
-
-    ep_th_arg->ep_cfg = ep_cfg;
-    ep_th_arg->s_ctx = rx_ctx;
-    err = pthread_create(&rx_ctx->ep_thread, NULL, rx_rdma_ep_thread, ep_th_arg);
+    err = pthread_create(&rx_ctx->ep_thread, NULL, rx_rdma_ep_thread, rx_ctx);
     if (err < 0) {
         ERROR("%s, Endpoint thread %d create failed: %s\n", __func__, rx_ctx->idx, strerror(err));
         goto exit_deinit_shm;
@@ -531,10 +476,10 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
 
 exit_deinit_shm:
     rx_shm_deinit(rx_ctx);
+exit_deinit_ep:
+    ep_destroy(&rx_ctx->ep_ctx);
 exit_dealloc:
-    free(ep_cfg);
     free(rx_ctx);
-    free(ep_th_arg);
     return NULL;
 }
 
@@ -611,7 +556,6 @@ void rdma_tx_session_destroy(tx_rdma_session_context_t **p_tx_ctx)
         printf("%s, ep free failed\n", __func__);
         return;
     }
-    atomic_store_explicit(&tx_ctx->ep_ready, false, memory_order_relaxed);
 
     tx_shm_deinit(tx_ctx);
 

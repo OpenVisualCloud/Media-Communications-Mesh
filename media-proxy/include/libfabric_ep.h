@@ -24,12 +24,11 @@ typedef struct {
 
 typedef struct {
     struct fid_ep *ep;
-    char *data_buf;
-    size_t data_buf_size;
     int rx_fd, tx_fd;
     struct fid_cq *txcq, *rxcq;
     struct fid_av *av;
     struct fid_mr *data_mr;
+    uint64_t mr_access;
     void *data_desc;
     fi_addr_t dest_av_entry;
 
@@ -42,23 +41,17 @@ typedef struct {
 
 typedef struct {
     libfabric_ctx *rdma_ctx;
-    char *data_buf;
-    size_t data_buf_size;
     rdma_addr remote_addr;
     rdma_addr local_addr;
     enum direction dir;
 } ep_cfg_t;
-
-typedef struct {
-    ep_cfg_t *ep_cfg;
-    void *s_ctx;
-} ep_thread_arg_t;
 
 int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size);
 // *buf has to point to registered memory
 int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx);
 int ep_rxcq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
 int ep_txcq_read(ep_ctx_t *ep_ctx, int timeout);
+int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size);
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
 int ep_destroy(ep_ctx_t **ep_ctx);
 

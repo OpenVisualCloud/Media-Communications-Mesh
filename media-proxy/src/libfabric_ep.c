@@ -159,16 +159,15 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
     }
     return 0;
 }
-
-static int ep_reg_mr(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi)
+int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
 {
     int ret;
 
     /* TODO: I'm using address of ep_ctx as a key,
      * maybe there is more elegant solution */
-    ret = rdma_reg_mr(rdma_ctx, ep_ctx->ep, fi, ep_ctx->data_buf, ep_ctx->data_buf_size,
-                      rdma_info_to_mr_access(fi), (uint64_t)ep_ctx, FI_HMEM_SYSTEM, 0,
-                      &ep_ctx->data_mr, &ep_ctx->data_desc);
+    ret = rdma_reg_mr(ep_ctx->rdma_ctx, ep_ctx->ep, data_buf, data_buf_size,
+                      ep_ctx->mr_access, (uint64_t)ep_ctx, FI_HMEM_SYSTEM, 0, &ep_ctx->data_mr,
+                      &ep_ctx->data_desc);
     return ret;
 }
 
@@ -229,8 +228,6 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         return -ENOMEM;
     }
     (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
-    (*ep_ctx)->data_buf = cfg->data_buf;
-    (*ep_ctx)->data_buf_size = cfg->data_buf_size;
 
     hints = fi_dupinfo((*ep_ctx)->rdma_ctx->info);
 
@@ -248,13 +245,6 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     }
     if (ret) {
         RDMA_PRINTERR("fi_getinfo", ret);
-        return ret;
-    }
-
-    ret = ep_reg_mr(*ep_ctx, (*ep_ctx)->rdma_ctx, fi);
-    if (ret) {
-        printf("%s, ep_reg_mr fail\n", __func__);
-        ep_destroy(ep_ctx);
         return ret;
     }
 
@@ -278,6 +268,7 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         if (ret)
             return ret;
     }
+    (*ep_ctx)->mr_access = rdma_info_to_mr_access(fi);
 
     fi_freeinfo(fi);
 

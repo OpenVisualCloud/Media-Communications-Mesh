@@ -44,7 +44,6 @@ typedef struct {
 
     volatile bool stop;
     pthread_t ep_thread;
-    atomic_bool ep_ready;
 
     int fb_send;
 
