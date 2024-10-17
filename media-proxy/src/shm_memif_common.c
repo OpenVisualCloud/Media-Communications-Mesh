@@ -21,7 +21,7 @@ void print_memif_details(memif_conn_handle_t conn)
     int err = 0;
 
     buf = (char*)malloc(buflen);
-    if (buf == NULL) {
+    if (!buf) {
         INFO("Not Enough Memory.");
         return;
     }
@@ -222,14 +222,14 @@ int memif_get_buffs_region(memif_conn_handle_t conn, memif_region_details_t *reg
 {
     memif_details_t md = { 0 };
     ssize_t buflen = 2000;
-    char* buf = NULL;
+    char *buf = NULL;
     int err = 0;
 
-    if(!region || ! conn)
+    if (!region || !conn)
         return -EINVAL;
 
-    buf = (char*)calloc(buflen, 1);
-    if (buf == NULL) {
+    buf = (char *)calloc(buflen, 1);
+    if (!buf) {
         ERROR("Not Enough Memory.");
         return -ENOMEM;
     }
@@ -241,7 +241,7 @@ int memif_get_buffs_region(memif_conn_handle_t conn, memif_region_details_t *reg
         return -EINVAL;
     }
     /* Region number 1 holds data buffers */
-    if (md.regions_num < 1){
+    if (md.regions_num < 1) {
         ERROR("Data buffers not found in memif regions");
         free(buf);
         return -EINVAL;
