@@ -320,19 +320,24 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
     ep_cfg_t *ep_cfg = NULL;
     int err;
 
+    if (!dev_handle || !opts || !memif_ops) {
+        ERROR("%s, A input parameter is NULL", __func__);
+        return NULL;
+    }
+
     ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
     if (!ep_th_arg) {
-        printf("%s, Endpoint thread arguments allocation failed\n", __func__);
+        ERROR("%s, Endpoint thread arguments allocation failed\n", __func__);
         goto exit_dealloc;
     }
     tx_ctx = calloc(1, sizeof(tx_rdma_session_context_t));
     if (tx_ctx == NULL) {
-        printf("%s, TX session contex allocation failed\n", __func__);
+        ERROR("%s, TX session contex allocation failed\n", __func__);
         goto exit_dealloc;
     }
     ep_cfg = calloc(1, sizeof(ep_cfg_t));
     if (!ep_cfg) {
-        printf("%s, RDMA endpoint config allocation failed\n", __func__);
+        ERROR("%s, RDMA endpoint config allocation failed\n", __func__);
         goto exit_dealloc;
     }
 
@@ -343,7 +348,7 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
 
     err = tx_rdma_shm_init(tx_ctx, memif_ops);
     if (err < 0) {
-        printf("%s, fail to initialize share memory.\n", __func__);
+        ERROR("%s, failed to initialize share memory.\n", __func__);
         goto exit_dealloc;
     }
 
@@ -356,7 +361,7 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
     ep_th_arg->s_ctx = tx_ctx;
     err = pthread_create(&tx_ctx->ep_thread, NULL, tx_rdma_ep_thread, ep_th_arg);
     if (err < 0) {
-        printf("%s(%d), thread create fail %d\n", __func__, err, tx_ctx->idx);
+        ERROR("%s, Endpoint thread %d create failed: %s\n", __func__, tx_ctx->idx, strerror(err));
         goto exit_deinit_shm;
     }
 
@@ -477,20 +482,25 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
     ep_cfg_t *ep_cfg = NULL;
     int err;
 
+    if (!dev_handle || !opts || !memif_ops) {
+        ERROR("%s, A input parameter is NULL", __func__);
+        return NULL;
+    }
+
     ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
     if (!ep_th_arg) {
-        printf("%s, Endpoint thread arguments allocation failed\n", __func__);
+        ERROR("%s, Endpoint thread arguments allocation failed\n", __func__);
         goto exit_dealloc;
     }
 
     rx_ctx = calloc(1, sizeof(rx_rdma_session_context_t));
     if (!rx_ctx) {
-        printf("%s, TX session contex allocation failed\n", __func__);
+        ERROR("%s, TX session contex allocation failed\n", __func__);
         goto exit_dealloc;
     }
     ep_cfg = calloc(1, sizeof(ep_cfg_t));
     if (!ep_cfg) {
-        printf("%s, RDMA endpoint config allocation failed\n", __func__);
+        ERROR("%s, RDMA endpoint config allocation failed\n", __func__);
         goto exit_dealloc;
     }
     rx_ctx->rdma_ctx = dev_handle;
@@ -500,7 +510,7 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
 
     err = rx_rdma_shm_init(rx_ctx, memif_ops);
     if (err < 0) {
-        printf("%s, fail to initialize share memory.\n", __func__);
+        ERROR("%s, Failed to initialize share memory.\n", __func__);
         goto exit_dealloc;
     }
 
@@ -513,7 +523,7 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
     ep_th_arg->s_ctx = rx_ctx;
     err = pthread_create(&rx_ctx->ep_thread, NULL, rx_rdma_ep_thread, ep_th_arg);
     if (err < 0) {
-        printf("%s(%d), thread create fail %d\n", __func__, err, rx_ctx->idx);
+        ERROR("%s, Endpoint thread %d create failed: %s\n", __func__, rx_ctx->idx, strerror(err));
         goto exit_deinit_shm;
     }
 
