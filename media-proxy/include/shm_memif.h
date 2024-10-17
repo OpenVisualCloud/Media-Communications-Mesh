@@ -89,6 +89,7 @@ int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
 int memif_buffer_alloc_timeout(memif_conn_handle_t conn, uint16_t qid,
                                memif_buffer_t * bufs, uint16_t count, uint16_t * count_out,
                                uint32_t size, uint32_t timeout_ms);
+int memif_get_buffs_region(memif_conn_handle_t conn, memif_region_details_t *region);
 
 #ifdef __cplusplus
 }
