@@ -79,9 +79,9 @@ static void rdma_fill_mr_attr(struct iovec *iov, struct fi_mr_dmabuf *dmabuf, in
     }
 }
 
-int rdma_reg_mr(libfabric_ctx *rdma_ctx, struct fid_ep *ep, struct fi_info *fi, void *buf,
-                size_t size, uint64_t access, uint64_t key, enum fi_hmem_iface iface,
-                uint64_t device, struct fid_mr **mr, void **desc)
+int rdma_reg_mr(libfabric_ctx *rdma_ctx, struct fid_ep *ep, void *buf, size_t size, uint64_t access,
+                uint64_t key, enum fi_hmem_iface iface, uint64_t device, struct fid_mr **mr,
+                void **desc)
 {
     struct fi_mr_dmabuf dmabuf = { 0 };
     struct fi_mr_attr attr = { 0 };
