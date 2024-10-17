@@ -22,9 +22,6 @@ extern "C" {
 #include "app_platform.h"
 #include "shm_memif.h" /* share memory */
 #include "utils.h"
-/*used by UDP H264*/
-#include <mtl/mudp_api.h>
-#include <mtl/mtl_sch_api.h>
 
 #ifndef NS_PER_S
 #define NS_PER_S (1000000000)
@@ -37,9 +34,6 @@ extern "C" {
 #ifndef NS_PER_MS
 #define NS_PER_MS (1000 * 1000)
 #endif
-
-#define SCH_CNT 3
-#define TASKLETS 1000
 
 typedef struct {
     mtl_handle st;
@@ -324,70 +318,6 @@ typedef struct {
     double expect_fps;
 } rx_st30_session_context_t;
 
-enum sample_udp_mode {
-    SAMPLE_UDP_TRANSPORT_H264,
-};
-
-typedef struct {
-    mtl_handle st;
-    struct mtl_init_params param;
-    uint8_t rx_sip_addr[MTL_PORT_MAX][MTL_IP_ADDR_LEN]; /* rx source IP */
-    uint16_t framebuff_cnt;
-    uint16_t udp_port;
-    uint8_t payload_type;
-    // uint32_t sessions; /* number of sessions */
-    bool ext_frame;
-    bool hdr_split;
-    bool rx_dump;
-    uint32_t fb_count; /* Frame buffer count. */
-    enum sample_udp_mode udp_mode;
-    uint64_t udp_tx_bps;
-    int udp_len;
-    bool exit;
-    bool has_user_meta; /* if provide user meta data with the st2110-20 frame */
-    pthread_t thread;
-    pthread_cond_t wake_cond;
-    pthread_mutex_t wake_mutex;
-    mudp_handle socket;
-    struct sockaddr_in client_addr;
-    struct sockaddr_in bind_addr;
-    bool stop;
-
-    /* share memory arguments */
-    memif_socket_args_t memif_socket_args;
-    memif_conn_args_t memif_conn_args;
-
-    /* memif conenction handle */
-    memif_socket_handle_t memif_socket;
-    memif_conn_handle_t memif_conn;
-
-    memif_buffer_t* shm_bufs;
-    uint16_t shm_buf_num;
-    uint8_t shm_ready;
-
-    uint32_t memif_nalu_size;
-
-    char name[32];
-    pthread_t memif_event_thread;
-
-    /*udp poll*/
-    //mtl_sch_handle schs[SCH_CNT];
-    mtl_tasklet_handle udp_tasklet;
-    struct mtl_tasklet_ops udp_tasklet_ops;
-    struct mudp_pollfd udp_pollfd;
-    bool sch_start;
-    int new_NALU;
-    bool check_first_new_NALU;
-    bool fragments_bunch;
-    mcm_buffer* rtp_header;
-    uint16_t tx_buf_num;
-    char* dst;
-    char* dst_nalu_size_point;
-    //int sch_idx;
-    //int tasklet_idx;
-
-} rx_udp_h264_session_context_t;
-
 typedef struct {
     mtl_handle st;
     int idx;
@@ -517,20 +447,11 @@ void mtl_st22p_tx_session_stop(tx_st22p_session_context_t* tx_ctx);
 /* RX: Stop ST22P session */
 void mtl_st22p_rx_session_stop(rx_st22p_session_context_t* rx_ctx);
 
-/* RX: Stop RTSP session */
-void mtl_rtsp_rx_session_stop(rx_udp_h264_session_context_t* rx_ctx);
-
 /* TX: Destroy ST22P session */
 void mtl_st22p_tx_session_destroy(tx_st22p_session_context_t** p_tx_ctx);
 
 /* RX: Destroy ST22P session */
 void mtl_st22p_rx_session_destroy(rx_st22p_session_context_t** p_rx_ctx);
-
-/* RX: Destroy RTSP session */
-void mtl_rtsp_rx_session_destroy(rx_udp_h264_session_context_t** p_rx_ctx);
-
-/* RX: Create UDP H264 session */
-rx_udp_h264_session_context_t* mtl_udp_h264_rx_session_create(mtl_handle dev_handle, mcm_dp_addr* dp_addr, memif_ops_t* memif_ops, mtl_sch_handle schs[]);
 
 /* TX: Stop ST30 session */
 void mtl_st30_tx_session_stop(tx_st30_session_context_t* pctx);

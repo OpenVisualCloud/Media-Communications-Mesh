@@ -148,8 +148,6 @@ void* msg_loop(void* ptr)
                             memcpy(&param.socket_args, &it->tx_st40_session->memif_socket_args, sizeof(memif_socket_args_t));
                             memcpy(&param.conn_args, &it->tx_st40_session->memif_conn_args, sizeof(memif_conn_args_t));
                             break;
-                        case PAYLOAD_TYPE_RTSP_VIDEO:
-                            break;
                         case PAYLOAD_TYPE_ST20_VIDEO:
                             memcpy(&param.socket_args, &it->tx_session->memif_socket_args, sizeof(memif_socket_args_t));
                             memcpy(&param.conn_args, &it->tx_session->memif_conn_args, sizeof(memif_conn_args_t));
@@ -177,10 +175,6 @@ void* msg_loop(void* ptr)
                         case PAYLOAD_TYPE_ST40_ANCILLARY:
                             memcpy(&param.socket_args, &it->rx_st40_session->memif_socket_args, sizeof(memif_socket_args_t));
                             memcpy(&param.conn_args, &it->rx_st40_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_RTSP_VIDEO:
-                            memcpy(&param.socket_args, &it->rx_udp_h264_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->rx_udp_h264_session->memif_conn_args, sizeof(memif_conn_args_t));
                             break;
                         case PAYLOAD_TYPE_ST20_VIDEO:
                             memcpy(&param.socket_args, &it->rx_session->memif_socket_args, sizeof(memif_socket_args_t));
