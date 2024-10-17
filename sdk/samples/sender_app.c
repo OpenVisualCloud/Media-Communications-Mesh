@@ -310,8 +310,6 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
     } else if (strncmp(payload_type, "st40", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
-    } else if (strncmp(payload_type, "rtsp", sizeof(payload_type)) == 0) {
-        param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
     } else if (strncmp(payload_type, "rdma", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_RDMA_VIDEO;
     } else {
@@ -339,12 +337,15 @@ int main(int argc, char** argv)
         break;
     case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_ST22_VIDEO:
-    default:
         /* video format */
         param.payload_args.video_args.width   = param.width = width;
         param.payload_args.video_args.height  = param.height = height;
         param.payload_args.video_args.fps     = param.fps = vid_fps;
         param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
+        break;
+    default:
+        printf("Unrecognized payload type\n");
+        exit(-1);
         break;
     }
 
