@@ -81,10 +81,18 @@ void rdma_cq_set_wait_attr(struct fi_cq_attr *cq_attr, enum cq_comp_method metho
 static int rdma_spin_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
                               int timeout, struct fi_cq_err_entry *entries)
 {
-    uint64_t entries_num = total - *cur;
+    uint64_t entries_num;
     struct fi_cq_err_entry comp;
     struct timespec a, b;
     int ret;
+
+    if (!cur)
+        return EINVAL;
+
+    if (total < *cur)
+        return EINVAL;
+
+    entries_num = total - *cur;
 
     if (timeout >= 0)
         clock_gettime(CLOCK_MONOTONIC, &a);
@@ -117,21 +125,33 @@ static int rdma_poll_fd(int fd, int timeout)
     fds.fd = fd;
     fds.events = POLLIN;
     ret = poll(&fds, 1, timeout);
-    if (ret == !ret) {
+    if (ret == -1) {
         RDMA_PRINTERR("poll", -errno);
         ret = -errno;
+    } else if (!ret) {
+        RDMA_WARN("poll timed out");
+        ret = -EAGAIN;
     } else {
-        return 0;
+        ret = 0;
     }
+    return ret;
 }
 
 static int rdma_fdwait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
                                 int timeout, struct fi_cq_err_entry *entries)
 {
-    uint64_t entries_num = total - *cur;
+    uint64_t entries_num;
     struct fi_cq_err_entry comp;
     struct fid *fids[1];
     int fd, ret;
+
+    if (!cur)
+        return EINVAL;
+
+    if (total < *cur)
+        return EINVAL;
+
+    entries_num = total - *cur;
 
     fd = cq == ep_ctx->txcq ? ep_ctx->tx_fd : ep_ctx->rx_fd;
     fids[0] = &cq->fid;
@@ -158,12 +178,21 @@ static int rdma_fdwait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *c
 static int rdma_wait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
                               int timeout, struct fi_cq_err_entry *entries)
 {
-    uint64_t entries_num = total - *cur;
+    uint64_t entries_num;
     struct fi_cq_err_entry comp;
     int ret;
 
+    if (!cur)
+        return EINVAL;
+
+    if (total < *cur)
+        return EINVAL;
+
+    entries_num = total - *cur;
+
     while (total != *cur) {
-        ret = fi_cq_sread(cq, entries ? &entries[entries_num - (total - *cur)] : &comp, 1, NULL, timeout);
+        ret = fi_cq_sread(cq, entries ? &entries[entries_num - (total - *cur)] : &comp, 1, NULL,
+                          timeout);
         if (ret > 0) {
             (*cur)++;
         } else if (ret < 0) {
@@ -179,7 +208,8 @@ int rdma_get_cq_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_
 {
     int ret;
 
-    assert(total > *cur);
+    if (!cur)
+        return EINVAL;
 
     ret = rdma_read_cq(ep_ctx, cq, cur, total, timeout, entries);
 

@@ -190,8 +190,7 @@ int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx)
     int ret;
 
     do {
-        ret =
-            fi_recv(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, FI_ADDR_UNSPEC, buf_ctx);
+        ret = fi_recv(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, FI_ADDR_UNSPEC, buf_ctx);
         if (ret == -FI_EAGAIN)
             (void)fi_cq_read(ep_ctx->rxcq, NULL, 0);
     } while (ret == -FI_EAGAIN);
@@ -211,7 +210,6 @@ int ep_rxcq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
     *buf_ctx = entry.op_context;
     return 0;
 }
-
 
 int ep_txcq_read(ep_ctx_t *ep_ctx, int timeout)
 {

@@ -79,7 +79,7 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
     rx_ctx->memif_conn_args.socket = rx_ctx->memif_socket;
     rx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     rx_ctx->memif_conn_args.buffer_size = (uint32_t)rx_ctx->transfer_size;
-    rx_ctx->memif_conn_args.log2_ring_size = 2;
+    rx_ctx->memif_conn_args.log2_ring_size = 4;
     memcpy((char *)rx_ctx->memif_conn_args.interface_name, memif_ops->interface_name,
            sizeof(rx_ctx->memif_conn_args.interface_name));
     rx_ctx->memif_conn_args.is_master = memif_ops->is_master;
@@ -87,7 +87,7 @@ int rx_rdma_shm_init(rx_rdma_session_context_t *rx_ctx, memif_ops_t *memif_ops)
     rx_ctx->shm_buf_num = 1 << rx_ctx->memif_conn_args.log2_ring_size;
     rx_ctx->shm_bufs = (shm_buf_info_t *)calloc(rx_ctx->shm_buf_num, sizeof(shm_buf_info_t));
     if (!rx_ctx->shm_bufs) {
-        ERROR("%s Fail to malloc shared memory buffers", __func__);
+        ERROR("%s Failed to allocate shared memory buffers", __func__);
         return -ENOMEM;
     }
 
@@ -170,7 +170,7 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
     tx_ctx->memif_conn_args.socket = tx_ctx->memif_socket;
     tx_ctx->memif_conn_args.interface_id = memif_ops->interface_id;
     tx_ctx->memif_conn_args.buffer_size = (uint32_t)tx_ctx->transfer_size;
-    tx_ctx->memif_conn_args.log2_ring_size = 2;
+    tx_ctx->memif_conn_args.log2_ring_size = 4;
     snprintf((char *)tx_ctx->memif_conn_args.interface_name,
              sizeof(tx_ctx->memif_conn_args.interface_name), "%s", memif_ops->interface_name);
     tx_ctx->memif_conn_args.is_master = memif_ops->is_master;
@@ -187,7 +187,7 @@ int tx_rdma_shm_init(tx_rdma_session_context_t *tx_ctx, memif_ops_t *memif_ops)
     err = pthread_create(&tx_ctx->memif_event_thread, NULL, memif_event_loop,
                          tx_ctx->memif_conn_args.socket);
     if (err < 0) {
-        ERROR("%s(%d), thread create fail\n", __func__, err);
+        ERROR("%s(%d), thread create failed\n", __func__, err);
         return -1;
     }
 
@@ -296,11 +296,10 @@ static void *tx_rdma_ep_thread(void *arg)
     err = ep_init(&s_ctx->ep_ctx, ep_cfg);
     free(ep_cfg);
     if (err) {
-        ERROR("%s, fail to initialize libfabric's end point.\n", __func__);
+        ERROR("%s, failed to initialize libfabric's end point.\n", __func__);
         return NULL;
     }
     atomic_store_explicit(&s_ctx->ep_ready, true, memory_order_release);
-
 
     INFO("%s(%d), TX RDMA thread started\n", __func__, s_ctx->idx);
     while (!s_ctx->stop) {
@@ -323,17 +322,17 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
 
     ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
     if (!ep_th_arg) {
-        printf("%s, Endpoint thread arguments malloc fail\n", __func__);
+        printf("%s, Endpoint thread arguments allocation failed\n", __func__);
         goto exit_dealloc;
     }
     tx_ctx = calloc(1, sizeof(tx_rdma_session_context_t));
     if (tx_ctx == NULL) {
-        printf("%s, TX session contex malloc fail\n", __func__);
+        printf("%s, TX session contex allocation failed\n", __func__);
         goto exit_dealloc;
     }
-    ep_cfg= calloc(1, sizeof(ep_cfg_t));
+    ep_cfg = calloc(1, sizeof(ep_cfg_t));
     if (!ep_cfg) {
-        printf("%s, RDMA endpoint config malloc fail\n", __func__);
+        printf("%s, RDMA endpoint config allocation failed\n", __func__);
         goto exit_dealloc;
     }
 
@@ -348,7 +347,6 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
         goto exit_dealloc;
     }
 
-
     ep_cfg->rdma_ctx = tx_ctx->rdma_ctx;
     ep_cfg->local_addr = opts->local_addr;
     ep_cfg->remote_addr = opts->remote_addr;
@@ -361,7 +359,6 @@ tx_rdma_session_context_t *rdma_tx_session_create(libfabric_ctx *dev_handle, rdm
         printf("%s(%d), thread create fail %d\n", __func__, err, tx_ctx->idx);
         goto exit_deinit_shm;
     }
-
 
     return tx_ctx;
 
@@ -376,16 +373,14 @@ exit_dealloc:
 
 static shm_buf_info_t *get_free_shm_buf(rx_rdma_session_context_t *s)
 {
-    uint32_t i = 0;
-    for (; i < s->shm_buf_num; i++) {
+    uint32_t i;
+    for (i = 0; i < s->shm_buf_num; i++) {
         if (!s->shm_bufs[i].used) {
             return &s->shm_bufs[i];
         }
     }
-    
     return NULL;
 }
-
 
 static int pass_empty_buf_to_libfabric(rx_rdma_session_context_t *s)
 {
@@ -428,11 +423,10 @@ static void handle_received_buffers(rx_rdma_session_context_t *s)
 
     err = memif_tx_burst(s->memif_conn, 0, &buf_info->shm_buf, 1, &bursted_buf_num);
     if (err != MEMIF_ERR_SUCCESS && bursted_buf_num != 1) {
-        INFO("%s memif_tx_burst: %s", __func__,  memif_strerror(err));
+        INFO("%s memif_tx_burst: %s", __func__, memif_strerror(err));
         return;
     }
     buf_info->used = false;
-
 }
 
 static void *rx_rdma_ep_thread(void *arg)
@@ -459,7 +453,7 @@ static void *rx_rdma_ep_thread(void *arg)
     err = ep_init(&s_ctx->ep_ctx, ep_cfg);
     free(ep_cfg);
     if (err) {
-        ERROR("%s, fail to initialize libfabric's end point.\n", __func__);
+        ERROR("%s, failed to initialize libfabric's end point.\n", __func__);
         return NULL;
     }
 
@@ -467,7 +461,7 @@ static void *rx_rdma_ep_thread(void *arg)
     while (!s_ctx->stop) {
         if (!atomic_load_explicit(&s_ctx->shm_ready, memory_order_acquire))
             continue;
-        while(!pass_empty_buf_to_libfabric(s_ctx));
+        while (!pass_empty_buf_to_libfabric(s_ctx)) {}
         handle_received_buffers(s_ctx);
     }
 
@@ -485,18 +479,18 @@ rx_rdma_session_context_t *rdma_rx_session_create(libfabric_ctx *dev_handle, rdm
 
     ep_th_arg = calloc(1, sizeof(ep_thread_arg_t));
     if (!ep_th_arg) {
-        printf("%s, Endpoint thread arguments malloc fail\n", __func__);
+        printf("%s, Endpoint thread arguments allocation failed\n", __func__);
         goto exit_dealloc;
     }
 
     rx_ctx = calloc(1, sizeof(rx_rdma_session_context_t));
     if (!rx_ctx) {
-        printf("%s, TX session contex malloc fail\n", __func__);
+        printf("%s, TX session contex allocation failed\n", __func__);
         goto exit_dealloc;
     }
     ep_cfg = calloc(1, sizeof(ep_cfg_t));
     if (!ep_cfg) {
-        printf("%s, RDMA endpoint config malloc fail\n", __func__);
+        printf("%s, RDMA endpoint config allocation failed\n", __func__);
         goto exit_dealloc;
     }
     rx_ctx->rdma_ctx = dev_handle;
