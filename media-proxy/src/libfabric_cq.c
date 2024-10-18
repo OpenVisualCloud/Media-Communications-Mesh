@@ -87,10 +87,10 @@ static int rdma_spin_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur
     int ret;
 
     if (!cur)
-        return EINVAL;
+        return -EINVAL;
 
     if (total < *cur)
-        return EINVAL;
+        return -EINVAL;
 
     entries_num = total - *cur;
 
@@ -146,10 +146,10 @@ static int rdma_fdwait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *c
     int fd, ret;
 
     if (!cur)
-        return EINVAL;
+        return -EINVAL;
 
     if (total < *cur)
-        return EINVAL;
+        return -EINVAL;
 
     entries_num = total - *cur;
 
@@ -183,10 +183,10 @@ static int rdma_wait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur
     int ret;
 
     if (!cur)
-        return EINVAL;
+        return -EINVAL;
 
     if (total < *cur)
-        return EINVAL;
+        return -EINVAL;
 
     entries_num = total - *cur;
 
@@ -209,7 +209,7 @@ int rdma_get_cq_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_
     int ret;
 
     if (!cur)
-        return EINVAL;
+        return -EINVAL;
 
     ret = rdma_read_cq(ep_ctx, cq, cur, total, timeout, entries);
 
@@ -217,7 +217,7 @@ int rdma_get_cq_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_
         if (ret == -FI_EAVAIL) {
             ret = rdma_cq_readerr(cq);
             (*cur)++;
-        } else {
+        } else if ( ret != -FI_EAGAIN) {
             RDMA_PRINTERR("rdma_get_cq_comp", ret);
         }
     }
