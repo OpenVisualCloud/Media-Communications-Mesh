@@ -28,7 +28,6 @@ typedef struct {
     struct fid_cq *txcq, *rxcq;
     struct fid_av *av;
     struct fid_mr *data_mr;
-    uint64_t mr_access;
     void *data_desc;
     fi_addr_t dest_av_entry;
 

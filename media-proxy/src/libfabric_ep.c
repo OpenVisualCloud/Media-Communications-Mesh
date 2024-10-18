@@ -166,8 +166,8 @@ int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
     /* TODO: I'm using address of ep_ctx as a key,
      * maybe there is more elegant solution */
     ret = rdma_reg_mr(ep_ctx->rdma_ctx, ep_ctx->ep, data_buf, data_buf_size,
-                      ep_ctx->mr_access, (uint64_t)ep_ctx, FI_HMEM_SYSTEM, 0, &ep_ctx->data_mr,
-                      &ep_ctx->data_desc);
+                      rdma_info_to_mr_access(ep_ctx->rdma_ctx->info), (uint64_t)ep_ctx,
+                      FI_HMEM_SYSTEM, 0, &ep_ctx->data_mr, &ep_ctx->data_desc);
     return ret;
 }
 
@@ -268,7 +268,6 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         if (ret)
             return ret;
     }
-    (*ep_ctx)->mr_access = rdma_info_to_mr_access(fi);
 
     fi_freeinfo(fi);
 
