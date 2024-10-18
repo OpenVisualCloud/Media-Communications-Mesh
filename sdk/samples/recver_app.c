@@ -270,8 +270,6 @@ int main(int argc, char** argv)
         param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
     } else if (strncmp(payload_type, "st40", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
-    } else if (strncmp(payload_type, "rtsp", sizeof(payload_type)) == 0) {
-        param.payload_type = PAYLOAD_TYPE_RTSP_VIDEO;
     } else if (strncmp(payload_type, "rdma", sizeof(payload_type)) == 0) {
         param.payload_type = PAYLOAD_TYPE_RDMA_VIDEO;
     } else {
@@ -297,16 +295,18 @@ int main(int argc, char** argv)
         param.payload_args.rdma_args.transfer_size =
             getFrameSize(pix_fmt, width, height, false);
         break;
-    case PAYLOAD_TYPE_RTSP_VIDEO:
     case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_ST22_VIDEO:
-    default:
         /* video format */
         param.pix_fmt = pix_fmt;
         param.payload_args.video_args.width   = param.width = width;
         param.payload_args.video_args.height  = param.height = height;
         param.payload_args.video_args.fps     = param.fps = vid_fps;
         param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
+        break;
+    default:
+        printf("Unrecognized payload type\n");
+        exit(-1);
         break;
     }
 
@@ -370,30 +370,23 @@ int main(int argc, char** argv)
             first_frame = false;
         }
 
-        if (strncmp(payload_type, "rtsp", sizeof(payload_type)) != 0) {
-            if (dump_fp) {
-                fwrite(buf->data, buf->len, 1, dump_fp);
-            } else {
-                // Following code are mainly for test purpose, it requires the sender side to
-                // pre-set the first several bytes
-                ptr = buf->data;
-                if (*(uint32_t *)ptr != frame_count) {
-                    printf("Wrong data content: expected %u, got %u\n", frame_count, *(uint32_t*)ptr);
-                    /* catch up the sender frame count */
-                    frame_count = *(uint32_t*)ptr;
-                }
-                ptr += sizeof(frame_count);
-                ts_send = *(struct timespec *)ptr;
-
-                latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
-                latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
-
+        if (dump_fp) {
+            fwrite(buf->data, buf->len, 1, dump_fp);
+        } else {
+            // Following code are mainly for test purpose, it requires the sender side to
+            // pre-set the first several bytes
+            ptr = buf->data;
+            if (*(uint32_t *)ptr != frame_count) {
+                printf("Wrong data content: expected %u, got %u\n", frame_count, *(uint32_t*)ptr);
+                /* catch up the sender frame count */
+                frame_count = *(uint32_t*)ptr;
             }
-        } else { //TODO: rtsp receiver side test code
-            if (dump_fp) {
-                fwrite(buf->data, buf->len, 1, dump_fp);
-            }
-            printf("RX package number:%d   seq_num: %d, timestamp: %u, RX H264 NALU: %ld\n", frame_count, buf->metadata.seq_num, buf->metadata.timestamp, buf->len);
+            ptr += sizeof(frame_count);
+            ts_send = *(struct timespec *)ptr;
+
+            latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
+            latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
+
         }
 
         if (frame_count % stat_interval == 0) {

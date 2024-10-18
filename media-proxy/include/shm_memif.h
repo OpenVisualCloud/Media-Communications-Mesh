@@ -65,7 +65,6 @@ int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data);
 int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
 int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
 int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_udp_h264_on_connect(memif_conn_handle_t conn, void* priv_data);
 
 int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data);
 int rx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data);
