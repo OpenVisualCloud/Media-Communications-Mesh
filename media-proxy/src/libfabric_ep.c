@@ -121,7 +121,7 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         cq_attr.format = FI_CQ_FORMAT_CONTEXT;
     }
 
-    rdma_cq_set_wait_attr(cq_attr, rdma_ctx->comp_method, NULL);
+    rdma_cq_set_wait_attr(&cq_attr, rdma_ctx->comp_method, NULL);
     if (tx_cq_size)
         cq_attr.size = tx_cq_size;
     else
@@ -133,7 +133,7 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         return ret;
     }
 
-    rdma_cq_set_wait_attr(cq_attr, rdma_ctx->comp_method, NULL);
+    rdma_cq_set_wait_attr(&cq_attr, rdma_ctx->comp_method, NULL);
     if (rx_cq_size)
         cq_attr.size = rx_cq_size;
     else
@@ -159,48 +159,61 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
     }
     return 0;
 }
-
-static int ep_reg_mr(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi)
+int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
 {
     int ret;
 
     /* TODO: I'm using address of ep_ctx as a key,
      * maybe there is more elegant solution */
-    ret = rdma_reg_mr(rdma_ctx, ep_ctx->ep, fi, ep_ctx->data_buf, ep_ctx->data_buf_size,
-                      rdma_info_to_mr_access(fi), (uint64_t)ep_ctx, FI_HMEM_SYSTEM, 0,
-                      &ep_ctx->data_mr, &ep_ctx->data_desc);
+    ret = rdma_reg_mr(ep_ctx->rdma_ctx, ep_ctx->ep, data_buf, data_buf_size,
+                      rdma_info_to_mr_access(ep_ctx->rdma_ctx->info), (uint64_t)ep_ctx,
+                      FI_HMEM_SYSTEM, 0, &ep_ctx->data_mr, &ep_ctx->data_desc);
     return ret;
 }
 
-int ep_send_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size)
+int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size)
 {
     int ret;
 
     do {
-        ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry,
-                      ep_ctx->send_ctx);
+        ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, NULL);
         if (ret == -EAGAIN)
             (void)fi_cq_read(ep_ctx->txcq, NULL, 0);
     } while (ret == -EAGAIN);
 
-    ret = rdma_get_cq_comp(ep_ctx, ep_ctx->txcq, &ep_ctx->tx_cq_cntr, ep_ctx->tx_cq_cntr + 1, -1);
     return ret;
 }
 
-int ep_recv_buf(ep_ctx_t *ep_ctx, char *buf, size_t buf_size)
+int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx)
 {
     int ret;
-    double elapsed_time;
-    double fps = 0.0;
 
     do {
-        ret =
-            fi_recv(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, FI_ADDR_UNSPEC, ep_ctx->recv_ctx);
-        if (ret == -EAGAIN)
+        ret = fi_recv(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, FI_ADDR_UNSPEC, buf_ctx);
+        if (ret == -FI_EAGAIN)
             (void)fi_cq_read(ep_ctx->rxcq, NULL, 0);
-    } while (ret == -EAGAIN);
+    } while (ret == -FI_EAGAIN);
 
-    return rdma_get_cq_comp(ep_ctx, ep_ctx->rxcq, &ep_ctx->rx_cq_cntr, ep_ctx->rx_cq_cntr + 1, -1);
+    return ret;
+}
+
+int ep_rxcq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
+{
+    struct fi_cq_err_entry entry;
+    int err;
+
+    err = rdma_get_cq_comp(ep_ctx, ep_ctx->rxcq, &ep_ctx->rx_cq_cntr, ep_ctx->rx_cq_cntr + 1,
+                           timeout, &entry);
+    if (err)
+        return err;
+    *buf_ctx = entry.op_context;
+    return 0;
+}
+
+int ep_txcq_read(ep_ctx_t *ep_ctx, int timeout)
+{
+    return rdma_get_cq_comp(ep_ctx, ep_ctx->txcq, &ep_ctx->tx_cq_cntr, ep_ctx->tx_cq_cntr + 1,
+                            timeout, NULL);
 }
 
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
@@ -215,8 +228,6 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         return -ENOMEM;
     }
     (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
-    (*ep_ctx)->data_buf = cfg->data_buf;
-    (*ep_ctx)->data_buf_size = cfg->data_buf_size;
 
     hints = fi_dupinfo((*ep_ctx)->rdma_ctx->info);
 
@@ -234,13 +245,6 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     }
     if (ret) {
         RDMA_PRINTERR("fi_getinfo", ret);
-        return ret;
-    }
-
-    ret = ep_reg_mr(*ep_ctx, (*ep_ctx)->rdma_ctx, fi);
-    if (ret) {
-        printf("%s, ep_reg_mr fail\n", __func__);
-        ep_destroy(ep_ctx);
         return ret;
     }
 

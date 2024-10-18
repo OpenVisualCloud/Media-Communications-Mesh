@@ -18,21 +18,26 @@
 int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
     rx_rdma_session_context_t *rx_ctx = (rx_rdma_session_context_t *)priv_data;
+    memif_region_details_t region;
     int err;
 
     INFO("RX RDMA memif connected!");
 
-    /* rx buffers */
-    rx_ctx->shm_buf_num = 1;
-    rx_ctx->shm_bufs = (memif_buffer_t *)malloc(sizeof(memif_buffer_t) * rx_ctx->shm_buf_num);
-    if (!rx_ctx->shm_bufs) {
-        ERROR("Failed to allocate memory");
-        return -ENOMEM;
-    }
-
     err = memif_refill_queue(conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("memif_refill_queue: %s", memif_strerror(err));
+        return err;
+    }
+
+    err = memif_get_buffs_region(conn, &region);
+    if (err) {
+        ERROR("%s, Getting memory buffers from memif failed. \n", __func__);
+        return err;
+    }
+
+    err = ep_reg_mr(rx_ctx->ep_ctx, region.addr, region.size);
+    if (errno) {
+        ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(err));
         return err;
     }
 
@@ -81,6 +86,7 @@ int rx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data)
 int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
 {
     tx_rdma_session_context_t *tx_ctx = (tx_rdma_session_context_t *)priv_data;
+    memif_region_details_t region;
     int err = 0;
 
     INFO("TX RDMA memif connected!");
@@ -88,6 +94,18 @@ int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
     err = memif_refill_queue(conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
         INFO("memif_refill_queue: %s", memif_strerror(err));
+        return err;
+    }
+
+    err = memif_get_buffs_region(conn, &region);
+    if (err) {
+        ERROR("%s, Getting memory buffers from memif failed. \n", __func__);
+        return err;
+    }
+
+    err = ep_reg_mr(tx_ctx->ep_ctx, region.addr, region.size);
+    if (errno) {
+        ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(err));
         return err;
     }
 
@@ -149,19 +167,15 @@ int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
     /* receive packets from the shared memory */
     err = memif_rx_burst(conn, qid, &shm_bufs, 1, &buf_num);
     if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF) {
-        INFO("memif_rx_burst: %s", memif_strerror(err));
+        ERROR("memif_rx_burst: %s", memif_strerror(err));
         return err;
     }
 
-    /* TODO: Use memif buffer directly. It has to be registered by libfabric */
-    memcpy(tx_ctx->ep_ctx->data_buf, shm_bufs.data, shm_bufs.len);
-    ep_send_buf(tx_ctx->ep_ctx, tx_ctx->ep_ctx->data_buf, shm_bufs.len);
-
-    err = memif_refill_queue(conn, qid, buf_num, 0);
-    if (err != MEMIF_ERR_SUCCESS)
-        INFO("memif_refill_queue: %s", memif_strerror(err));
-
-    tx_ctx->fb_send++;
+    err = ep_send_buf(tx_ctx->ep_ctx, shm_bufs.data, shm_bufs.len);
+    if (err) {
+        ERROR("ep_send_buf failed with: %s", fi_strerror(err));
+        return err;
+    }
 
     return 0;
 }
