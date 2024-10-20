@@ -42,12 +42,14 @@ IF(ENABLE_ZERO_COPY)
 ENDIF(ENABLE_ZERO_COPY)
 
 set(proto_name controller)
+set(proto2_name mediaproxy)
 set(target media_proxy)
 set(MTL_LIB mtl)
 set(MEMIF_LIB memif)
 
 # Get proto files
 get_filename_component(proto "./protos/${proto_name}.proto" ABSOLUTE)
+get_filename_component(proto2 "./protos/${proto2_name}.proto" ABSOLUTE)
 get_filename_component(proto_dir "${proto}" DIRECTORY)
 
 # Generate source files
@@ -56,19 +58,24 @@ set(proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.pb.h")
 set(grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.cc")
 set(grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.h")
 
+set(proto2_srcs "${CMAKE_CURRENT_BINARY_DIR}/${proto2_name}.pb.cc")
+set(proto2_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto2_name}.pb.h")
+set(grpc2_srcs "${CMAKE_CURRENT_BINARY_DIR}/${proto2_name}.grpc.pb.cc")
+set(grpc2_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto2_name}.grpc.pb.h")
+
 aux_source_directory(./src proxy_srcs)
 
 add_definitions(-DHAVE_MEMFD_CREATE)
 
 add_custom_command(
-    OUTPUT "${proto_srcs}" "${proto_hdrs}" "${grpc_srcs}" "${grpc_hdrs}"
+    OUTPUT "${proto_srcs}" "${proto_hdrs}" "${grpc_srcs}" "${grpc_hdrs}" "${proto2_srcs}" "${proto2_hdrs}" "${grpc2_srcs}" "${grpc2_hdrs}"
     COMMAND ${_PROTOBUF_PROTOC}
     ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
     --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
     -I "${proto_dir}"
     --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-    "${proto}"
-    DEPENDS "${proto}"
+    "${proto}" "${proto2}"
+    DEPENDS "${proto}" "${proto2}"
 )
 
 # Find the libfabric library
@@ -85,7 +92,7 @@ ADD_DEFINITIONS(-D_GNU_SOURCE)
 # Include generated *.pb.h files
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ${LIBFABRIC_INCLUDE_DIR})
 
-add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
+add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proto2_srcs} ${grpc2_srcs} ${proxy_srcs})
 target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${_REFLECTION}
     ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB} ${LIBFABRIC})
 

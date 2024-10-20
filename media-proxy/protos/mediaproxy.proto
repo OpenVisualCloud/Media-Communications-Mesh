@@ -1,0 +1,84 @@
+// SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
+syntax = "proto3";
+
+option go_package = "control-plane-agent/api/proxy/proto/mediaproxy";
+
+package mediaproxy;
+
+service ControlAPI {
+  rpc RegisterMediaProxy (RegisterMediaProxyRequest) returns (RegisterMediaProxyReply) {}
+
+  rpc UnregisterMediaProxy (UnregisterMediaProxyRequest) returns (UnregisterMediaProxyReply) {}
+
+  rpc RegisterConnection (RegisterConnectionRequest) returns (RegisterConnectionReply) {}
+
+  rpc UnregisterConnection (UnregisterConnectionRequest) returns (UnregisterConnectionReply) {}
+
+  rpc StartCommandQueue (StartCommandQueueRequest) returns (stream CommandMessage) {}
+
+  // rpc ReportCommandResult (ReportCommandResultRequest) returns (ReportCommandResultReply) {}
+}
+
+// ReportCommandResult request
+message ReportCommandResultRequest {
+  string proxy_id = 1; // id assigned by Agent at registration
+}
+
+// RegisterMediaProxy request
+message RegisterMediaProxyRequest {
+  uint32 sdk_port = 1; // SDK API port - something to identify Media Proxy
+}
+
+// RegisterMediaProxy reply
+message RegisterMediaProxyReply {
+  string proxy_id = 1; // id assigned by Agent at registration
+}
+
+// UnregisterMediaProxy request
+message UnregisterMediaProxyRequest {
+  string proxy_id = 1; // id assigned by Agent at registration
+}
+
+// UnregisterMediaProxy reply
+message UnregisterMediaProxyReply {
+  // Empty reply  
+}
+
+// RegisterConnection request
+message RegisterConnectionRequest {
+  string proxy_id = 1;
+  uint32 kind = 2;
+  uint32 conn_type = 3;
+  uint32 payload_type = 4;
+  uint64 buffer_size = 5;
+}
+
+// RegisterConnection reply
+message RegisterConnectionReply {
+  string conn_id = 1; // id assigned by Agent at registration
+}
+
+// UnregisterConnection request
+message UnregisterConnectionRequest {
+  string proxy_id = 1;
+  string conn_id = 2; // id assigned by Agent at registration
+}
+
+// UnregisterConnection reply
+message UnregisterConnectionReply {
+  // Empty reply
+}
+
+// StartCommandQueue request
+message StartCommandQueueRequest {
+  string proxy_id = 1; // Media Proxy id
+}
+
+// Command message from Agent to Media Proxy
+message CommandMessage {
+  string opcode = 1;
+  string id = 2;
+}

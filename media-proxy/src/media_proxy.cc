@@ -105,8 +105,13 @@ int main(int argc, char* argv[])
     ctx->setDevicePort(dev_port);
     ctx->setDataPlaneAddress(dp_ip);
 
+    /* start gRPC server */
+    std::thread rpcThread(RunRPCServer, ctx);
+
     /* start TCP server */
     std::thread tcpThread(RunTCPServer, ctx);
+
+    rpcThread.join();
     tcpThread.join();
 
     delete (ctx);
