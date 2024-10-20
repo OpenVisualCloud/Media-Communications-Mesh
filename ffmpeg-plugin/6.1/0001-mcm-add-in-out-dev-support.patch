@@ -46,7 +46,7 @@ index ff11033a01..96c17b34c7 100755
  enabled libaribcaption    && require_pkg_config libaribcaption "libaribcaption >= 1.1.1" "aribcaption/aribcaption.h" aribcc_context_alloc
  enabled lv2               && require_pkg_config lv2 lilv-0 "lilv/lilv.h" lilv_world_new
  enabled libiec61883       && require libiec61883 libiec61883/iec61883.h iec61883_cmp_connect -lraw1394 -lavc1394 -lrom1394 -liec61883
-+enabled mcm               && { check_pkg_config libmcm_dp "libmcm_dp >= 24.00" mcm_dp.h mcm_dequeue_buffer ||
++enabled mcm               && { check_pkg_config libmcm_dp "libmcm_dp >= 24.00" mesh_dp.h mesh_get_buffer   ||
 +                               die "ERROR: libmcm_dp must be installed and version must be >= 24.00"; }
  enabled libass            && require_pkg_config libass "libass >= 0.11.0" ass/ass.h ass_library_init
  enabled libbluray         && require_pkg_config libbluray libbluray libbluray/bluray.h bd_open
