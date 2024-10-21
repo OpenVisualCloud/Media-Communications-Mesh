@@ -262,7 +262,7 @@ static void handle_sent_buffers(tx_rdma_session_context_t *s)
     err = ep_cq_read(s->ep_ctx, NULL, 1);
     if (err) {
         if (err != -EAGAIN)
-            INFO("%s ep_txcq_read: %s", __func__, strerror(err));
+            INFO("%s ep_txcq_read: %s", __func__, strerror(-err));
         return;
     }
     s->fb_send++;
@@ -378,7 +378,7 @@ static int pass_empty_buf_to_libfabric(rx_rdma_session_context_t *s)
 
     err = ep_recv_buf(s->ep_ctx, buf_info->shm_buf.data, buf_size, buf_info);
     if (err) {
-        ERROR("%s ep_recv_buf failed with errno: %s", __func__, fi_strerror(err));
+        ERROR("%s ep_recv_buf failed with errno: %s", __func__, fi_strerror(-err));
         return err;
     }
     return 0;
@@ -393,7 +393,7 @@ static void handle_received_buffers(rx_rdma_session_context_t *s)
     err = ep_cq_read(s->ep_ctx, (void **)&buf_info, 1);
     if (err) {
         if (err != -EAGAIN)
-            INFO("%s ep_rxcq_read: %s", __func__, strerror(err));
+            INFO("%s ep_rxcq_read: %s", __func__, strerror(-err));
         return;
     }
     s->fb_recv++;

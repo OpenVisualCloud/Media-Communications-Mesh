@@ -36,8 +36,8 @@ int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
     }
 
     err = ep_reg_mr(rx_ctx->ep_ctx, region.addr, region.size);
-    if (errno) {
-        ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(err));
+    if (err) {
+        ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(-err));
         return err;
     }
 
@@ -105,7 +105,7 @@ int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data)
 
     err = ep_reg_mr(tx_ctx->ep_ctx, region.addr, region.size);
     if (errno) {
-        ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(err));
+        ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(-err));
         return err;
     }
 
@@ -173,7 +173,7 @@ int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid)
 
     err = ep_send_buf(tx_ctx->ep_ctx, shm_bufs.data, shm_bufs.len);
     if (err) {
-        ERROR("ep_send_buf failed with: %s", fi_strerror(err));
+        ERROR("ep_send_buf failed with: %s", fi_strerror(-err));
         return err;
     }
 
