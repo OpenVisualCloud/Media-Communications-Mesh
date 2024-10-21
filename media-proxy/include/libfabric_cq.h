@@ -11,16 +11,27 @@
 extern "C" {
 #endif
 
-#include "libfabric_ep.h"
+/* forward declaration */
+typedef struct ep_ctx_t ep_ctx_t;
 
-void rdma_cq_set_wait_attr(struct fi_cq_attr *cq_attr, enum cq_comp_method method,
-                           struct fid_wait *waitset);
-int rdma_read_cq(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total, int timeout,
-                 struct fi_cq_err_entry *entries);
+enum cq_comp_method {
+    RDMA_COMP_SPIN = 0,
+    RDMA_COMP_SREAD,
+    RDMA_COMP_WAITSET,
+    RDMA_COMP_WAIT_FD,
+    RDMA_COMP_YIELD,
+};
 
-int rdma_get_cq_fd(struct fid_cq *cq, int *fd, enum cq_comp_method method);
-int rdma_get_cq_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
-                     int timeout, struct fi_cq_err_entry *entry);
+typedef struct {
+    struct fid_cq *cq;
+    struct fid_wait *waitset;
+    uint64_t cq_cntr;
+    int cq_fd;
+    int (*eq_read)(ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout);
+} cq_ctx_t;
+
+int rdma_cq_open(ep_ctx_t *ep_ctx, size_t cq_size, enum cq_comp_method comp_method);
+int rdma_read_cq(ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout);
 int rdma_cq_readerr(struct fid_cq *cq);
 
 #ifdef __cplusplus

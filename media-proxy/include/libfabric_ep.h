@@ -15,6 +15,7 @@ extern "C" {
 #include <rdma/fi_rma.h>
 #include <rdma/fi_domain.h>
 #include "libfabric_dev.h"
+#include "libfabric_cq.h"
 #include "utils.h"
 
 typedef struct {
@@ -22,18 +23,15 @@ typedef struct {
     char port[6];
 } rdma_addr;
 
-typedef struct {
+typedef struct ep_ctx_t {
     struct fid_ep *ep;
-    int rx_fd, tx_fd;
-    struct fid_cq *txcq, *rxcq;
+
     struct fid_av *av;
     struct fid_mr *data_mr;
     void *data_desc;
     fi_addr_t dest_av_entry;
 
-    struct fid_wait *waitset;
-    uint64_t tx_cq_cntr;
-    uint64_t rx_cq_cntr;
+    cq_ctx_t cq_ctx;
 
     libfabric_ctx *rdma_ctx;
 } ep_ctx_t;
@@ -45,11 +43,10 @@ typedef struct {
     enum direction dir;
 } ep_cfg_t;
 
+/* buf has to point to memory registered with ep_reg_mr */
 int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size);
-// *buf has to point to registered memory
 int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx);
-int ep_rxcq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
-int ep_txcq_read(ep_ctx_t *ep_ctx, int timeout);
+int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
 int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size);
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
 int ep_destroy(ep_ctx_t **ep_ctx);

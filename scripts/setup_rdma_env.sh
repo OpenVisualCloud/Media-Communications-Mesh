@@ -104,7 +104,7 @@ run_perftest() {
     interface_name="$1"
     network_address="${2:-192.168.255.255}"
     network_mask="${3:-24}"
-    sudo ip addr add ${network_address}/${network_mask} dev ${interface_name}
+    ip addr show dev ${interface_name} | grep ${network_address} || sudo ip addr add ${network_address}/${network_mask} dev ${interface_name}
     taskset -c 1 ib_write_bw --qp=4 --report_gbit -D 60 --tos 96 -R &> "$WORKING_DIR"/perftest_server.log &
     server_pid=$!
     ib_write_bw ${network_address} --qp=4 --report_gbit -D 60 --tos 96 -R &> "$WORKING_DIR"/perftest_client.log &

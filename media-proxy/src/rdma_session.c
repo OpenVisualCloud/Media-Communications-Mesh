@@ -259,7 +259,7 @@ static void handle_sent_buffers(tx_rdma_session_context_t *s)
     uint16_t bursted_buf_num;
     int err;
 
-    err = ep_txcq_read(s->ep_ctx, 1);
+    err = ep_cq_read(s->ep_ctx, NULL, 1);
     if (err) {
         if (err != -EAGAIN)
             INFO("%s ep_txcq_read: %s", __func__, strerror(err));
@@ -390,7 +390,7 @@ static void handle_received_buffers(rx_rdma_session_context_t *s)
     int err;
     uint16_t bursted_buf_num;
 
-    err = ep_rxcq_read(s->ep_ctx, (void **)&buf_info, 1);
+    err = ep_cq_read(s->ep_ctx, (void **)&buf_info, 1);
     if (err) {
         if (err != -EAGAIN)
             INFO("%s ep_rxcq_read: %s", __func__, strerror(err));
