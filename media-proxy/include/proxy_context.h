@@ -12,11 +12,12 @@
 #include <string_view>
 #include <vector>
 
-#include "mtl.h"
 #include "libfabric_dev.h"
-#include "rdma_session.h"
 #include <mcm_dp.h>
-#include "sessions.h"
+
+#include <mtl/st40_api.h> /* st2110-40 */
+#include "session-mtl.h"
+#include "session-rdma.h"
 
 // Based on mtl/app/src/fmt.h
 #ifndef ST_APP_PAYLOAD_TYPE_VIDEO
@@ -37,9 +38,7 @@ public:
     std::string mVideoFormat;
 
     // direction mDir;
-    std::vector<dp_session_context_t *> mDpCtx;
-    std::vector<rx_session_context_t*> mRxCtx;
-    std::vector<tx_session_context_t*> mTxCtx;
+    std::vector<Session *> mDpCtx;
     mtl_handle mDevHandle = NULL;
     libfabric_ctx *mDevHandle_rdma = NULL;
 
@@ -81,8 +80,7 @@ public:
     void ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_ops* opts);
     int TxStart(const mcm_conn_param* request);
     int RxStart(const mcm_conn_param* request);
-    void TxStop(const int32_t session_id);
-    void RxStop(const int32_t session_id);
+    int Stop(const int32_t session_id);
 
 private:
     std::atomic<std::uint32_t> mSessionCount;
