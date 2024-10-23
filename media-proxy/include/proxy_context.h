@@ -43,9 +43,6 @@ public:
     mtl_handle mDevHandle = NULL;
     libfabric_ctx *mDevHandle_rdma = NULL;
 
-    /*udp pool*/
-    mtl_sch_handle schs[SCH_CNT];
-    bool schs_ready;
     bool imtl_init_preparing;
     pthread_mutex_t mutex_lock;
 

@@ -27,7 +27,6 @@ typedef struct {
         rx_st22p_session_context_t *rx_st22p_session;
         tx_st30_session_context_t *tx_st30_session;
         rx_st30_session_context_t *rx_st30_session;
-        rx_udp_h264_session_context_t *rx_udp_h264_session;
         tx_st40_session_context_t *tx_st40_session;
         rx_st40_session_context_t *rx_st40_session;
         tx_rdma_session_context_t *tx_rdma_session;
