@@ -10,12 +10,11 @@
 #include <algorithm>
 
 #include "proxy_context.h"
-#include <mtl/mtl_sch_api.h>
 
 ProxyContext::ProxyContext(void)
     : mRpcCtrlAddr("0.0.0.0:8001")
     , mTcpCtrlAddr("0.0.0.0:8002")
-    , schs_ready(false), imtl_init_preparing(false), mSessionCount(0)
+    , imtl_init_preparing(false), mSessionCount(0)
 {
     mTcpCtrlPort = 8002;
 }
@@ -23,7 +22,7 @@ ProxyContext::ProxyContext(void)
 ProxyContext::ProxyContext(std::string_view rpc_addr, std::string_view tcp_addr)
     : mRpcCtrlAddr(rpc_addr)
     , mTcpCtrlAddr(tcp_addr)
-    , schs_ready(false), imtl_init_preparing(false), mSessionCount(0)
+    , imtl_init_preparing(false), mSessionCount(0)
 {
     auto colon = tcp_addr.find_first_of(":");
     if (colon >= tcp_addr.size() ||
@@ -583,35 +582,6 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
             ERROR("%s, Failed to initialize MTL.", __func__);
             return -1;
         } else {
-            /*udp pool*/
-            if (schs_ready == false) {
-                struct mtl_sch_ops sch_ops;
-                memset(&sch_ops, 0x0, sizeof(sch_ops));
-
-                sch_ops.nb_tasklets = TASKLETS;
-
-                for (int i = 0; i < SCH_CNT; i++) {
-                    char sch_name[32];
-
-                    snprintf(sch_name, sizeof(sch_name), "sch_udp_%d", i);
-                    sch_ops.name = sch_name;
-                    mtl_sch_handle sch = mtl_sch_create(mDevHandle, &sch_ops);
-                    if (sch == NULL) {
-                        INFO("%s, error: schduler create fail.", __func__);
-                        break;
-                    }
-                    ret = mtl_sch_start(sch);
-                    INFO("%s, start schduler %d.", __func__, i);
-                    if (ret < 0) {
-                        INFO("%s, fail to start schduler %d.", __func__, i);
-                        ret = mtl_sch_free(sch);
-                        break;
-                    }
-                    schs[i] = sch;
-                }
-                schs_ready = true;
-            }
-
             imtl_init_preparing = false;
         }
     }
@@ -668,19 +638,6 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
         }
 
         st_ctx->rx_st40_session = rx_ctx;
-        break;
-    }
-    case PAYLOAD_TYPE_RTSP_VIDEO: {
-        rx_udp_h264_session_context_t* rx_ctx = NULL;
-        mcm_dp_addr local_addr = request->local_addr;
-        /*udp poll*/
-        rx_ctx = mtl_udp_h264_rx_session_create(mDevHandle, &local_addr, &memif_ops, schs);
-        if (rx_ctx == NULL) {
-            INFO("%s, Failed to create UDP H264 TX session.", __func__);
-            delete st_ctx;
-            return -1;
-        }
-        st_ctx->rx_udp_h264_session = rx_ctx;
         break;
     }
     case PAYLOAD_TYPE_ST20_VIDEO:
@@ -939,10 +896,6 @@ void ProxyContext::RxStop(const int32_t session_id)
         case PAYLOAD_TYPE_ST40_ANCILLARY:
             mtl_st40_rx_session_stop((*it)->rx_st40_session);
             mtl_st40_rx_session_destroy(&(*it)->rx_st40_session);
-            break;
-        case PAYLOAD_TYPE_RTSP_VIDEO:
-            mtl_rtsp_rx_session_stop((*it)->rx_udp_h264_session);
-            mtl_rtsp_rx_session_destroy(&(*it)->rx_udp_h264_session);
             break;
         case PAYLOAD_TYPE_RDMA_VIDEO:
             rdma_rx_session_stop((*it)->rx_rdma_session);
