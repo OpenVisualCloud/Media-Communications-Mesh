@@ -36,6 +36,7 @@
  */
 
 #include <assert.h>
+#include <stdio.h>
 
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
@@ -47,11 +48,13 @@
 #include <rdma/fi_collective.h>
 
 #include "libfabric_cq.h"
+#include "libfabric_dev.h"
+#include "libfabric_ep.h"
 
 #define CQ_TIMEOUT (-1)
 
-void rdma_cq_set_wait_attr(struct fi_cq_attr *cq_attr, enum cq_comp_method method,
-                           struct fid_wait *waitset)
+static void rdma_cq_set_wait_attr(struct fi_cq_attr *cq_attr, enum cq_comp_method method,
+                                  struct fid_wait *waitset)
 {
     switch (method) {
     case RDMA_COMP_SREAD:
@@ -78,43 +81,35 @@ void rdma_cq_set_wait_attr(struct fi_cq_attr *cq_attr, enum cq_comp_method metho
     }
 }
 
-static int rdma_spin_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
-                              int timeout, struct fi_cq_err_entry *entries)
+static int rdma_spin_for_comp(struct ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout)
 {
-    uint64_t entries_num;
-    struct fi_cq_err_entry comp;
-    struct timespec a, b;
-    int ret;
-
-    if (!cur)
-        return -EINVAL;
-
-    if (total < *cur)
-        return -EINVAL;
-
-    entries_num = total - *cur;
+    struct timespec start_time, current_time;
+    ssize_t ret;
 
     if (timeout >= 0)
-        clock_gettime(CLOCK_MONOTONIC, &a);
+        clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    do {
-        ret = fi_cq_read(cq, entries ? &entries[entries_num - (total - *cur)] : &comp, 1);
+    while (1) {
+        /* Attempt to read one completion queue entry */
+        ret = fi_cq_read(ep_ctx->cq_ctx.cq, entry, 1);
         if (ret > 0) {
-            if (timeout >= 0)
-                clock_gettime(CLOCK_MONOTONIC, &a);
-            (*cur)++;
+            /* Successfully read an entry, increment counter and return */
+            ep_ctx->cq_ctx.cq_cntr++;
+            return 0;
         } else if (ret < 0 && ret != -FI_EAGAIN) {
+            /* Return on any error other than -FI_EAGAIN (Try again) */
             return ret;
-        } else if (timeout >= 0) {
-            clock_gettime(CLOCK_MONOTONIC, &b);
-            if ((b.tv_sec - a.tv_sec) > timeout) {
+        }
+
+        /* Check for timeout if -FI_EAGAIN is returned or number of returned entries == 0 */
+        if (timeout >= 0) {
+            clock_gettime(CLOCK_MONOTONIC, &current_time);
+            if ((current_time.tv_sec - start_time.tv_sec) > timeout) {
                 fprintf(stderr, "%ds timeout expired\n", timeout);
                 return -ENODATA;
             }
         }
-    } while (total != *cur);
-
-    return 0;
+    }
 }
 
 static int rdma_poll_fd(int fd, int timeout)
@@ -137,120 +132,58 @@ static int rdma_poll_fd(int fd, int timeout)
     return ret;
 }
 
-static int rdma_fdwait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
-                                int timeout, struct fi_cq_err_entry *entries)
+static int rdma_fdwait_for_comp(struct ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout)
 {
-    uint64_t entries_num;
-    struct fi_cq_err_entry comp;
     struct fid *fids[1];
-    int fd, ret;
+    int ret;
 
-    if (!cur)
-        return -EINVAL;
+    fids[0] = &ep_ctx->cq_ctx.cq->fid;
 
-    if (total < *cur)
-        return -EINVAL;
-
-    entries_num = total - *cur;
-
-    fd = cq == ep_ctx->txcq ? ep_ctx->tx_fd : ep_ctx->rx_fd;
-    fids[0] = &cq->fid;
-
-    while (total != *cur) {
-        ret = fi_trywait(ep_ctx->rdma_ctx->fabric, fids, 1);
-        if (!ret) {
-            ret = rdma_poll_fd(fd, timeout);
-            if (ret)
-                return ret;
-        }
-
-        ret = fi_cq_read(cq, entries ? &entries[entries_num - (total - *cur)] : &comp, 1);
-        if (ret > 0) {
-            (*cur)++;
-        } else if (ret < 0) {
+    ret = fi_trywait(ep_ctx->rdma_ctx->fabric, fids, 1);
+    if (!ret) {
+        ret = rdma_poll_fd(ep_ctx->cq_ctx.cq_fd, timeout);
+        if (ret)
             return ret;
-        }
+    }
+
+    ret = fi_cq_read(ep_ctx->cq_ctx.cq, entry, 1);
+    if (ret > 0) {
+        ep_ctx->cq_ctx.cq_cntr++;
+    } else if (ret < 0) {
+        return ret;
     }
 
     return 0;
 }
 
-static int rdma_wait_for_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
-                              int timeout, struct fi_cq_err_entry *entries)
+static int rdma_wait_for_comp(struct ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout)
 {
-    uint64_t entries_num;
-    struct fi_cq_err_entry comp;
     int ret;
 
-    if (!cur)
-        return -EINVAL;
-
-    if (total < *cur)
-        return -EINVAL;
-
-    entries_num = total - *cur;
-
-    while (total != *cur) {
-        ret = fi_cq_sread(cq, entries ? &entries[entries_num - (total - *cur)] : &comp, 1, NULL,
-                          timeout);
-        if (ret > 0) {
-            (*cur)++;
-        } else if (ret < 0) {
-            return ret;
-        }
+    ret = fi_cq_sread(ep_ctx->cq_ctx.cq, entry, 1, NULL, timeout);
+    if (ret > 0) {
+        ep_ctx->cq_ctx.cq_cntr++;
+    } else if (ret < 0) {
+        return ret;
     }
 
     return 0;
 }
 
-int rdma_get_cq_comp(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total,
-                     int timeout, struct fi_cq_err_entry *entries)
+int rdma_read_cq(struct ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout)
 {
     int ret;
 
-    if (!cur)
-        return -EINVAL;
-
-    ret = rdma_read_cq(ep_ctx, cq, cur, total, timeout, entries);
+    ret = ep_ctx->cq_ctx.eq_read(ep_ctx, entry, timeout);
 
     if (ret) {
         if (ret == -FI_EAVAIL) {
-            ret = rdma_cq_readerr(cq);
-            (*cur)++;
+            ret = rdma_cq_readerr(ep_ctx->cq_ctx.cq);
+            ep_ctx->cq_ctx.cq_cntr++;
         } else if ( ret != -FI_EAGAIN) {
             RDMA_PRINTERR("rdma_get_cq_comp", ret);
         }
     }
-    return ret;
-}
-
-int rdma_read_cq(ep_ctx_t *ep_ctx, struct fid_cq *cq, uint64_t *cur, uint64_t total, int timeout,
-                 struct fi_cq_err_entry *entries)
-{
-    switch (ep_ctx->rdma_ctx->comp_method) {
-    case RDMA_COMP_SREAD:
-    case RDMA_COMP_YIELD:
-        return rdma_wait_for_comp(ep_ctx, cq, cur, total, timeout, entries);
-        break;
-    case RDMA_COMP_WAIT_FD:
-        return rdma_fdwait_for_comp(ep_ctx, cq, cur, total, timeout, entries);
-        break;
-    default:
-        return rdma_spin_for_comp(ep_ctx, cq, cur, total, timeout, entries);
-        break;
-    }
-}
-
-int rdma_get_cq_fd(struct fid_cq *cq, int *fd, enum cq_comp_method method)
-{
-    int ret = 0;
-
-    if (cq && method == RDMA_COMP_WAIT_FD) {
-        ret = fi_control(&cq->fid, FI_GETWAIT, fd);
-        if (ret)
-            RDMA_PRINTERR("fi_control(FI_GETWAIT)", ret);
-    }
-
     return ret;
 }
 
@@ -267,6 +200,45 @@ int rdma_cq_readerr(struct fid_cq *cq)
         ret = -cq_err.err;
     }
     return ret;
+}
+
+int rdma_cq_open(ep_ctx_t *ep_ctx, size_t cq_size, enum cq_comp_method comp_method)
+{
+    struct fi_cq_attr cq_attr = {.wait_obj = FI_WAIT_NONE, .format = FI_CQ_FORMAT_CONTEXT};
+    int err;
+
+    rdma_cq_set_wait_attr(&cq_attr, comp_method, NULL);
+    if (cq_size)
+        cq_attr.size = cq_size;
+    else
+        cq_attr.size = ep_ctx->rdma_ctx->info->tx_attr->size;
+
+    err = fi_cq_open(ep_ctx->rdma_ctx->domain, &cq_attr, &ep_ctx->cq_ctx.cq, ep_ctx);
+    if (err) {
+        RDMA_PRINTERR("fi_cq_open", err);
+        return err;
+    }
+
+    if (comp_method == RDMA_COMP_WAIT_FD) {
+        err = fi_control(&ep_ctx->cq_ctx.cq->fid, FI_GETWAIT, &ep_ctx->cq_ctx.cq_fd);
+        if (err)
+            RDMA_PRINTERR("fi_control(FI_GETWAIT)", err);
+    }
+
+    switch (comp_method) {
+    case RDMA_COMP_SREAD:
+    case RDMA_COMP_YIELD:
+        ep_ctx->cq_ctx.eq_read = rdma_wait_for_comp;
+        break;
+    case RDMA_COMP_WAIT_FD:
+        ep_ctx->cq_ctx.eq_read = rdma_fdwait_for_comp;
+        break;
+    default:
+        ep_ctx->cq_ctx.eq_read = rdma_spin_for_comp;
+        break;
+    }
+
+    return err;
 }
 
 // EQ not CQ

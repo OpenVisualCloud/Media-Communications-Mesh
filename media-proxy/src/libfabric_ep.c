@@ -58,24 +58,12 @@
 
 static int enable_ep(ep_ctx_t *ep_ctx)
 {
-    uint64_t flags;
     int ret;
 
     RDMA_EP_BIND(ep_ctx->ep, ep_ctx->av, 0);
 
-    flags = FI_TRANSMIT;
-    RDMA_EP_BIND(ep_ctx->ep, ep_ctx->txcq, flags);
-
-    flags = FI_RECV;
-    RDMA_EP_BIND(ep_ctx->ep, ep_ctx->rxcq, flags);
-
-    ret = rdma_get_cq_fd(ep_ctx->txcq, &ep_ctx->tx_fd, ep_ctx->rdma_ctx->comp_method);
-    if (ret)
-        return ret;
-
-    ret = rdma_get_cq_fd(ep_ctx->rxcq, &ep_ctx->rx_fd, ep_ctx->rdma_ctx->comp_method);
-    if (ret)
-        return ret;
+    /* TODO: Find out if unidirectional endpoint can be created */
+    RDMA_EP_BIND(ep_ctx->ep, ep_ctx->cq_ctx.cq, FI_SEND | FI_RECV);
 
     ret = fi_enable(ep_ctx->ep);
     if (ret) {
@@ -105,9 +93,8 @@ static int ep_av_insert(libfabric_ctx *rdma_ctx, struct fid_av *av, void *addr, 
 }
 
 static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_info *fi,
-                        size_t tx_cq_size, size_t rx_cq_size, size_t av_size)
+                        size_t av_size)
 {
-    struct fi_cq_attr cq_attr = {.wait_obj = FI_WAIT_NONE};
     struct fi_av_attr av_attr = {.type = FI_AV_MAP, .count = 1};
     int ret;
 
@@ -117,33 +104,7 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         return ret;
     }
 
-    if (cq_attr.format == FI_CQ_FORMAT_UNSPEC) {
-        cq_attr.format = FI_CQ_FORMAT_CONTEXT;
-    }
-
-    rdma_cq_set_wait_attr(&cq_attr, rdma_ctx->comp_method, NULL);
-    if (tx_cq_size)
-        cq_attr.size = tx_cq_size;
-    else
-        cq_attr.size = rdma_ctx->info->tx_attr->size;
-
-    ret = fi_cq_open(rdma_ctx->domain, &cq_attr, &ep_ctx->txcq, ep_ctx);
-    if (ret) {
-        RDMA_PRINTERR("fi_cq_open", ret);
-        return ret;
-    }
-
-    rdma_cq_set_wait_attr(&cq_attr, rdma_ctx->comp_method, NULL);
-    if (rx_cq_size)
-        cq_attr.size = rx_cq_size;
-    else
-        cq_attr.size = rdma_ctx->info->rx_attr->size;
-
-    ret = fi_cq_open(rdma_ctx->domain, &cq_attr, &ep_ctx->rxcq, ep_ctx);
-    if (ret) {
-        RDMA_PRINTERR("fi_cq_open", ret);
-        return ret;
-    }
+    rdma_cq_open(ep_ctx, 0, RDMA_COMP_SREAD);
 
     if (!ep_ctx->av && (rdma_ctx->info->ep_attr->type == FI_EP_RDM ||
                         rdma_ctx->info->ep_attr->type == FI_EP_DGRAM)) {
@@ -178,7 +139,7 @@ int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size)
     do {
         ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, NULL);
         if (ret == -EAGAIN)
-            (void)fi_cq_read(ep_ctx->txcq, NULL, 0);
+            (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
     } while (ret == -EAGAIN);
 
     return ret;
@@ -191,29 +152,25 @@ int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx)
     do {
         ret = fi_recv(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, FI_ADDR_UNSPEC, buf_ctx);
         if (ret == -FI_EAGAIN)
-            (void)fi_cq_read(ep_ctx->rxcq, NULL, 0);
+            (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
     } while (ret == -FI_EAGAIN);
 
     return ret;
 }
 
-int ep_rxcq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
+int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
 {
     struct fi_cq_err_entry entry;
     int err;
 
-    err = rdma_get_cq_comp(ep_ctx, ep_ctx->rxcq, &ep_ctx->rx_cq_cntr, ep_ctx->rx_cq_cntr + 1,
-                           timeout, &entry);
+    err = rdma_read_cq(ep_ctx, &entry, timeout);
     if (err)
         return err;
-    *buf_ctx = entry.op_context;
-    return 0;
-}
 
-int ep_txcq_read(ep_ctx_t *ep_ctx, int timeout)
-{
-    return rdma_get_cq_comp(ep_ctx, ep_ctx->txcq, &ep_ctx->tx_cq_cntr, ep_ctx->tx_cq_cntr + 1,
-                            timeout, NULL);
+    if (buf_ctx)
+        *buf_ctx = entry.op_context;
+
+    return 0;
 }
 
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
@@ -248,7 +205,7 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         return ret;
     }
 
-    ret = ep_alloc_res(*ep_ctx, (*ep_ctx)->rdma_ctx, fi, 0, 0, 1);
+    ret = ep_alloc_res(*ep_ctx, (*ep_ctx)->rdma_ctx, fi, 1);
     if (ret) {
         printf("%s, ep_alloc_res fail\n", __func__);
         ep_destroy(ep_ctx);
@@ -283,10 +240,9 @@ int ep_destroy(ep_ctx_t **ep_ctx)
     RDMA_CLOSE_FID((*ep_ctx)->data_mr);
     RDMA_CLOSE_FID((*ep_ctx)->ep);
 
-    RDMA_CLOSE_FID((*ep_ctx)->txcq);
-    RDMA_CLOSE_FID((*ep_ctx)->rxcq);
+    RDMA_CLOSE_FID((*ep_ctx)->cq_ctx.cq);
     RDMA_CLOSE_FID((*ep_ctx)->av);
-    RDMA_CLOSE_FID((*ep_ctx)->waitset);
+    RDMA_CLOSE_FID((*ep_ctx)->cq_ctx.waitset);
 
     if (ep_ctx && *ep_ctx) {
         free(*ep_ctx);

@@ -116,17 +116,7 @@ extern "C" {
         }                                                                                          \
     } while (0)
 
-enum cq_comp_method {
-    RDMA_COMP_SPIN = 0,
-    RDMA_COMP_SREAD,
-    RDMA_COMP_WAITSET,
-    RDMA_COMP_WAIT_FD,
-    RDMA_COMP_YIELD,
-};
-
 typedef struct {
-    enum cq_comp_method comp_method;
-
     struct fid_fabric *fabric;
     struct fid_domain *domain;
     struct fi_info *info;

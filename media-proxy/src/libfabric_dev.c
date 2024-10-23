@@ -11,7 +11,6 @@
 #include <rdma/fi_cm.h>
 
 #include "libfabric_dev.h"
-#include "rdma_session.h"
 #include "rdma_hmem.h"
 
 /* We need to free any data that we allocated before freeing the
@@ -100,8 +99,6 @@ int rdma_init(libfabric_ctx **ctx)
         printf("%s, TX session contex malloc fail\n", __func__);
         return -ENOMEM;
     }
-
-    (*ctx)->comp_method = RDMA_COMP_SREAD;
 
     hints = fi_allocinfo();
     if (!hints) {
