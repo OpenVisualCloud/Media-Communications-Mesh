@@ -11,7 +11,6 @@
 #include <rdma/fi_cm.h>
 
 #include "libfabric_dev.h"
-#include "rdma_session.h"
 #include "rdma_hmem.h"
 
 /* We need to free any data that we allocated before freeing the

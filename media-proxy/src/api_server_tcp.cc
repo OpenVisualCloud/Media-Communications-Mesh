@@ -6,6 +6,8 @@
 #include <bsd/string.h>
 #include "api_server_tcp.h"
 #include <mcm_dp.h>
+#include <signal.h>
+#include <netinet/ip.h>
 
 static volatile bool keepRunning = true;
 
@@ -134,63 +136,9 @@ void* msg_loop(void* ptr)
                 if (it->id == session_id) {
                     /* return memif parameters. */
                     memif_conn_param param = { };
-                    if (it->type == TX) {
-                        switch (it->payload_type) {
-                        case PAYLOAD_TYPE_ST22_VIDEO:
-                            memcpy(&param.socket_args, &it->tx_st22p_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->tx_st22p_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_ST30_AUDIO:
-                            memcpy(&param.socket_args, &it->tx_st30_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->tx_st30_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_ST40_ANCILLARY:
-                            memcpy(&param.socket_args, &it->tx_st40_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->tx_st40_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_ST20_VIDEO:
-                            memcpy(&param.socket_args, &it->tx_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->tx_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_RDMA_VIDEO:
-                            memcpy(&param.socket_args, &it->tx_rdma_session->memif_socket_args,
-                                   sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->tx_rdma_session->memif_conn_args,
-                                   sizeof(memif_conn_args_t));
-                            break;
-                        default:
-                            INFO("Unknown session type.");
-                            break;
-                        }
-                    } else {
-                        switch (it->payload_type) {
-                        case PAYLOAD_TYPE_ST22_VIDEO:
-                            memcpy(&param.socket_args, &it->rx_st22p_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->rx_st22p_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_ST30_AUDIO:
-                            memcpy(&param.socket_args, &it->rx_st30_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->rx_st30_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_ST40_ANCILLARY:
-                            memcpy(&param.socket_args, &it->rx_st40_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->rx_st40_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_ST20_VIDEO:
-                            memcpy(&param.socket_args, &it->rx_session->memif_socket_args, sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->rx_session->memif_conn_args, sizeof(memif_conn_args_t));
-                            break;
-                        case PAYLOAD_TYPE_RDMA_VIDEO:
-                            memcpy(&param.socket_args, &it->rx_rdma_session->memif_socket_args,
-                                   sizeof(memif_socket_args_t));
-                            memcpy(&param.conn_args, &it->rx_rdma_session->memif_conn_args,
-                                   sizeof(memif_conn_args_t));
-                            break;
-                        default:
-                            INFO("Unknown session type.");
-                            break;
-                        }
-                    }
+
+                    memcpy(&param.socket_args, &it->memif_socket_args, sizeof(memif_socket_args_t));
+                    memcpy(&param.conn_args, &it->memif_conn_args, sizeof(memif_conn_args_t));
 
                     if (param.conn_args.is_master) {
                         param.conn_args.is_master = 0;
@@ -212,16 +160,8 @@ void* msg_loop(void* ptr)
                 break;
             }
             session_id = *(uint32_t*)buffer;
-            for (auto it : proxy_ctx->mDpCtx) {
-                if (it->id == session_id) {
-                    if (it->type == TX) {
-                        proxy_ctx->TxStop(session_id);
-                    } else {
-                        proxy_ctx->RxStop(session_id);
-                    }
-                    sessionKeepRunning = false;
-                    break;
-                }
+            if(!proxy_ctx->Stop(session_id)){
+                sessionKeepRunning = false;
             }
             break;
         default:
@@ -241,16 +181,7 @@ void* msg_loop(void* ptr)
         (int)((addr >> 16) & 0xff), (int)((addr >> 24) & 0xff));
 
     if(session_id > 0) {
-        for (auto it : proxy_ctx->mDpCtx) {
-            if (it->id == session_id) {
-                if (it->type == TX) {
-                    proxy_ctx->TxStop(session_id);
-                } else {
-                    proxy_ctx->RxStop(session_id);
-                }
-                break;
-            }
-        }
+        proxy_ctx->Stop(session_id);
     }
 
     /* close socket and clean up */
