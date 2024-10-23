@@ -83,28 +83,33 @@ static void rdma_cq_set_wait_attr(struct fi_cq_attr *cq_attr, enum cq_comp_metho
 
 static int rdma_spin_for_comp(struct ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout)
 {
-    struct timespec a, b;
-    int ret;
+    struct timespec start_time, current_time;
+    ssize_t ret;
 
     if (timeout >= 0)
-        clock_gettime(CLOCK_MONOTONIC, &a);
+        clock_gettime(CLOCK_MONOTONIC, &start_time);
 
-    do {
+    while (1) {
+        /* Attempt to read one completion queue entry */
         ret = fi_cq_read(ep_ctx->cq_ctx.cq, entry, 1);
-        if (ret < 0 && ret != -FI_EAGAIN) {
+        if (ret > 0) {
+            /* Successfully read an entry, increment counter and return */
+            ep_ctx->cq_ctx.cq_cntr++;
+            return 0;
+        } else if (ret < 0 && ret != -FI_EAGAIN) {
+            /* Return on any error other than -FI_EAGAIN (Try again) */
             return ret;
-        } else if (ret == -FI_EAGAIN && timeout >= 0) {
-            clock_gettime(CLOCK_MONOTONIC, &b);
-            if ((b.tv_sec - a.tv_sec) > timeout) {
+        }
+
+        /* Check for timeout if -FI_EAGAIN is returned or number of returned entries == 0 */
+        if (timeout >= 0) {
+            clock_gettime(CLOCK_MONOTONIC, &current_time);
+            if ((current_time.tv_sec - start_time.tv_sec) > timeout) {
                 fprintf(stderr, "%ds timeout expired\n", timeout);
                 return -ENODATA;
             }
         }
-    } while (ret <= 0);
-
-    ep_ctx->cq_ctx.cq_cntr++;
-
-    return 0;
+    }
 }
 
 static int rdma_poll_fd(int fd, int timeout)
