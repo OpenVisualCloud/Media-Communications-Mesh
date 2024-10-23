@@ -6,22 +6,39 @@
 int main(void)
 {
     /* Default client configuration */
-    MeshClientConfig client_config = { 0 };
-    
-    /* ST2110-XX configuration */
-    MeshConfig_ST2110 conn_config = {
-        .remote_ip_addr = "192.168.96.2",
-        .remote_port = 9001,
-        .transport = MESH_CONN_TRANSPORT_ST2110_22,
-    };
+    const char *client_config = R"(
+      {
+        "apiVersion": "v1",
+        "apiConnectionString": "Server=192.168.96.1; Port=8001",
+        "apiDefaultTimeoutMicroseconds": 100000,
+        "maxMediaConnections": 32
+      }
+    )";
 
-    /* Video configuration */
-    MeshConfig_Video payload_config = {
-        .width = 1920,
-        .height = 1080,
-        .fps = 60,
-        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE,
-    };
+    // Transmitter connection configuration
+    const char *conn_config = R"(
+      {
+        "connType": "st2110",
+        "connection": {
+          "st2110": {
+            "transport": "st2110-22",
+            "remoteIpAddr": "192.168.96.2",
+            "remotePort": "9002",
+            "localIpAddr": "192.168.91.1",
+            "localPort": "9001"
+          }
+        },
+        "payloadType": "video",
+        "payload": {
+          "video": {
+            "width": 1920,
+            "height": 1080,
+            "fps": 60,
+            "pixelFormat": "yuv422p10le"
+          }
+        },
+      }
+    )";
 
     MeshConnection *conn;
     MeshBuffer *buf;
@@ -30,38 +47,17 @@ int main(void)
     int i, n;
 
     /* Create a mesh client */
-    err = mesh_create_client(&mc, &client_config);
+    err = mesh_create_client(&mc, client_config);
     if (err) {
         printf("Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
         exit(1);
     }
 
-    /* Create a mesh connection */
-    err = mesh_create_connection(mc, &conn);
+    /* Create a mesh transmitter connection */
+    err = mesh_create_tx_connection(mc, &conn, conn_config);
     if (err) {
         printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
         goto exit_delete_client;
-    }
-
-    /* Apply connection configuration */
-    err = mesh_apply_connection_config_st2110(conn, &conn_config);
-    if (err) {
-        printf("Failed to apply SMPTE ST2110 configuration: %s (%d)\n", mesh_err2str(err), err);
-        goto exit_delete_conn;
-    }
-
-    /* Apply video payload configuration */
-    err = mesh_apply_connection_config_video(conn, &video_config);
-    if (err) {
-        printf("Failed to apply video configuration: %s (%d)\n", mesh_err2str(err), err);
-        goto exit_delete_conn;
-    }
-
-    /* Establish a connection for sending data */
-    err = mesh_establish_connection(conn, MESH_CONN_KIND_SENDER);
-    if (err) {
-        printf("Failed to establish connection: %s (%d)\n", mesh_err2str(err), err);
-        goto exit_delete_conn;
     }
 
     /* 10 video frames to be sent */
@@ -77,7 +73,7 @@ int main(void)
         }
 
         /* Fill the buffer with user data */
-        put_user_video_frames(buf->data, buf->data_len);
+        put_user_video_frames(buf->payload_ptr, buf->payload_len);
 
         /* Send the buffer */
         err = mesh_put_buffer(&buf);
@@ -110,22 +106,39 @@ exit_delete_client:
 int main(void)
 {
     /* Default client configuration */
-    MeshClientConfig client_config = { 0 };
-    
-    /* ST2110-XX configuration */
-    MeshConfig_ST2110 conn_config = {
-        .remote_ip_addr = "192.168.96.1",
-        .local_port = 9001,
-        .transport = MESH_CONN_TRANSPORT_ST2110_22,
-    };
+    const char *client_config = R"(
+      {
+        "apiVersion": "v1",
+        "apiConnectionString": "Server=192.168.96.1; Port=8002",
+        "apiDefaultTimeoutMicroseconds": 100000,
+        "maxMediaConnections": 32
+      }
+    )";
 
-    /* Video configuration */
-    MeshConfig_Video payload_config = {
-        .width = 1920,
-        .height = 1080,
-        .fps = 60,
-        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE,
-    };
+    // Receiver connection configuration
+    const char *conn_config = R"(
+      {
+        "connType": "st2110",
+        "connection": {
+          "st2110": {
+            "transport": "st2110-22",
+            "remoteIpAddr": "192.168.95.1",
+            "remotePort": "9001",
+            "localIpAddr": "192.168.95.2",
+            "localPort": "9002"
+          }
+        },
+        "payloadType": "video",
+        "payload": {
+          "video": {
+            "width": 1920,
+            "height": 1080,
+            "fps": 60,
+            "pixelFormat": "yuv422p10le"
+          }
+        }
+      }
+    )";
 
     MeshConnection *conn;
     MeshClient *mc;
@@ -133,41 +146,17 @@ int main(void)
     int i, n;
 
     /* Create a mesh client */
-    err = mesh_create_client(&mc, &client_config);
+    err = mesh_create_client(&mc, client_config);
     if (err) {
         printf("Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
         exit(1);
     }
 
-    /* Create a mesh connection */
-    err = mesh_create_connection(mc, &conn);
+    /* Create a mesh receiver connection */
+    err = mesh_create_rx_connection(mc, &conn, conn_config);
     if (err) {
         printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
         goto exit_delete_client;
-    }
-
-    /* Apply connection configuration */
-    err = mesh_apply_connection_config_st2110(conn, &conn_config);
-    if (err) {
-        printf("Failed to apply SMPTE ST2110 configuration: %s (%d)\n",
-               mesh_err2str(err), err);
-        goto exit_delete_conn;
-    }
-
-    /* Apply video payload configuration */
-    err = mesh_apply_connection_config_video(conn, &video_config);
-    if (err) {
-        printf("Failed to apply video configuration: %s (%d)\n",
-               mesh_err2str(err), err);
-        goto exit_delete_conn;
-    }
-
-    /* Establish a connection for receiving data */
-    err = mesh_establish_connection(conn, MESH_CONN_KIND_RECEIVER);
-    if (err) {
-        printf("Failed to establish connection: %s (%d)\n",
-               mesh_err2str(err), err);
-        goto exit_delete_conn;
     }
 
     /* Receive data loop */
@@ -186,7 +175,7 @@ int main(void)
         }
 
         /* Process the received user data */
-        get_user_video_frames(buf->data, buf->data_len);
+        get_user_video_frames(buf->payload_ptr, buf->payload_len);
 
         /* Release and put the buffer back to the mesh */
         err = mesh_put_buffer(&buf);

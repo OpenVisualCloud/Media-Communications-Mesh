@@ -25,17 +25,9 @@ sequenceDiagram
    app ->>+ sdk: Create client
    sdk ->>- app: Client created
 
-   note over app, network: Create connection
+   note over app, network: Create Transmitter connection
    app ->>+ sdk: Create connection
    sdk ->> sdk: Register connection in the client
-   sdk ->>- app: Connection created
-
-   note over app, network: Configure connection
-   app ->> sdk: Apply SMPTE ST2110-XX configuration
-   app ->> sdk: Apply video configuration
-
-   note over app, network: Establish Tx connection
-   app ->>+ sdk: Establish Tx connection
    sdk ->>+ proxy: Open TCP connection to Proxy
    proxy ->>+ mtl: Start Tx session
    note right of mtl: SMPTE ST2110-22
@@ -51,7 +43,7 @@ sequenceDiagram
 
    sdk ->>+ memif: Create Memif Tx connection
    memif ->>- sdk: Connection created
-   sdk ->>- app: Connection established
+   sdk ->>- app: Connection created
 
    note over app, network: Send N video frames
    loop
@@ -79,7 +71,6 @@ sequenceDiagram
    app ->>+ sdk: Shutdown connection
    sdk ->>+ proxy: Close TCP connection to Proxy
    proxy ->> mtl: Stop Tx session
-   note right of mtl: SMPTE ST2110-22
    mtl ->> network: Terminate connection
    proxy ->>- memif: Close Memif Rx connection
    sdk ->> memif: Close Memif Tx connection
