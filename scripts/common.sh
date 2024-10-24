@@ -3,6 +3,43 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
+COMMON_SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+REPO_DIR="$(readlink -f "${COMMON_SCRIPT_DIR}/..")"
+
+export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
+export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
+
+export TZ="Europe/Warsaw"
+export NPROC="${NPROC:-$(nproc)}"
+export DEBIAN_FRONTEND="noninteractive"
+
+export ICE_VER="${ICE_VER:-1.14.9}"
+export ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
+export IAVF_VER="${IAVF_VER:-4.12.5}"
+export IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
+export IRDMA_DMID="${IRDMA_DMID:-832291}"
+export IRDMA_VER="${IRDMA_VER:-1.15.11}"
+export IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
+
+if ! grep "/root/.local/bin" <<< "${PATH}"; then
+    export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"
+    export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH}"
+fi
+
+if [ -z "${DISABLE_COLOR_PRINT}" ]; then
+    export    PromptTBlue='\e[38;05;45m'
+    export    PromptHBlue='\e[38;05;33m'
+    export      ErrorHRed='\e[38;05;1m'
+    export WarningHPurple='\e[38;05;61m'
+    export          EndCl='\e[m'
+else
+    export    PromptTBlue=''
+    export    PromptHBlue=''
+    export      ErrorHRed=''
+    export WarningHPurple=''
+    export          EndCl=''
+fi
+
 function message() {
     local type=$1
     shift
@@ -10,32 +47,24 @@ function message() {
 }
 
 function prompt() {
-    local PromptHBlue='\e[38;05;33m';
-    local PromptTBlue='\e[38;05;45m';
-    message "${PromptHBlue}INFO${PromptTBlue}" "$*\e[m"
+    message "${PromptHBlue}INFO${PromptTBlue}" "$*${EndCl}"
 }
 
 function error() {
-    local ErrorHRed='\e[38;05;1m'
-    local PromptTBlue='\e[38;05;45m';
-    message "${ErrorHRed}ERROR${PromptTBlue}" "$*\e[m"
+    message "${ErrorHRed}ERROR${PromptTBlue}" "$*${EndCl}"
 }
 
 function warning() {
-    local WarningHPurple='\e[38;05;61m';
-    local PromptTBlue='\e[38;05;45m';
-    message "${WarningHPurple}WARN${PromptTBlue}" "$*\e[m"
+    message "${WarningHPurple}WARN${PromptTBlue}" "$*${EndCl}"
 }
 
 function get_user_input_confirm() {
     local confirm
     local confirm_string
     local confirm_default="${1:-0}"
-    local PromptHBlue='\e[38;05;33m';
-    local PromptTBlue='\e[38;05;45m';
     confirm_string=( "(N)o" "(Y)es" )
 
-    echo -en "${PromptHBlue}CHOOSE:${PromptTBlue} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: \e[m" >&2
+    echo -en "${PromptHBlue}CHOOSE:${PromptTBlue} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: ${EndCl}" >&2
     read -r confirm
     if [[ -z "$confirm" ]]; then
         confirm="$confirm_default"
@@ -127,11 +156,22 @@ function get_filepath_add_sufix() {
 function run_as_root_user()
 {
     CMD_TO_EVALUATE="$*"
-    if [ "${EUID:-$(id -u)}" -eq 0 ]; then
+    EFECTIVE_USER_ID="${EUID:-$(id -u)}"
+
+    if [ "${EFECTIVE_USER_ID}" -eq 0 ]; then
         eval "${CMD_TO_EVALUATE[*]}"
     else
-        eval "sudo ${CMD_TO_EVALUATE[*]}" || echo 'Must be run as root. No sudo found.'
+        if which sudo 1>/dev/null; then
+            eval "sudo ${CMD_TO_EVALUATE[*]}"
+        else
+            error "This command must be run as root [EUID=0] ${CMD_TO_EVALUATE[*]}."
+            error "- current [EUID=${EFECTIVE_USER_ID}]."
+            error "- sudo was not found in PATH."
+            error "Re-run the script as sudo or install sudo pkg. Exiting."
+            exit 1
+        fi
     fi
+    return 0
 }
 
 function github_api_call() {
@@ -258,31 +298,117 @@ function print_logo_anim()
     done
 }
 
-function config_intel_rdma_driver() {
-    prompt "Configuration of iRDMA starting."
-    prompt "Enabling RoCE."
+function catch_error_print_debug() {
+    local _last_command_height=""
+    local -n _lineno="${1:-LINENO}"
+    local -n _bash_lineno="${2:-BASH_LINENO}"
+    local _last_command="${3:-${BASH_COMMAND}}"
+    local _code="${4:-0}"
+    local -a _output_array=()
+    _last_command_height="$(wc -l <<<"${_last_command}")"
 
-    # enable RoCE
-    roce_ena_val=$(grep "options irdma roce_ena=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
-    if [[ -z "$roce_ena_val" ]]; then
-        echo "options irdma roce_ena=1" | sudo tee -a /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    elif [[ "$roce_ena_val" != "1" ]]; then
-        sudo sed -i '/options irdma roce_ena=/s/roce_ena=[0-9]*/roce_ena=1/' /etc/modprobe.d/irdma.conf
-        sudo dracut -f
+    _output_array+=(
+        '---'
+        "lines_history: [${_lineno} ${_bash_lineno[*]}]"
+        "function_trace: [${FUNCNAME[*]}]"
+        "exit_code: ${_code}"
+    )
+
+    if [[ "${#BASH_SOURCE[@]}" -gt '1' ]]; then
+        _output_array+=('source_trace:')
+        for _item in "${BASH_SOURCE[@]}"; do
+            _output_array+=("  - ${_item}")
+        done
+    else
+        _output_array+=("source_trace: [${BASH_SOURCE[*]}]")
+    fi
+
+    if [[ "${_last_command_height}" -gt '1' ]]; then
+        _output_array+=(
+            'last_command: ->'
+            "${_last_command}"
+        )
+    else
+        _output_array+=("last_command: ${_last_command}")
+    fi
+
+    _output_array+=('---')
+    error "${_output_array[@]}"
+}
+
+# Calling this function executes ERR and SIGINT signals trapping. Triggered trap calls catch_error_print_debug and exit 1
+function trap_error_print_debug() {
+    prompt "Setting trap for errors handling"
+    trap 'catch_error_print_debug "LINENO" "BASH_LINENO" "${BASH_COMMAND}" "${?}"; exit 1' SIGINT ERR
+    prompt "Trap set successfuly."
+}
+
+# GITHUB_CREDENTIALS="username:password"
+# URL construction: https://${GITHUB_CREDENTIALS}@github.com/${name}/archive/${version}.tar.gz
+# $1 - name
+# $2 - version
+# $3 - dest_dir
+function git_download_strip_unpack()
+{
+    # Version can be commit sha or tag, examples:
+    # version=d2515b90cc0ef651f6d0a6661d5a644490bfc3f3
+    # version=refs/tags/v${JPEG_XS_VER}
+    name="${1}"
+    version="${2}"
+    dest_dir="${3}"
+    filename="$(get_filename "${version}")"
+    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
+
+    mkdir -p "${dest_dir}"
+    curl -Lf "https://${creds}github.com/${name}/archive/${version}.tar.gz" -o "${dest_dir}/${filename}.tar.gz"
+    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
+    rm -f "${dest_dir}/${filename}.tar.gz"
+}
+
+# Downloads and strip unpack a file from URL ($1) to a target directory ($2)
+# $1 - URL to download
+# $2 - destination directory to strip unpack the tar.gz
+function wget_download_strip_unpack()
+{
+    local filename
+    local source_url="${1}"
+    local dest_dir="${2}"
+    filename="$(get_filename "${source_url}")"
+    [ -n "${GITHUB_CREDENTIALS}" ] && creds="${GITHUB_CREDENTIALS}@" || creds=""
+
+    mkdir -p "${dest_dir}"
+    curl -Lf "${source_url}" -o "${dest_dir}/${filename}.tar.gz"
+    tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
+    rm -f "${dest_dir}/${filename}.tar.gz"
+}
+
+function config_intel_rdma_driver() {
+    #   \s - single (s)pace or tabulator
+    #   \d - single (d)igit
+    # ^\s* - starts with zero or more space/tabulators
+    # \s\+ - at least one or more space/tabulators
+    local PREFIX_REGEX='^\s*options\s\+irdma\s\+'
+    local PREFIX_NORM_ROCE='options irdma roce_ena=1'
+    local PREFIX_NORM_SEL='options irdma limits_sel=5'
+
+    prompt "Configuration of iRDMA starting."
+    touch "/etc/modprobe.d/irdma.conf"
+
+    prompt "Enabling RoCE."
+    if grep -e "${PREFIX_REGEX}roce_ena=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
+        sudo sed -i "s/${PREFIX_REGEX}roce_ena=\d/${PREFIX_NORM_ROCE}/g" /etc/modprobe.d/irdma.conf
+    else
+        echo "${PREFIX_NORM_ROCE}" | sudo tee -a /etc/modprobe.d/irdma.conf
     fi
     prompt "RoCE enabled."
 
     prompt "Increasing Queue Pair limit."
-    # increase irdma Queue Pair limit
-    limits_sel_val=$(grep "options irdma limits_sel=" /etc/modprobe.d/irdma.conf | cut -d "=" -f 2)
-    if [[ -z "$limits_sel_val" ]]; then
-        echo "options irdma limits_sel=5" | sudo tee -a /etc/modprobe.d/irdma.conf
-        sudo dracut -f
-    elif [[ "$limits_sel_val" != "5" ]]; then
-        sudo sed -i '/options irdma limits_sel=/s/limits_sel=[0-9]*/limits_sel=5/' /etc/modprobe.d/irdma.conf
-        sudo dracut -f
+    if grep -e "${PREFIX_REGEX}limits_sel=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
+        sudo sed -i "s/${PREFIX_REGEX}limits_sel=\d/${PREFIX_NORM_SEL}/g" /etc/modprobe.d/irdma.conf
+    else
+        echo "${PREFIX_NORM_SEL}" | sudo tee -a /etc/modprobe.d/irdma.conf
     fi
+    sudo dracut -f
     prompt "Queue Pair limits_sel set to 5."
     prompt "Configuration of iRDMA finished."
 }
