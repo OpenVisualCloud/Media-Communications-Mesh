@@ -50,6 +50,7 @@ function build_install_and_config_intel_drivers()
     ./build.sh
     popd
     config_intel_rdma_driver
+    modprobe irdma
     set +x
 }
 
