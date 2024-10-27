@@ -70,7 +70,7 @@ int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg)
     if (!mc)
         return -MESH_ERR_BAD_CLIENT_PTR;
 
-    mc_ctx = mesh_calloc(sizeof(MeshClientContext));
+    mc_ctx = calloc(1, sizeof(MeshClientContext));
     if (!mc_ctx) {
         *mc = NULL;
         return -ENOMEM;
@@ -80,7 +80,7 @@ int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg)
 
     err = pthread_mutex_init(&mc_ctx->mx, NULL);
     if (err) {
-        mesh_free(mc_ctx);
+        free(mc_ctx);
         *mc = NULL;
         return err;
     }
@@ -88,7 +88,7 @@ int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg)
     LIST_INIT(&mc_ctx->conn_list_head);
 
     if (cfg)
-        mesh_memcpy(&mc_ctx->config, cfg, sizeof(MeshClientConfig));
+        memcpy(&mc_ctx->config, cfg, sizeof(MeshClientConfig));
 
     if (mc_ctx->config.max_conn_num == 0)
         mc_ctx->config.max_conn_num = MESH_CLIENT_DEFAULT_MAX_CONN;
@@ -116,13 +116,16 @@ int mesh_delete_client(MeshClient **mc)
     if (!mc_ctx)
         return -MESH_ERR_BAD_CLIENT_PTR;
 
+    if (atomic_load_explicit(&mc_ctx->conn_num, memory_order_relaxed))
+        return -MESH_ERR_FOUND_ALLOCATED;
+
     pthread_mutex_destroy(&mc_ctx->mx);
 
     /**
      * TODO: Shutdown and deallocate connections here
      */
 
-    mesh_free(mc_ctx);
+    free(mc_ctx);
     *mc = NULL;
 
     return 0;
@@ -156,7 +159,7 @@ int mesh_create_connection(MeshClient *mc, MeshConnection **conn)
     if (!(conn_num < mc_ctx->config.max_conn_num))
         return -MESH_ERR_MAX_CONN;
 
-    conn_ctx = mesh_calloc(sizeof(MeshConnectionContext));
+    conn_ctx = calloc(1, sizeof(MeshConnectionContext));
     if (!conn_ctx) {
         err = -ENOMEM;
         goto exit_dec_conn_num;
@@ -180,7 +183,7 @@ int mesh_create_connection(MeshClient *mc, MeshConnection **conn)
     return 0;
 
 exit_dealloc_conn:
-    mesh_free(conn_ctx);
+    free(conn_ctx);
 
 exit_dec_conn_num:
     atomic_fetch_sub(&mc_ctx->conn_num, 1);
@@ -203,7 +206,7 @@ int mesh_apply_connection_config_memif(MeshConnection *conn, MeshConfig_Memif *c
 
     conn_ctx = (MeshConnectionContext *)conn;
     conn_ctx->cfg.conn_type = MESH_CONN_TYPE_MEMIF;
-    mesh_memcpy(&conn_ctx->cfg.conn.memif, cfg, sizeof(MeshConfig_Memif));
+    memcpy(&conn_ctx->cfg.conn.memif, cfg, sizeof(MeshConfig_Memif));
 
     return 0;
 }
@@ -223,7 +226,7 @@ int mesh_apply_connection_config_st2110(MeshConnection *conn, MeshConfig_ST2110 
 
     conn_ctx = (MeshConnectionContext *)conn;
     conn_ctx->cfg.conn_type = MESH_CONN_TYPE_ST2110;
-    mesh_memcpy(&conn_ctx->cfg.conn.st2110, cfg, sizeof(MeshConfig_ST2110));
+    memcpy(&conn_ctx->cfg.conn.st2110, cfg, sizeof(MeshConfig_ST2110));
 
     return 0;
 }
@@ -243,7 +246,7 @@ int mesh_apply_connection_config_rdma(MeshConnection *conn, MeshConfig_RDMA *cfg
 
     conn_ctx = (MeshConnectionContext *)conn;
     conn_ctx->cfg.conn_type = MESH_CONN_TYPE_RDMA;
-    mesh_memcpy(&conn_ctx->cfg.conn.rdma, cfg, sizeof(MeshConfig_RDMA));
+    memcpy(&conn_ctx->cfg.conn.rdma, cfg, sizeof(MeshConfig_RDMA));
 
     return 0;
 }
@@ -263,7 +266,7 @@ int mesh_apply_connection_config_video(MeshConnection *conn, MeshConfig_Video *c
 
     conn_ctx = (MeshConnectionContext *)conn;
     conn_ctx->cfg.payload_type = MESH_PAYLOAD_TYPE_VIDEO;
-    mesh_memcpy(&conn_ctx->cfg.payload.video, cfg, sizeof(MeshConfig_Video));
+    memcpy(&conn_ctx->cfg.payload.video, cfg, sizeof(MeshConfig_Video));
 
     return 0;
 }
@@ -283,7 +286,7 @@ int mesh_apply_connection_config_audio(MeshConnection *conn, MeshConfig_Audio *c
 
     conn_ctx = (MeshConnectionContext *)conn;
     conn_ctx->cfg.payload_type = MESH_PAYLOAD_TYPE_AUDIO;
-    mesh_memcpy(&conn_ctx->cfg.payload.audio, cfg, sizeof(MeshConfig_Audio));
+    memcpy(&conn_ctx->cfg.payload.audio, cfg, sizeof(MeshConfig_Audio));
 
     return 0;
 }
@@ -441,9 +444,9 @@ int mesh_parse_conn_config(MeshConnectionContext *ctx, mcm_conn_param *param)
     case MESH_CONN_TYPE_MEMIF:
         param->protocol = PROTO_MEMIF;
 
-        mesh_strlcpy(param->memif_interface.socket_path,
-                     ctx->cfg.conn.memif.socket_path,
-                     sizeof(param->memif_interface.socket_path));
+        strlcpy(param->memif_interface.socket_path,
+                ctx->cfg.conn.memif.socket_path,
+                sizeof(param->memif_interface.socket_path));
 
         param->memif_interface.interface_id = ctx->cfg.conn.memif.interface_id;
         param->memif_interface.is_master = (param->type == is_tx) ? 1 : 0;
@@ -459,13 +462,13 @@ int mesh_parse_conn_config(MeshConnectionContext *ctx, mcm_conn_param *param)
     case MESH_CONN_TYPE_ST2110:
         param->protocol = PROTO_AUTO;
 
-        mesh_strlcpy(param->local_addr.ip, ctx->cfg.conn.st2110.local_ip_addr,
-                     sizeof(param->local_addr.ip));
+        strlcpy(param->local_addr.ip, ctx->cfg.conn.st2110.local_ip_addr,
+                sizeof(param->local_addr.ip));
         snprintf(param->local_addr.port, sizeof(param->local_addr.port),
                  "%u", ctx->cfg.conn.st2110.local_port);
 
-        mesh_strlcpy(param->remote_addr.ip, ctx->cfg.conn.st2110.remote_ip_addr,
-                     sizeof(param->remote_addr.ip));
+        strlcpy(param->remote_addr.ip, ctx->cfg.conn.st2110.remote_ip_addr,
+                sizeof(param->remote_addr.ip));
         snprintf(param->remote_addr.port, sizeof(param->remote_addr.port),
                  "%u", ctx->cfg.conn.st2110.remote_port);
 
@@ -511,13 +514,13 @@ int mesh_parse_conn_config(MeshConnectionContext *ctx, mcm_conn_param *param)
     case MESH_CONN_TYPE_RDMA:
         param->protocol = PROTO_AUTO;
 
-        mesh_strlcpy(param->local_addr.ip, ctx->cfg.conn.rdma.local_ip_addr,
-                     sizeof(param->local_addr.ip));
+        strlcpy(param->local_addr.ip, ctx->cfg.conn.rdma.local_ip_addr,
+                sizeof(param->local_addr.ip));
         snprintf(param->local_addr.port, sizeof(param->local_addr.port),
                  "%u", ctx->cfg.conn.rdma.local_port);
 
-        mesh_strlcpy(param->remote_addr.ip, ctx->cfg.conn.rdma.remote_ip_addr,
-                     sizeof(param->remote_addr.ip));
+        strlcpy(param->remote_addr.ip, ctx->cfg.conn.rdma.remote_ip_addr,
+                sizeof(param->remote_addr.ip));
         snprintf(param->remote_addr.port, sizeof(param->remote_addr.port),
                  "%u", ctx->cfg.conn.rdma.remote_port);
 
@@ -648,7 +651,7 @@ int mesh_delete_connection(MeshConnection **conn)
 
     atomic_fetch_sub(&mc_ctx->conn_num, 1);
 
-    mesh_free(conn_ctx);
+    free(conn_ctx);
     *conn = NULL;
 
     return 0;
@@ -680,7 +683,7 @@ int mesh_get_buffer_timeout(MeshConnection *conn, MeshBuffer **buf,
 
     conn_ctx = (MeshConnectionContext *)conn;
 
-    buf_ctx = mesh_calloc(sizeof(MeshBufferContext));
+    buf_ctx = calloc(1, sizeof(MeshBufferContext));
     
     if (!buf_ctx)
         return -ENOMEM;
@@ -690,7 +693,7 @@ int mesh_get_buffer_timeout(MeshConnection *conn, MeshBuffer **buf,
 
     buf_ctx->buf = mesh_internal_ops.dequeue_buf(conn_ctx->handle, timeout_ms, &err);
     if (!buf_ctx->buf) {
-        mesh_free(buf_ctx);
+        free(buf_ctx);
 
         if (!err)
             return -MESH_ERR_CONN_CLOSED;
@@ -741,7 +744,7 @@ int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms)
     if (err)
         return err;
 
-    mesh_free(buf_ctx);
+    free(buf_ctx);
     *buf = NULL;
 
     return 0;
@@ -763,6 +766,8 @@ const char *mesh_err2str(int err)
         return "Bad buffer pointer";
     case -MESH_ERR_MAX_CONN:
         return "Reached max number of connections";
+    case -MESH_ERR_FOUND_ALLOCATED:
+        return "Found allocated resources";
     case -MESH_ERR_CONN_FAILED:
         return "Connection creation failed";
     case -MESH_ERR_CONN_CONFIG_INVAL:

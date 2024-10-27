@@ -88,26 +88,6 @@ typedef struct MeshConnectionContext {
 } MeshConnectionContext;
 
 /**
- * Heap zeroed allocation function definition
- */
-#define mesh_calloc(size) calloc(1, size)
-
-/**
- * Heap memory deallocation function definition
- */
-#define mesh_free(ptr) free(ptr)
-
-/**
- * Memory copy function definition
- */
-#define mesh_memcpy(dst, src, size) memcpy(dst, src, size)
-
-/**
- * String size-bounded copy function definition
- */
-#define mesh_strlcpy(dst, src, size) strlcpy(dst, src, size)
-
-/**
  * Max number of connections handled by mesh client by default
  */
 #define MESH_CLIENT_DEFAULT_MAX_CONN 1024

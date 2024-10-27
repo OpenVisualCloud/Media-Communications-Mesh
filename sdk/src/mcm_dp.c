@@ -146,6 +146,10 @@ static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memi
             log_error("Invalid audio parameters.");
         break;
 
+    case PAYLOAD_TYPE_RDMA_VIDEO:
+        request->payload_args.rdma_args.transfer_size = (size_t)request->payload_args.video_args.width * request->payload_args.video_args.height * 4;
+        /* NOTE: fall through here intentionally */
+
     case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_ST22_VIDEO:
     case PAYLOAD_TYPE_RTSP_VIDEO:

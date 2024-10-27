@@ -70,7 +70,7 @@ typedef struct MeshConnection {
  * Define configuration string field sizes
  */
 #define MESH_SOCKET_PATH_SIZE   108
-#define MESH_IP_ADDRESS_SIZE    46
+#define MESH_IP_ADDRESS_SIZE    253 /* max of [IPv4, IPv6, FQDN] */
 
 /**
  * Mesh configuration for Single node direct connection via memif
@@ -258,90 +258,180 @@ typedef struct{
 #define MESH_ERR_BAD_CONFIG_PTR       1002 ///< Bad configuration pointer
 #define MESH_ERR_BAD_BUF_PTR          1003 ///< Bad buffer pointer
 #define MESH_ERR_MAX_CONN             1004 ///< Reached max connections number
-#define MESH_ERR_CONN_FAILED          1005 ///< Connection creation failed
-#define MESH_ERR_CONN_CONFIG_INVAL    1006 ///< Invalid connection config
-#define MESH_ERR_CONN_CONFIG_INCOMPAT 1007 ///< Incompatible connection config
-#define MESH_ERR_CONN_CLOSED          1008 ///< Connection is closed
-#define MESH_ERR_TIMEOUT              1009 ///< Timeout occurred
+#define MESH_ERR_FOUND_ALLOCATED      1005 ///< Found allocated resources
+#define MESH_ERR_CONN_FAILED          1006 ///< Connection creation failed
+#define MESH_ERR_CONN_CONFIG_INVAL    1007 ///< Invalid connection config
+#define MESH_ERR_CONN_CONFIG_INCOMPAT 1008 ///< Incompatible connection config
+#define MESH_ERR_CONN_CLOSED          1009 ///< Connection is closed
+#define MESH_ERR_TIMEOUT              1010 ///< Timeout occurred
 
 /**
- * Create a new mesh client
+ * @brief Create a new mesh client.
+ * 
+ * Creates a new mesh client from the given configuration structure.
+ * 
+ * @param [out] mc Address of a pointer to a mesh client structure.
+ * @param [in] cfg Pointer to a mesh client configuration structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg);
 
 /**
- * Delete mesh client
+ * @brief Delete mesh client.
+ * 
+ * Deletes the mesh client and its resources.
+ * 
+ * @param [in,out] mc Address of a pointer to a mesh client structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_delete_client(MeshClient **mc);
 
 /**
- * Create a new mesh connection
+ * @brief Create a new mesh connection.
+ * 
+ * Creates a new media connection for the given mesh client.
+ * 
+ * @param [in] mc Pointer to a parent mesh client.
+ * @param [out] conn Address of a pointer to the connection structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_create_connection(MeshClient *mc, MeshConnection **conn);
 
 /**
- * Apply configuration to setup Single node direct connection via memif
+ * @brief Apply configuration to setup Single node direct connection via memif.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [in] cfg Pointer to a configuration structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_apply_connection_config_memif(MeshConnection *conn, MeshConfig_Memif *cfg);
 
 /**
- * Apply configuration to setup SMPTE ST2110-xx connection via Media Proxy
+ * @brief Apply configuration to setup SMPTE ST2110-xx connection via Media Proxy.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [in] cfg Pointer to a configuration structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_apply_connection_config_st2110(MeshConnection *conn, MeshConfig_ST2110 *cfg);
 
 /**
- * Apply configuration to setup RDMA connection via Media Proxy
+ * @brief Apply configuration to setup RDMA connection via Media Proxy.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [in] cfg Pointer to a configuration structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_apply_connection_config_rdma(MeshConnection *conn, MeshConfig_RDMA *cfg);
 
 /**
- * Apply configuration to setup connection payload for Video frames
+ * @brief Apply configuration to setup connection payload for Video frames.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [in] cfg Pointer to a configuration structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_apply_connection_config_video(MeshConnection *conn, MeshConfig_Video *cfg);
 
 /**
- * Apply configuration to setup connection payload for Audio packets
+ * @brief Apply configuration to setup connection payload for Audio packets.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [in] cfg Pointer to a configuration structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_apply_connection_config_audio(MeshConnection *conn, MeshConfig_Audio *cfg);
 
 /**
- * Establish a mesh connection
+ * @brief Establish a mesh connection.
+ * 
+ * Checks the previously applied configuration for parameter compatibility
+ * and establishes a mesh connection of the given kind (sender or receiver).
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [in] kind Connection kind: Sender or Receiver.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_establish_connection(MeshConnection *conn, int kind);
 
 /**
- * Shutdown a mesh connection
+ * @brief Shutdown a mesh connection.
+ * 
+ * Closes the active mesh connection.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_shutdown_connection(MeshConnection *conn);
 
 /**
- * Delete mesh connection
+ * @brief Delete mesh connection.
+ * 
+ * Deletes the connection and its resources.
+ * 
+ * @param [in,out] conn Address of a pointer to the connection structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_delete_connection(MeshConnection **conn);
 
 /**
- * Get buffer from mesh connection
+ * @brief Get buffer from mesh connection.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [out] buf Address of a pointer to a mesh buffer structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_get_buffer(MeshConnection *conn, MeshBuffer **buf);
 
 /**
- * Get buffer from mesh connection with timeout
+ * @brief Get buffer from mesh connection with timeout.
+ * 
+ * @param [in] conn Pointer to a connection structure.
+ * @param [out] buf Address of a pointer to a mesh buffer structure.
+ * @param [in] timeout_ms Timeout interval in milliseconds.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_get_buffer_timeout(MeshConnection *conn, MeshBuffer **buf,
                             int timeout_ms);
 
 /**
- * Put buffer to mesh connection
+ * @brief Put buffer to mesh connection.
+ * 
+ * @param [in,out] buf Address of a pointer to a mesh buffer structure.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_put_buffer(MeshBuffer **buf);
 
 /**
- * Put buffer to mesh connection with timeout
+ * @brief Put buffer to mesh connection with timeout.
+ * 
+ * @param [in,out] buf Address of a pointer to a mesh buffer structure.
+ * @param [in] timeout_ms Timeout interval in milliseconds.
+ * 
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms);
 
 /**
- * Get text description of an error code.
+ * @brief Get text description of an error code.
+ * 
+ * @param [in] err Error code returned from any Mesh Data Plane API call.
+ * 
+ * @return NULL-terminated string describing the error code.
  */
 const char *mesh_err2str(int err);
 

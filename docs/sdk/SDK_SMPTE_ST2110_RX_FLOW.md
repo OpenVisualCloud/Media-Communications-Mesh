@@ -6,7 +6,7 @@ The diagram in this document shows interaction between a user app and Mesh Data 
 1. Create client.
 1. Create connection.
 1. Configure connection.
-1. Establish Tx connection.
+1. Establish Rx connection.
 1. Receive video frames.
 1. Shutdown connection.
 1. Delete connection.

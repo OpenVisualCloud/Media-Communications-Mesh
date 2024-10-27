@@ -35,7 +35,6 @@ typedef struct McmVideoDemuxerContext {
     MeshClient *mc;
     MeshConnection *conn;
     bool first_frame;
-
 } McmVideoDemuxerContext;
 
 static int mcm_video_read_header(AVFormatContext* avctx)

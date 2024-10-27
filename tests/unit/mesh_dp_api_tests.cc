@@ -104,6 +104,28 @@ void APITests_Setup()
 }
 
 /**
+ * Test negative scenarios of deleting a client with live connections
+ */
+TEST(APITests_MeshConnection, TestNegative_DeleteClientLiveConnections) {
+    MeshConfig_Memif memif_config = { 0 };
+    MeshConfig_Video video_config = { 0 };
+    MeshConnection *conn = NULL;
+    MeshClient *mc, *mc_copy = NULL;
+    int err;
+
+    APITests_Setup();
+
+    mesh_create_client(&mc, NULL);
+    mesh_create_connection(mc, &conn);
+
+    mc_copy = mc;
+
+    err = mesh_delete_client(&mc);
+    EXPECT_EQ(err, -MESH_ERR_FOUND_ALLOCATED) << mesh_err2str(err);
+    EXPECT_EQ(mc, mc_copy);
+}
+
+/**
  * Test creation, establishing, shutting down, and deletion of a mesh connection
  */
 TEST(APITests_MeshConnection, Test_CreateEstablishShutdownDeleteConnection) {
@@ -1470,21 +1492,22 @@ TEST(APITests_MeshBuffer, TestNegative_PutBuffer_NulledBuf) {
  * Test important constants
  */
 TEST(APITests_MeshBuffer, Test_ImportantConstants) {
-    ASSERT_EQ(MESH_SOCKET_PATH_SIZE, 108);
-    ASSERT_EQ(MESH_IP_ADDRESS_SIZE,   46);
+    EXPECT_EQ(MESH_SOCKET_PATH_SIZE, 108);
+    EXPECT_EQ(MESH_IP_ADDRESS_SIZE,   253);
 
-    ASSERT_EQ(MESH_ERR_BAD_CLIENT_PTR,       1000);
-    ASSERT_EQ(MESH_ERR_BAD_CONN_PTR,         1001);
-    ASSERT_EQ(MESH_ERR_BAD_CONFIG_PTR,       1002);
-    ASSERT_EQ(MESH_ERR_BAD_BUF_PTR,          1003);
-    ASSERT_EQ(MESH_ERR_MAX_CONN,             1004);
-    ASSERT_EQ(MESH_ERR_CONN_FAILED,          1005);
-    ASSERT_EQ(MESH_ERR_CONN_CONFIG_INVAL,    1006);
-    ASSERT_EQ(MESH_ERR_CONN_CONFIG_INCOMPAT, 1007);
-    ASSERT_EQ(MESH_ERR_CONN_CLOSED,          1008);
-    ASSERT_EQ(MESH_ERR_TIMEOUT,              1009);
+    EXPECT_EQ(MESH_ERR_BAD_CLIENT_PTR,       1000);
+    EXPECT_EQ(MESH_ERR_BAD_CONN_PTR,         1001);
+    EXPECT_EQ(MESH_ERR_BAD_CONFIG_PTR,       1002);
+    EXPECT_EQ(MESH_ERR_BAD_BUF_PTR,          1003);
+    EXPECT_EQ(MESH_ERR_MAX_CONN,             1004);
+    EXPECT_EQ(MESH_ERR_FOUND_ALLOCATED,      1005);
+    EXPECT_EQ(MESH_ERR_CONN_FAILED,          1006);
+    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INVAL,    1007);
+    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INCOMPAT, 1008);
+    EXPECT_EQ(MESH_ERR_CONN_CLOSED,          1009);
+    EXPECT_EQ(MESH_ERR_TIMEOUT,              1010);
 
-    ASSERT_EQ(MESH_TIMEOUT_DEFAULT,  -2);
-    ASSERT_EQ(MESH_TIMEOUT_INFINITE, -1);
-    ASSERT_EQ(MESH_TIMEOUT_ZERO,      0);
+    EXPECT_EQ(MESH_TIMEOUT_DEFAULT,  -2);
+    EXPECT_EQ(MESH_TIMEOUT_INFINITE, -1);
+    EXPECT_EQ(MESH_TIMEOUT_ZERO,      0);
 }

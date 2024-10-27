@@ -30,8 +30,7 @@ typedef struct McmVideoMuxerContext {
 
     MeshClient *mc;
     MeshConnection *conn;
-
- } McmVideoMuxerContext;
+} McmVideoMuxerContext;
 
 static int mcm_video_write_header(AVFormatContext* avctx)
 {

@@ -24,6 +24,7 @@ int main(void)
     };
 
     MeshConnection *conn;
+    MeshBuffer *buf;
     MeshClient *mc;
     int err;
     int i, n;
@@ -68,8 +69,6 @@ int main(void)
 
     /* Send data loop */
     for (i = 0; i < n; i++) {
-        MeshBuffer *buf;
-
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(conn, &buf);
         if (err) {
