@@ -146,10 +146,6 @@ static void parse_memif_param(mcm_conn_param* request, memif_socket_args_t* memi
             log_error("Invalid audio parameters.");
         break;
 
-    case PAYLOAD_TYPE_RDMA_VIDEO:
-        request->payload_args.rdma_args.transfer_size = (size_t)request->payload_args.video_args.width * request->payload_args.video_args.height * 4;
-        /* NOTE: fall through here intentionally */
-
     case PAYLOAD_TYPE_ST20_VIDEO:
     case PAYLOAD_TYPE_ST22_VIDEO:
     case PAYLOAD_TYPE_RTSP_VIDEO:
@@ -236,6 +232,18 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
     /* Create connection w/o media-proxy. */
     switch (param->protocol) {
     case PROTO_AUTO:
+        /**
+         * This is a temporary workaround to calculate the RDMA transfer size
+         * from video payload parameters provided by the user. It will be
+         * removed after the Control Plane implementation supporting Multipoint
+         * Groups is implemented in Media Proxy.
+         */
+        if (param->payload_type == PAYLOAD_TYPE_RDMA_VIDEO) {
+            size_t sz = (size_t)param->payload_args.video_args.width *
+                        param->payload_args.video_args.height * 4; 
+            param->payload_args.rdma_args.transfer_size = sz;
+        }
+
         /* Connect to MCM media proxy daemon through memif. */
         conn_ctx = mcm_create_connection_proxy(param);
         if (conn_ctx == NULL) {
