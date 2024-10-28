@@ -10,7 +10,7 @@
 #include "libavformat/avformat.h"
 #include "libavformat/mux.h"
 #include "libavdevice/mcm_common.h"
-#include <mcm_dp.h>
+#include <mesh_dp.h>
 #include <unistd.h>
 
 typedef struct McmAudioMuxerContext {
@@ -28,8 +28,9 @@ typedef struct McmAudioMuxerContext {
     int sample_rate;
     char* ptime;
 
-    mcm_conn_context *tx_handle;
-    mcm_buffer *unsent_mcm_buf;
+    MeshClient *mc;
+    MeshConnection *conn;
+    MeshBuffer *unsent_buf;
     int unsent_len;
 } McmAudioMuxerContext;
 
@@ -37,23 +38,9 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
 {
     AVCodecParameters* codecpar = avctx->streams[0]->codecpar;
     McmAudioMuxerContext *s = avctx->priv_data;
-    mcm_audio_sampling mcm_sample_rate;
-    mcm_conn_param param = { 0 };
-    mcm_audio_ptime mcm_ptime;
-    mcm_audio_format mcm_fmt;
+    int kind = MESH_CONN_KIND_SENDER;
+    MeshConfig_Audio cfg;
     int err;
-
-    err = mcm_parse_conn_param(avctx, &param, is_tx, s->ip_addr, s->port,
-                               s->protocol_type, s->payload_type, s->socket_name,
-                               s->interface_id);
-    if (err)
-        return err;
-
-    /* payload type */
-    if (param.payload_type != PAYLOAD_TYPE_ST30_AUDIO) {
-        av_log(avctx, AV_LOG_ERROR, "Unknown payload type\n");
-        return AVERROR(EINVAL);
-    }
 
     /* check channels argument */
     if (codecpar->ch_layout.nb_channels != s->channels) {
@@ -69,79 +56,113 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
         return AVERROR(EINVAL);
     }
 
-    err = mcm_parse_audio_sample_rate(avctx, &mcm_sample_rate, s->sample_rate);
+    err = mcm_parse_audio_sample_rate(avctx, &cfg.sample_rate, s->sample_rate);
     if (err)
         return err;
 
-    err = mcm_parse_audio_packet_time(avctx, &mcm_ptime, s->ptime);
+    err = mcm_parse_audio_packet_time(avctx, &cfg.packet_time, s->ptime);
     if (err)
         return err;
-
-    err = mcm_check_audio_params_compat(mcm_sample_rate, mcm_ptime);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Incompatible audio parameters\n");
-        return AVERROR(EINVAL);
-    }
 
     switch (codecpar->codec_id) {
     case AV_CODEC_ID_PCM_S24BE:
-        mcm_fmt = AUDIO_FMT_PCM24;
+        cfg.format = MESH_AUDIO_FORMAT_PCM_S24BE;
         break;
     case AV_CODEC_ID_PCM_S16BE:
-        mcm_fmt = AUDIO_FMT_PCM16;
+        cfg.format = MESH_AUDIO_FORMAT_PCM_S16BE;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Audio PCM format not supported\n");
         return AVERROR(EINVAL);
     }
 
-    /* audio format */
-    param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-    param.payload_args.audio_args.channel = s->channels;
-    param.payload_args.audio_args.sampling = mcm_sample_rate;
-    param.payload_args.audio_args.ptime = mcm_ptime;
-    param.payload_args.audio_args.format = mcm_fmt;
+    cfg.channels = s->channels;
 
-    s->tx_handle = mcm_create_connection(&param);
-    if (!s->tx_handle) {
-        av_log(avctx, AV_LOG_ERROR, "Create connection failed\n");
-        return AVERROR(EIO);
+    err = mcm_get_client(&s->mc);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Get mesh client failed: %s (%d)\n",
+               mesh_err2str(err), err);
+        return AVERROR(EINVAL);
+    }
+
+    err = mesh_create_connection(s->mc, &s->conn);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Create connection failed: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EIO);
+        goto exit_put_client;
+    }
+
+    err = mcm_parse_conn_param(avctx, s->conn, kind, s->ip_addr, s->port,
+                                  s->protocol_type, s->payload_type,
+                                  s->socket_name, s->interface_id);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Configuration parsing failed: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EINVAL);
+        goto exit_delete_conn;
+    }
+
+    err = mesh_apply_connection_config_audio(s->conn, &cfg);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Failed to apply connection config: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EIO);
+        goto exit_delete_conn;
+    }
+
+    err = mesh_establish_connection(s->conn, kind);
+    if (err) {
+        av_log(avctx, AV_LOG_ERROR, "Cannot establish connection: %s (%d)\n",
+               mesh_err2str(err), err);
+        err = AVERROR(EIO);
+        goto exit_delete_conn;
     }
 
     av_log(avctx, AV_LOG_INFO, "codec:%s sampling:%d ch:%d ptime:%s\n",
            avcodec_get_name(codecpar->codec_id), s->sample_rate, s->channels,
            s->ptime);
     return 0;
+
+exit_delete_conn:
+    mesh_delete_connection(&s->conn);
+
+exit_put_client:
+    mcm_put_client(&s->mc);
+    return err;
 }
 
 static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
 {
     McmAudioMuxerContext *s = avctx->priv_data;
-    size_t frame_size = s->tx_handle->frame_size;
     const uint8_t *data = pkt->data;
     int size = pkt->size;
     int len, err = 0;
 
     while (size > 0) {
+        size_t max_len;
         char *dest;
 
-        if (!s->unsent_mcm_buf) {
-            s->unsent_mcm_buf = mcm_dequeue_buffer(s->tx_handle, -1, &err);
-            if (s->unsent_mcm_buf == NULL) {
-                av_log(avctx, AV_LOG_ERROR, "Initial dequeue buffer error %d\n", err);
+        if (!s->unsent_buf) {
+            err = mesh_get_buffer(s->conn, &s->unsent_buf);
+
+            if (err) {
+                av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
+                       mesh_err2str(err), err);
                 return AVERROR(EIO);
             }
         }
 
-        len = FFMIN(frame_size, size + s->unsent_len);
+        max_len = s->unsent_buf->conn->buf_size;
+        len = FFMIN(max_len, size + s->unsent_len);
 
-        if (len < frame_size) {
-            memcpy((char *)s->unsent_mcm_buf->data + s->unsent_len, data, size);
+        if (len < max_len) {
+            memcpy((char *)s->unsent_buf->data + s->unsent_len, data, size);
             s->unsent_len += size;
             break;
         }
 
-        dest = s->unsent_mcm_buf->data;
+        dest = s->unsent_buf->data;
 
         if (s->unsent_len) {
             dest += s->unsent_len;
@@ -153,13 +174,12 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         data += len;
         size -= len;
 
-        err = mcm_enqueue_buffer(s->tx_handle, s->unsent_mcm_buf);
+        err = mesh_put_buffer(&s->unsent_buf);
         if (err) {
-            av_log(avctx, AV_LOG_ERROR, "Enqueue buffer error %d\n", err);
+            av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
+                   mesh_err2str(err), err);
             return AVERROR(EIO);
         }
-
-        s->unsent_mcm_buf = NULL;
     }
 
     return 0;
@@ -168,29 +188,28 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
 static int mcm_audio_write_trailer(AVFormatContext* avctx)
 {
     McmAudioMuxerContext *s = avctx->priv_data;
+    int err;
 
-    if (s->unsent_mcm_buf) {
-        int err;
-
+    if (s->unsent_buf) {
         /* zero the unused rest of the buffer */
-        memset((char *)s->unsent_mcm_buf->data + s->unsent_len, 0,
-               s->unsent_mcm_buf->len - s->unsent_len);
+        memset((char *)s->unsent_buf->data + s->unsent_len, 0,
+               s->unsent_buf->data_len - s->unsent_len);
 
-        err = mcm_enqueue_buffer(s->tx_handle, s->unsent_mcm_buf);
-        if (err) {
-            av_log(avctx, AV_LOG_ERROR, "Enqueue buffer error %d\n", err);
-            return AVERROR(EIO);
-        }
+        err = mesh_put_buffer(&s->unsent_buf);
+        if (err)
+            av_log(avctx, AV_LOG_ERROR, "Enqueue buffer error: %s (%d)\n",
+                   mesh_err2str(err), err);
     }
 
-    /* Delay for 50ms to allow Media Proxy to complete transmission of all
-     * buffers sitting in the memif queue before destroying the connection.
-     *
-     * TODO: Replace the delay with an API call when it is implemented in SDK.
-     */
-    usleep(50000);
+    err = mesh_delete_connection(&s->conn);
+    if (err)
+        av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
+               mesh_err2str(err), err);
 
-    mcm_destroy_connection(s->tx_handle);
+    err = mcm_put_client(&s->mc);
+    if (err)
+        av_log(avctx, AV_LOG_ERROR, "Put mesh client failed (%d)\n", err);
+
     return 0;
 }
 

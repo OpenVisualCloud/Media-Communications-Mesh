@@ -13,7 +13,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
-#include "mcm_dp.h"
+#include "mesh_dp.h"
 
 #define DEFAULT_RECV_IP "127.0.0.1"
 #define DEFAULT_RECV_PORT "9001"
@@ -25,7 +25,6 @@
 #define DEFAULT_PAYLOAD_TYPE "st20"
 #define DEFAULT_LOCAL_FILE "data-sdk.264"
 #define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
-#define DEFAULT_MEMIF_IS_MASTER 0
 #define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_PROTOCOL "auto"
 #define DEFAULT_VIDEO_FMT "yuv422p10le"
@@ -74,9 +73,6 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-k, --socketpath=socket_path\t"
                 "Set memif socket path (default: %s)\n",
         DEFAULT_MEMIF_SOCKET_PATH);
-    fprintf(fp, "-m, --master=is_master\t\t"
-                "Set memif conn is master (default: %d)\n",
-        DEFAULT_MEMIF_IS_MASTER);
     fprintf(fp, "-d, --interfaceid=interface_id\t"
                 "Set memif conn interface id (default: %d)\n",
         DEFAULT_MEMIF_INTERFACE_ID);
@@ -86,37 +82,8 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "\n");
 }
 
-static int getFrameSize(video_pixel_format fmt, uint32_t width, uint32_t height, bool interlaced)
-{
-    size_t size = 0;
-    size_t pixels = (size_t)(width*height);
-    switch (fmt) {
-        case PIX_FMT_YUV422P: /* YUV 422 packed 8bit(aka ST20_FMT_YUV_422_8BIT, aka ST_FRAME_FMT_UYVY) */
-            size = pixels * 2;
-            break;
-        case PIX_FMT_RGB8:
-            size = pixels * 3; /* 8 bits RGB pixel in a 24 bits (aka ST_FRAME_FMT_RGB8) */
-            break;
-/* Customized YUV 420 8bit, set transport format as ST20_FMT_YUV_420_8BIT. For direct transport of
-none-RFC4175 formats like I420/NV12. When this input/output format is set, the frame is identical to
-transport frame without conversion. The frame should not have lines padding) */
-        case PIX_FMT_NV12: /* PIX_FMT_NV12, YUV 420 planar 8bits (aka ST_FRAME_FMT_YUV420CUSTOM8, aka ST_FRAME_FMT_YUV420PLANAR8) */
-            size = pixels * 3 / 2;
-            break;
-        case PIX_FMT_YUV444P_10BIT_LE:
-            size = pixels * 2 * 3;
-            break;
-        case PIX_FMT_YUV422P_10BIT_LE: /* YUV 422 planar 10bits little indian, in two bytes (aka ST_FRAME_FMT_YUV422PLANAR10LE) */
-        default:
-            size = pixels * 2 * 2;
-    }
-    if (interlaced) size /= 2; /* if all fmt support interlace? */
-    return (int)size;
-}
-
 int main(int argc, char** argv)
 {
-    int err = 0;
     char recv_addr[46] = DEFAULT_RECV_IP;
     char recv_port[6] = DEFAULT_RECV_PORT;
     char send_addr[46] = DEFAULT_SEND_IP;
@@ -127,18 +94,17 @@ int main(int argc, char** argv)
     char file_name[128] = "";
     char pix_fmt_string[32] = DEFAULT_VIDEO_FMT;
     char socket_path[108] = DEFAULT_MEMIF_SOCKET_PATH;
-    uint8_t is_master = DEFAULT_MEMIF_IS_MASTER;
     uint32_t interface_id = DEFAULT_MEMIF_INTERFACE_ID;
 
     /* video resolution */
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
-    video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
 
-    mcm_conn_context* dp_ctx = NULL;
-    mcm_conn_param param = {};
-    mcm_buffer* buf = NULL;
+    MeshClient *client;
+    MeshConnection *conn;
+    MeshBuffer *buf;
+    int err;
 
     int help_flag = 0;
     int opt;
@@ -154,7 +120,6 @@ int main(int argc, char** argv)
         { "protocol", required_argument, NULL, 'o' },
         { "type", required_argument, NULL, 't' },
         { "socketpath", required_argument, NULL, 'k' },
-        { "master", required_argument, NULL, 'm' },
         { "interfaceid", required_argument, NULL, 'd' },
         { "dumpfile", required_argument, NULL, 'b' },
         { "pix_fmt", required_argument, NULL, 'x' },
@@ -205,25 +170,11 @@ int main(int argc, char** argv)
         case 'k':
             strlcpy(socket_path, optarg, sizeof(socket_path));
             break;
-        case 'm':
-            is_master = atoi(optarg);
-            break;
         case 'd':
             interface_id = atoi(optarg);
             break;
         case 'x':
             strlcpy(pix_fmt_string, optarg, sizeof(pix_fmt_string));
-            if (strncmp(pix_fmt_string, "yuv422p", sizeof(pix_fmt_string)) == 0){
-                pix_fmt = PIX_FMT_YUV422P;
-            } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(pix_fmt_string)) == 0) {
-                pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            } else if (strncmp(pix_fmt_string, "yuv444p10le", sizeof(pix_fmt_string)) == 0){
-                pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-            } else if (strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)) == 0){
-                pix_fmt = PIX_FMT_RGB8;
-            } else {
-                pix_fmt = PIX_FMT_NV12;
-            }
             break;
         case '?':
             usage(stderr, argv[0]);
@@ -238,95 +189,125 @@ int main(int argc, char** argv)
         return 0;
     }
 
-    /* is receiver */
-    param.type = is_rx;
+    err = mesh_create_client(&client, NULL);
+    if (err) {
+        printf("Failed to create a mesh client: %s (%d)\n",
+               mesh_err2str(err), err);
+        exit(-1);
+    }
+
+    err = mesh_create_connection(client, &conn);
+    if (err) {
+        printf("Failed to create a mesh connection: %s (%d)\n",
+               mesh_err2str(err), err);
+        goto error_delete_client;
+    }
 
     /* protocol type */
+    if (!strcmp(protocol_type, "memif")) {
+        MeshConfig_Memif cfg;
 
-    if (strncmp(protocol_type, "memif", sizeof(protocol_type)) == 0) {
-        param.protocol = PROTO_MEMIF;
-        strlcpy(param.memif_interface.socket_path, socket_path, sizeof(param.memif_interface.socket_path));
-        param.memif_interface.is_master = is_master;
-        param.memif_interface.interface_id = interface_id;
-    } else if (strncmp(protocol_type, "udp", sizeof(protocol_type)) == 0) {
-        param.protocol = PROTO_UDP;
-    } else if (strncmp(protocol_type, "tcp", sizeof(protocol_type)) == 0) {
-        param.protocol = PROTO_TCP;
-    } else if (strncmp(protocol_type, "http", sizeof(protocol_type)) == 0) {
-        param.protocol = PROTO_HTTP;
-    } else if (strncmp(protocol_type, "grpc", sizeof(protocol_type)) == 0) {
-        param.protocol = PROTO_GRPC;
+        strlcpy(cfg.socket_path, socket_path, sizeof(cfg.socket_path));
+        cfg.interface_id = interface_id;
+
+        err = mesh_apply_connection_config_memif(conn, &cfg);
+        if (err) {
+            printf("Failed to apply memif configuration: %s (%d)\n",
+               mesh_err2str(err), err);
+            goto error_delete_conn;
+        }
     } else {
-        param.protocol = PROTO_AUTO;
+        MeshConfig_ST2110 cfg;
+
+        strlcpy(cfg.remote_ip_addr, send_addr, sizeof(cfg.remote_ip_addr));
+        cfg.remote_port = atoi(send_port);
+        strlcpy(cfg.local_ip_addr, recv_addr, sizeof(cfg.local_ip_addr));
+        cfg.local_port = atoi(recv_port);
+
+        /* transport type */
+        if (!strcmp(payload_type, "st20")) {
+            cfg.transport = MESH_CONN_TRANSPORT_ST2110_20;
+        } else if (!strcmp(payload_type, "st22")) {
+            cfg.transport = MESH_CONN_TRANSPORT_ST2110_22;
+        } else if (!strcmp(payload_type, "st30")) {
+            cfg.transport = MESH_CONN_TRANSPORT_ST2110_30;
+        } else {
+            printf("Unknown SMPTE ST2110 transport type: %s\n", payload_type);
+            goto error_delete_conn;
+        }
+
+        err = mesh_apply_connection_config_st2110(conn, &cfg);
+        if (err) {
+            printf("Failed to apply SMPTE ST2110 configuration: %s (%d)\n",
+                   mesh_err2str(err), err);
+            goto error_delete_conn;
+        }
     }
 
     /* payload type */
-    if (strncmp(payload_type, "st20", sizeof(payload_type)) == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
-    } else if (strncmp(payload_type, "st22", sizeof(payload_type)) == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST22_VIDEO;
-        param.payload_codec = PAYLOAD_CODEC_JPEGXS;
-    } else if (strncmp(payload_type, "st30", sizeof(payload_type)) == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST30_AUDIO;
-    } else if (strncmp(payload_type, "st40", sizeof(payload_type)) == 0) {
-        param.payload_type = PAYLOAD_TYPE_ST40_ANCILLARY;
-    } else if (strncmp(payload_type, "rdma", sizeof(payload_type)) == 0) {
-        param.payload_type = PAYLOAD_TYPE_RDMA_VIDEO;
+    if (!strcmp(payload_type, "st20") || !strcmp(payload_type, "st22")) {
+        /* video */
+        MeshConfig_Video cfg;
+
+        if (!strncmp(pix_fmt_string, "yuv422p", sizeof(pix_fmt_string)))
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
+        else if (!strncmp(pix_fmt_string, "yuv422p10le", sizeof(pix_fmt_string)))
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
+        else if (!strncmp(pix_fmt_string, "yuv444p10le", sizeof(pix_fmt_string)))
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE;
+        else if (!strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)))
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_RGB8;
+        else
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_NV12;
+
+        cfg.width = width;
+        cfg.height = height;
+        cfg.fps = vid_fps;
+
+        err = mesh_apply_connection_config_video(conn, &cfg);
+        if (err) {
+            printf("Failed to apply video configuration: %s (%d)\n",
+                   mesh_err2str(err), err);
+            goto error_delete_conn;
+        }
+    } else if (!strcmp(payload_type, "st30")) {
+        /* audio */
+        MeshConfig_Audio cfg;
+
+        cfg.channels = 2;
+        cfg.format = MESH_AUDIO_FORMAT_PCM_S16BE;
+        cfg.sample_rate = MESH_AUDIO_SAMPLE_RATE_48000;
+        cfg.packet_time = MESH_AUDIO_PACKET_TIME_1MS;
+
+        err = mesh_apply_connection_config_audio(conn, &cfg);
+        if (err) {
+            printf("Failed to apply audio configuration: %s (%d)\n",
+                   mesh_err2str(err), err);
+            goto error_delete_conn;
+        }
     } else {
-        param.payload_type = PAYLOAD_TYPE_NONE;
+        printf("Unknown payload type: %s\n", payload_type);
+        goto error_delete_conn;
     }
 
-    switch (param.payload_type) {
-    case PAYLOAD_TYPE_ST30_AUDIO:
-        /* audio format */
-        param.payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-        param.payload_args.audio_args.channel = 2;
-        param.payload_args.audio_args.format = AUDIO_FMT_PCM16;
-        param.payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
-        param.payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
-        break;
-    case PAYLOAD_TYPE_ST40_ANCILLARY:
-        /* ancillary format */
-        param.payload_args.anc_args.format = ANC_FORMAT_CLOSED_CAPTION;
-        param.payload_args.anc_args.type = ANC_TYPE_FRAME_LEVEL;
-        param.payload_args.anc_args.fps = vid_fps;
-        break;
-    case PAYLOAD_TYPE_RDMA_VIDEO:
-        param.payload_args.rdma_args.transfer_size =
-            getFrameSize(pix_fmt, width, height, false);
-        break;
-    case PAYLOAD_TYPE_ST20_VIDEO:
-    case PAYLOAD_TYPE_ST22_VIDEO:
-        /* video format */
-        param.pix_fmt = pix_fmt;
-        param.payload_args.video_args.width   = param.width = width;
-        param.payload_args.video_args.height  = param.height = height;
-        param.payload_args.video_args.fps     = param.fps = vid_fps;
-        param.payload_args.video_args.pix_fmt = param.pix_fmt = pix_fmt;
-        break;
-    default:
-        printf("Unrecognized payload type\n");
-        exit(-1);
-        break;
+    err = mesh_establish_connection(conn, MESH_CONN_KIND_RECEIVER);
+    if (err) {
+        printf("Failed to establish connection: %s (%d)\n",
+               mesh_err2str(err), err);
+        goto error_delete_conn;
     }
-
-    strlcpy(param.remote_addr.ip, send_addr, sizeof(param.remote_addr.ip));
-    strlcpy(param.remote_addr.port, send_port, sizeof(param.remote_addr.port));
-    strlcpy(param.local_addr.port, recv_port, sizeof(param.local_addr.port));
-    strlcpy(param.local_addr.ip, recv_addr, sizeof(param.local_addr.ip));
 
     signal(SIGINT, intHandler);
 
     uint32_t frame_count = 0;
-    // uint32_t frm_size = width * height * 3 / 2; //TODO:assume it's NV12
-    uint32_t frm_size = getFrameSize(PIX_FMT_YUV422P_10BIT_LE, width, height, false);
+    uint32_t frm_size = conn->buf_size;
 
     const uint32_t stat_interval = 10;
     double fps = 0.0;
     double throughput_MB = 0;
     double stat_period_s = 0;
     void *ptr = NULL;
-    int timeout = -1;
+    int timeout = MESH_TIMEOUT_INFINITE;
     bool first_frame = true;
     float latency = 0;
     struct timespec ts_recv = {}, ts_send = {};
@@ -337,32 +318,27 @@ int main(int argc, char** argv)
         dump_fp = fopen(file_name, "wb");
     }
 
-    dp_ctx = mcm_create_connection(&param);
-    if (dp_ctx == NULL) {
-        printf("Fail to connect to MCM data plane\n");
-        exit(-1);
-    }
-
     while (keepRunning) {
         /* receive frame */
         if (first_frame) {
-            /* infinity for the 1st frame. */
-            timeout = -1;
+            /* infinite for the 1st frame. */
+            timeout = MESH_TIMEOUT_INFINITE;
         } else {
             /* 1 second */
             timeout = 1000;
         }
 
-        buf = mcm_dequeue_buffer(dp_ctx, timeout, &err);
-        if (buf == NULL) {
-            if (err == 0) {
-                printf("Read buffer timeout\n");
-            } else {
-                printf("Failed to read buffer\n");
-            }
+        err = mesh_get_buffer_timeout(conn, &buf, timeout);
+        if (err == -MESH_ERR_CONN_CLOSED) {
+            printf("Connection closed\n");
             break;
         }
-        printf("INFO: buf->len = %ld frame size = %u\n", buf->len, frm_size);
+        if (err) {
+            printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+            break;
+        }
+
+        printf("INFO: buf->len = %ld frame size = %u\n", buf->data_len, frm_size);
 
         clock_gettime(CLOCK_REALTIME, &ts_recv);
         if (first_frame) {
@@ -371,7 +347,7 @@ int main(int argc, char** argv)
         }
 
         if (dump_fp) {
-            fwrite(buf->data, buf->len, 1, dump_fp);
+            fwrite(buf->data, buf->data_len, 1, dump_fp);
         } else {
             // Following code are mainly for test purpose, it requires the sender side to
             // pre-set the first several bytes
@@ -384,6 +360,8 @@ int main(int argc, char** argv)
             ptr += sizeof(frame_count);
             ts_send = *(struct timespec *)ptr;
 
+            latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
+            latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
             latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
             latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
 
@@ -405,10 +383,12 @@ int main(int argc, char** argv)
 
         frame_count++;
 
-        /* enqueue buffer */
-        if (mcm_enqueue_buffer(dp_ctx, buf) != 0) {
+        err = mesh_put_buffer(&buf);
+        if (err) {
+            printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
             break;
         }
+
         printf("\n");
     }
 
@@ -416,8 +396,21 @@ int main(int argc, char** argv)
     if (dump_fp) {
         fclose(dump_fp);
     }
-    printf("Destroy MCM connection\n");
-    mcm_destroy_connection(dp_ctx);
+
+    err = mesh_delete_connection(&conn);
+    if (err)
+        printf("Failed to delete connection: %s (%d)\n", mesh_err2str(err), err);
+
+    err = mesh_delete_client(&client);
+    if (err)
+        printf("Failed to delete mesh client: %s (%d)\n", mesh_err2str(err), err);
 
     return 0;
+
+error_delete_conn:
+    mesh_delete_connection(&conn);
+
+error_delete_client:
+    mesh_delete_client(&client);
+    exit(-1);
 }
