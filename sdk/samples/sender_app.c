@@ -257,35 +257,52 @@ int main(int argc, char** argv)
             goto error_delete_conn;
         }
     } else {
-        MeshConfig_ST2110 cfg;
+        if (!strcmp(payload_type, "rdma")) {
+            MeshConfig_RDMA cfg;
 
-        strlcpy(cfg.remote_ip_addr, send_addr, sizeof(cfg.remote_ip_addr));
-        cfg.remote_port = atoi(send_port);
-        strlcpy(cfg.local_ip_addr, recv_addr, sizeof(cfg.local_ip_addr));
-        cfg.local_port = atoi(recv_port);
+            strlcpy(cfg.remote_ip_addr, send_addr, sizeof(cfg.remote_ip_addr));
+            cfg.remote_port = atoi(send_port);
+            strlcpy(cfg.local_ip_addr, recv_addr, sizeof(cfg.local_ip_addr));
+            cfg.local_port = atoi(recv_port);
 
-        /* transport type */
-        if (!strcmp(payload_type, "st20")) {
-            cfg.transport = MESH_CONN_TRANSPORT_ST2110_20;
-        } else if (!strcmp(payload_type, "st22")) {
-            cfg.transport = MESH_CONN_TRANSPORT_ST2110_22;
-        } else if (!strcmp(payload_type, "st30")) {
-            cfg.transport = MESH_CONN_TRANSPORT_ST2110_30;
+            err = mesh_apply_connection_config_rdma(conn, &cfg);
+            if (err) {
+                printf("Failed to apply RDMA configuration: %s (%d)\n",
+                    mesh_err2str(err), err);
+                goto error_delete_conn;
+            }
         } else {
-            printf("Unknown SMPTE ST2110 transport type: %s\n", payload_type);
-            goto error_delete_conn;
-        }
+            MeshConfig_ST2110 cfg;
 
-        err = mesh_apply_connection_config_st2110(conn, &cfg);
-        if (err) {
-            printf("Failed to apply SMPTE ST2110 configuration: %s (%d)\n",
-                   mesh_err2str(err), err);
-            goto error_delete_conn;
+            strlcpy(cfg.remote_ip_addr, send_addr, sizeof(cfg.remote_ip_addr));
+            cfg.remote_port = atoi(send_port);
+            strlcpy(cfg.local_ip_addr, recv_addr, sizeof(cfg.local_ip_addr));
+            cfg.local_port = atoi(recv_port);
+
+            /* transport type */
+            if (!strcmp(payload_type, "st20")) {
+                cfg.transport = MESH_CONN_TRANSPORT_ST2110_20;
+            } else if (!strcmp(payload_type, "st22")) {
+                cfg.transport = MESH_CONN_TRANSPORT_ST2110_22;
+            } else if (!strcmp(payload_type, "st30")) {
+                cfg.transport = MESH_CONN_TRANSPORT_ST2110_30;
+            } else {
+                printf("Unknown SMPTE ST2110 transport type: %s\n", payload_type);
+                goto error_delete_conn;
+            }
+
+            err = mesh_apply_connection_config_st2110(conn, &cfg);
+            if (err) {
+                printf("Failed to apply SMPTE ST2110 configuration: %s (%d)\n",
+                    mesh_err2str(err), err);
+                goto error_delete_conn;
+            }
         }
     }
 
     /* payload type */
-    if (!strcmp(payload_type, "st20") || !strcmp(payload_type, "st22")) {
+    if (!strcmp(payload_type, "st20") || !strcmp(payload_type, "st22") ||
+        !strcmp(payload_type, "rdma")) {
         /* video */
         MeshConfig_Video cfg;
 

@@ -5,7 +5,7 @@
 
 # Directories
 script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-bin_dir="$script_dir/../../out/bin"
+bin_dir="$script_dir/../../_build/bin"
 out_dir="$script_dir/out"
 
 # Media file names
