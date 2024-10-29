@@ -379,9 +379,6 @@ int main(int argc, char** argv)
 
             latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
             latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
-            latency = 1000.0 * (ts_recv.tv_sec - ts_send.tv_sec);
-            latency += (ts_recv.tv_nsec - ts_send.tv_nsec) / 1000000.0;
-
         }
 
         if (frame_count % stat_interval == 0) {
