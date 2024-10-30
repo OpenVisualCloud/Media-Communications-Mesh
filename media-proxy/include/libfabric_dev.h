@@ -121,10 +121,6 @@ typedef struct {
     struct fi_info *info;
 } libfabric_ctx;
 
-typedef struct {
-    // Not used
-} libfabric_cfg;
-
 int rdma_init(libfabric_ctx **ctx);
 
 /* Deinitialize RDMA */
