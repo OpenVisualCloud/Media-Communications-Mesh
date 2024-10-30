@@ -46,7 +46,6 @@ extern "C" {
 #include <rdma/fi_domain.h>
 
 #include "utils.h"
-#include "app_platform.h"
 #include "mcm_dp.h"
 #include "shm_memif.h"
 

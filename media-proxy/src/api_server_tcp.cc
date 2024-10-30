@@ -6,6 +6,8 @@
 #include <bsd/string.h>
 #include "api_server_tcp.h"
 #include <mcm_dp.h>
+#include <signal.h>
+#include <netinet/ip.h>
 
 static volatile bool keepRunning = true;
 

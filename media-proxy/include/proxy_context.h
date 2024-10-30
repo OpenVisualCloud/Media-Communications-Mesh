@@ -15,15 +15,8 @@
 #include "libfabric_dev.h"
 #include <mcm_dp.h>
 
-#include <mtl/st40_api.h> /* st2110-40 */
 #include "session-mtl.h"
 #include "session-rdma.h"
-
-// Based on mtl/app/src/fmt.h
-#ifndef ST_APP_PAYLOAD_TYPE_VIDEO
-#define ST_APP_PAYLOAD_TYPE_VIDEO (112)
-#define ST_APP_PAYLOAD_TYPE_ST22 (114)
-#endif
 
 #pragma once
 
@@ -70,14 +63,6 @@ public:
 
     void ParseMemIFParam(const mcm_conn_param* request, memif_ops_t& memif_ops);
 
-    void ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx_ops* opts);
-    void ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx_ops* opts);
-    void ParseSt22TxOps(const mcm_conn_param* request, struct st22p_tx_ops* opts);
-    void ParseSt22RxOps(const mcm_conn_param* request, struct st22p_rx_ops* opts);
-    void ParseSt30TxOps(const mcm_conn_param* request, struct st30_tx_ops* opts);
-    void ParseSt30RxOps(const mcm_conn_param* request, struct st30_rx_ops* opts);
-    void ParseSt40TxOps(const mcm_conn_param* request, struct st40_tx_ops* opts);
-    void ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_ops* opts);
     int TxStart(const mcm_conn_param* request);
     int RxStart(const mcm_conn_param* request);
     int Stop(const int32_t session_id);
@@ -89,7 +74,6 @@ private:
     ProxyContext(const ProxyContext&) = delete;
     ProxyContext& operator=(const ProxyContext&) = delete;
     uint32_t incrementMSessionCount(bool postIncrement);
-    st_frame_fmt getStFrameFmt(video_pixel_format fmt);
 
     int TxStart_mtl(const mcm_conn_param *request);
     int RxStart_mtl(const mcm_conn_param *request);

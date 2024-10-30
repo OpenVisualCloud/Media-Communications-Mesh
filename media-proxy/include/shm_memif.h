@@ -12,8 +12,10 @@ extern "C" {
 #endif
 
 #include <libmemif.h>
+#include <string.h>
+#include <unistd.h>
+#include <errno.h>
 
-// #include "mtl.h"
 #include "utils.h"
 
 typedef struct {
@@ -50,40 +52,6 @@ typedef struct {
 } memif_ops_t;
 
 void print_memif_details(memif_conn_handle_t conn);
-
-/* informs user about connected status. private_ctx is used by user to identify
- * connection */
-int rx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-
-/* informs user about disconnected status. private_ctx is used by user to
- * identify connection */
-int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int rx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-
-int rx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int rx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
-int rx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
-
-int rx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data);
-int rx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data);
-
-int tx_st20p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st20p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int tx_st22p_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data);
-int tx_st20p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-int tx_st22p_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st22p_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-int tx_st30_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st30_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-int tx_st40_on_connect(memif_conn_handle_t conn, void* priv_data);
-int tx_st40_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid);
-
-int tx_rdma_on_connect(memif_conn_handle_t conn, void *priv_data);
-int tx_rdma_on_disconnect(memif_conn_handle_t conn, void *priv_data);
-int tx_rdma_on_receive(memif_conn_handle_t conn, void *priv_data, uint16_t qid);
 
 int memif_buffer_alloc_timeout(memif_conn_handle_t conn, uint16_t qid,
                                memif_buffer_t * bufs, uint16_t count, uint16_t * count_out,
