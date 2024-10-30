@@ -12,6 +12,7 @@
 #include <bsd/string.h>
 #include <stdatomic.h>
 #include <unistd.h>
+#include "libmemif.h"
 
 /**
  * Isolation interface for testability. Accessed from unit tests only.
