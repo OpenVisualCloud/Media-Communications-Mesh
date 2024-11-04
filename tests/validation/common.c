@@ -38,13 +38,13 @@
 
 
 void set_video_pix_fmt(video_pixel_format* pix_fmt, char* pix_fmt_string){
-    if (strncmp(pix_fmt_string, "yuv422p", sizeof(pix_fmt_string)) == 0){
+    if (strncmp(pix_fmt_string, "yuv422p", sizeof(*pix_fmt_string)) == 0){
         *pix_fmt = PIX_FMT_YUV422P;
-    } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(pix_fmt_string)) == 0) {
+    } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(*pix_fmt_string)) == 0) {
         *pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-    } else if (strncmp(pix_fmt_string, "yuv444p10le", sizeof(pix_fmt_string)) == 0){
+    } else if (strncmp(pix_fmt_string, "yuv444p10le", sizeof(*pix_fmt_string)) == 0){
         *pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-    } else if (strncmp(pix_fmt_string, "rgb8", sizeof(pix_fmt_string)) == 0){
+    } else if (strncmp(pix_fmt_string, "rgb8", sizeof(*pix_fmt_string)) == 0){
         *pix_fmt = PIX_FMT_RGB8;
     } else {
         *pix_fmt = PIX_FMT_NV12;
@@ -53,9 +53,9 @@ void set_video_pix_fmt(video_pixel_format* pix_fmt, char* pix_fmt_string){
 
 void set_video_payload_type(int* payload_type, char* payload_type_string){
     /* payload type */
-    if (strncmp(payload_type_string, "st20", sizeof(payload_type_string)) == 0) {
+    if (strncmp(payload_type_string, "st20", sizeof(*payload_type_string)) == 0) {
         *payload_type = MESH_CONN_TRANSPORT_ST2110_20;
-    } else if (strncmp(payload_type_string, "st22", sizeof(payload_type_string)) == 0) {
+    } else if (strncmp(payload_type_string, "st22", sizeof(*payload_type_string)) == 0) {
         *payload_type = MESH_CONN_TRANSPORT_ST2110_22;
     } else {
         *payload_type = PAYLOAD_TYPE_NONE; //TODO: Fixme?
