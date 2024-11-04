@@ -11,54 +11,55 @@ int main(int argc, char** argv)
     // kind -> sender
     // payload_type -> video
 
-    // conn_type -> memif | st2110 | rdma
+    // conn_type -> st2110 [TBD: | memif | rdma]
 
-    // if conn_type -> conn.memif -> socket_path + interface_id
-    // elif conn_type -> st2110/rdma -> remote_ip_addr + remote_port (+local_ip_addr + local_port - static)
-    //     if conn_type -> st2110 -> transport -> st2110-20/22 [/30 not here]
+    // if conn_type -> st2110 -> transport -> st2110-20/22 [/30 not here] + remote_ip_addr^ + remote_port^ + local_ip_addr^ + local_port^
+    // elif conn_type -> conn.memif -> socket_path + interface_id
+    // ^also with rdma
     
     // payload.video -> width + height + fps + pixel_format
 
     /* Video sender menu */
-    int help_flag = 0;
     struct option longopts[] = {
-        { "help",               no_argument, &help_flag, 'H' },
-        { "conn_type",          required_argument, NULL, 'r' }, // memif | st2110 | rdma
-        { "socket_path",        optional_argument, NULL, 'r' }, // memif only
-        { "interface_id",       optional_argument, NULL, 'r' }, // memif only
-        { "remote_ip_addr",     optional_argument, NULL, 'r' }, // st2110 OR rdma only
-        { "remote_port",        optional_argument, NULL, 'r' }, // st2110 OR rdma only
-        { "local_ip_addr",      optional_argument, NULL, 'r' }, // st2110 OR rdma only
-        { "local_port",         optional_argument, NULL, 'r' }, // st2110 OR rdma only
-        
-        { "protocol",           required_argument, NULL, 'o' },
-        { "type",               required_argument, NULL, 't' },
-        { "width",              required_argument, NULL, 'w' },
-        { "height",             required_argument, NULL, 'h' },
-        { "fps",                required_argument, NULL, 'f' },
-        { "pix_fmt",            required_argument, NULL, 'x' },
-        { "number",             required_argument, NULL, 'n' },
+        { "help",           no_argument,       NULL, 'H' },
+        // { "conn_type",      required_argument, NULL, 't' }, // memif | st2110 | rdma
+        // { "socket_path",    optional_argument, NULL, 's' }, // memif only
+        // { "interface_id",   optional_argument, NULL, 'i' }, // memif only
+        { "remote_ip_addr", optional_argument, NULL, 'a' }, // st2110 [OR rdma] only
+        { "remote_port",    optional_argument, NULL, 'p' }, // st2110 [OR rdma] only
+        { "local_ip_addr",  optional_argument, NULL, 'l' }, // st2110 [OR rdma] only
+        { "local_port",     optional_argument, NULL, 'o' }, // st2110 [OR rdma] only
+        { "protocol",       required_argument, NULL, 'c' },
+        { "type",           required_argument, NULL, 't' },
+        { "width",          required_argument, NULL, 'w' },
+        { "height",         required_argument, NULL, 'h' },
+        { "fps",            required_argument, NULL, 'f' },
+        { "pix_fmt",        required_argument, NULL, 'x' },
+        { "number",         required_argument, NULL, 'n' },
         { 0 }
     };
 
-    char recv_addr[46] = DEFAULT_RECV_IP;
-    char recv_port[6] = DEFAULT_RECV_PORT;
-    char payload_type[32] = "";
-    char protocol_type[32] = "";
+    char remote_ip_addr[46] = DEFAULT_RECV_IP;
+    char remote_port[6] = DEFAULT_RECV_PORT;
+    char local_ip_addr[46] = DEFAULT_SEND_IP;
+    char local_port[6] = DEFAULT_SEND_PORT;
+    char payload_type[32] = DEFAULT_PAYLOAD_TYPE;
+    char protocol_type[32] = DEFAULT_PROTOCOL;
 
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
-    char pix_fmt_string[32] = DEFAULT_VIDEO_FMT;
-    video_pixel_format pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-    uint32_t frame_size = 0;
+    char pix_fmt_string[32] = DEFAULT_PIX_FMT_STRING;
+    video_pixel_format pix_fmt = DEFAULT_PIX_FMT;
+    uint32_t frame_size = 0; // zero is infinity (process all provided frames)
     uint32_t total_num = DEFAULT_TOTAL_NUM;
+    int transport = DEFAULT_MESH_CONN_TRANSPORT;
 
     /* infinite loop, to be broken when we are done parsing options */
     int opt;
     while (1) {
         opt = getopt_long(argc, argv,
-                          "Hr:i:o:t:w:h:f:x:n:",
+                          "Ht:s:i:a:p:l:o:c:t:w:h:f:x:n",
                           longopts, 0);
         if (opt == -1) {
             break;
@@ -66,59 +67,63 @@ int main(int argc, char** argv)
 
         switch (opt) {
         case 'H':
-            help_flag = 1;
+            usage(stdout, argv[0], 1);
+            return 0;
+        // case 't': //conn_type
+        //     break;
+        // case 's': //socket_path
+        //     break;
+        // case 'i': //interface_id
+        //     break;
+        case 'a': //remote_ip_addr
+            strlcpy(remote_ip_addr, optarg, sizeof(remote_ip_addr));
             break;
-        case 'r':
-            strlcpy(recv_addr, optarg, sizeof(recv_addr));
+        case 'p': //remote_port
+            strlcpy(remote_port, optarg, sizeof(remote_port));
             break;
-        case 'i':
-            strlcpy(recv_port, optarg, sizeof(recv_port));
+        case 'l': //local_ip_addr
+            strlcpy(local_ip_addr, optarg, sizeof(local_ip_addr));
             break;
-        case 'o':
+        case 'o': //local_port
+            strlcpy(local_port, optarg, sizeof(local_port));
+            break;
+        case 'c': //protocol
             strlcpy(protocol_type, optarg, sizeof(protocol_type));
             break;
-        case 't':
+        case 't': //type
             strlcpy(payload_type, optarg, sizeof(payload_type));
+            set_video_payload_type(&transport, payload_type)
             break;
-        case 'w':
+        case 'w': //width
             width = atoi(optarg);
             break;
-        case 'h':
+        case 'h': //height
             height = atoi(optarg);
             break;
-        case 'f':
+        case 'f': //fps
             vid_fps = atof(optarg);
             break;
-        case 'x':
+        case 'x': //pix_fmt
             strlcpy(pix_fmt_string, optarg, sizeof(pix_fmt_string));
             set_video_pix_fmt(&pix_fmt, pix_fmt_string);
             break;
-        case 'n':
+        case 'n': //number
             total_num = atoi(optarg);
             break;
         default:
             break;
         }
     }
-
-    if (help_flag) {
-        usage(stdout, argv[0], 1);
-        return 0;
-    }
     /* END OF: Video sender menu */
-
-
-    // int len = 0;
-    // char* video_data = open_video_file(&len);
 
     /* Default client configuration */
     MeshClientConfig client_config = { 0 };
     
     /* ST2110-XX configuration */
     MeshConfig_ST2110 conn_config = {
-        .remote_ip_addr = recv_addr,
-        .remote_port = recv_port,
-        .transport = MESH_CONN_TRANSPORT_ST2110_20,
+        .remote_ip_addr = remote_ip_addr,
+        .remote_port = remote_port,
+        .transport = transport,
     };
 
     /* Video configuration */

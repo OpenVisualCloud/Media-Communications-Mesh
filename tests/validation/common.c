@@ -18,7 +18,8 @@
 #define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_INFINITY_LOOP 0 // sender only
 #define DEFAULT_LOCAL_FILE "data-sdk.264" // recver only
-#define DEFAULT_VIDEO_FMT "yuv422p10le"
+#define DEFAULT_PIX_FMT_STRING "yuv422p10le"
+#define DEFAULT_PIX_FMT PIX_FMT_YUV422P_10BIT_LE
 #define DEFAULT_AUDIO_TYPE "frame"
 #define DEFAULT_AUDIO_FORMAT "pcm16"
 #define DEFAULT_AUDIO_SAMPLING "48k"
@@ -26,6 +27,7 @@
 #define DEFAULT_AUDIO_CHANNELS 1
 #define DEFAULT_ANC_TYPE "frame"
 #define DEFAULT_PAYLOAD_CODEC "jpegxs"
+#define DEFAULT_MESH_CONN_TRANSPORT 0 // ST2110-20 (raw)
 
 
 void set_video_pix_fmt(video_pixel_format* pix_fmt, char* pix_fmt_string){
@@ -42,14 +44,14 @@ void set_video_pix_fmt(video_pixel_format* pix_fmt, char* pix_fmt_string){
     }
 }
 
-void set_video_payload_type(){
+void set_video_payload_type(int* payload_type; char* payload_type_string){
     /* payload type */
-    if (strncmp(payload_type, "st20", sizeof(payload_type)) == 0) {
+    if (strncmp(payload_type_string, "st20", sizeof(payload_type_string)) == 0) {
         payload_type = MESH_CONN_TRANSPORT_ST2110_20;
-    } else if (strncmp(payload_type, "st22", sizeof(payload_type)) == 0) {
+    } else if (strncmp(payload_type_string, "st22", sizeof(payload_type_string)) == 0) {
         payload_type = MESH_CONN_TRANSPORT_ST2110_22;
     } else {
-        payload_type = PAYLOAD_TYPE_NONE; //TODO: Fixme
+        payload_type = PAYLOAD_TYPE_NONE; //TODO: Fixme?
     }
 }
 
