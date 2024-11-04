@@ -1,8 +1,15 @@
 #include "mcm_dp.h"
-#include "mesh_dp.h"
+#include "../../sdk/include/mesh_dp.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <bsd/string.h>
+#include <getopt.h>
+#include <signal.h>
+#include <stdbool.h>
+#include <sys/stat.h>
+#include <time.h>
+#include <unistd.h>
+#include <assert.h>
 
 #define DEFAULT_FRAME_WIDTH 1920
 #define DEFAULT_FRAME_HEIGHT 1080
@@ -44,14 +51,14 @@ void set_video_pix_fmt(video_pixel_format* pix_fmt, char* pix_fmt_string){
     }
 }
 
-void set_video_payload_type(int* payload_type; char* payload_type_string){
+void set_video_payload_type(int* payload_type, char* payload_type_string){
     /* payload type */
     if (strncmp(payload_type_string, "st20", sizeof(payload_type_string)) == 0) {
-        payload_type = MESH_CONN_TRANSPORT_ST2110_20;
+        *payload_type = MESH_CONN_TRANSPORT_ST2110_20;
     } else if (strncmp(payload_type_string, "st22", sizeof(payload_type_string)) == 0) {
-        payload_type = MESH_CONN_TRANSPORT_ST2110_22;
+        *payload_type = MESH_CONN_TRANSPORT_ST2110_22;
     } else {
-        payload_type = PAYLOAD_TYPE_NONE; //TODO: Fixme?
+        *payload_type = PAYLOAD_TYPE_NONE; //TODO: Fixme?
     }
 }
 
