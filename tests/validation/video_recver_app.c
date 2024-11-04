@@ -45,7 +45,7 @@ int main(int argc, char** argv)
     char local_ip_addr[46] = DEFAULT_RECV_IP;
     char local_port[6] = DEFAULT_RECV_PORT;
     char payload_type[32] = DEFAULT_PAYLOAD_TYPE;
-    char protocol_type[32] = DEFAULT_PROTOCOL;
+    // char protocol_type[32] = DEFAULT_PROTOCOL;
 
     static char output_file[128] = "";
 
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     int opt;
     while (1) {
         opt = getopt_long(argc, argv,
-                          "Hz:t:s:i:a:p:l:o:c:t:w:h:f:x",
+                          "Hz:t:s:i:a:p:l:o:t:w:h:f:x",
                           longopts, 0);
         if (opt == -1) {
             break;
@@ -94,9 +94,9 @@ int main(int argc, char** argv)
         case 'o': //local_port
             strlcpy(local_port, optarg, sizeof(local_port));
             break;
-        case 'c': //protocol
-            strlcpy(protocol_type, optarg, sizeof(protocol_type));
-            break;
+        // case 'c': //protocol
+        //     strlcpy(protocol_type, optarg, sizeof(protocol_type));
+        //     break;
         case 't': //type
             strlcpy(payload_type, optarg, sizeof(payload_type));
             set_video_payload_type(&transport, payload_type);
