@@ -22,6 +22,7 @@ int main(int argc, char** argv)
     /* Video sender menu */
     struct option longopts[] = {
         { "help",           no_argument,       NULL, 'H' },
+        { "input_file",     optional_argument, NULL, 'z' },
         // { "conn_type",      required_argument, NULL, 't' }, // memif | st2110 | rdma
         // { "socket_path",    optional_argument, NULL, 's' }, // memif only
         // { "interface_id",   optional_argument, NULL, 'i' }, // memif only
@@ -46,6 +47,8 @@ int main(int argc, char** argv)
     char payload_type[32] = DEFAULT_PAYLOAD_TYPE;
     char protocol_type[32] = DEFAULT_PROTOCOL;
 
+    static char input_file[128] = "";
+
     uint32_t width = DEFAULT_FRAME_WIDTH;
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
@@ -53,7 +56,9 @@ int main(int argc, char** argv)
     video_pixel_format pix_fmt = DEFAULT_PIX_FMT;
     uint32_t frame_size = 0; // zero is infinity (process all provided frames)
     uint32_t total_num = DEFAULT_TOTAL_NUM;
+    int do_not_break = 0; // do not break by default
     int transport = DEFAULT_MESH_CONN_TRANSPORT;
+    FILE* input_fp = NULL;
 
     /* infinite loop, to be broken when we are done parsing options */
     int opt;
@@ -75,6 +80,9 @@ int main(int argc, char** argv)
         //     break;
         // case 'i': //interface_id
         //     break;
+        case 'z': //input_file
+            strlcpy(input_file, optarg, sizeof(input_file));
+            break;
         case 'a': //remote_ip_addr
             strlcpy(remote_ip_addr, optarg, sizeof(remote_ip_addr));
             break;
@@ -92,7 +100,7 @@ int main(int argc, char** argv)
             break;
         case 't': //type
             strlcpy(payload_type, optarg, sizeof(payload_type));
-            set_video_payload_type(&transport, payload_type)
+            set_video_payload_type(&transport, payload_type);
             break;
         case 'w': //width
             width = atoi(optarg);
@@ -116,13 +124,42 @@ int main(int argc, char** argv)
     }
     /* END OF: Video sender menu */
 
+    /* Read test data */
+    int read_test_data(FILE* fp, MeshBuffer* buf, uint32_t frame_size)
+    {
+        int ret = 0;
+
+        assert(fp != NULL && buf != NULL);
+        assert(buf->data_len >= frame_size);
+
+        if (fread(buf->data, frame_size, 1, fp) < 1) {
+            ret = -1;
+        }
+        return ret;
+    }
+
+    /* Check if input file is readable */
+    if (strlen(input_file) > 0) {
+        struct stat statbuf = { 0 };
+        if (stat(input_file, &statbuf) == -1) {
+            perror(NULL);
+            return -1;
+        }
+
+        input_fp = fopen(input_file, "rb");
+        if (input_fp == NULL) {
+            printf("Failed to open input file: %s\n", input_file);
+            return -1;
+        }
+    }
+
     /* Default client configuration */
     MeshClientConfig client_config = { 0 };
     
     /* ST2110-XX configuration */
     MeshConfig_ST2110 conn_config = {
-        .remote_ip_addr = remote_ip_addr,
-        .remote_port = remote_port,
+        .remote_ip_addr = *remote_ip_addr,
+        .remote_port = atoi(remote_port),
         .transport = transport,
     };
 
@@ -138,7 +175,7 @@ int main(int argc, char** argv)
     MeshBuffer *buf;
     MeshClient *mc;
     int err;
-    int i, n;
+    int i;//, n;
 
     /* Create a mesh client */
     err = mesh_create_client(&mc, &client_config);
@@ -175,11 +212,33 @@ int main(int argc, char** argv)
         goto exit_delete_conn;
     }
 
-    /* 10 video frames to be sent */
-    n = 10;
+    // /* 10 video frames to be sent */
+    // n = 10;
 
     /* Send data loop */
-    for (i = 0; i < n; i++) {
+    if ( total_num == 0 ) { do_not_break = 1;}
+    else do_not_break = 0;
+    do {
+        if (read_test_data(input_fp, buf, frame_size) < 0) {
+            if (input_fp != NULL) {
+                fclose(input_fp);
+                input_fp = NULL;
+            }
+            if (do_not_break == 0) {
+                input_fp = fopen(input_file, "rb");
+                if (input_fp == NULL) {
+                    printf("Failed to open input file for infinite loop: %s\n",
+                            input_file);
+                    break;
+                }
+                if (read_test_data(input_fp, buf, frame_size) < 0) {
+                    break;
+                }
+            } else {
+                break;
+            }
+        }
+
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(conn, &buf);
         if (err) {
@@ -196,7 +255,10 @@ int main(int argc, char** argv)
             printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
             break;
         }
-    }
+        if (do_not_break == 1) continue;
+        total_num -= 1;
+        if (total_num <= 0) break;
+    } while(1);
 
     /* Shutdown the connection */
     err = mesh_shutdown_connection(conn);
