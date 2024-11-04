@@ -22,14 +22,14 @@ int main(int argc, char** argv)
     /* Video sender menu */
     struct option longopts[] = {
         { "help",           no_argument,       NULL, 'H' },
-        { "input_file",     optional_argument, NULL, 'z' },
+        { "input_file",     required_argument, NULL, 'z' },
         // { "conn_type",      required_argument, NULL, 't' }, // memif | st2110 | rdma
         // { "socket_path",    optional_argument, NULL, 's' }, // memif only
         // { "interface_id",   optional_argument, NULL, 'i' }, // memif only
-        { "remote_ip_addr", optional_argument, NULL, 'a' }, // st2110 [OR rdma] only
-        { "remote_port",    optional_argument, NULL, 'p' }, // st2110 [OR rdma] only
-        { "local_ip_addr",  optional_argument, NULL, 'l' }, // st2110 [OR rdma] only
-        { "local_port",     optional_argument, NULL, 'o' }, // st2110 [OR rdma] only
+        { "remote_ip_addr", required_argument, NULL, 'a' }, // st2110 [OR rdma] only
+        { "remote_port",    required_argument, NULL, 'p' }, // st2110 [OR rdma] only
+        { "local_ip_addr",  required_argument, NULL, 'l' }, // st2110 [OR rdma] only
+        { "local_port",     required_argument, NULL, 'o' }, // st2110 [OR rdma] only
         { "protocol",       required_argument, NULL, 'c' },
         { "type",           required_argument, NULL, 't' },
         { "width",          required_argument, NULL, 'w' },
@@ -158,7 +158,7 @@ int main(int argc, char** argv)
     
     /* ST2110-XX configuration */
     MeshConfig_ST2110 conn_config = {
-        .remote_ip_addr = *remote_ip_addr,
+        .remote_ip_addr = { *remote_ip_addr },
         .remote_port = atoi(remote_port),
         .transport = transport,
     };
@@ -175,7 +175,7 @@ int main(int argc, char** argv)
     MeshBuffer *buf;
     MeshClient *mc;
     int err;
-    int i;//, n;
+    //int i;//, n;
 
     /* Create a mesh client */
     err = mesh_create_client(&mc, &client_config);

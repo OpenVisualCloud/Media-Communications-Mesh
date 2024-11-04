@@ -22,21 +22,21 @@ int main(int argc, char** argv)
     /* Video sender menu */
     struct option longopts[] = {
         { "help",           no_argument,       NULL, 'H' },
-        { "output_file", optional_argument, NULL, 'z' },
+        { "output_file", required_argument, NULL, 'z' },
         // { "conn_type",      required_argument, NULL, 't' }, // memif | st2110 | rdma
         // { "socket_path",    optional_argument, NULL, 's' }, // memif only
         // { "interface_id",   optional_argument, NULL, 'i' }, // memif only
-        { "remote_ip_addr", optional_argument, NULL, 'a' }, // st2110 [OR rdma] only
-        { "remote_port",    optional_argument, NULL, 'p' }, // st2110 [OR rdma] only
-        { "local_ip_addr",  optional_argument, NULL, 'l' }, // st2110 [OR rdma] only
-        { "local_port",     optional_argument, NULL, 'o' }, // st2110 [OR rdma] only
+        { "remote_ip_addr", required_argument, NULL, 'a' }, // st2110 [OR rdma] only
+        { "remote_port",    required_argument, NULL, 'p' }, // st2110 [OR rdma] only
+        { "local_ip_addr",  required_argument, NULL, 'l' }, // st2110 [OR rdma] only
+        { "local_port",     required_argument, NULL, 'o' }, // st2110 [OR rdma] only
         { "protocol",       required_argument, NULL, 'c' },
         { "type",           required_argument, NULL, 't' },
         { "width",          required_argument, NULL, 'w' },
         { "height",         required_argument, NULL, 'h' },
         { "fps",            required_argument, NULL, 'f' },
         { "pix_fmt",        required_argument, NULL, 'x' },
-        { "number",         required_argument, NULL, 'n' },
+        // { "number",         required_argument, NULL, 'n' },
         { 0 }
     };
 
@@ -54,8 +54,8 @@ int main(int argc, char** argv)
     double vid_fps = DEFAULT_FPS;
     char pix_fmt_string[32] = DEFAULT_PIX_FMT_STRING;
     video_pixel_format pix_fmt = DEFAULT_PIX_FMT;
-    uint32_t frame_size = 0; // zero is infinity (process all provided frames)
-    uint32_t total_num = DEFAULT_TOTAL_NUM;
+    // uint32_t frame_size = 0; // zero is infinity (process all provided frames)
+    // uint32_t total_num = DEFAULT_TOTAL_NUM;
     int transport = DEFAULT_MESH_CONN_TRANSPORT;
     FILE* dump_fp = NULL;
 
@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     int opt;
     while (1) {
         opt = getopt_long(argc, argv,
-                          "Hz:t:s:i:a:p:l:o:c:t:w:h:f:x:n",
+                          "Hz:t:s:i:a:p:l:o:c:t:w:h:f:x",
                           longopts, 0);
         if (opt == -1) {
             break;
@@ -114,9 +114,9 @@ int main(int argc, char** argv)
             strlcpy(pix_fmt_string, optarg, sizeof(pix_fmt_string));
             set_video_pix_fmt(&pix_fmt, pix_fmt_string);
             break;
-        case 'n': //number
-            total_num = atoi(optarg);
-            break;
+        // case 'n': //number
+        //     total_num = atoi(optarg);
+        //     break;
         default:
             break;
         }
@@ -133,7 +133,7 @@ int main(int argc, char** argv)
     
     /* ST2110-XX configuration */
     MeshConfig_ST2110 conn_config = {
-        .remote_ip_addr = *remote_ip_addr,
+        .remote_ip_addr = { *remote_ip_addr },
         .local_port = atoi(local_port),
         .transport = transport,
     };
@@ -149,7 +149,7 @@ int main(int argc, char** argv)
     MeshConnection *conn;
     MeshClient *mc;
     int err;
-    int i;//, n;
+    // int i;//, n;
 
     /* Create a mesh client */
     err = mesh_create_client(&mc, &client_config);
