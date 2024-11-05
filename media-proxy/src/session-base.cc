@@ -45,7 +45,7 @@ void Session::memif_event_loop()
         // INFO("media-proxy waiting event.");
         err = memif_poll_event(memif_socket, -1);
         // INFO("media-proxy received event.");
-    } while (err == MEMIF_ERR_SUCCESS);
+    } while (!memif_stop && (err == MEMIF_ERR_SUCCESS));
 
     INFO("MEMIF DISCONNECTED.");
 }
@@ -100,6 +100,7 @@ int Session::shm_deinit()
 {
     int err = 0;
 
+    memif_stop = true;
     if (memif_event_thread) {
         memif_event_thread->join();
         delete memif_event_thread;
@@ -188,7 +189,7 @@ int Session::on_receive_cb(memif_conn_handle_t conn, uint16_t qid)
 
 Session::Session(memif_ops_t &memif_ops, mcm_payload_type payload, direction dir_type)
     : id(0), memif_socket(0), memif_conn(0), memif_event_thread(0), type(dir_type),
-      payload_type(payload), memif_socket_args{0}, memif_conn_args{0}
+      payload_type(payload), memif_socket_args{0}, memif_conn_args{0}, memif_stop(false)
 {
     id = memif_ops.m_session_count;
 

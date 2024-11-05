@@ -31,6 +31,7 @@ class Session
     memif_conn_args_t memif_conn_args;
     std::thread *memif_event_thread;
 
+    volatile bool memif_stop;
     void memif_event_loop();
     int shm_deinit();
 
