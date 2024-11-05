@@ -63,7 +63,7 @@ int main(int argc, char** argv)
     int opt;
     while (1) {
         opt = getopt_long(argc, argv,
-                          "Hz:t:s:i:a:p:l:o:t:w:h:f:x",
+                          "Hz:t:s:i:a:p:l:o:t:w:h:f:x:",
                           longopts, 0);
         if (opt == -1) {
             break;
