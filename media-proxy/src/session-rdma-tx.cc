@@ -79,7 +79,9 @@ TxRdmaSession::~TxRdmaSession()
     INFO("%s, fb_send %d\n", __func__, fb_send);
     stop = true;
     if (ep_ctx) {
-        ep_destroy(&ep_ctx);
+        if (ep_destroy(&ep_ctx)) {
+            ERROR("Failed to destroy RDMA context");
+        }
         ep_ctx = 0;
     }
 
@@ -128,10 +130,17 @@ int TxRdmaSession::on_connect_cb(memif_conn_handle_t conn)
     }
 
     err = ep_reg_mr(ep_ctx, region.addr, region.size);
-    if (errno) {
+    if (err) {
         ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(-err));
         return err;
     }
 
     return Session::on_connect_cb(conn);
+}
+
+int TxRdmaSession::on_disconnect_cb(memif_conn_handle_t conn)
+{
+    /* TODO: unregister in libfabric memory regions allocated by memif */
+
+    return Session::on_disconnect_cb(conn);
 }

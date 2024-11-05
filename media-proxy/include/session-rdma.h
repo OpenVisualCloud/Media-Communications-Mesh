@@ -39,6 +39,7 @@ class TxRdmaSession : public Session
 
     int on_connect_cb(memif_conn_handle_t conn);
     int on_receive_cb(memif_conn_handle_t conn, uint16_t qid);
+    int on_disconnect_cb(memif_conn_handle_t conn);
 
     void frame_thread();
     void handle_sent_buffers();
@@ -64,6 +65,7 @@ class RxRdmaSession : public Session
     uint16_t shm_buf_num;
 
     int on_connect_cb(memif_conn_handle_t conn);
+    int on_disconnect_cb(memif_conn_handle_t conn);
 
     void frame_thread();
     void handle_received_buffers();
