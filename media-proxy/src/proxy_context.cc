@@ -181,6 +181,7 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param *request)
 
     if (session_ptr->init()) {
         ERROR("%s, Failed to initialize session.", __func__);
+        delete session_ptr;
         return -1;
     }
 
@@ -245,6 +246,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
 
     if (session_ptr->init()) {
         ERROR("%s, Failed to initialize session.", __func__);
+        delete session_ptr;
         return -1;
     }
 
@@ -280,6 +282,7 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param *request)
 
     if (session_ptr->init()) {
         ERROR("%s, Failed to initialize session.", __func__);
+        delete session_ptr;
         return -1;
     }
 
@@ -343,6 +346,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
 
     if (session_ptr->init()) {
         ERROR("%s, Failed to initialize session.", __func__);
+        delete session_ptr;
         return -1;
     }
 
