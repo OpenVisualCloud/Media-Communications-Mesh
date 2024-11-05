@@ -43,7 +43,7 @@ void Session::memif_event_loop()
 
     do {
         // INFO("media-proxy waiting event.");
-        err = memif_poll_event(memif_socket, -1);
+        err = memif_poll_event(memif_socket, 1);
         // INFO("media-proxy received event.");
     } while (!memif_stop && (err == MEMIF_ERR_SUCCESS));
 
