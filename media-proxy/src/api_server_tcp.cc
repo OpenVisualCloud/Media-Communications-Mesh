@@ -160,7 +160,7 @@ void* msg_loop(void* ptr)
                 break;
             }
             session_id = *(uint32_t*)buffer;
-            if(!proxy_ctx->Stop(session_id)){
+            if (!proxy_ctx->Stop(session_id)) {
                 sessionKeepRunning = false;
             }
             break;
