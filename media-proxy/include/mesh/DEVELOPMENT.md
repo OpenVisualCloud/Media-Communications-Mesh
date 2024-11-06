@@ -20,7 +20,7 @@
          * ST2110-22 Rx class – `mesh::connection::ST2110_22Rx`
          * ST2110-30 Rx class – `mesh::connection::ST2110_30Rx`
 
-## How It Is Supposed To Work?
+## How Is It Supposed To Work?
 
 
 ### Tx/Rx Test Scenario

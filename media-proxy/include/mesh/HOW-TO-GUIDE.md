@@ -49,4 +49,7 @@ void process_user_data(context::Context ctx, void *data)
 * If the top level (main) context is cancelled, all child contexts are cancelled recursively as well. This is called **Graceful Shutdown**.
 * Always pass the context by reference. Don't use pointers to the context.
 
-
+## C++ Exceptions
+* Rule 1 – **Catch**: We catch and handle all exceptions that can happen in the standard library or in 3rd party components.
+* Rule 2 – **Don't Propagate**: We don't allow exceptions to propagate to upper layers of the call stack. Instead, we return with an error from the function where the exception was caught.
+* Rule 3 – **Don't Throw**: We never throw our own exceptions. Instead, we return an error.

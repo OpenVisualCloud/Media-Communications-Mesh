@@ -82,6 +82,8 @@ stateDiagram
     closed --> configuring: Configure
     closed --> establishing: Establish
     deleting --> [*]
+    notinit --> closed: Shutdown
+    configured --> closed: Shutdown
 ```
 
 ## Diagram of Classes
