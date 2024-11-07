@@ -58,6 +58,7 @@ function install_ubuntu_package_dependencies()
 {
     set -x
     APT_LINUX_HEADERS="linux-headers-$(uname -r)"
+    APT_LINUX_MOD_EXTRA="linux-modules-extra-$(uname -r)"
     apt-get update --fix-missing && \
     apt-get install --no-install-recommends -y \
         apt-transport-https \
@@ -96,7 +97,10 @@ function install_ubuntu_package_dependencies()
         systemtap-sdt-dev \
         wget \
         zlib1g-dev \
-        "${APT_LINUX_HEADERS}"
+        v4l2loopback-dkms \
+        v4l2loopback-utils \
+        "${APT_LINUX_HEADERS}" \
+        "${APT_LINUX_MOD_EXTRA}"
     set +x
     return 0
 }
