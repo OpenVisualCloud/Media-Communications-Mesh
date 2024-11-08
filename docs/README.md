@@ -60,18 +60,18 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 1. **Clone the repository**
 
    ```bash
-   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
+   git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
 2. **Navigate to the Media-Communications-Mesh directory**
 
     ```bash
-    $ cd Media-Communications-Mesh
+    cd Media-Communications-Mesh
     ```
 
-3. **Install Dependencies**, choose between options `a)` or `b)`.
+3. **Install Dependencies**, choose between **OPTION A** or **OPTION B**.
 
-    a) Use all-in-one environment preparation script. The script is designed for Debian and was tested under `Ubuntu 20.04` and `Ubuntu 22.04`, kernel version 5.15 environments.
+    - **OPTION A:** Use all-in-one environment preparation script. The script is designed for Debian and was tested under `Ubuntu 20.04` and `Ubuntu 22.04`, kernel version 5.15 environments.
 
     To use this option run the following command:
 
@@ -79,39 +79,39 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
     sudo ./scripts/setup_build_env.sh
     ```
 
-    b) The following method is universal and should work for most Linux OS distributions.
+    - **OPTION B:** The following method is universal and should work for most Linux OS distributions.
 
-    - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
-    - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation instructions.
-    - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation instructions.
-    - E810 driver: Follow the [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md) for installation instructions.
-    - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
-    - Install required packages:
+        - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
+        - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation instructions.
+        - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation instructions.
+        - E810 driver: Follow the [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md) for installation instructions.
+        - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
+        - Install required packages:
 
-        - Ubuntu/Debian
-        ```bash
-        sudo apt-get update
-        sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
-        ```
-        - Centos stream
-        ```bash
-        sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
-        ```
+            - Ubuntu/Debian
+                ```bash
+                sudo apt-get update
+                sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
+                ```
+            - Centos stream
+                ```bash
+                sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
+                ```
 
-    - Install the irdma driver and libfabric
+        - Install the irdma driver and libfabric
 
-    ```bash
-    ./scripts/setup_rdma_env.sh install
-    ```
+            ```bash
+            ./scripts/setup_rdma_env.sh install
+            ```
 
-    - Reboot
+        - Reboot
 
 4. **Build the Media Proxy binary**
 
     To build Media Communications Mesh and make SDK available for development, run:
 
     ```bash
-    $ ./build.sh
+    ./build.sh
     ```
 
     By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
@@ -121,7 +121,9 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 The program "media_proxy" and SDK library will be installed on system, after the "build.sh" script run successfully. To run "Media Proxy" execute below command:
 
 ```bash
-$ media_proxy
+media_proxy
+```
+```
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
@@ -142,13 +144,13 @@ This will start the media proxy in blocking mode and confirm that build was succ
 1. **Clone the repository**
 
    ```bash
-   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
+   git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
 2. **Navigate to the Media-Communications-Mesh directory**
 
     ```bash
-    $ cd Media-Communications-Mesh
+    cd Media-Communications-Mesh
     ```
 
 3. **Build the Dockerfiles**
@@ -156,11 +158,11 @@ This will start the media proxy in blocking mode and confirm that build was succ
 > [!WARNING]
 > Depending on your docker installation, this step may require being run as `root`.
 
-    run bellow command from the root directory of the repository to build all of the Dockerfiles:
+Run below command from the root directory of the repository to build all of the Dockerfiles:
 
-    ```bash
-    $ ./build_docker.sh
-    ```
+```bash
+./build_docker.sh
+```
 
 ### Basic usage
 
@@ -173,7 +175,9 @@ After running the `build_docker.sh` the following docker images will be availabl
 Now the "Media Proxy" can be run inside the container. To check it, execute bellow command:
 
 ```bash
-$ docker run --privileged -it -v /var/run/mcm:/run/mcm -v /dev/hugepages:/dev/hugepages mcm/media-proxy:latest
+docker run --privileged -it -v /var/run/mcm:/run/mcm -v /dev/hugepages:/dev/hugepages mcm/media-proxy:latest
+```
+```
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
@@ -185,7 +189,9 @@ This will start the media proxy in blocking mode and confirm that build was succ
 Run the media proxy:
 
 ```bash
-$ media_proxy
+media_proxy
+```
+```
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
@@ -197,7 +203,9 @@ This will start the "Media Proxy" program. When the "Media Proxy" program launch
 To get full list of all supported parameters, use the `-h` flag alongside `media_proxy` call:
 
 ```bash
-$ media_proxy -h
+media_proxy -h
+```
+```
 Usage: media_proxy [OPTION]
 -h, --help              Print this help and exit.
 -d, --dev=dev_port      PCI device port (defaults: 0000:31:00.0).
