@@ -97,8 +97,6 @@ function install_ubuntu_package_dependencies()
         systemtap-sdt-dev \
         wget \
         zlib1g-dev \
-        v4l2loopback-dkms \
-        v4l2loopback-utils \
         "${APT_LINUX_HEADERS}" \
         "${APT_LINUX_MOD_EXTRA}"
     set +x
