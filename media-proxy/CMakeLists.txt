@@ -80,7 +80,11 @@ ADD_DEFINITIONS(-D_GNU_SOURCE)
 # Include generated *.pb.h files
 include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ./include/mesh ${LIBFABRIC_INCLUDE_DIR})
 
-add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
+# Exclude the source file containing main() to avoid issues with GTest
+set(proxy_lib_srcs ${proxy_srcs})
+list(FILTER proxy_lib_srcs EXCLUDE REGEX ".*/media_proxy\\.cc")
+
+add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_lib_srcs})
 target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${_REFLECTION}
     ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB} ${LIBFABRIC})
 
