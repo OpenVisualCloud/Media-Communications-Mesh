@@ -123,6 +123,7 @@ The program "media_proxy" and SDK library will be installed on system, after the
 ```bash
 media_proxy
 ```
+which should result in:
 ```
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
@@ -172,11 +173,12 @@ After running the `build_docker.sh` the following docker images will be availabl
 - `mcm/ffmpeg:latest`
 - `mcm/ffmpeg:6.1-latest`
 
-Now the "Media Proxy" can be run inside the container. To check it, execute bellow command:
+Now the "Media Proxy" can be run inside the container. To check it, execute below command:
 
 ```bash
 docker run --privileged -it -v /var/run/mcm:/run/mcm -v /dev/hugepages:/dev/hugepages mcm/media-proxy:latest
 ```
+which should result in:
 ```
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
@@ -186,11 +188,12 @@ This will start the media proxy in blocking mode and confirm that build was succ
 
 ## Parameters breakdown and ports
 
-Run the media proxy:
+Running the media proxy with:
 
 ```bash
 media_proxy
 ```
+should result in:
 ```
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
@@ -205,6 +208,7 @@ To get full list of all supported parameters, use the `-h` flag alongside `media
 ```bash
 media_proxy -h
 ```
+which should print a similar usage information:
 ```
 Usage: media_proxy [OPTION]
 -h, --help              Print this help and exit.
