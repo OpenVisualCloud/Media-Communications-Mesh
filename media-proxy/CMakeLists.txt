@@ -104,7 +104,8 @@ include_directories(
     ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
 )
 
-add_library(media_proxy_lib ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
+add_library(media_proxy_lib STATIC ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS}
+            ${GRPC_HDRS})
 target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${MEMIF_LIB} ${LIBFABRIC}
     gRPC::grpc++ protobuf::libprotobuf)
 

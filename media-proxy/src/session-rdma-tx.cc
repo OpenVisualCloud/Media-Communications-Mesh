@@ -13,7 +13,7 @@
 
 void TxRdmaSession::handle_sent_buffers()
 {
-    int err = ep_cq_read(ep_ctx, NULL, 1);
+    int err = libfabric_ep_ops.ep_cq_read(ep_ctx, NULL, 1);
     if (err) {
         if (err != -EAGAIN)
             INFO("%s ep_txcq_read: %s", __func__, strerror(-err));
@@ -54,7 +54,7 @@ TxRdmaSession::TxRdmaSession(libfabric_ctx *dev_handle, const mcm_conn_param &re
 
 int TxRdmaSession::init()
 {
-    int err = ep_init(&ep_ctx, &ep_cfg);
+    int err = libfabric_ep_ops.ep_init(&ep_ctx, &ep_cfg);
     if (err) {
         ERROR("Failed to initialize libfabric's end point");
         return -1;
@@ -79,7 +79,7 @@ TxRdmaSession::~TxRdmaSession()
     INFO("%s, fb_send %d\n", __func__, fb_send);
     stop = true;
     if (ep_ctx) {
-        if (ep_destroy(&ep_ctx)) {
+        if (libfabric_ep_ops.ep_destroy(&ep_ctx)) {
             ERROR("Failed to destroy RDMA context");
         }
         ep_ctx = 0;
@@ -110,7 +110,7 @@ int TxRdmaSession::on_receive_cb(memif_conn_handle_t conn, uint16_t qid)
         return err;
     }
 
-    err = ep_send_buf(ep_ctx, shm_bufs.data, shm_bufs.len);
+    err = libfabric_ep_ops.ep_send_buf(ep_ctx, shm_bufs.data, shm_bufs.len);
     if (err) {
         ERROR("ep_send_buf failed with: %s", fi_strerror(-err));
         return err;
@@ -129,7 +129,7 @@ int TxRdmaSession::on_connect_cb(memif_conn_handle_t conn)
         return err;
     }
 
-    err = ep_reg_mr(ep_ctx, region.addr, region.size);
+    err = libfabric_ep_ops.ep_reg_mr(ep_ctx, region.addr, region.size);
     if (err) {
         ERROR("%s, ep_reg_mr failed: %s\n", __func__, fi_strerror(-err));
         return err;
