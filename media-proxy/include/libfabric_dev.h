@@ -46,7 +46,6 @@ extern "C" {
 #include <rdma/fi_domain.h>
 
 #include "utils.h"
-#include "app_platform.h"
 #include "mcm_dp.h"
 #include "shm_memif.h"
 
@@ -121,10 +120,6 @@ typedef struct {
     struct fid_domain *domain;
     struct fi_info *info;
 } libfabric_ctx;
-
-typedef struct {
-    // Not used
-} libfabric_cfg;
 
 int rdma_init(libfabric_ctx **ctx);
 

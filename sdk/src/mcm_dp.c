@@ -269,6 +269,7 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
         conn_ctx->priv = (void*)p_ctx;
         break;
     case PROTO_MEMIF:
+    {
         memif_conn_param memif_param = {};
         parse_memif_param(param, &(memif_param.socket_args), &(memif_param.conn_args));
         /* Connect memif connection. */
@@ -279,6 +280,7 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
         }
         conn_ctx->session_id = 0;
         break;
+    }
     default:
         log_warn("Unsupported protocol: %d", param->protocol);
         break;

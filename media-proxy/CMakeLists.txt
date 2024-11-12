@@ -35,12 +35,6 @@ else()
   set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
 endif()
 
-# Enabled by default
-option(ENABLE_ZERO_COPY "Enable zero-copy mode to avoid memory copying between Media Proxy and MTL" ON)
-IF(ENABLE_ZERO_COPY)
-	ADD_DEFINITIONS(-DZERO_COPY)
-ENDIF(ENABLE_ZERO_COPY)
-
 set(proto_name controller)
 set(target media_proxy)
 set(MTL_LIB mtl)

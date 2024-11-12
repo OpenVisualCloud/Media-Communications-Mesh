@@ -6,7 +6,6 @@
 
 #include <stdlib.h>
 
-#include "mtl.h"
 #include "shm_memif.h"
 
 void print_memif_details(memif_conn_handle_t conn)
@@ -89,112 +88,6 @@ void print_memif_details(memif_conn_handle_t conn)
         printf("down\n");
 
     free(buf);
-}
-
-/* informs user about disconnected status. private_ctx is used by user to
- * identify connection */
-int rx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
-{
-    int err = 0;
-    rx_session_context_t* rx_ctx = priv_data;
-    memif_socket_handle_t socket;
-
-    if (conn == NULL) {
-        return 0;
-    }
-
-    // if (rx_ctx == NULL) {
-    //     INFO("Invalid Parameters.");
-    //     return -1;
-    // }
-
-    // release session
-    // if (rx_ctx->shm_ready == 0) {
-    //     return 0;
-    // }
-    // rx_ctx->shm_ready = 0;
-
-    // mtl_st20p_rx_session_destroy(&rx_ctx);
-
-    /* stop event polling thread */
-    INFO("RX Stop poll event\n");
-    socket = memif_get_socket_handle(conn);
-    if (socket == NULL) {
-        INFO("Invalide socket handle.");
-        return -1;
-    }
-
-    err = memif_cancel_poll_event(socket);
-    if (err != MEMIF_ERR_SUCCESS) {
-        INFO("We are doomed...");
-    }
-
-    // free(priv_data);
-
-    return 0;
-}
-
-int rx_on_receive(memif_conn_handle_t conn, void* priv_data, uint16_t qid)
-{
-    int err = 0;
-    memif_buffer_t shm_bufs;
-    uint16_t buf_num = 0;
-
-    /* receive packets from the shared memory */
-    err = memif_rx_burst(conn, qid, &shm_bufs, 1, &buf_num);
-    if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF) {
-        INFO("memif_rx_burst: %s", memif_strerror(err));
-        return err;
-    }
-
-    /* Process on the received buffer. */
-    /* Supposed this function will never be called. */
-
-    err = memif_refill_queue(conn, qid, buf_num, 0);
-    if (err != MEMIF_ERR_SUCCESS)
-        INFO("memif_refill_queue: %s", memif_strerror(err));
-
-    return 0;
-}
-
-/* informs user about disconnected status. private_ctx is used by user to
- * identify connection */
-int tx_on_disconnect(memif_conn_handle_t conn, void* priv_data)
-{
-    static int counter = 0;
-    int err = 0;
-    tx_session_context_t* tx_ctx = priv_data;
-    memif_socket_handle_t socket;
-
-    // if (tx_ctx == NULL) {
-    //     INFO("Invalid Parameters.");
-    //     return -1;
-    // }
-
-    // // release session
-    // if (tx_ctx->shm_ready == 0) {
-    //     return 0;
-    // }
-    // tx_ctx->shm_ready = 0;
-
-    // mtl_st20p_tx_session_destroy(&tx_ctx);
-
-    /* stop event polling thread */
-    INFO("TX Stop poll event");
-    socket = memif_get_socket_handle(conn);
-    if (socket == NULL) {
-        INFO("Invalide socket handle.");
-        return -1;
-    }
-
-    err = memif_cancel_poll_event(socket);
-    if (err != MEMIF_ERR_SUCCESS) {
-        INFO("We are doomed...");
-    }
-
-    // free(priv_data);
-
-    return 0;
 }
 
 int memif_buffer_alloc_timeout(memif_conn_handle_t conn, uint16_t qid,
