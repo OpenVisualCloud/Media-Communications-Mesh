@@ -7,6 +7,7 @@ namespace connection {
 Connection::Connection()
 {
     _kind = Kind::undefined;
+    _link = nullptr;
     _state = State::not_configured;
     _status = Status::initial;
     setting_link = false;
