@@ -4,33 +4,18 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "common.c"
+#include "video_common.c"
 
 int main(int argc, char** argv)
 {
-    // kind -> sender
-    // payload_type -> video
-
-    // conn_type -> st2110 [TBD: | memif | rdma]
-
-    // if conn_type -> st2110 -> transport -> st2110-20/22 [/30 not here] + remote_ip_addr^ + remote_port^ + local_ip_addr^ + local_port^
-    // elif conn_type -> conn.memif -> socket_path + interface_id
-    // ^also with rdma
-    
-    // payload.video -> width + height + fps + pixel_format
-
     /* Video sender menu */
     struct option longopts[] = {
         { "help",           no_argument,       NULL, 'H' },
         { "input_file",     required_argument, NULL, 'z' },
-        // { "conn_type",      required_argument, NULL, 't' }, // memif | st2110 | rdma
-        // { "socket_path",    optional_argument, NULL, 's' }, // memif only
-        // { "interface_id",   optional_argument, NULL, 'i' }, // memif only
-        { "remote_ip_addr", required_argument, NULL, 'a' }, // st2110 [OR rdma] only
-        { "remote_port",    required_argument, NULL, 'p' }, // st2110 [OR rdma] only
-        { "local_ip_addr",  required_argument, NULL, 'l' }, // st2110 [OR rdma] only
-        { "local_port",     required_argument, NULL, 'o' }, // st2110 [OR rdma] only
-        { "protocol",       required_argument, NULL, 'c' },
+        { "remote_ip_addr", required_argument, NULL, 'a' },
+        { "remote_port",    required_argument, NULL, 'p' },
+        { "local_ip_addr",  required_argument, NULL, 'l' },
+        { "local_port",     required_argument, NULL, 'o' },
         { "type",           required_argument, NULL, 't' },
         { "width",          required_argument, NULL, 'w' },
         { "height",         required_argument, NULL, 'h' },
@@ -40,12 +25,11 @@ int main(int argc, char** argv)
         { 0 }
     };
 
-    char remote_ip_addr[46] = DEFAULT_RECV_IP;
+    char remote_ip_addr[MESH_IP_ADDRESS_SIZE] = DEFAULT_RECV_IP;
     char remote_port[6] = DEFAULT_RECV_PORT;
-    char local_ip_addr[46] = DEFAULT_SEND_IP;
+    char local_ip_addr[MESH_IP_ADDRESS_SIZE] = DEFAULT_SEND_IP;
     char local_port[6] = DEFAULT_SEND_PORT;
     char payload_type[32] = DEFAULT_PAYLOAD_TYPE;
-    // char protocol_type[32] = DEFAULT_PROTOCOL;
 
     static char input_file[128] = "";
 
@@ -57,14 +41,14 @@ int main(int argc, char** argv)
     uint32_t frame_size = 0; // zero is infinity (process all provided frames)
     uint32_t total_num = DEFAULT_TOTAL_NUM;
     int do_not_break = 0; // do not break by default
-    int transport = DEFAULT_MESH_CONN_TRANSPORT;
+    int transport = DEFAULT_MESH_CONN_TRANSPORT; //0
     FILE* input_fp = NULL;
 
     /* infinite loop, to be broken when we are done parsing options */
     int opt;
     while (1) {
         opt = getopt_long(argc, argv,
-                          "Ht:s:i:a:p:l:o:t:w:h:f:x:n:",
+                          "Hz:a:p:l:o:t:w:h:f:x:n:",
                           longopts, 0);
         if (opt == -1) {
             break;
@@ -72,32 +56,24 @@ int main(int argc, char** argv)
 
         switch (opt) {
         case 'H':
-            usage(stdout, argv[0], 1);
+            video_usage();
             return 0;
-        // case 't': //conn_type
-        //     break;
-        // case 's': //socket_path
-        //     break;
-        // case 'i': //interface_id
-        //     break;
         case 'z': //input_file
             strlcpy(input_file, optarg, sizeof(input_file));
             break;
         case 'a': //remote_ip_addr
-            strlcpy(remote_ip_addr, optarg, sizeof(remote_ip_addr));
+            strlcpy(remote_ip_addr, optarg, MESH_IP_ADDRESS_SIZE);
             break;
         case 'p': //remote_port
             strlcpy(remote_port, optarg, sizeof(remote_port));
             break;
         case 'l': //local_ip_addr
-            strlcpy(local_ip_addr, optarg, sizeof(local_ip_addr));
+            strlcpy(local_ip_addr, optarg, MESH_IP_ADDRESS_SIZE);
+            printf("local_ip_addr = %s\n", optarg);
             break;
         case 'o': //local_port
             strlcpy(local_port, optarg, sizeof(local_port));
             break;
-        // case 'c': //protocol
-        //     strlcpy(protocol_type, optarg, sizeof(protocol_type));
-        //     break;
         case 't': //type
             strlcpy(payload_type, optarg, sizeof(payload_type));
             set_video_payload_type(&transport, payload_type);
@@ -109,6 +85,10 @@ int main(int argc, char** argv)
             height = atoi(optarg);
             break;
         case 'f': //fps
+            if (strcmp(optarg, "ps") == 0){
+                printf("Ensure no `-fps X`, use `-f X` or `--fps X`!");
+                return -1;
+            }
             vid_fps = atof(optarg);
             break;
         case 'x': //pix_fmt
@@ -158,10 +138,14 @@ int main(int argc, char** argv)
     
     /* ST2110-XX configuration */
     MeshConfig_ST2110 conn_config = {
-        .remote_ip_addr = { *remote_ip_addr },
+        .local_ip_addr = { "" },
+        .local_port = atoi(local_port),
+        .remote_ip_addr = { "" },
         .remote_port = atoi(remote_port),
         .transport = transport,
     };
+    strlcpy(conn_config.local_ip_addr, local_ip_addr, MESH_IP_ADDRESS_SIZE);
+    strlcpy(conn_config.remote_ip_addr, remote_ip_addr, MESH_IP_ADDRESS_SIZE);
 
     /* Video configuration */
     MeshConfig_Video payload_config = {
@@ -175,7 +159,6 @@ int main(int argc, char** argv)
     MeshBuffer *buf;
     MeshClient *mc;
     int err;
-    //int i;//, n;
 
     /* Create a mesh client */
     err = mesh_create_client(&mc, &client_config);
@@ -211,9 +194,6 @@ int main(int argc, char** argv)
         printf("Failed to establish connection: %s (%d)\n", mesh_err2str(err), err);
         goto exit_delete_conn;
     }
-
-    // /* 10 video frames to be sent */
-    // n = 10;
 
     /* Send data loop */
     if ( total_num == 0 ) { do_not_break = 1;}

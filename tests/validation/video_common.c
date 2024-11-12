@@ -38,17 +38,19 @@
 
 
 void set_video_pix_fmt(video_pixel_format* pix_fmt, char* pix_fmt_string){
-    if (strncmp(pix_fmt_string, "yuv422p", sizeof(*pix_fmt_string)) == 0){
-        *pix_fmt = PIX_FMT_YUV422P;
-    } else if (strncmp(pix_fmt_string, "yuv422p10le", sizeof(*pix_fmt_string)) == 0) {
-        *pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-    } else if (strncmp(pix_fmt_string, "yuv444p10le", sizeof(*pix_fmt_string)) == 0){
-        *pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-    } else if (strncmp(pix_fmt_string, "rgb8", sizeof(*pix_fmt_string)) == 0){
-        *pix_fmt = PIX_FMT_RGB8;
+    printf("----> PRE: set_video_pix_fmt(pix_fmt: %d, pix_fmt_string: %s)\n", *pix_fmt, pix_fmt_string);
+    if (strcmp(pix_fmt_string, "yuv444p10le") == 0){
+        *pix_fmt = PIX_FMT_YUV444P_10BIT_LE; //3
+    } else if (strcmp(pix_fmt_string, "yuv422p10le") == 0){
+        *pix_fmt = PIX_FMT_YUV422P_10BIT_LE; //2
+    } else if (strcmp(pix_fmt_string, "yuv422p") == 0){
+        *pix_fmt = PIX_FMT_YUV422P; //1
+    } else if (strcmp(pix_fmt_string, "rgb8") == 0){
+        *pix_fmt = PIX_FMT_RGB8; //4
     } else {
-        *pix_fmt = PIX_FMT_NV12;
+        *pix_fmt = PIX_FMT_NV12; //0
     }
+    printf("----> AFTER: set_video_pix_fmt / pix_fmt: %d, pix_fmt_string: %s\n", *pix_fmt, pix_fmt_string);
 }
 
 void set_video_payload_type(int* payload_type, char* payload_type_string){
@@ -83,12 +85,34 @@ void set_video_payload_type(int* payload_type, char* payload_type_string){
 //     // ...
 // }
 
-static void usage()
+static void video_usage()
 {
-    // /* take only the last portion of the path */
+    // TODO: Fix all the issues here
+    /* take only the last portion of the path */
     // const char* basename = strrchr(path, '/');
     // basename = basename ? basename + 1 : path;
 
     // fprintf(fp, "Usage: %s [OPTION]\n", basename);
-    printf("Usage ...");
+    printf("some usage here...");
+    // fprintf(fp, "-z, --input_file=<file_name>\t\t\t"
+    //             "Name of the file\n");
+    // fprintf(fp, "-a, --remote_ip_addr=<remote_ip_addr>\t\t\t"
+    //             "Remote IP address (default: %0.2f)\n",
+    //     DEFAULT_RECV_IP); // does not cut it for sender
+    // fprintf(fp, "-p, --remote_port=<remote_port>\t\t\t"
+    //             "Remote port number (default: %0.2f)\n",
+    //     DEFAULT_RECV_PORT); // does not cut it for sender
+    // fprintf(fp, "-l, --local_ip_addr=<local_ip_addr>\t\t\t"
+    //             "Local IP address (default: %0.2f)\n",
+    //     DEFAULT_SEND_IP); // does not cut it for recver
+    // fprintf(fp, "-o, --local_port=<local_port>\t\t\t"
+    //             "Local port number (default: %0.2f)\n",
+    //     DEFAULT_SEND_PORT); // does not cut it for recver
+    // // fprintf(fp, "-c, --protocol=<protocol>\t\t\t"
+    // //             "Local port number (default: %0.2f)\n",
+    // //     DEFAULT_SEND_PORT); // does not cut it for recver //UNUSED
+
+    // fprintf(fp, "-f, --fps=<video_fps>\t\t\t"
+    //             "Test video FPS (frame per second) (default: %0.2f)\n",
+    //     DEFAULT_FPS);
 }
