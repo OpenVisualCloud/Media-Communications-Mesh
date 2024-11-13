@@ -71,7 +71,7 @@ int TxSt22MtlSession::on_disconnect_cb(memif_conn_handle_t conn)
 }
 #endif
 
-void TxSt22MtlSession::copy_connection_params(const mcm_conn_param &request, std::string dev_port)
+void TxSt22MtlSession::copy_connection_params(const mcm_conn_param &request, std::string &dev_port)
 {
     char session_name[NAME_MAX] = "";
 
@@ -135,6 +135,9 @@ TxSt22MtlSession::TxSt22MtlSession(mtl_handle dev_handle, const mcm_conn_param &
 #if defined(MTL_ZERO_COPY)
     ops.notify_frame_done = tx_frame_done_callback_wrapper;
     ops.flags |= ST22P_TX_FLAG_EXT_FRAME;
+    source_begin_iova_map_sz = 0;
+    source_begin_iova = {0};
+    source_begin = nullptr;
 #endif
 }
 

@@ -85,7 +85,7 @@ void RxRdmaSession::frame_thread()
 RxRdmaSession::RxRdmaSession(libfabric_ctx *dev_handle, const mcm_conn_param &request,
                              memif_ops_t &memif_ops)
     : Session(memif_ops, request.payload_type, RX), ep_cfg{0}, ep_ctx(0), stop(false),
-      frame_thread_handle(0), fb_recv(0), shm_bufs(0)
+      frame_thread_handle(0), fb_recv(0), shm_bufs(0), shm_buf_num(0)
 {
     transfer_size = request.payload_args.rdma_args.transfer_size;
 

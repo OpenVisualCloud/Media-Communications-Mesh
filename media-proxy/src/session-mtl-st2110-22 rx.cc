@@ -114,7 +114,7 @@ void RxSt22MtlSession::frame_thread()
     }
 }
 
-void RxSt22MtlSession::copy_connection_params(const mcm_conn_param &request, std::string dev_port)
+void RxSt22MtlSession::copy_connection_params(const mcm_conn_param &request, std::string &dev_port)
 {
     char session_name[NAME_MAX] = "";
     snprintf(session_name, NAME_MAX, "mcm_rx_st22_%d", get_id());
@@ -183,6 +183,9 @@ RxSt22MtlSession::RxSt22MtlSession(mtl_handle dev_handle, const mcm_conn_param &
     ops.flags |= ST22P_RX_FLAG_EXT_FRAME;
     ops.flags |= ST22P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
     ops.query_ext_frame = query_ext_frame_callback_wrapper;
+    source_begin_iova_map_sz = 0;
+    source_begin_iova = {0};
+    source_begin = nullptr;
 #endif
 }
 
@@ -243,12 +246,13 @@ void RxSt22MtlSession::consume_frame(struct st_frame *frame)
     }
 
 #if defined(MTL_ZERO_COPY)
+    fifo_mtx.lock();
     if (fifo.empty()) {
+        fifo_mtx.unlock();
         ERROR("%s FIFO empty \n", __func__);
         return;
     }
 
-    fifo_mtx.lock();
     rx_buf = fifo.front();
     fifo.pop();
     fifo_mtx.unlock();
