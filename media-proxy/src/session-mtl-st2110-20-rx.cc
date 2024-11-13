@@ -243,12 +243,13 @@ void RxSt20MtlSession::consume_frame(struct st_frame *frame)
     }
 
 #if defined(MTL_ZERO_COPY)
+    fifo_mtx.lock();
     if (fifo.empty()) {
+        fifo_mtx.unlock();
         ERROR("%s FIFO empty \n", __func__);
         return;
     }
 
-    fifo_mtx.lock();
     rx_buf = fifo.front();
     fifo.pop();
     fifo_mtx.unlock();
