@@ -136,6 +136,8 @@ TxSt22MtlSession::TxSt22MtlSession(mtl_handle dev_handle, const mcm_conn_param &
     ops.notify_frame_done = tx_frame_done_callback_wrapper;
     ops.flags |= ST22P_TX_FLAG_EXT_FRAME;
     source_begin_iova_map_sz = 0;
+    source_begin_iova = {0};
+    source_begin = nullptr;
 #endif
 }
 

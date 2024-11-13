@@ -184,6 +184,8 @@ RxSt22MtlSession::RxSt22MtlSession(mtl_handle dev_handle, const mcm_conn_param &
     ops.flags |= ST22P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
     ops.query_ext_frame = query_ext_frame_callback_wrapper;
     source_begin_iova_map_sz = 0;
+    source_begin_iova = {0};
+    source_begin = nullptr;
 #endif
 }
 

@@ -181,6 +181,8 @@ RxSt20MtlSession::RxSt20MtlSession(mtl_handle dev_handle, const mcm_conn_param &
     ops.flags |= ST20P_RX_FLAG_RECEIVE_INCOMPLETE_FRAME;
     ops.query_ext_frame = query_ext_frame_callback_wrapper;
     source_begin_iova_map_sz = 0;
+    source_begin_iova = {0};
+    source_begin = nullptr;
 #endif
 }
 
