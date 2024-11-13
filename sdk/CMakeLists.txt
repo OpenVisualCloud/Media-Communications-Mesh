@@ -4,11 +4,12 @@
 
 cmake_minimum_required(VERSION 3.16)
 
-project("McmDPSdk" C)
+project("McmDPSdk" C CXX)
 set(MCM_TARGET "libmcm_dp")
 set(DESCRIPTION "MCM DP SDK Library")
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
 # extract version from git
 execute_process(
   COMMAND git describe --long --tags
