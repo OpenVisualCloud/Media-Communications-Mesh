@@ -104,6 +104,8 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
             ```bash
             ./scripts/setup_rdma_env.sh install
             ```
+            > [!TIP]
+            > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
 
         - Reboot
 
