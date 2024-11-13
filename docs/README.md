@@ -73,16 +73,17 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
     - **OPTION A:** Use all-in-one environment preparation script. The script is designed for Debian and was tested under `Ubuntu 20.04` and `Ubuntu 22.04`, kernel version 5.15 environments.
 
-    To use this option run the following command:
+        To use this option run the following command:
 
-    ```bash
-    sudo ./scripts/setup_build_env.sh
-    ```
+        ```bash
+        sudo ./scripts/setup_build_env.sh
+        ```
+
+        Reboot the machine after the script is executed.
 
     - **OPTION B:** The following method is universal and should work for most Linux OS distributions.
 
         - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
-        - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation instructions.
         - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation instructions.
         - E810 driver: Follow the [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md) for installation instructions.
         - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
@@ -98,7 +99,7 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
                 sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
                 ```
 
-        - Install the irdma driver and libfabric
+        - Install the irdma driver and libfabric:
 
             ```bash
             ./scripts/setup_rdma_env.sh install
