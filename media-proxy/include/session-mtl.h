@@ -60,7 +60,7 @@ class RxSt20MtlSession : public MtlSession
     size_t source_begin_iova_map_sz;
 #endif
 
-    void copy_connection_params(const mcm_conn_param &request, std::string dev_port);
+    void copy_connection_params(const mcm_conn_param &request, std::string &dev_port);
     void consume_frame(struct st_frame *frame);
     void frame_thread();
 
@@ -94,7 +94,7 @@ class TxSt20MtlSession : public MtlSession
     size_t source_begin_iova_map_sz;
 #endif
 
-    void copy_connection_params(const mcm_conn_param &request, std::string dev_port);
+    void copy_connection_params(const mcm_conn_param &request, std::string &dev_port);
     int on_receive_cb(memif_conn_handle_t conn, uint16_t qid);
 
 #if defined(MTL_ZERO_COPY)
@@ -128,7 +128,7 @@ class RxSt22MtlSession : public MtlSession
     size_t source_begin_iova_map_sz;
 #endif
 
-    void copy_connection_params(const mcm_conn_param &request, std::string dev_port);
+    void copy_connection_params(const mcm_conn_param &request, std::string &dev_port);
     void consume_frame(struct st_frame *frame);
     void frame_thread();
 
@@ -162,7 +162,7 @@ class TxSt22MtlSession : public MtlSession
     size_t source_begin_iova_map_sz;
 #endif
 
-    void copy_connection_params(const mcm_conn_param &request, std::string dev_port);
+    void copy_connection_params(const mcm_conn_param &request, std::string &dev_port);
     int on_receive_cb(memif_conn_handle_t conn, uint16_t qid);
 
 #if defined(MTL_ZERO_COPY)
@@ -188,7 +188,7 @@ class RxSt30MtlSession : public MtlSession
     std::thread *frame_thread_handle;
 
     void consume_frame(struct st30_frame *frame);
-    void copy_connection_params(const mcm_conn_param &request, std::string dev_port);
+    void copy_connection_params(const mcm_conn_param &request, std::string &dev_port);
     void frame_thread();
 
   public:
@@ -205,7 +205,7 @@ class TxSt30MtlSession : public MtlSession
 
     int fb_send;
 
-    void copy_connection_params(const mcm_conn_param &request, std::string dev_port);
+    void copy_connection_params(const mcm_conn_param &request, std::string &dev_port);
     int on_receive_cb(memif_conn_handle_t conn, uint16_t qid);
 
   public:

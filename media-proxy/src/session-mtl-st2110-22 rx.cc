@@ -114,7 +114,7 @@ void RxSt22MtlSession::frame_thread()
     }
 }
 
-void RxSt22MtlSession::copy_connection_params(const mcm_conn_param &request, std::string dev_port)
+void RxSt22MtlSession::copy_connection_params(const mcm_conn_param &request, std::string &dev_port)
 {
     char session_name[NAME_MAX] = "";
     snprintf(session_name, NAME_MAX, "mcm_rx_st22_%d", get_id());

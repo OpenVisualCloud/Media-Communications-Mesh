@@ -71,7 +71,7 @@ int TxSt20MtlSession::on_disconnect_cb(memif_conn_handle_t conn)
 }
 #endif
 
-void TxSt20MtlSession::copy_connection_params(const mcm_conn_param &request, std::string dev_port)
+void TxSt20MtlSession::copy_connection_params(const mcm_conn_param &request, std::string &dev_port)
 {
     char session_name[NAME_MAX] = "";
 
