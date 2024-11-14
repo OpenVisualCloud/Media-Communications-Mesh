@@ -413,6 +413,32 @@ function config_intel_rdma_driver() {
     prompt "Configuration of iRDMA finished."
 }
 
+# Example usage:
+#    PM="$(setup_package_manager)" && \
+#    $PM install python3
+function setup_package_manager()
+{
+    TIBER_USE_PM="${PM:-$1}"
+    if [[ -x "$(command -v "$TIBER_USE_PM")" ]]; then
+        export PM="${TIBER_USE_PM}"
+    elif [[ -x "$(command -v yum)" ]]; then
+        export PM='yum'
+    elif [[ -x "$(command -v dnf)" ]]; then
+        export PM='dnf'
+    elif [[ -x "$(command -v apt-get)" ]]; then
+        export PM='apt-get'
+    elif [[ -x "$(command -v apt)" ]]; then
+        export PM='apt'
+    else
+        error "No known pkg manager found. Try to re-run with variable, example:"
+        error "export PM=\"apt\""
+        return 1
+    fi
+    prompt "Setting pkg manager to ${PM}."
+    echo "${PM}"
+    return 0
+}
+
 function exec_command()
 {
     # One of: yes|no|accept-new

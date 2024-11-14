@@ -71,7 +71,7 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
 3. **Install Dependencies**, choose between options `a)` or `b)`.
 
-    a) Use all-in-one environment preparation script. The script is designed for Debian and was tested under `Ubuntu 20.04` and `Ubuntu 22.04`, kernel version 5.15 environments.
+    a) Use all-in-one environment preparation script. The script was tested under `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, `CentOS Stream9` and kernel version `5.15` environments.
 
     To use this option run the following command:
 
