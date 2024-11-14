@@ -145,35 +145,47 @@ LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
 ARG MCM_DIR="/opt/mcm"
 ARG GRPC_DIR="/opt/grpc"
+
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=Europe/Warsaw
+
+ENV MCM_USER=mcm \
+    MCM_GROUP=mcm \
+    MCM_UID=994 \
+    MCM_GID=994
 
 ENV KAHAWAI_CFG_PATH="/usr/local/etc/jpegxs.json"
 ENV LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu"
 
+WORKDIR /opt/mcm/
 SHELL ["/bin/bash", "-exc"]
 RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
     apt-get install -y --no-install-recommends \
        ca-certificates libbsd0 libnuma1 libjson-c5 libpcap0.8 libsdl2-2.0-0 libsdl2-ttf-2.0-0 \
        libssl3 zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap sudo \
-       librte-net-mlx4-22 librte-net-mlx5-22 libfdt1 ethtool && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    groupadd -g 2110 vfio && \
-    groupadd -g 1001 imtl && \
-    useradd -m -s /bin/bash -G vfio,imtl -u 1002 mcm && \
-    usermod -aG sudo mcm
-
-COPY --chown=mcm --from=builder /install /
-
-RUN ldconfig && \
-    apt-get purge -y '.*sound.*' '.*systemtap.*' '.*libdrm.*' '.*vorbis.*' '.*wayland.*' '.*x11.*' '.*python.*' '.*readline.*' '.*avahi.*' '^libx[a-w,y-z].*' make media-types libopus0 \
+       librte-net-mlx4-22 librte-net-mlx5-22 libfdt1 ethtool libcap2-bin && \
+    apt-get purge -y '*sound*' '*systemtap*' '*libdrm*' '*vorbis*' '*wayland*' '*x11*' '*python*' '*readline*' '*avahi*' '^libx[a-w,y-z].*' make media-types libopus0 \
         libexpat1 libflac8 libfreetype6 libsndfile1 libgbm1 libglib2.0-0 libgraphite2-3 libharfbuzz0b libogg0 libpulse0 libmpdec3 libnspr4 libpng16-16 \
-        xkb-data distro-info-data libdw1 libbrotli1 libdecor-0-0 libxxf86vm1 libapparmor1 libasyncns0 libnss3 libsqlite3-0 lsb-release
-USER mcm
-WORKDIR /opt/mcm/
+        xkb-data distro-info-data libdw1 libbrotli1 libdecor-0-0 libxxf86vm1 libapparmor1 libasyncns0 libnss3 libsqlite3-0 lsb-release && \
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
+COPY --chown=${MCM_USER}:${MCM_GROUP} --from=builder /install /
+RUN ldconfig && \
+    mkdir /opt/grpc && \
+    groupadd -g 2110 vfio && \
+    groupadd -g 993 imtl && \
+    getent group ${MCM_GROUP} > /dev/null || groupadd -r ${MCM_GROUP} -g "${MCM_GID}" && \
+    getent passwd ${MCM_USER} > /dev/null || useradd -r -g ${MCM_GROUP} -u "${MCM_UID}" -s /sbin/nologin ${MCM_USER} -d /opt/mcm && \
+    usermod -aG sudo,vfio,imtl ${MCM_USER} && \
+    chown -R ${MCM_USER}:${MCM_GROUP} /opt/mcm /opt/grpc && \
+    chown -R root:${MCM_GROUP} /usr/lib64 /usr/local /run /var/run && \
+    chmod -R 2775 /usr/lib64 /usr/local /run /var/run /opt/mcm  && \
+    passwd -d ${MCM_USER} && \
+    setcap "cap_ipc_lock,cap_bpf,cap_net_raw,cap_net_admin,cap_net_bind_service=+eip" /usr/local/bin/media_proxy
+
+USER mcm
 EXPOSE 8001/tcp 8002/tcp
 
 CMD ["--help"]
