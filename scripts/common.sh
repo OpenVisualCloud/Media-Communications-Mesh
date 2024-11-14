@@ -20,6 +20,9 @@ export IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
 export IRDMA_DMID="${IRDMA_DMID:-832291}"
 export IRDMA_VER="${IRDMA_VER:-1.15.11}"
 export IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
+export IRDMA_REPO="https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz"
+export PERF_DIR="${DRIVERS_DIR}/perftest"
+export PERF_REPO="https://github.com/linux-rdma/perftest/releases/download/24.07.0-0.44/perftest-24.07.0-0.44.g57725f2.tar.gz"
 
 if ! grep "/root/.local/bin" <<< "${PATH}"; then
     export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"
@@ -333,7 +336,7 @@ function catch_error_print_debug() {
     fi
 
     _output_array+=('---')
-    error "${_output_array[@]}"
+    error "${_output_array[*]}"
 }
 
 # Calling this function executes ERR and SIGINT signals trapping. Triggered trap calls catch_error_print_debug and exit 1

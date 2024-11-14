@@ -1,6 +1,7 @@
 #!/bin/bash
 
 set -eEo pipefail
+set +x
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
@@ -45,7 +46,7 @@ function get_and_patch_intel_drivers()
         error "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
-    wget_download_strip_unpack "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz" "${IRDMA_DIR}"
+    wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
@@ -56,13 +57,19 @@ function get_and_patch_intel_drivers()
 
 function build_install_and_config_intel_drivers()
 {
-    make -j "${NPROC}" -C "${IAVF_DIR}/src" install
-    make -j "${NPROC}" -C "${ICE_DIR}/src" install
-    pushd "${IRDMA_DIR}"
-    ./build.sh
-    popd
-    config_intel_rdma_driver
-    modprobe irdma
+    make -j "${NPROC}" -C "${IAVF_DIR}/src" install && \
+    make -j "${NPROC}" -C "${ICE_DIR}/src" install && \
+    return 0 || return 1
+}
+
+function build_install_and_config_irdma_drivers()
+{
+    pushd "${IRDMA_DIR}" && \
+    ./build.sh && \
+    popd && \
+    config_intel_rdma_driver && \
+    modprobe irdma && \
+    return 0 || return 1
 }
 
 function install_package_dependencies()
@@ -90,6 +97,7 @@ function install_ubuntu_package_dependencies()
         build-essential \
         ca-certificates \
         clang \
+        curl \
         dracut \
         gcc-multilib \
         libbsd-dev \
@@ -135,6 +143,7 @@ function install_yum_package_dependencies()
         autoconf \
         automake \
         bzip2 \
+        curl-minimal \
         ca-certificates \
         clang \
         cmake \
@@ -147,6 +156,7 @@ function install_yum_package_dependencies()
         gtest-devel \
         intel-ipp-crypto-mb \
         intel-ipsec-mb \
+        kernel-devel \
         kernel-headers \
         kernel-modules-extra \
         libbpf \
@@ -307,39 +317,41 @@ function full_build_and_install_workflow()
     return 0 || return 1
 }
 
-if [ "${EUID}" != "0" ]; then
-    error "Must be run as root. Try running bellow command:"
-    error "sudo \"${BASH_SOURCE[0]}\""
-    exit 1
-fi
-
 # cp -f "${REPO_DIR}/media-proxy/imtl.json" "/usr/local/etc/imtl.json"
 # export KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"
 
-print_logo_anim "2" "0.04"
-sleep 1
-trap_error_print_debug
-sleep 1
-prompt Starting: OS packages installation, MTL and DPDK download.
-install_package_dependencies
-lib_download_mtl_and_dpdk
-prompt Finished: OS packages installation, MTL and DPDK download.
-prompt Starting: Intel drivers download and patch apply.
-get_and_patch_intel_drivers
-prompt Finished: Intel drivers download and patch apply.
-prompt Starting: Dependencies build, install and configation.
-full_build_and_install_workflow ||
-error Dependencies build, install and configation failed. && \
-exit 1
-prompt Finished: Dependencies build, install and configation.
-prompt Starting: Build, install and configuration of Intel drivers.
-build_install_and_config_intel_drivers || \
-error Intel drivers were not installed correctly. && \
-error Please rerun the driver setup part manuallly Requires manual setup. && \
-exit 1
-prompt Finished: Build, install and configuration of Intel drivers.
-prompt All tasks compleated. Reboot required.
-warning ""
-warning OS reboot is required for all of the changes to take place.
-sleep 2
-exit 0
+# Allow sourcing of the script.
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
+then
+    if [ "${EUID}" != "0" ]; then
+        error "Must be run as root. Try running bellow command:"
+        error "sudo \"${BASH_SOURCE[0]}\""
+        exit 1
+    fi
+    print_logo_anim "2" "0.04"
+    sleep 1
+    trap_error_print_debug
+    sleep 1
+    prompt Starting: OS packages installation, MTL and DPDK download.
+    install_package_dependencies
+    lib_download_mtl_and_dpdk
+    prompt Finished: OS packages installation, MTL and DPDK download.
+    prompt Starting: Intel drivers download and patch apply.
+    get_and_patch_intel_drivers
+    prompt Finished: Intel drivers download and patch apply.
+    prompt Starting: Dependencies build, install and configation.
+    full_build_and_install_workflow || \
+    { error Dependencies build, install and configation failed. && exit 1; }
+    prompt Finished: Dependencies build, install and configation.
+    prompt Starting: Build, install and configuration of Intel drivers.
+    build_install_and_config_intel_drivers || \
+    { error Intel drivers configuration/installation failed. && exit 1; }
+    build_install_and_config_irdma_drivers || \
+    { error Intel irdma configuration/installation failed. && exit 1; }
+    prompt Finished: Build, install and configuration of Intel drivers.
+    prompt All tasks compleated. Reboot required.
+    warning ""
+    warning OS reboot is required for all of the changes to take place.
+    sleep 2
+    exit 0
+fi
