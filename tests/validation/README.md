@@ -8,11 +8,8 @@ This part of the repository is to be used solely for holding validation applicat
 
 In order to compile the apps, first compile the whole Media Communications Mesh using `build.sh` script from the root of the repo, then use following commands:
 
-`cc -o <output_name> <input_file.c> -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
-
-Examples:
-- `cc -o video_sender_app video_sender_app.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
-- `cc -o video_recver_app video_recver_app.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
+- `cc -o sender_app sender_app.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
+- `cc -o recver_app recver_app.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
 
 ## Usage
 
@@ -20,7 +17,7 @@ Remember to properly start the Media Proxy application before running the sample
 
 Use `app_name -H` to see full usage options for a specific application.
 
-Common switches:
+### Common switches
 TBD
 <!-- TODO: Add switches here at the end, when everything is stable
 - `-z <filename>` - input/output filename
@@ -36,11 +33,19 @@ TBD
 - `-x <pix_fmt>` - video pixel format
 -->
 
-Usage examples:
-- `./video_sender_app -z 1080p_yuv422_10b_1.yuv -a 192.168.96.1 -p 9001 -l 192.168.96.2 -o 9002 -t st20 -w 1920 -h 1080 -f 30 -x yuv422p10le`
-- `./video_recver_app -z out_1080p_yuv422_10b_1.yuv -a 192.168.96.2 -p 9002 -l 192.168.96.1 -o 9001 -t st20 -w 1920 -h 1080 -f 30 -x yuv422p10le`
+### Usage examples
 
-## Known issues
+Sender:
+- `sudo media_proxy -d 0000:c0:11.1 -t 9992`
+- `sudo MCM_MEDIA_PROXY_PORT=9992 ./sender -w 1920 -h 1080 -f 30 -x "yuv422p10le" -s 192.168.96.1 -r 192.168.96.2 -i 9991 -b input.yuv`
+
+Receiver:
+- `sudo media_proxy -d 0000:c0:11.0 -t 9991`
+- `sudo MCM_MEDIA_PROXY_PORT=9991 ./recver -w 1920 -h 1080 -f 30 -x "yuv422p10le" -s 192.168.96.2 -p 9992 -b output.yuv`
+
+## Validation helpers
+
+An aside part with help information for validators.
 
 ### Media Proxy hugepages requirement
 
