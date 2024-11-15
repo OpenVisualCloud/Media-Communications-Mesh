@@ -76,7 +76,7 @@ public:
 int main()
 {
     auto ctx = context::WithCancel(mesh::context::Background());
-    int res;
+    connection::Result res;
 
     // Setup Emulated Receiver
     auto emulated_rx = new EmulatedReceiver;
@@ -86,18 +86,18 @@ int main()
     auto conn_rx = new mesh::connection::ST2110_20Rx;
 
     res = conn_rx->configure(ctx, some_ST2110_20Rx_related_config);
-    if (res) {
+    if (res != connection::Result::success) {
         printf("Configure Rx failed: %s\n", mesh::connection::result2str(res));
         goto exit;
     }
     res = conn_rx->establish(ctx);
-    if (res) {
+    if (res != connection::Result::success) {
         printf("Establish Rx failed: %s\n", mesh::connection::result2str(res));
         goto exit;
     }
 
     // Connect Rx connection to Emulated Receiver
-    conn_rx->set_link(emulated_rx);
+    conn_rx->set_link(ctx, emulated_rx);
 
     // Sleep some sufficient time to allow receiving the data from transmitter
     mesh::thread::Sleep(ctx, std::chrono::milliseconds(5000));
@@ -105,7 +105,7 @@ int main()
 exit:
     // Shutdown Rx connection
     res = conn_rx->shutdown(ctx);
-    if (res) {
+    if (res != connection::Result::success) {
         printf("Shutdown Rx failed: %s\n", mesh::connection::result2str(res));
     }
 
@@ -135,33 +135,33 @@ public:
 int main()
 {
     auto ctx = context::WithCancel(mesh::context::Background());
-    int res;
+    connection::Result res;
+
+    auto conn_tx = new mesh::connection::ST2110_20Tx;
+    auto emulated_tx = new EmulatedTransmitter;
 
     // Setup Tx connection
-    auto conn_tx = new mesh::connection::ST2110_20Tx;
-
     res = conn_tx->configure(ctx, some_ST2110_20Tx_related_config);
-    if (res) {
+    if (res != connection::Result::success) {
         printf("Configure Tx failed: %s\n", mesh::connection::result2str(res));
         goto exit;
     }
     res = conn_tx->establish(ctx);
-    if (res) {
+    if (res != connection::Result::success) {
         printf("Establish Tx failed: %s\n", mesh::connection::result2str(res));
         goto exit;
     }
 
     // Setup Emulated Transmitter
-    auto emulated_tx = new EmulatedTransmitter;
     emulated_tx->establish(ctx);
 
     // Connect Emulated Transmitter to Tx connection
-    emulated_tx->set_link(conn_tx);
+    emulated_tx->set_link(ctx, conn_tx);
 
     // Send data
     for (int i = 0; i < 5; i++) {
         res = emulated_tx->transmit(ctx, "Hello world", 12); // Use appropriate data here
-        if (res) {
+        if (res != connection::Result::success) {
             printf("Transmit failed: %s\n", mesh::connection::result2str(res));
             break;
         }
@@ -170,7 +170,7 @@ int main()
 exit:
     // Shutdown Tx connection
     res = conn_tx->shutdown(ctx);
-    if (res) {
+    if (res != connection::Result::success) {
         printf("Shutdown Tx failed: %s\n", mesh::connection::result2str(res));
     }
 
