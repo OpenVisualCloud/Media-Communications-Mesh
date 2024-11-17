@@ -140,16 +140,37 @@ int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
 
 int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size)
 {
-    int ret;
+    INFO("Entering ep_send_buf.");
+    INFO("Parameters - Buffer Address: %p, Buffer Size: %zu, Endpoint Context: %p", buf, buf_size, ep_ctx);
 
+    if (!ep_ctx || !buf || buf_size == 0) {
+        ERROR("Invalid parameters provided to ep_send_buf: ep_ctx=%p, buf=%p, buf_size=%zu", ep_ctx, buf, buf_size);
+        return -EINVAL;
+    }
+
+    int ret;
+    int attempts = 0;
+
+    INFO("Attempting to send buffer using fi_send...");
     do {
         ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, NULL);
-        if (ret == -EAGAIN)
+        if (ret == -EAGAIN) {
+          //  INFO("fi_send returned -EAGAIN, attempting to read completion queue (cq). Attempt #%d", attempts + 1);
             (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
+            attempts++;
+        }
     } while (ret == -EAGAIN);
 
+    if (ret == 0) {
+        INFO("Buffer successfully sent through RDMA.");
+    } else {
+        ERROR("fi_send failed with error: %s (error code: %d)", fi_strerror(-ret), ret);
+    }
+
+    INFO("Exiting ep_send_buf with return code: %d", ret);
     return ret;
 }
+
 
 int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx)
 {
@@ -181,9 +202,11 @@ int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
 
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
 {
+    INFO("Starting ep_init...");
+
     int ret;
-    struct fi_info *fi;
-    struct fi_info *hints;
+    struct fi_info *fi = NULL;
+    struct fi_info *hints = NULL;
 
     if (!ep_ctx || !cfg)
         return -EINVAL;
@@ -196,9 +219,18 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         RDMA_PRINTERR("libfabric ep context malloc fail\n", -ENOMEM);
         return -ENOMEM;
     }
-    (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
+    INFO("Memory allocation for ep_ctx successful.");
 
+    (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
+    INFO("Assigned rdma_ctx to ep_ctx.");
+
+    INFO("Duplicating hints from RDMA context info.");
     hints = fi_dupinfo((*ep_ctx)->rdma_ctx->info);
+    if (!hints) {
+        ERROR("fi_dupinfo failed.");
+        free(*ep_ctx);
+        return -ENOMEM;
+    }
 
     hints->src_addr = NULL;
     hints->src_addrlen = 0;
@@ -207,32 +239,40 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     hints->addr_format = FI_SOCKADDR_IN;
 
     if (cfg->dir == RX) {
+        INFO("Direction is RX. Fetching info using fi_getinfo.");
         ret = fi_getinfo(FI_VERSION(1, 21), NULL, cfg->local_addr.port, FI_SOURCE, hints, &fi);
     } else {
-        ret = fi_getinfo(FI_VERSION(1, 21), cfg->remote_addr.ip, cfg->remote_addr.port, 0, hints,
-                         &fi);
+        INFO("Direction is TX. Fetching info using fi_getinfo.");
+        ret = fi_getinfo(FI_VERSION(1, 21), cfg->remote_addr.ip, cfg->remote_addr.port, 0, hints, &fi);
     }
+
     if (ret) {
         RDMA_PRINTERR("fi_getinfo", ret);
         libfabric_ep_ops.ep_destroy(ep_ctx);
         return ret;
     }
+    INFO("fi_getinfo successful.");
 
+    INFO("Allocating RDMA endpoint resources.");
     ret = ep_alloc_res(*ep_ctx, (*ep_ctx)->rdma_ctx, fi, 1);
     if (ret) {
         RDMA_PRINTERR("ep_alloc_res fail\n", ret);
         libfabric_ep_ops.ep_destroy(ep_ctx);
         return ret;
     }
+    INFO("RDMA endpoint resources allocated successfully.");
 
+    INFO("Enabling endpoint.");
     ret = enable_ep((*ep_ctx));
     if (ret) {
         RDMA_PRINTERR("ep_enable fail\n", ret);
         libfabric_ep_ops.ep_destroy(ep_ctx);
         return ret;
     }
+    INFO("Endpoint enabled successfully.");
 
     if (fi->dest_addr) {
+        INFO("Inserting destination address into address vector.");
         ret = ep_av_insert((*ep_ctx)->rdma_ctx, (*ep_ctx)->av, fi->dest_addr, 1,
                            &(*ep_ctx)->dest_av_entry, 0, NULL);
         if (ret) {
@@ -242,10 +282,13 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         }
     }
 
+    INFO("Freeing fi_info structure.");
     fi_freeinfo(fi);
 
+    INFO("ep_init completed successfully.");
     return 0;
 }
+
 
 int ep_destroy(ep_ctx_t **ep_ctx)
 {
