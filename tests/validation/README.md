@@ -18,30 +18,36 @@ Remember to properly start the Media Proxy application before running the sample
 Use `app_name -H` to see full usage options for a specific application.
 
 ### Common switches
-TBD
-<!-- TODO: Add switches here at the end, when everything is stable
-- `-z <filename>` - input/output filename
-- `-a <remote_ip_addr>` - remote IP address
-- `-p <remote_port>` - remote port
-- `-l <local_ip_addr>` - local IP address
-- `-o <local_port>` - local port
-- `-t <st20|st22|st30>` - video transport type (ST2110-20 = "st20" raw; ST2110-22 - "st22" compressed)
-^^^^^^TODO: Consider changing that
-- `-w <pix_num>` - video width
-- `-h <pix_num>` - video height
-- `-f <fps_val>` - video frames per second (fps)
-- `-x <pix_fmt>` - video pixel format
--->
+
+> **Note:** Kept here with a best-effort approach and may be obsolete. Check usage help (`-H` or `--help`) for the newest information about present switches.
+
+| Switch | Long switch       | Variable type      | Argument value         | Default                        | Examples                   |
+| ------ | ----------------- | ------------------ | ---------------------- | ------------------------------ | -------------------------- |
+| `-H`   | `--help`          | N/A                | empty (no argument)    | N/A                            | N/A                        |
+| `-b`   | `--file_name`     | `static char[128]` | Input/Output file name | `""` (empty)                   | `"in.yuv"` / `"out.yuv"`   |
+| `-w`   | `--width`         | `uint32_t`         | Video width [pixels]   | `1920`                         | `1920`                     |
+| `-h`   | `--height`        | `uint32_t`         | Video height [pixels]  | `1080`                         | `1080`                     |
+| `-f`   | `--fps`           | `double`           | Frames per second      | `30.0`                         | `25`                       |
+| `-x`   | `--pix_fmt`       | `char[32]`         | Video pixel format     | `"yuv422p10le"`                | `"yuv444p"`                |
+| `-r`   | `--rcv_ip`        | `char[253]`        | Receiver IP address    | `"127.0.0.1"`                  | `"192.168.96.1"`           |
+| `-i`   | `--rcv_port`      | `char[5]`          | Receiver port number   | `9001`                         | `9001`                     |
+| `-s`   | `--send_ip`       | `char[253]`        | Sender IP address      | `"127.0.0.1"`                  | `"192.168.96.2"`           |
+| `-p`   | `--send_port`     | `char[5]`          | Sender port number     | `9001`                         | `9002`                     |
+| `-o`   | `--protocol_type` | `char[32]`         | Type of protocol       | `"auto"`                       | `"memif"`                  |
+| `-t`   | `--payload_type`  | `char[32]`         | Type of payload        | `"st20"`                       | `"rdma"`/`"st22"`/`"st30"` |
+| `-k`   | `--socketpath`    | `char[108]`        | Socket path            | `"/run/mcm/mcm_rx_memif.sock"` | `"/other/path.sock"`       |
+| `-d`   | `--interfaceid`   | `uint32_t`         | ID of an interface     | `0`                            | `1`                        |
+| `-l`   | `--loop`          | `bool`             | Whether to loop or not | `0` (false)                    | `1` (true)                 |
 
 ### Usage examples
 
 Sender:
 - `sudo media_proxy -d 0000:c0:11.1 -t 9992`
-- `sudo MCM_MEDIA_PROXY_PORT=9992 ./sender -w 1920 -h 1080 -f 30 -x "yuv422p10le" -s 192.168.96.1 -r 192.168.96.2 -i 9991 -b input.yuv`
+- `sudo MCM_MEDIA_PROXY_PORT=9992 ./sender -w 1920 -h 1080 -f 30 -x yuv422p10le" -s 192.168.96.1 -r 192.168.96.2 -i 9991 -b input.yuv`
 
 Receiver:
 - `sudo media_proxy -d 0000:c0:11.0 -t 9991`
-- `sudo MCM_MEDIA_PROXY_PORT=9991 ./recver -w 1920 -h 1080 -f 30 -x "yuv422p10le" -s 192.168.96.2 -p 9992 -b output.yuv`
+- `sudo MCM_MEDIA_PROXY_PORT=9991 ./recver -w 1920 -h 1080 -f 30 -x yuv422p10le" -s 192.168.96.2 -p 9992 -b output.yuv`
 
 ## Validation helpers
 
