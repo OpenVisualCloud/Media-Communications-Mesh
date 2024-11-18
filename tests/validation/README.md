@@ -1,4 +1,4 @@
-# Media Communications Mesh API validation
+# Media Communications Mesh SDK API validation
 
 This part of the repository is to be used solely for holding validation applications for Media Communications Mesh API and other files related to validating mentioned API.
 
