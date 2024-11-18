@@ -21,6 +21,13 @@ ClientContext::ClientContext(MeshClientConfig *cfg)
         config.timeout_ms = MESH_CLIENT_DEFAULT_TIMEOUT_MS;
 }
 
+int ClientContext::init()
+{
+    grpc_client = mesh_internal_ops.grpc_create_client();
+
+    return 0;
+}
+
 int ClientContext::shutdown()
 {
     std::lock_guard<std::mutex> lk(mx);
@@ -31,6 +38,9 @@ int ClientContext::shutdown()
     /**
      * TODO: Shutdown and deallocate connections here
      */
+
+    mesh_internal_ops.grpc_destroy_client(grpc_client);
+    grpc_client = NULL;
 
     return 0;
 }

@@ -94,6 +94,24 @@ int mock_enqueue_buf(mcm_conn_context *pctx, mcm_buffer *buf)
     return 0;
 }
 
+void * mock_grpc_create_client()
+{
+    return NULL;
+}
+
+void mock_grpc_destroy_client(void *client)
+{
+}
+
+void * mock_grpc_create_conn(void *client, mcm_conn_param *param)
+{
+    return NULL;
+}
+
+void mock_grpc_destroy_conn(void *conn)
+{
+}
+
 /**
  * APITests setup
  */
@@ -103,6 +121,11 @@ void APITests_Setup()
     mesh_internal_ops.destroy_conn = mock_destroy_connection;
     mesh_internal_ops.dequeue_buf = mock_dequeue_buf;
     mesh_internal_ops.enqueue_buf = mock_enqueue_buf;
+
+    mesh_internal_ops.grpc_create_client = mock_grpc_create_client;
+    mesh_internal_ops.grpc_destroy_client = mock_grpc_destroy_client;
+    mesh_internal_ops.grpc_create_conn = mock_grpc_create_conn;
+    mesh_internal_ops.grpc_destroy_conn = mock_grpc_destroy_conn;
 }
 
 /**

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #ifndef CONCURRENCY_H
 #define CONCURRENCY_H
 
@@ -140,7 +146,7 @@ void Sleep(context::Context& ctx, std::chrono::milliseconds interval_ms);
  * Channel
  * 
  * A thread-safe queue template supporting cancellation of blocking calls
- * put() and get() by checking context::Context. To set a timeout on the
+ * send() and receive() by checking context::Context. To set a timeout on the
  * blocking calls, context::WithTimeout is supposed to be used.
  * Example:
  * ...
