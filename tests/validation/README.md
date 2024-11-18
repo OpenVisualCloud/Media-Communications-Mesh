@@ -13,7 +13,7 @@ In order to compile the apps, first compile the whole Media Communications Mesh 
 
 ## Usage
 
-Remember to properly start the Media Proxy application before running the sample apps, in order to make the transmission possible.
+Remember to properly start the Media Proxy application before running the sample apps in order to make the transmission possible.
 
 Use `app_name -H` to see full usage options for a specific application.
 
