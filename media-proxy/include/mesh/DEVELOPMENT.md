@@ -59,7 +59,11 @@ using namespace mesh;
 
 class EmulatedReceiver : public connection::Connection {
 public:
-    EmulatedReceiver() : _kind(connection::Kind::receiver) {}
+    EmulatedReceiver(context::Context &ctx)
+    {
+        _kind = connection::Kind::receiver;
+        set_state(ctx, connection::State::configured);
+    }
 
     connection::Result on_establish(context::Context& ctx) {
         set_state(ctx, connection::State::active);
@@ -79,7 +83,7 @@ int main()
     connection::Result res;
 
     // Setup Emulated Receiver
-    auto emulated_rx = new EmulatedReceiver;
+    auto emulated_rx = new EmulatedReceiver(ctx);
     emulated_rx->establish(ctx);
 
     // Setup Rx connection
@@ -123,13 +127,22 @@ using namespace mesh;
 
 class EmulatedTransmitter : public connection::Connection {
 public:
-    EmulatedTransmitter() : _kind(connection::Kind::transmitter) {}
+    EmulatedTransmitter(context::Context &ctx)
+    {
+        _kind = connection::Kind::transmitter;
+        set_state(ctx, connection::State::configured);
+    }
 
     connection::Result on_establish(context::Context& ctx) {
         set_state(ctx, connection::State::active);
     }
 
     connection::Result on_shutdown(context::Context& ctx) {}
+
+    connection::Result transmit_wrapper(context::Context& ctx, void *ptr, uint32_t sz)
+    {
+        return transmit(ctx, ptr, sz);
+    }
 };
 
 int main()
@@ -138,7 +151,7 @@ int main()
     connection::Result res;
 
     auto conn_tx = new mesh::connection::ST2110_20Tx;
-    auto emulated_tx = new EmulatedTransmitter;
+    auto emulated_tx = new EmulatedTransmitter(ctx);
 
     // Setup Tx connection
     res = conn_tx->configure(ctx, some_ST2110_20Tx_related_config);
@@ -160,7 +173,7 @@ int main()
 
     // Send data
     for (int i = 0; i < 5; i++) {
-        res = emulated_tx->transmit(ctx, "Hello world", 12); // Use appropriate data here
+        res = emulated_tx->transmit_wrapper(ctx, "Hello world", 12); // Use appropriate data here
         if (res != connection::Result::success) {
             printf("Transmit failed: %s\n", mesh::connection::result2str(res));
             break;
