@@ -71,7 +71,7 @@ EAL: No free 1048576 kB hugepages reported on node 1
 
 ### Media Proxy device vfio-pci mode
 
-If a following message is presented
+If the following message is presented
 
 ```text
 MTL: (...), Error: Run "dpdk-devbind.py -s | grep Ethernet" to check if other port driver is ready as vfio-pci mode
