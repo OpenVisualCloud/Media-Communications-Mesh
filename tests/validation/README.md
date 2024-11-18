@@ -55,7 +55,7 @@ An aside part with help information for validators.
 
 ### Media Proxy hugepages requirement
 
-To meet Media Proxy hugepages requirement, as super user, add a number >10 to each of the files:
+To meet Media Proxy hugepages requirement, as a super user, add a number >10 to each of the files:
 ```shell
 /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages
 /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
