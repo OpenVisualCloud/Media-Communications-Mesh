@@ -1,6 +1,8 @@
 #include <gtest/gtest.h>
-#include "mesh_dp_internal.h"
 #include <bsd/string.h>
+#include "mesh_client.h"
+#include "mesh_conn.h"
+#include "mcm_dp.h"
 
 /**
  * Test creation and deletion of a mesh client
@@ -107,8 +109,8 @@ void APITests_Setup()
  * Test negative scenarios of deleting a client with live connections
  */
 TEST(APITests_MeshConnection, TestNegative_DeleteClientLiveConnections) {
-    MeshConfig_Memif memif_config = { 0 };
-    MeshConfig_Video video_config = { 0 };
+    MeshConfig_Memif memif_config = {};
+    MeshConfig_Video video_config = {};
     MeshConnection *conn = NULL;
     MeshClient *mc, *mc_copy = NULL;
     int err;
@@ -243,12 +245,12 @@ exit:
  * Test apply connection configuration functions
  */
 TEST(APITests_MeshConnection, Test_ApplyConfig) {
-    MeshConfig_Memif memif_config_empty = { 0 };
+    MeshConfig_Memif memif_config_empty = {};
     MeshConfig_Memif memif_config = {
         .socket_path = "/run/mcm/mcm_memif_0.sock",
         .interface_id = 123,
     };
-    MeshConfig_ST2110 st2110_config_empty = { 0 };
+    MeshConfig_ST2110 st2110_config_empty = {};
     MeshConfig_ST2110 st2110_config = {
         .remote_ip_addr = "192.168.95.2",
         .remote_port = 9002,
@@ -256,28 +258,29 @@ TEST(APITests_MeshConnection, Test_ApplyConfig) {
         .local_port = 9001,
         .transport = MESH_CONN_TRANSPORT_ST2110_22,
     };
-    MeshConfig_RDMA rdma_config_empty = { 0 };
+    MeshConfig_RDMA rdma_config_empty = {};
     MeshConfig_RDMA rdma_config = {
         .remote_ip_addr = "192.168.95.2",
         .remote_port = 9002,
         .local_ip_addr = "192.168.95.1",
         .local_port = 9001,
     };
-    MeshConfig_Video video_config_empty = { 0 };
+    MeshConfig_Video video_config_empty = {};
     MeshConfig_Video video_config = {
         .width = 1920,
         .height = 1080,
         .fps = 60,
         .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE,
     };
-    MeshConfig_Audio audio_config_empty = { 0 };
+    MeshConfig_Audio audio_config_empty = {};
     MeshConfig_Audio audio_config = {
         .channels = 2,
         .sample_rate = MESH_AUDIO_SAMPLE_RATE_44100,
         .format = MESH_AUDIO_FORMAT_PCM_S24BE,
         .packet_time = MESH_AUDIO_PACKET_TIME_1_09MS,
     };
-    MeshConnectionContext ctx = { 0 };
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     int err;
 
@@ -368,12 +371,13 @@ TEST(APITests_MeshConnection, Test_ApplyConfig) {
  * Test negative scenarios of applying connection configuration
  */
 TEST(APITests_MeshConnection, TestNegative_ApplyConfig) {
-    MeshConfig_Memif memif_config = { 0 };
-    MeshConfig_ST2110 st2110_config = { 0 };
-    MeshConfig_RDMA rdma_config = { 0 };
-    MeshConfig_Video video_config = { 0 };
-    MeshConfig_Audio audio_config = { 0 };
-    MeshConnectionContext ctx = { 0 };
+    MeshConfig_Memif memif_config = {};
+    MeshConfig_ST2110 st2110_config = {};
+    MeshConfig_RDMA rdma_config = {};
+    MeshConfig_Video video_config = {};
+    MeshConfig_Audio audio_config = {};
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     int err;
 
@@ -526,9 +530,10 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
         .local_ip_addr = "192.168.95.1",
         .local_port = 9001,
     };
-    MeshConfig_Video video_config = { 0 };
-    MeshConfig_Audio audio_config = { 0 };
-    MeshConnectionContext ctx = { 0 };
+    MeshConfig_Video video_config = {};
+    MeshConfig_Audio audio_config = {};
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     mcm_conn_param param;
     int err;
@@ -541,7 +546,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_SENDER;
     mesh_apply_connection_config_memif(conn, &memif_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_tx);
     ASSERT_EQ(param.protocol, PROTO_MEMIF);
@@ -552,7 +557,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
 
     ctx.cfg.kind = MESH_CONN_KIND_RECEIVER;
     mesh_apply_connection_config_memif(conn, &memif_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_rx);
     ASSERT_EQ(param.protocol, PROTO_MEMIF);
@@ -564,7 +569,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_SENDER;
     mesh_apply_connection_config_memif(conn, &memif_config);
     mesh_apply_connection_config_audio(conn, &audio_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_tx);
     ASSERT_EQ(param.protocol, PROTO_MEMIF);
@@ -575,7 +580,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
 
     ctx.cfg.kind = MESH_CONN_KIND_RECEIVER;
     mesh_apply_connection_config_memif(conn, &memif_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_rx);
     ASSERT_EQ(param.protocol, PROTO_MEMIF);
@@ -590,7 +595,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_SENDER;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_tx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -603,7 +608,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_RECEIVER;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_rx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -617,7 +622,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     st2110_config.transport = MESH_CONN_TRANSPORT_ST2110_20,
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_tx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -630,7 +635,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_RECEIVER;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_rx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -644,7 +649,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     st2110_config.transport = MESH_CONN_TRANSPORT_ST2110_30,
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_audio(conn, &audio_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_tx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -657,7 +662,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_RECEIVER;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_audio(conn, &audio_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_rx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -673,7 +678,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_SENDER;
     mesh_apply_connection_config_rdma(conn, &rdma_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_tx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -686,7 +691,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_RECEIVER;
     mesh_apply_connection_config_rdma(conn, &rdma_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_rx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -699,7 +704,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_SENDER;
     mesh_apply_connection_config_rdma(conn, &rdma_config);
     mesh_apply_connection_config_audio(conn, &audio_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_tx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -715,7 +720,7 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
     ctx.cfg.kind = MESH_CONN_KIND_RECEIVER;
     mesh_apply_connection_config_rdma(conn, &rdma_config);
     mesh_apply_connection_config_audio(conn, &audio_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.type, is_rx);
     ASSERT_EQ(param.protocol, PROTO_AUTO);
@@ -733,8 +738,9 @@ TEST(APITests_MeshConnection, Test_ParseConnectionConfig) {
  * Test negative scenarios of parsing connection configuration - invalid config
  */
 TEST(APITests_MeshConnection, TestNegative_ParseConnectionConfigInval) {
-    MeshConfig_ST2110 st2110_config = { 0 };
-    MeshConnectionContext ctx = { 0 };
+    MeshConfig_ST2110 st2110_config = {};
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     mcm_conn_param param;
     int err;
@@ -742,17 +748,17 @@ TEST(APITests_MeshConnection, TestNegative_ParseConnectionConfigInval) {
     conn = (MeshConnection *)&ctx;
 
     ctx.cfg.kind = 2;
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INVAL) << mesh_err2str(err);
 
     ctx.cfg.kind = MESH_CONN_KIND_SENDER;
     ctx.cfg.conn_type = 3,
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INVAL) << mesh_err2str(err);
 
     st2110_config.transport = 3;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INVAL) << mesh_err2str(err);
 }
 
@@ -760,10 +766,11 @@ TEST(APITests_MeshConnection, TestNegative_ParseConnectionConfigInval) {
  * Test negative scenarios of parsing connection configuration - incompatible config
  */
 TEST(APITests_MeshConnection, TestNegative_ParseConnectionConfigIncompat) {
-    MeshConfig_ST2110 st2110_config = { 0 };
-    MeshConfig_Video video_config = { 0 };
-    MeshConfig_Audio audio_config = { 0 };
-    MeshConnectionContext ctx = { 0 };
+    MeshConfig_ST2110 st2110_config = {};
+    MeshConfig_Video video_config = {};
+    MeshConfig_Audio audio_config = {};
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     mcm_conn_param param;
     int err;
@@ -773,19 +780,19 @@ TEST(APITests_MeshConnection, TestNegative_ParseConnectionConfigIncompat) {
     st2110_config.transport = MESH_CONN_TRANSPORT_ST2110_20;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_audio(conn, &audio_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INCOMPAT) << mesh_err2str(err);
 
     st2110_config.transport = MESH_CONN_TRANSPORT_ST2110_22;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_audio(conn, &audio_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INCOMPAT) << mesh_err2str(err);
 
     st2110_config.transport = MESH_CONN_TRANSPORT_ST2110_30;
     mesh_apply_connection_config_st2110(conn, &st2110_config);
     mesh_apply_connection_config_video(conn, &video_config);
-    err = mesh_parse_conn_config(&ctx, &param);
+    err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INCOMPAT) << mesh_err2str(err);
 }
 
@@ -799,7 +806,8 @@ TEST(APITests_MeshConnection, Test_ParseVideoPayloadConfig) {
         .fps = 60,
         .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE,
     };
-    MeshConnectionContext ctx = { 0 };
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     mcm_conn_param param;
     int err;
@@ -807,7 +815,7 @@ TEST(APITests_MeshConnection, Test_ParseVideoPayloadConfig) {
     conn = (MeshConnection *)&ctx;
 
     mesh_apply_connection_config_video(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.width, 1920);
     ASSERT_EQ(param.payload_args.video_args.width, 1920);
@@ -820,28 +828,28 @@ TEST(APITests_MeshConnection, Test_ParseVideoPayloadConfig) {
 
     cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_NV12;
     mesh_apply_connection_config_video(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.pix_fmt, PIX_FMT_NV12);
     ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_NV12);
 
     cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
     mesh_apply_connection_config_video(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.pix_fmt, PIX_FMT_YUV422P);
     ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_YUV422P);
 
     cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
     mesh_apply_connection_config_video(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.pix_fmt, PIX_FMT_YUV422P_10BIT_LE);
     ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_YUV422P_10BIT_LE);
 
     cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_RGB8;
     mesh_apply_connection_config_video(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.pix_fmt, PIX_FMT_RGB8);
     ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_RGB8);
@@ -857,7 +865,8 @@ TEST(APITests_MeshConnection, Test_ParseAudioPayloadConfig) {
         .format = MESH_AUDIO_FORMAT_PCM_S24BE,
         .packet_time = MESH_AUDIO_PACKET_TIME_1_09MS,
     };
-    MeshConnectionContext ctx = { 0 };
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     mcm_conn_param param;
     int err;
@@ -865,7 +874,7 @@ TEST(APITests_MeshConnection, Test_ParseAudioPayloadConfig) {
     conn = (MeshConnection *)&ctx;
 
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.type, AUDIO_TYPE_FRAME_LEVEL);
     ASSERT_EQ(param.payload_args.audio_args.channel, 2);
@@ -875,69 +884,69 @@ TEST(APITests_MeshConnection, Test_ParseAudioPayloadConfig) {
 
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_0_14MS;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_0_14MS);
 
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_0_09MS;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_0_09MS);
 
     cfg.sample_rate = MESH_AUDIO_SAMPLE_RATE_48000;
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_1MS;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.sampling, AUDIO_SAMPLING_48K);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_1MS);
 
     cfg.sample_rate = MESH_AUDIO_SAMPLE_RATE_96000;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.sampling, AUDIO_SAMPLING_96K);
 
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_125US;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_125US);
 
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_250US;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_250US);
 
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_333US;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_333US);
 
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_4MS;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_4MS);
 
     cfg.packet_time = MESH_AUDIO_PACKET_TIME_80US;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.ptime, AUDIO_PTIME_80US);
 
     cfg.format = MESH_AUDIO_FORMAT_PCM_S8;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.format, AUDIO_FMT_PCM8);
 
     cfg.format = MESH_AUDIO_FORMAT_PCM_S16BE;
     mesh_apply_connection_config_audio(conn, &cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
     ASSERT_EQ(param.payload_args.audio_args.format, AUDIO_FMT_PCM16);
 }
@@ -948,7 +957,8 @@ TEST(APITests_MeshConnection, Test_ParseAudioPayloadConfig) {
 TEST(APITests_MeshConnection, TestNegative_ParsePayloadConfigInval) {
     MeshConfig_Video video_cfg = { .pixel_format = 5 };
     MeshConfig_Audio audio_cfg = { .sample_rate = 3 };
-    MeshConnectionContext ctx = { 0 };
+    mesh::ClientContext mc_ctx(nullptr);
+    mesh::ConnectionContext ctx(&mc_ctx);
     MeshConnection *conn;
     mcm_conn_param param;
     int err;
@@ -956,11 +966,11 @@ TEST(APITests_MeshConnection, TestNegative_ParsePayloadConfigInval) {
     conn = (MeshConnection *)&ctx;
 
     mesh_apply_connection_config_video(conn, &video_cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INVAL) << mesh_err2str(err);
 
     mesh_apply_connection_config_audio(conn, &audio_cfg);
-    err = mesh_parse_payload_config(&ctx, &param);
+    err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INVAL) << mesh_err2str(err);
 }
 
@@ -1035,7 +1045,8 @@ TEST(APITests_MeshConnection, TestNegative_ParsePayloadConfigIncompat) {
 
     for (i = 0; i < sizeof(cases) / sizeof(cases[0]); i++) {
         MeshConfig_Audio *cfg = &cases[i];
-        MeshConnectionContext ctx = { 0 };
+        mesh::ClientContext mc_ctx(nullptr);
+        mesh::ConnectionContext ctx(&mc_ctx);
         MeshConnection *conn;
         mcm_conn_param param;
         int err;
@@ -1043,7 +1054,7 @@ TEST(APITests_MeshConnection, TestNegative_ParsePayloadConfigIncompat) {
         conn = (MeshConnection *)&ctx;
 
         mesh_apply_connection_config_audio(conn, cfg);
-        err = mesh_parse_payload_config(&ctx, &param);
+        err = ctx.parse_payload_config(&param);
         ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INCOMPAT) << mesh_err2str(err);
     }
 }
@@ -1052,8 +1063,8 @@ TEST(APITests_MeshConnection, TestNegative_ParsePayloadConfigIncompat) {
  * Test negative scenario of establishing a mesh connection with invalid config
  */
 TEST(APITests_MeshConnection, TestNegative_EstablishConnectionConfigInval) {
-    MeshConfig_Memif memif_cfg = { 0 };
-    MeshConfig_Video video_cfg = { 0 };
+    MeshConfig_Memif memif_cfg = {};
+    MeshConfig_Video video_cfg = {};
     MeshConnection *conn = NULL;
     MeshClient *mc = NULL;
     int err;
@@ -1082,7 +1093,7 @@ TEST(APITests_MeshConnection, TestNegative_EstablishConnectionConfigInval) {
  * Test negative scenario of establishing a mesh connection with incompatible config
  */
 TEST(APITests_MeshConnection, TestNegative_CreateConnectionConfigIncompat) {
-    MeshConfig_Memif memif_cfg = { 0 };
+    MeshConfig_Memif memif_cfg = {};
     MeshConfig_Audio audio_cfg = { 
         .sample_rate = MESH_AUDIO_SAMPLE_RATE_48000,
         .packet_time = MESH_AUDIO_PACKET_TIME_1_09MS,
@@ -1222,8 +1233,8 @@ TEST(APITests_MeshConnection, TestNegative_DeleteConnection_NulledConn) {
  * Test getting and putting of a mesh buffer
  */
 TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
-    MeshConfig_Memif memif_cfg = { 0 };
-    MeshConfig_Video video_cfg = { 0 };
+    MeshConfig_Memif memif_cfg = {};
+    MeshConfig_Video video_cfg = {};
     MeshConnection *conn = NULL;
     MeshBuffer *buf = NULL;
     MeshClient *mc = NULL;
@@ -1339,8 +1350,8 @@ exit_delete_client:
  * Test getting a mesh buffer when connection is closed
  */
 TEST(APITests_MeshBuffer, Test_GetBufferConnClosed) {
-    MeshConfig_Memif memif_cfg = { 0 };
-    MeshConfig_Video video_cfg = { 0 };
+    MeshConfig_Memif memif_cfg = {};
+    MeshConfig_Video video_cfg = {};
     MeshConnection *conn = NULL;
     MeshBuffer *buf = NULL;
     MeshClient *mc = NULL;
@@ -1370,9 +1381,9 @@ TEST(APITests_MeshBuffer, Test_GetBufferConnClosed) {
  * Test getting a mesh buffer with default timeout
  */
 TEST(APITests_MeshBuffer, Test_GetBufferDefaultTimeout) {
-    MeshConfig_Memif memif_cfg = { 0 };
-    MeshConfig_Video video_cfg = { 0 };
-    MeshClientConfig mc_cfg = { 0 };
+    MeshConfig_Memif memif_cfg = {};
+    MeshConfig_Video video_cfg = {};
+    MeshClientConfig mc_cfg = {};
     MeshConnection *conn = NULL;
     MeshBuffer *buf = NULL;
     MeshClient *mc = NULL;
@@ -1455,8 +1466,8 @@ TEST(APITests_MeshBuffer, TestNegative_GetBuffer_NulledConnAndBuf) {
  * Test negative scenario of getting a mesh buffer - nulled buffer
  */
 TEST(APITests_MeshBuffer, TestNegative_GetBuffer_NulledBuf) {
-    MeshConfig_Memif memif_cfg = { 0 };
-    MeshConfig_Video video_cfg = { 0 };
+    MeshConfig_Memif memif_cfg = {};
+    MeshConfig_Video video_cfg = {};
     MeshConnection *conn;
     MeshClient *mc;
     int err;

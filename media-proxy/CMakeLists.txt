@@ -7,7 +7,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(MediaProxy VERSION 0.0.1 LANGUAGES CXX C)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
 set(protobuf_MODULE_COMPATIBLE TRUE)
@@ -35,12 +35,6 @@ else()
   set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
 endif()
 
-# Enabled by default
-option(ENABLE_ZERO_COPY "Enable zero-copy mode to avoid memory copying between Media Proxy and MTL" ON)
-IF(ENABLE_ZERO_COPY)
-	ADD_DEFINITIONS(-DZERO_COPY)
-ENDIF(ENABLE_ZERO_COPY)
-
 set(proto_name controller)
 set(target media_proxy)
 set(MTL_LIB mtl)
@@ -56,7 +50,8 @@ set(proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.pb.h")
 set(grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.cc")
 set(grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.h")
 
-aux_source_directory(./src proxy_srcs)
+# Find source files recursively
+file(GLOB_RECURSE proxy_srcs "src/*")
 
 add_definitions(-DHAVE_MEMFD_CREATE)
 
@@ -83,9 +78,13 @@ ADD_DEFINITIONS(-DIMTL_CONFIG_PATH=\"${CMAKE_INSTALL_PREFIX}/etc/imtl.json\")
 ADD_DEFINITIONS(-D_GNU_SOURCE)
 
 # Include generated *.pb.h files
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ${LIBFABRIC_INCLUDE_DIR})
+include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ./include/mesh ${LIBFABRIC_INCLUDE_DIR})
 
-add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_srcs})
+# Exclude the source file containing main() to avoid issues with GTest
+set(proxy_lib_srcs ${proxy_srcs})
+list(FILTER proxy_lib_srcs EXCLUDE REGEX ".*/media_proxy\\.cc")
+
+add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_lib_srcs})
 target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${_REFLECTION}
     ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB} ${LIBFABRIC})
 

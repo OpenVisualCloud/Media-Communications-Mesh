@@ -3,42 +3,65 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-
-#ifndef __MESH_DP_INTERNAL_H
-#define __MESH_DP_INTERNAL_H
-
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef MESH_CONN_H
+#define MESH_CONN_H
 
 #include "mesh_dp.h"
 #include "mcm_dp.h"
-#include <sys/queue.h>
+#include "mesh_client.h"
+
+/**
+ * Isolation interface for testability. Accessed from unit tests only.
+ */
+struct mesh_internal_ops_t {
+    mcm_conn_context * (*create_conn)(mcm_conn_param *param);
+    void (*destroy_conn)(mcm_conn_context *pctx);
+    mcm_buffer * (*dequeue_buf)(mcm_conn_context *pctx, int timeout, int *error_code);
+    int (*enqueue_buf)(mcm_conn_context *pctx, mcm_buffer *buf);
+};
+
+extern struct mesh_internal_ops_t mesh_internal_ops;
+
+namespace mesh {
 
 /**
  * Mesh connection context structure
  */
-typedef struct MeshConnectionContext {
+class ConnectionContext {
+public:
+    ConnectionContext(ClientContext *parent);
+    ~ConnectionContext();
+
+    int apply_config_memif(MeshConfig_Memif *config);
+    int apply_config_st2110(MeshConfig_ST2110 *config);
+    int apply_config_rdma(MeshConfig_RDMA *config);
+
+    int apply_config_video(MeshConfig_Video *config);
+    int apply_config_audio(MeshConfig_Audio *config);
+
+    int parse_payload_config(mcm_conn_param *param);
+    int parse_conn_config(mcm_conn_param *param);
+
+    int establish(int kind);
+    int shutdown();
+
+    int get_buffer_timeout(MeshBuffer **buf, int timeout_ms);
+
     /**
      * NOTE: The __public structure is directly mapped in the memory to the
      * MeshConnection structure, which is publicly accessible to the user.
      * Therefore, the __public structure _MUST_ be placed first here.
      */
-    MeshConnection __public;
+    MeshConnection __public = {};
 
     /**
      * NOTE: All declarations below this point are hidden from the user.
      */
 
     /**
-     * Connections list entry registered in the Mesh client.
-     */
-    LIST_ENTRY(MeshConnectionContext) conns;
-
-    /**
      * MCM connection handle.
      */
-    mcm_conn_context *handle;
+    mcm_conn_context *handle = nullptr;
 
     /**
      * Configuration structure
@@ -83,50 +106,10 @@ typedef struct MeshConnectionContext {
             MeshConfig_Video video;
             MeshConfig_Audio audio;
         } payload;
-    } cfg;
+    } cfg = {};
 
-} MeshConnectionContext;
-
-/**
- * Max number of connections handled by mesh client by default
- */
-#define MESH_CLIENT_DEFAULT_MAX_CONN 1024
-
-/**
- * Default timeout applied to all mesh client operations
- */
-#define MESH_CLIENT_DEFAULT_TIMEOUT_MS (MESH_TIMEOUT_INFINITE)
-
-/**
- * Constants for marking uninitialized resources
- */
-#define MESH_CONN_TYPE_UNINITIALIZED    -1 ///< Connection type is uninitialized
-#define MESH_PAYLOAD_TYPE_UNINITIALIZED -1 ///< Payload type is uninitialized
-
-/**
- * Isolation interface for testability. Accessed from unit tests only.
- */
-struct mesh_internal_ops_t {
-    mcm_conn_context * (*create_conn)(mcm_conn_param *param);
-    void (*destroy_conn)(mcm_conn_context *pctx);
-    mcm_buffer * (*dequeue_buf)(mcm_conn_context *pctx, int timeout, int *error_code);
-    int (*enqueue_buf)(mcm_conn_context *pctx, mcm_buffer *buf);
 };
 
-extern struct mesh_internal_ops_t mesh_internal_ops;
+} // namespace mesh
 
-/**
- * Parse payload configuration
- */
-int mesh_parse_payload_config(MeshConnectionContext *conn, mcm_conn_param *param);
-/**
- * Parse connection configuration and check for for wrong or incompatible
- * parameter values.
- */
-int mesh_parse_conn_config(MeshConnectionContext *ctx, mcm_conn_param *param);
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* __MESH_DP_INTERNAL_H */
+#endif // MESH_CONN_H

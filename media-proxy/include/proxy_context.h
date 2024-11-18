@@ -12,17 +12,11 @@
 #include <string_view>
 #include <vector>
 
-#include "mtl.h"
 #include "libfabric_dev.h"
-#include "rdma_session.h"
 #include <mcm_dp.h>
-#include "sessions.h"
 
-// Based on mtl/app/src/fmt.h
-#ifndef ST_APP_PAYLOAD_TYPE_VIDEO
-#define ST_APP_PAYLOAD_TYPE_VIDEO (112)
-#define ST_APP_PAYLOAD_TYPE_ST22 (114)
-#endif
+#include "session-mtl.h"
+#include "session-rdma.h"
 
 #pragma once
 
@@ -37,9 +31,7 @@ public:
     std::string mVideoFormat;
 
     // direction mDir;
-    std::vector<dp_session_context_t *> mDpCtx;
-    std::vector<rx_session_context_t*> mRxCtx;
-    std::vector<tx_session_context_t*> mTxCtx;
+    std::vector<Session *> mDpCtx;
     mtl_handle mDevHandle = NULL;
     libfabric_ctx *mDevHandle_rdma = NULL;
 
@@ -71,18 +63,9 @@ public:
 
     void ParseMemIFParam(const mcm_conn_param* request, memif_ops_t& memif_ops);
 
-    void ParseSt20TxOps(const mcm_conn_param* request, struct st20p_tx_ops* opts);
-    void ParseSt20RxOps(const mcm_conn_param* request, struct st20p_rx_ops* opts);
-    void ParseSt22TxOps(const mcm_conn_param* request, struct st22p_tx_ops* opts);
-    void ParseSt22RxOps(const mcm_conn_param* request, struct st22p_rx_ops* opts);
-    void ParseSt30TxOps(const mcm_conn_param* request, struct st30_tx_ops* opts);
-    void ParseSt30RxOps(const mcm_conn_param* request, struct st30_rx_ops* opts);
-    void ParseSt40TxOps(const mcm_conn_param* request, struct st40_tx_ops* opts);
-    void ParseSt40RxOps(const mcm_conn_param* request, struct st40_rx_ops* opts);
     int TxStart(const mcm_conn_param* request);
     int RxStart(const mcm_conn_param* request);
-    void TxStop(const int32_t session_id);
-    void RxStop(const int32_t session_id);
+    int Stop(const int32_t session_id);
 
 private:
     std::atomic<std::uint32_t> mSessionCount;
@@ -91,7 +74,6 @@ private:
     ProxyContext(const ProxyContext&) = delete;
     ProxyContext& operator=(const ProxyContext&) = delete;
     uint32_t incrementMSessionCount(bool postIncrement);
-    st_frame_fmt getStFrameFmt(video_pixel_format fmt);
 
     int TxStart_mtl(const mcm_conn_param *request);
     int RxStart_mtl(const mcm_conn_param *request);
