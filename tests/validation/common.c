@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-// TODO: Consider splitting into common.h and common.c (not sure if it is needed at this point)
-
 #include "mcm_dp.h"
 
 #define DEFAULT_RECV_IP "127.0.0.1"
@@ -36,8 +34,6 @@ void usage(FILE* fp, const char* path, int sender)
     fprintf(fp, "to be done after the params are prepped properly");
     fprintf(fp, "\n");
     return;
-
-    // TODO: To be done after the params are prepped properly
 
     fprintf(fp, "-w, --width=<frame_width>\t"
                 "Width of test video frame (default: %d)\n",
