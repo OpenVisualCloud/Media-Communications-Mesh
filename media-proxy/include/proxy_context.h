@@ -17,6 +17,7 @@
 
 #include "session-mtl.h"
 #include "session-rdma.h"
+#include <mutex>
 
 #pragma once
 
@@ -34,6 +35,7 @@ public:
     std::vector<Session *> mDpCtx;
     mtl_handle mDevHandle = NULL;
     libfabric_ctx *mDevHandle_rdma = NULL;
+    std::mutex ctx_mtx;
 
     bool imtl_init_preparing;
     pthread_mutex_t mutex_lock;
