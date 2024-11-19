@@ -223,7 +223,7 @@ An aside part with help information for validators.
 
 > **Note:** [Minimal Media Transport Library setup](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md#4-setup-hugepage) specifies setting up 4 GB hugepages altogether. Below paragraph is just a recommendation, which should be used for testing purposes.
 
-To ensure stable testing of Media Proxy, as super user, add a number 4 to `/sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages` (4 * 1 GB hugepages) and 2048 to `/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages` (2048 * 2 MB hugepages).
+To ensure stable testing of Media Proxy, as super user, `echo 4 > /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages` (creating 4 * 1 GB hugepages) and `echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages` (creating 2048 * 2 MB hugepages).
 
 Error thrown when the hugepages are not properly setup:
 ```text
