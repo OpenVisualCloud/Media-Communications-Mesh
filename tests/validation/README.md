@@ -11,15 +11,68 @@ In order to compile the apps, first compile the whole Media Communications Mesh 
 - `cc -o sender_val sender_val.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
 - `cc -o recver_val recver_val.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
 
+## Creating virtual functions
+
+In order to create proper virtual functions (VFs):
+
+1. Find addresses of 800-series (E810) card network interfaces with `lshw -C network`:
+    ```text
+    (...)
+    *-network:0
+         description: Ethernet interface
+         product: Ethernet Controller E810-C for QSFP
+         vendor: Intel Corporation
+         physical id: 0
+         bus info: pci@0000:c0:00.0
+         logical name: eth0
+         version: 02
+         serial: 6c:fe:54:5a:18:70
+         capacity: 25Gbit/s
+         width: 64 bits
+         clock: 33MHz
+         capabilities: bus_master cap_list rom ethernet physical 25000bt-fd autonegotiation
+         configuration: autonegotiation=off broadcast=yes driver=ice driverversion=Kahawai_1.14.  9_20240613 firmware=4.60 0x8001e8b1 1.3682.0 latency=0 link=no multicast=yes  # link=no!
+         resources: iomemory:2eff0-2efef iomemory:2eff0-2efef irq:16   memory:2efffa000000-2efffbffffff memory:2efffe010000-2efffe01ffff   memory:f1600000-f16fffff memory:2efffd000000-2efffdffffff   memory:2efffe220000-2efffe41ffff
+    *-network:1
+         description: Ethernet interface
+         product: Ethernet Controller E810-C for QSFP
+         vendor: Intel Corporation
+         physical id: 0.1
+         bus info: pci@0000:c0:00.1
+         logical name: eth1
+         version: 02
+         serial: 6c:fe:54:5a:18:71
+         capacity: 25Gbit/s
+         width: 64 bits
+         clock: 33MHz
+         capabilities: bus_master cap_list rom ethernet physical fibre 25000bt-fd autonegotiation
+         configuration: autonegotiation=on broadcast=yes driver=ice driverversion=Kahawai_1.14.  9_20240613 duplex=full firmware=4.60 0x8001e8b1 1.3682.0 latency=0 link=yes   multicast=yes # link=yes!
+         resources: iomemory:2eff0-2efef iomemory:2eff0-2efef irq:16   memory:2efff8000000-2efff9ffffff memory:2efffe000000-2efffe00ffff   memory:f1500000-f15fffff memory:2efffc000000-2efffcffffff   memory:2efffe020000-2efffe21ffff
+    (...)
+    ```
+2. Note the address of a PCI bus for the interface to be used as a VF-bound. Use only interfaces with `link=yes`, like `eth1` above.
+2. Use a `nicctl.sh` script from Media Transport Library to create the VFs `${mtl}/script/nicctl.sh create_vf <pci_bus_address>`, e.g. `${mtl}/script/nicctl.sh create_vf 0000:c0:00.1`.
+    ```text
+    0000:c0:00.1 'Ethernet Controller E810-C for QSFP 1592' if=eth1 drv=ice unused=vfio-pci
+    Bind 0000:c0:11.0(eth4) to vfio-pci success
+    Bind 0000:c0:11.1(eth5) to vfio-pci success
+    Bind 0000:c0:11.2(eth6) to vfio-pci success
+    Bind 0000:c0:11.3(eth7) to vfio-pci success
+    Bind 0000:c0:11.4(eth8) to vfio-pci success
+    Bind 0000:c0:11.5(eth9) to vfio-pci success
+    Create 6 VFs on PF bdf: 0000:c0:00.1 eth1 succ
+    ```
+
+This section was partially based on [Media Transport Library instruction](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md#321-create-intel-e810-vfs-and-bind-to-dpdk-pmd).
+
+
 ## Usage
 
 Remember to properly start the Media Proxy application before running the sample apps in order to make the transmission possible.
 
-Use `app_name -H` to see full usage options for a specific application.
-
 ### Common switches
 
-> **Note:** Kept here with a best-effort approach and may be obsolete. Check usage help (`-H` or `--help`) for the newest information about present switches.
+> **Note:** Kept here with a best-effort approach and may be obsolete. Check usage help (`-H` or `--help`) for the newest information about present switches. Use `app_name -H` to see full usage options for a specific application.
 
 | Switch | Long switch       | Variable type      | Argument value         | Default                        | Examples                   |
 | ------ | ----------------- | ------------------ | ---------------------- | ------------------------------ | -------------------------- |
