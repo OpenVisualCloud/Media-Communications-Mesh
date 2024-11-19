@@ -126,8 +126,7 @@ void* msg_loop(void* ptr)
             DEBUG("MCM_QUERY_MEMIF_ID: Case entry.");
             /* TODO: return memdif ID */
             break;
-        case MCM_QUERY_MEMIF_PARAM:
-        {
+        case MCM_QUERY_MEMIF_PARAM: {
             DEBUG("MCM_QUERY_MEMIF_PARAM: Case entry.");
             if (buffer == NULL || msg.command.data_len < 4) {
                 INFO("Invalid parameters.");
@@ -155,7 +154,7 @@ void* msg_loop(void* ptr)
                     break;
                 }
             }
-        break;
+            break;
         }
         case MCM_DESTROY_SESSION:
             DEBUG("MCM_DESTROY_SESSION: Case entry.");

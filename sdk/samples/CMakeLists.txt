@@ -17,3 +17,11 @@ target_link_libraries(sender_app PRIVATE mcm_dp)
 add_executable(recver_app recver_app.c)
 target_include_directories(recver_app PRIVATE ../include)
 target_link_libraries(recver_app PRIVATE mcm_dp)
+
+add_executable(ping_app ping_app.c pingpong_common.c)
+target_include_directories(ping_app PRIVATE ../include)
+target_link_libraries(ping_app PRIVATE mcm_dp)
+
+add_executable(pong_app pong_app.c pingpong_common.c)
+target_include_directories(pong_app PRIVATE ../include)
+target_link_libraries(pong_app PRIVATE mcm_dp)
