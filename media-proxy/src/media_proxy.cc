@@ -52,7 +52,7 @@ void usage(FILE* fp, const char* path)
 using namespace mesh;
 
 // Main context with cancellation
-context::WithCancel ctx(context::Background());
+auto ctx = context::WithCancel(context::Background());
 
 int main(int argc, char* argv[])
 {

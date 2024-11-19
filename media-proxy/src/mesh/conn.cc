@@ -25,8 +25,8 @@ Connection::Connection()
 
 Connection::~Connection()
 {
-    context::WithTimeout ctx(context::Background(),
-                             std::chrono::milliseconds(5000));
+    auto ctx = context::WithTimeout(context::Background(),
+                                    std::chrono::milliseconds(5000));
     set_state(ctx, State::deleting);
     on_delete(ctx);
 }

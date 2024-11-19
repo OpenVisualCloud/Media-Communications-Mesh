@@ -11,19 +11,87 @@ namespace mesh {
 
 namespace context {
 
-Context::Context() : ss(std::stop_source()), ch(new thread::Channel<bool>(1))
+Context::Context() : ss(std::stop_source()),
+                     parent(nullptr),
+                     cb(nullptr),
+                     ch(new thread::Channel<bool>(1)),
+                     timeout_ms(std::chrono::milliseconds(0))
 {
+}
+
+Context::Context(Context& parent) : ss(std::stop_source()),
+                                    parent(&parent),
+                                    ch(new thread::Channel<bool>(1))
+{
+    cb = std::make_unique<std::stop_callback<std::function<void()>>>(
+        parent.ss.get_token(), [this] { cancel(); }
+    );
+}
+
+Context::Context(Context& parent,
+                 std::chrono::milliseconds timeout_ms) : ss(std::stop_source()),
+                                                         parent(&parent),
+                                                         ch(new thread::Channel<bool>(1)),
+                                                         timeout_ms(timeout_ms)
+{
+    cb = std::make_unique<std::stop_callback<std::function<void()>>>(
+        parent.ss.get_token(), [this] { cancel(); }
+    );
+
+    if (timeout_ms != std::chrono::milliseconds(0)) {
+        async_cb = std::async(std::launch::async, [this] {
+            std::mutex mx;
+            std::unique_lock<std::mutex> lk(mx);
+            std::condition_variable_any cv;
+            cv.wait_for(lk, ss.get_token(), this->timeout_ms, [] { return false; });
+            cancel();
+        });
+    }
+}
+
+Context& Context::operator=(Context&& other) noexcept {
+    if (this != &other) {
+        ss = std::stop_source();
+        parent = other.parent;
+
+        cb = std::make_unique<std::stop_callback<std::function<void()>>>(
+            parent->ss.get_token(), [this] { cancel(); }
+        );
+
+        timeout_ms = other.timeout_ms;
+
+        if (timeout_ms != std::chrono::milliseconds(0)) {
+            async_cb = std::async(std::launch::async, [this] {
+                std::mutex mx;
+                std::unique_lock<std::mutex> lk(mx);
+                std::condition_variable_any cv;
+                cv.wait_for(lk, ss.get_token(), timeout_ms, [] { return false; });
+                cancel();
+            });
+        }
+
+        ch = other.ch;
+        other.ch = nullptr;
+    }
+    return *this;
 }
 
 Context::~Context()
 {
     cancel();
-    delete ch;
+
+    if (async_cb.valid())
+        async_cb.wait();
+
+    if (ch)
+        delete ch;
 }
 
 void Context::cancel() 
 {
-    ch->close();
+    if (ch)
+        ch->close();
+
     ss.request_stop();
 }
 
@@ -39,7 +107,9 @@ std::stop_token Context::stop_token()
 
 bool Context::done()
 {
-    ch->receive(*this);
+    if (ch)
+        ch->receive(*this);
+
     return true;
 }
 
@@ -49,26 +119,14 @@ Context& Background()
     return backgroundContext;
 }
 
-WithCancel::WithCancel(Context& parent) : Context(), parent(parent)
+Context WithCancel(Context& parent)
 {
-    std::stop_callback(parent.ss.get_token(), [this] { cancel(); });
+    return Context(parent);
 }
 
-WithTimeout::WithTimeout(Context& parent,
-                         std::chrono::milliseconds timeout_ms) : WithCancel(parent)
+Context WithTimeout(Context& parent, std::chrono::milliseconds timeout_ms)
 {
-    async_cb = std::async(std::launch::async, [this, timeout_ms] {
-        std::mutex mx;
-        std::unique_lock<std::mutex> lk(mx);
-        std::condition_variable_any cv;
-        cv.wait_for(lk, ss.get_token(), timeout_ms, [] { return false; });
-        cancel();
-    });
-}
-
-WithTimeout::~WithTimeout()
-{
-    cancel();
+    return Context(parent, timeout_ms);
 }
 
 } // namespace context
