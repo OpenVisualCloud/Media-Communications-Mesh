@@ -8,8 +8,8 @@ This part of the repository is to be used solely for holding validation applicat
 
 In order to compile the apps, first compile the whole Media Communications Mesh using `build.sh` script from the root of the repo, then use the following commands:
 
-- `cc -o sender_app sender_app.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
-- `cc -o recver_app recver_app.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
+- `cc -o sender_val sender_val.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
+- `cc -o recver_val recver_val.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
 
 ## Usage
 
@@ -43,11 +43,124 @@ Use `app_name -H` to see full usage options for a specific application.
 
 Sender:
 - `sudo media_proxy -d 0000:c0:11.1 -t 9992`
-- `sudo MCM_MEDIA_PROXY_PORT=9992 ./sender -w 1920 -h 1080 -f 30 -x yuv422p10le" -s 192.168.96.1 -r 192.168.96.2 -i 9991 -b input.yuv`
+  ```text
+  DEBUG: Set MTL configure file path to /usr/local/etc/imtl.json
+  INFO: TCP Server listening on 0.0.0.0:9992
+  ```
+- `sudo MCM_MEDIA_PROXY_PORT=9992 ./sender_val -w 1920 -h 1080 -f 30 -x yuv422p10le -s 192.168.96.1 -r 192.168.96.2 -i 9991 -b input.yuv`
+  ```text
+  INFO - Set default media-proxy IP address: 127.0.0.1
+  INFO - Connecting to MCM Media-Proxy: 127.0.0.1:9992
+  INFO - Connected to media-proxy.
+  INFO - Session ID: 1
+  INFO - Create memif socket.
+  INFO - Create memif interface.
+  MEMIF DETAILS
+  ==============================
+          interface name: memif_tx_0
+          app name: memif_tx_0
+          remote interface name: memif_tx_0
+          remote app name: memif_tx_0
+          id: 0
+          secret: (null)
+          role: slave
+          mode: ethernet
+          socket path: /run/mcm/media_proxy_tx_0.sock
+          regions num: 2
+                  regions idx: 0
+                  regions addr: 0x7f7d7f4bc000
+                  regions size: 384
+                  regions ext: 0
+                  regions idx: 1
+                  regions addr: 0x7f7d7b2b2000
+                  regions size: 66355200
+                  regions ext: 0
+          rx queues:
+                  queue id: 0
+                  ring size: 4
+                  buffer size: 8294400
+          tx queues:
+                  queue id: 0
+                  ring size: 4
+                  buffer size: 8294400
+          link: up
+  INFO - memif connected!
+  INFO - Success connect to MCM media-proxy.
+  INFO: frame_size = 8294400
+  TX frames: [0], FPS: 0.00 [30.00]
+  Throughput: 0.00 MB/s, 0.00 Gb/s
+  pacing: 33333
+  spend: 5549
+
+  (...)
+
+  INFO: frame_size = 8294400
+  TX frames: [49], FPS: 30.02 [30.00]
+  Throughput: 248.97 MB/s, 1.99 Gb/s
+  pacing: 33333
+  spend: 33476
+
+  INFO: frame_size = 8294400
+  INFO - memif disconnected!
+  ```
 
 Receiver:
 - `sudo media_proxy -d 0000:c0:11.0 -t 9991`
-- `sudo MCM_MEDIA_PROXY_PORT=9991 ./recver -w 1920 -h 1080 -f 30 -x yuv422p10le" -s 192.168.96.2 -p 9992 -b output.yuv`
+  ```text
+  DEBUG: Set MTL configure file path to /usr/local/etc/imtl.json
+  INFO: TCP Server listening on 0.0.0.0:9991
+  ```
+- `sudo MCM_MEDIA_PROXY_PORT=9991 ./recver_val -w 1920 -h 1080 -f 30 -x yuv422p10le -s 192.168.96.2 -p 9992 -b output.yuv`
+  ```text
+  INFO - Set default media-proxy IP address: 127.0.0.1
+  INFO - Connecting to MCM Media-Proxy: 127.0.0.1:9991
+  INFO - Connected to media-proxy.
+  INFO - Session ID: 1
+  INFO - Create memif socket.
+  INFO - Create memif interface.
+  MEMIF DETAILS
+  ==============================
+          interface name: memif_rx_0
+          app name: memif_rx_0
+          remote interface name: memif_rx_0
+          remote app name: memif_rx_0
+          id: 0
+          secret: (null)
+          role: slave
+          mode: ethernet
+          socket path: /run/mcm/media_proxy_rx_0.sock
+          regions num: 2
+                  regions idx: 0
+                  regions addr: 0x7f4b337b0000
+                  regions size: 384
+                  regions ext: 0
+                  regions idx: 1
+                  regions addr: 0x7f4b2f5a6000
+                  regions size: 66355200
+                  regions ext: 0
+          rx queues:
+                  queue id: 0
+                  ring size: 4
+                  buffer size: 8294400
+          tx queues:
+                  queue id: 0
+                  ring size: 4
+                  buffer size: 8294400
+          link: up
+  INFO - memif connected!
+  INFO - Success connect to MCM media-proxy.
+  INFO: buf->len = 8294400 frame size = 8294400
+  RX frames: [0], latency: 0.0 ms, FPS: 1192.027
+  Throughput: 9887.15 MB/s, 79.10 Gb/s
+
+  (...)
+  INFO: buf->len = 8294400 frame size = 8294400
+  RX frames: [49], latency: 0.0 ms, FPS: 30.057
+  Throughput: 249.31 MB/s, 1.99 Gb/s
+
+  Connection closed
+  INFO - memif disconnected!
+  ```
 
 ## Validation helpers
 
@@ -55,11 +168,9 @@ An aside part with help information for validators.
 
 ### Media Proxy hugepages requirement
 
-To meet Media Proxy hugepages requirement, as a super user, add a number >10 to each of the files:
-```shell
-/sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages
-/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages
-```
+> **Note:** [Minimal Media Transport Library setup](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md#4-setup-hugepage) specifies setting up 4 GB hugepages altogether. Below paragraph is just a recommendation, which should be used for testing purposes.
+
+To ensure stable testing of Media Proxy, as super user, add a number 4 to `/sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages` (4 * 1 GB hugepages) and 2048 to `/sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages` (2048 * 2 MB hugepages).
 
 Error thrown when the hugepages are not properly setup:
 ```text

@@ -14,13 +14,13 @@
 #define DEFAULT_FRAME_HEIGHT 1080
 #define DEFAULT_FPS 30.0
 #define DEFAULT_PAYLOAD_TYPE "st20"
-#define DEFAULT_LOCAL_FILE "data-sdk.264"
 #define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
 #define DEFAULT_MEMIF_INTERFACE_ID 0
 #define DEFAULT_PROTOCOL "auto"
 #define DEFAULT_VIDEO_FMT "yuv422p10le"
 #define DEFAULT_TOTAL_NUM 300
 #define DEFAULT_INFINITE_LOOP 0
+#define EXAMPLE_LOCAL_FILE "sample_video.yuv"
 
 
 /* print a description of all supported options */
@@ -65,7 +65,7 @@ void usage(FILE* fp, const char* path, int sender)
     fprintf(fp, "\n");
 
 
-    if (sender == 1){
+    if (sender) {
         fprintf(fp, "-i, --file=input_file\t\t"
                     "Input file name (optional)\n");
         fprintf(fp, "-l, --loop=is_loop\t"
@@ -77,7 +77,7 @@ void usage(FILE* fp, const char* path, int sender)
         fprintf(fp, "-r, --ip=ip_address\t\t"
                     "Receive data from IP address (default: %s)\n",
             DEFAULT_RECV_IP);
-    } else { // receiver
+    } else { /* receiver */
         fprintf(fp, "-s, --ip=ip_address\t\t"
                     "Send data to IP address (default: %s)\n",
             DEFAULT_SEND_IP);
@@ -86,24 +86,24 @@ void usage(FILE* fp, const char* path, int sender)
             DEFAULT_SEND_PORT);
         fprintf(fp, "-k, --dumpfile=file_name\t"
                 "Save stream to local file (example: %s)\n",
-        DEFAULT_LOCAL_FILE);
+            EXAMPLE_LOCAL_FILE);
     }
 
     fprintf(fp, "\n");
 }
 
-void set_video_pix_fmt(int* pix_fmt, char* pix_fmt_string){
+void set_video_pix_fmt(int* pix_fmt, char* pix_fmt_string) {
     printf("----> PRE: set_video_pix_fmt(pix_fmt: %d, pix_fmt_string: %s)\n", *pix_fmt, pix_fmt_string);
-    if (strcmp(pix_fmt_string, "yuv444p10le") == 0){
-        *pix_fmt = PIX_FMT_YUV444P_10BIT_LE; //3
-    } else if (strcmp(pix_fmt_string, "yuv422p10le") == 0){
-        *pix_fmt = PIX_FMT_YUV422P_10BIT_LE; //2
-    } else if (strcmp(pix_fmt_string, "yuv422p") == 0){
-        *pix_fmt = PIX_FMT_YUV422P; //1
-    } else if (strcmp(pix_fmt_string, "rgb8") == 0){
-        *pix_fmt = PIX_FMT_RGB8; //4
+    if (!strcmp(pix_fmt_string, "yuv444p10le")) {
+        *pix_fmt = PIX_FMT_YUV444P_10BIT_LE; /* 3 */
+    } else if (!strcmp(pix_fmt_string, "yuv422p10le")) {
+        *pix_fmt = PIX_FMT_YUV422P_10BIT_LE; /* 2 */
+    } else if (!strcmp(pix_fmt_string, "yuv422p")) {
+        *pix_fmt = PIX_FMT_YUV422P; /* 1 */
+    } else if (!strcmp(pix_fmt_string, "rgb8")) {
+        *pix_fmt = PIX_FMT_RGB8; /* 4 */
     } else {
-        *pix_fmt = PIX_FMT_NV12; //0
+        *pix_fmt = PIX_FMT_NV12; /* 0 */
     }
     printf("----> AFTER: set_video_pix_fmt / pix_fmt: %d, pix_fmt_string: %s\n", *pix_fmt, pix_fmt_string);
 }
