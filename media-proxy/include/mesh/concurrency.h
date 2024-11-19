@@ -35,6 +35,7 @@ namespace context {
  */
 class Context {
 public:
+    Context();
     virtual ~Context();
     Context& operator=(Context&& other) noexcept;
 
@@ -46,7 +47,6 @@ public:
     std::stop_source ss;
 
 protected:
-    Context();
     Context(Context& parent);
     Context(Context& parent, std::chrono::milliseconds timeout_ms);
 
