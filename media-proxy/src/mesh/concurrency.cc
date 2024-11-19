@@ -21,7 +21,8 @@ Context::Context() : ss(std::stop_source()),
 
 Context::Context(Context& parent) : ss(std::stop_source()),
                                     parent(&parent),
-                                    ch(new thread::Channel<bool>(1))
+                                    ch(new thread::Channel<bool>(1)),
+                                    timeout_ms(std::chrono::milliseconds(0))
 {
     cb = std::make_unique<std::stop_callback<std::function<void()>>>(
         parent.ss.get_token(), [this] { cancel(); }
