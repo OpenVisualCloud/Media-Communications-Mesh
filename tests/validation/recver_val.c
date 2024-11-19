@@ -4,17 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <bsd/string.h>
-#include <getopt.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <time.h>
-#include <unistd.h>
-#include "mesh_dp.h"
-#include "common.c"
+#include "common.h"
 
 static volatile bool keepRunning = true;
 
@@ -80,7 +70,7 @@ int main(int argc, char** argv)
 
         switch (opt) {
         case 'H':
-            usage(stdout, argv[0], 1);
+            usage(stdout, argv[0], 0);
             return 0;
         case 'b':
             strlcpy(file_name, optarg, sizeof(file_name));

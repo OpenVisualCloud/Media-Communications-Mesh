@@ -4,24 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "mcm_dp.h"
-
-#define DEFAULT_RECV_IP "127.0.0.1"
-#define DEFAULT_RECV_PORT "9001"
-#define DEFAULT_SEND_IP "127.0.0.1"
-#define DEFAULT_SEND_PORT "9001"
-#define DEFAULT_FRAME_WIDTH 1920
-#define DEFAULT_FRAME_HEIGHT 1080
-#define DEFAULT_FPS 30.0
-#define DEFAULT_PAYLOAD_TYPE "st20"
-#define DEFAULT_MEMIF_SOCKET_PATH "/run/mcm/mcm_rx_memif.sock"
-#define DEFAULT_MEMIF_INTERFACE_ID 0
-#define DEFAULT_PROTOCOL "auto"
-#define DEFAULT_VIDEO_FMT "yuv422p10le"
-#define DEFAULT_TOTAL_NUM 300
-#define DEFAULT_INFINITE_LOOP 0
-#define EXAMPLE_LOCAL_FILE "sample_video.yuv"
-
+#include "common.h"
 
 /* print a description of all supported options */
 void usage(FILE* fp, const char* path, int sender)
@@ -31,10 +14,6 @@ void usage(FILE* fp, const char* path, int sender)
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "Usage: %s [OPTION]\n", basename);
-    fprintf(fp, "to be done after the params are prepped properly");
-    fprintf(fp, "\n");
-    return;
-
     fprintf(fp, "-w, --width=<frame_width>\t"
                 "Width of test video frame (default: %d)\n",
         DEFAULT_FRAME_WIDTH);
@@ -62,13 +41,11 @@ void usage(FILE* fp, const char* path, int sender)
     fprintf(fp, "-p, --port=port_number\t\t"
                 "Receive data from Port (default: %s)\n",
         DEFAULT_RECV_PORT);
-    fprintf(fp, "\n");
-
 
     if (sender) {
         fprintf(fp, "-i, --file=input_file\t\t"
                     "Input file name (optional)\n");
-        fprintf(fp, "-l, --loop=is_loop\t"
+        fprintf(fp, "-l, --loop=is_loop\t\t"
                     "Set infinite loop sending (default: %d)\n",
             DEFAULT_INFINITE_LOOP);
         fprintf(fp, "-n, --number=frame_number\t"
@@ -93,7 +70,6 @@ void usage(FILE* fp, const char* path, int sender)
 }
 
 void set_video_pix_fmt(int* pix_fmt, char* pix_fmt_string) {
-    printf("----> PRE: set_video_pix_fmt(pix_fmt: %d, pix_fmt_string: %s)\n", *pix_fmt, pix_fmt_string);
     if (!strcmp(pix_fmt_string, "yuv444p10le")) {
         *pix_fmt = PIX_FMT_YUV444P_10BIT_LE; /* 3 */
     } else if (!strcmp(pix_fmt_string, "yuv422p10le")) {
@@ -105,5 +81,4 @@ void set_video_pix_fmt(int* pix_fmt, char* pix_fmt_string) {
     } else {
         *pix_fmt = PIX_FMT_NV12; /* 0 */
     }
-    printf("----> AFTER: set_video_pix_fmt / pix_fmt: %d, pix_fmt_string: %s\n", *pix_fmt, pix_fmt_string);
 }

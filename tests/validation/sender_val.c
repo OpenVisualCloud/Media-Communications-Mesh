@@ -4,19 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <assert.h>
-#include <bsd/string.h>
-#include <getopt.h>
-#include <linux/limits.h>
-#include <signal.h>
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <sys/stat.h>
-#include <time.h>
-#include <unistd.h>
-#include "mesh_dp.h"
-#include "common.c"
+#include "common.h"
 
 static volatile bool keepRunning = true;
 bool loop = DEFAULT_INFINITE_LOOP;
