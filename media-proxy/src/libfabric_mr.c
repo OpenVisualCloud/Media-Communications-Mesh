@@ -47,7 +47,6 @@
 #include <rdma/fi_collective.h>
 
 #include "libfabric_mr.h"
-#include "rdma_hmem.h"
 
 static void rdma_fill_mr_attr(struct iovec *iov, struct fi_mr_dmabuf *dmabuf, int iov_count,
                               uint64_t access, uint64_t key, enum fi_hmem_iface iface,
@@ -80,8 +79,7 @@ static void rdma_fill_mr_attr(struct iovec *iov, struct fi_mr_dmabuf *dmabuf, in
 }
 
 int rdma_reg_mr(libfabric_ctx *rdma_ctx, struct fid_ep *ep, void *buf, size_t size, uint64_t access,
-                uint64_t key, enum fi_hmem_iface iface, uint64_t device, struct fid_mr **mr,
-                void **desc)
+                uint64_t key, enum fi_hmem_iface iface, uint64_t device, struct fid_mr **mr, void **desc)
 {
     struct fi_mr_dmabuf dmabuf = { 0 };
     struct fi_mr_attr attr = { 0 };
@@ -173,3 +171,13 @@ uint64_t rdma_info_to_mr_access(struct fi_info *info)
     }
     return mr_access;
 }
+
+void rdma_unreg_mr(struct fid_mr *data_mr) {
+    RDMA_CLOSE_FID(data_mr);
+}
+
+struct libfabric_mr_ops_t libfabric_mr_ops = {
+    .rdma_reg_mr = rdma_reg_mr,
+    .rdma_info_to_mr_access = rdma_info_to_mr_access,
+    .rdma_unreg_mr = rdma_unreg_mr,
+};
