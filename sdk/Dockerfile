@@ -13,14 +13,24 @@ ENV TZ=Europe/Warsaw
 
 ARG MCM_DIR=/opt/mcm
 ARG PREFIX_DIR="/install"
+ARG GPRC_VER="v1.58.0"
+ARG GRPC_DIR="/opt/grpc"
 
-SHELL ["/bin/bash", "-exc"]
+SHELL ["/bin/bash", "-exo", "pipefail", "-c"]
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
         apt-utils build-essential make cmake git ca-certificates pkg-config nasm libbsd-dev && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    mkdir -p "${GRPC_DIR}" && \
+    git clone --branch ${GPRC_VER} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc "${GRPC_DIR}"
+
+# gRPC
+WORKDIR ${GRPC_DIR}/cmake/build
+RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
+    make -j `nproc` && \
+    make install
 
 COPY . ${MCM_DIR}
 WORKDIR ${MCM_DIR}/sdk
