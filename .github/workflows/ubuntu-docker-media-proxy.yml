@@ -30,24 +30,6 @@ jobs:
         with:
           buildkitd-flags: --debug
 
-      - name: Build and push SDK sample apps
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          file: sdk/Dockerfile
-          allow: network.host
-          context: .
-          push: false
-          tags: "mcm/sdk:${{ github.sha }}"
-
-      - name: Build and push ffmpeg and plugins
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          file: ffmpeg-plugin/Dockerfile
-          allow: network.host
-          context: .
-          push: false
-          tags: "mcm/ffmpeg:${{ github.sha }}"
-
       - name: Build and push media proxy application
         uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
         with:

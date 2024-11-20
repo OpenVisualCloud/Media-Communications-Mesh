@@ -42,6 +42,12 @@ typedef struct MeshClientConfig {
      */
     int max_conn_num;
 
+    /**
+     * TEMPORARY
+     * TCP connection is used by default. This flag is to enable gRPC instead.
+     */
+    bool enable_grpc;
+
 } MeshClientConfig;
 
 /**

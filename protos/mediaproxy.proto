@@ -1,0 +1,73 @@
+// SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
+syntax = "proto3";
+
+option go_package = "control-plane-agent/api/proxy/proto/mediaproxy";
+
+package mediaproxy;
+
+service ControlAPI {
+  rpc RegisterMediaProxy (RegisterMediaProxyRequest) returns (RegisterMediaProxyReply) {}
+
+  rpc UnregisterMediaProxy (UnregisterMediaProxyRequest) returns (UnregisterMediaProxyReply) {}
+
+  rpc RegisterConnection (RegisterConnectionRequest) returns (RegisterConnectionReply) {}
+
+  rpc UnregisterConnection (UnregisterConnectionRequest) returns (UnregisterConnectionReply) {}
+
+  rpc StartCommandQueue (StartCommandQueueRequest) returns (stream CommandMessage) {}
+
+  // rpc ReportCommandResult (ReportCommandResultRequest) returns (ReportCommandResultReply) {}
+}
+
+// message ReportCommandResultRequest {
+//   string proxy_id = 1; // id assigned by Agent at registration
+// }
+
+message RegisterMediaProxyRequest {
+  uint32 sdk_port = 1; // SDK API port - something to identify Media Proxy
+}
+
+message RegisterMediaProxyReply {
+  string proxy_id = 1; // id assigned by Agent at registration
+}
+
+message UnregisterMediaProxyRequest {
+  string proxy_id = 1; // id assigned by Agent at registration
+}
+
+message UnregisterMediaProxyReply {
+  // Empty reply  
+}
+
+message RegisterConnectionRequest {
+  string proxy_id = 1;
+  uint32 kind = 2;
+  uint32 conn_type = 3;
+  uint32 payload_type = 4;
+  uint64 buffer_size = 5;
+}
+
+message RegisterConnectionReply {
+  string conn_id = 1; // id assigned by Agent at registration
+}
+
+message UnregisterConnectionRequest {
+  string proxy_id = 1;
+  string conn_id = 2; // id assigned by Agent at registration
+}
+
+message UnregisterConnectionReply {
+  // Empty reply
+}
+
+message StartCommandQueueRequest {
+  string proxy_id = 1; // Media Proxy id
+}
+
+message CommandMessage {
+  string opcode = 1;
+  string id = 2;
+}

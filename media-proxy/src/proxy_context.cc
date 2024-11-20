@@ -168,7 +168,7 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param *request)
     int ret;
 
     if (!mDevHandle_rdma) {
-        ret = rdma_init(&mDevHandle_rdma);
+        ret = libfabric_dev_ops.rdma_init(&mDevHandle_rdma);
         if (ret) {
             INFO("%s, Failed to initialize libfabric.", __func__);
             return -EINVAL;
@@ -269,7 +269,7 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param *request)
     int ret;
 
     if (!mDevHandle_rdma) {
-        ret = rdma_init(&mDevHandle_rdma);
+        ret = libfabric_dev_ops.rdma_init(&mDevHandle_rdma);
         if (ret) {
             INFO("%s, Failed to initialize libfabric.", __func__);
             return -EINVAL;

@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #ifndef CONCURRENCY_H
 #define CONCURRENCY_H
 
@@ -29,20 +35,32 @@ namespace context {
  */
 class Context {
 public:
+    Context();
     virtual ~Context();
+    Context& operator=(Context&& other) noexcept;
+
     void cancel();
     bool cancelled();
     std::stop_token stop_token();
     bool done();
 
-protected:
     std::stop_source ss;
-    thread::Channel<bool> *ch;
 
-    Context();
+protected:
+    Context(Context& parent);
+    Context(Context& parent, std::chrono::milliseconds timeout_ms);
+
+    Context *parent;
+    thread::Channel<bool> *ch;
+    std::future<void> async_cb;
+    std::chrono::milliseconds timeout_ms;
+    std::unique_ptr<std::stop_callback<std::function<void()>>> cb;
 
     friend Context& Background();
     friend class WithCancel;
+    friend Context WithCancel(Context& parent);
+    friend Context WithTimeout(Context& parent,
+                               std::chrono::milliseconds timeout_ms);
 };
 
 /**
@@ -67,13 +85,7 @@ Context& Background();
  * parent context down to the very bottom child context and stopping all
  * threads and blocking I/O calls that depend on any context in the chain.
  */
-class WithCancel : public Context {
-public:
-    WithCancel(Context& parent);
-
-private:
-    Context& parent;
-};
+Context WithCancel(Context& parent);
 
 /**
  * mesh::context::WithTimeout
@@ -82,14 +94,7 @@ private:
  * starts to count down at creation. When the time is out, the context is
  * cancelled, which triggers cancellation of all child contexts in the chain.
  */
-class WithTimeout : public WithCancel {
-public:
-    WithTimeout(Context& parent, std::chrono::milliseconds timeout_ms);
-    ~WithTimeout() override;
-
-private:
-    std::future<void> async_cb;
-};
+Context WithTimeout(Context& parent, std::chrono::milliseconds timeout_ms);
 
 } // namespace context
 
@@ -140,7 +145,7 @@ void Sleep(context::Context& ctx, std::chrono::milliseconds interval_ms);
  * Channel
  * 
  * A thread-safe queue template supporting cancellation of blocking calls
- * put() and get() by checking context::Context. To set a timeout on the
+ * send() and receive() by checking context::Context. To set a timeout on the
  * blocking calls, context::WithTimeout is supposed to be used.
  * Example:
  * ...
