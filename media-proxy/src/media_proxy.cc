@@ -136,8 +136,6 @@ class EmulatedTransmitter : public connection::Connection
     }
 };
 
-auto ctx = context::WithCancel(context::Background());
-
 int main(int argc, char *argv[])
 {
     log::info("Starting media_proxy application");

@@ -47,7 +47,7 @@ Result RdmaRx::handle_buffers(context::Context& ctx, void *buffer, size_t size)
     while (!ctx.cancelled()) {
 
         // Try to read the completion queue with the provided buffer
-        int err = ep_cq_read(ep_ctx, (void **)&buffer, RDMA_DEFAULT_TIMEOUT);
+        int err = libfabric_ep_ops.ep_cq_read(ep_ctx, (void **)&buffer, RDMA_DEFAULT_TIMEOUT);
         if (err == -EAGAIN) {
             // No completion event yet; keep looping
             //    INFO("No completion event yet for buffer: %p, retrying...",
@@ -92,7 +92,7 @@ Result RdmaRx::receive_data(context::Context& ctx, void *buffer,
     log::info("Receiving data")("buffer_size", buffer_size)
              ("buffer_address", buffer);
     
-    int err = ep_recv_buf(ep_ctx, buffer, buffer_size, buffer);
+    int err = libfabric_ep_ops.ep_recv_buf(ep_ctx, buffer, buffer_size, buffer);
     if (err) {
         log::error("Failed to receive data into buffer")("buffer_address", buffer)
                   ("error", fi_strerror(-err));

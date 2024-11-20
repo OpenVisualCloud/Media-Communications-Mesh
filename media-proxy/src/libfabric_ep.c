@@ -159,7 +159,7 @@ int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size)
             (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
             attempts++;
         }
-    } while (ret == -EAGAIN);
+    } while (ret == -EAGAIN && attempts<500000);
 
     if (ret == 0) {
         INFO("Buffer successfully sent through RDMA.");

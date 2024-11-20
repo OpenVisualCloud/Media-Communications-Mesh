@@ -27,7 +27,7 @@ Result RdmaTx::configure(context::Context& ctx, const mcm_conn_param& request,
 Result RdmaTx::handle_buffers(context::Context& ctx, void *buffer, size_t size)
 {
     // Handle completion events for Tx
-    int err = ep_cq_read(ep_ctx, &buffer, RDMA_DEFAULT_TIMEOUT);
+    int err = libfabric_ep_ops.ep_cq_read(ep_ctx, &buffer, RDMA_DEFAULT_TIMEOUT);
     if (err == -EAGAIN) {
         // No completion yet
         return Result::success;
@@ -77,7 +77,7 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
 
     // Send the buffer using RDMA
     log::info("Sending buffer through RDMA")("size", temp_sent);
-    int err = ep_send_buf(ep_ctx, registered_buffer, temp_sent);
+    int err = libfabric_ep_ops.ep_send_buf(ep_ctx, registered_buffer, temp_sent);
     if (err) {
         log::error("Failed to send buffer through RDMA")
                   ("error",fi_strerror(-err));

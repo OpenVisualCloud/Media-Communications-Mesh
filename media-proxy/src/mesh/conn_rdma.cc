@@ -34,7 +34,6 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
                 sizeof(request.local_addr));
     ep_cfg.dir = dir;
 
-
     set_state(ctx, State::configured);
 
     log::info("RDMA configured successfully")("state", "configured")
@@ -57,7 +56,7 @@ Result Rdma::on_establish(context::Context& ctx)
 
     // Initialize the RDMA device if not already initialized
     if (!mDevHandle) {
-        ret = rdma_init(&mDevHandle);
+        ret = libfabric_dev_ops.rdma_init(&mDevHandle);
         if (ret) {
             log::error("Failed to initialize RDMA device")("ret", ret);
             return Result::error_initialization_failed;
@@ -67,7 +66,7 @@ Result Rdma::on_establish(context::Context& ctx)
     ep_cfg.rdma_ctx = mDevHandle;
 
     // Initialize the endpoint context
-    ret = ep_init(&ep_ctx, &ep_cfg);
+    ret = libfabric_ep_ops.ep_init(&ep_ctx, &ep_cfg);
     if (ret) {
         log::error("Failed to initialize RDMA endpoint context")
                   ("error", fi_strerror(-ret));
@@ -166,7 +165,7 @@ Result Rdma::configure_endpoint(context::Context& ctx)
         }
         log::info("Registering buffer")("address", buffer)("size",
                                                            transfer_size);
-        int ret = ep_reg_mr(ep_ctx, buffer, transfer_size);
+        int ret = libfabric_ep_ops.ep_reg_mr(ep_ctx, buffer, transfer_size);
         if (ret) {
             log::error("Memory registration failed")("error",
                                                      fi_strerror(-ret));
@@ -236,7 +235,7 @@ Result Rdma::cleanup_resources(context::Context& ctx)
     // Clean up RDMA resources
     if (ep_ctx) {
         log::info("Destroying RDMA endpoint...");
-        int err = ep_destroy(&ep_ctx);
+        int err = libfabric_ep_ops.ep_destroy(&ep_ctx);
         if (err) {
             log::error("Failed to destroy RDMA endpoint")("error", fi_strerror(-err));
         } else {
