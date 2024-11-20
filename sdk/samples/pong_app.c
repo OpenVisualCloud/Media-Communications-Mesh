@@ -96,7 +96,7 @@ void usage(FILE *fp, const char *path)
     fprintf(fp, "\n");
 }
 
-void *pong_thread(void *arg)
+void * pong_thread(void *arg)
 {
     int thread_id = *(int *)arg;
     cpu_set_t cpuset;
@@ -111,28 +111,28 @@ void *pong_thread(void *arg)
     err = mesh_create_connection(client, &r_conn);
     if (err) {
         printf("Failed to create a recv mesh connection: %s (%d)\n", mesh_err2str(err), err);
-        pthread_exit(NULL);
+        return NULL;
     }
 
     err = init_conn(r_conn, &config, MESH_CONN_KIND_RECEIVER, thread_id);
     if (err) {
         printf("ERROR: init_conn failed \n");
         mesh_delete_connection(&r_conn);
-        pthread_exit(NULL);
+        return NULL;
     }
     usleep(100000);
 
     err = mesh_create_connection(client, &s_conn);
     if (err) {
         printf("Failed to create a send mesh connection: %s (%d)\n", mesh_err2str(err), err);
-        pthread_exit(NULL);
+        return NULL;
     }
 
     err = init_conn(s_conn, &config, MESH_CONN_KIND_SENDER, thread_id);
     if (err) {
         printf("ERROR: init_conn failed \n");
         mesh_delete_connection(&s_conn);
-        pthread_exit(NULL);
+        return NULL;
     }
 
     // Pin the thread to specific CPU core
@@ -140,7 +140,7 @@ void *pong_thread(void *arg)
     CPU_SET((thread_id + config.threads_num * 2) % CPU_CORES, &cpuset);
     if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
         perror("pthread_setaffinity_np");
-        pthread_exit(NULL);
+        return NULL;
     }
 
     while (1) {
@@ -186,7 +186,7 @@ void *pong_thread(void *arg)
     if (err)
         printf("Failed to delete recv connection: %s (%d)\n", mesh_err2str(err), err);
 
-    pthread_exit(NULL);
+    return NULL;
 }
 
 int main(int argc, char **argv)

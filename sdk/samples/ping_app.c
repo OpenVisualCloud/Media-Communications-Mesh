@@ -107,7 +107,7 @@ typedef struct {
     double *latency_results;
 } t_data;
 
-void *receiver_thread(void *arg)
+void * receiver_thread(void *arg)
 {
     t_data *thread_data = (t_data *)arg;
     struct timespec send_time = {}, now = {};
@@ -122,14 +122,14 @@ void *receiver_thread(void *arg)
     err = mesh_create_connection(client, &conn);
     if (err) {
         printf("Failed to create a mesh connection: %s (%d)\n", mesh_err2str(err), err);
-        pthread_exit(NULL);
+        return NULL;
     }
 
     err = init_conn(conn, &config, MESH_CONN_KIND_RECEIVER, thread_data->thread_id);
     if (err) {
         printf("ERROR: init_conn failed \n");
         mesh_delete_connection(&conn);
-        pthread_exit(NULL);
+        return NULL;
     }
 
     if (thread_data->thread_id == 0)
@@ -140,7 +140,7 @@ void *receiver_thread(void *arg)
     CPU_SET((thread_data->thread_id + config.threads_num) % CPU_CORES, &cpuset);
     if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
         perror("pthread_setaffinity_np");
-        pthread_exit(NULL);
+        return NULL;
     }
 
     while (1) {
@@ -174,10 +174,10 @@ void *receiver_thread(void *arg)
     if (err)
         printf("Failed to delete connection: %s (%d)\n", mesh_err2str(err), err);
 
-    pthread_exit(NULL);
+    return NULL;
 }
 
-void *sender_thread(void *arg)
+void * sender_thread(void *arg)
 {
     int thread_id = *(int *)arg;
     struct timespec send_time = {};
@@ -190,14 +190,14 @@ void *sender_thread(void *arg)
     err = mesh_create_connection(client, &conn);
     if (err) {
         printf("Failed to create a mesh connection: %s (%d)\n", mesh_err2str(err), err);
-        pthread_exit(NULL);
+        return NULL;
     }
 
     err = init_conn(conn, &config, MESH_CONN_KIND_SENDER, thread_id);
     if (err) {
         printf("ERROR: init_conn failed \n");
         mesh_delete_connection(&conn);
-        pthread_exit(NULL);
+        return NULL;
     }
 
     // Pin the thread to specific CPU core
@@ -205,7 +205,7 @@ void *sender_thread(void *arg)
     CPU_SET(thread_id % CPU_CORES, &cpuset);
     if (pthread_setaffinity_np(pthread_self(), sizeof(cpu_set_t), &cpuset) != 0) {
         perror("pthread_setaffinity_np");
-        pthread_exit(NULL);
+        return NULL;
     }
 
     // Wait and send buffers based on atomic counter value
@@ -234,7 +234,7 @@ void *sender_thread(void *arg)
     if (err)
         printf("Failed to delete connection: %s (%d)\n", mesh_err2str(err), err);
 
-    pthread_exit(NULL);
+    return NULL;
 }
 
 int main(int argc, char **argv)
