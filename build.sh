@@ -28,7 +28,7 @@ run_as_root_user ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.s
 run_as_root_user ldconfig
 
 # Run unit tests
-export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib"
+export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
 "${BUILD_DIR}/bin/sdk_unit_tests"
 "${BUILD_DIR}/bin/media_proxy_unit_tests"
 
