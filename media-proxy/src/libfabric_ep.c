@@ -104,7 +104,11 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
         return ret;
     }
 
-    rdma_cq_open(ep_ctx, 0, RDMA_COMP_SREAD);
+    ret = libfabric_cq_ops.rdma_cq_open(ep_ctx, 0, RDMA_COMP_SREAD);
+    if (ret) {
+        RDMA_PRINTERR("rdma_cq_open", ret);
+        return ret;
+    }
 
     if (!ep_ctx->av && (rdma_ctx->info->ep_attr->type == FI_EP_RDM ||
                         rdma_ctx->info->ep_attr->type == FI_EP_DGRAM)) {
@@ -120,15 +124,17 @@ static int ep_alloc_res(ep_ctx_t *ep_ctx, libfabric_ctx *rdma_ctx, struct fi_inf
     }
     return 0;
 }
+
 int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
 {
     int ret;
 
     /* TODO: I'm using address of ep_ctx as a key,
      * maybe there is more elegant solution */
-    ret = rdma_reg_mr(ep_ctx->rdma_ctx, ep_ctx->ep, data_buf, data_buf_size,
-                      rdma_info_to_mr_access(ep_ctx->rdma_ctx->info), (uint64_t)ep_ctx,
-                      FI_HMEM_SYSTEM, 0, &ep_ctx->data_mr, &ep_ctx->data_desc);
+    ret = libfabric_mr_ops.rdma_reg_mr(
+        ep_ctx->rdma_ctx, ep_ctx->ep, data_buf, data_buf_size,
+        libfabric_mr_ops.rdma_info_to_mr_access(ep_ctx->rdma_ctx->info), (uint64_t)ep_ctx,
+        FI_HMEM_SYSTEM, 0, &ep_ctx->data_mr, &ep_ctx->data_desc);
     return ret;
 }
 
@@ -163,7 +169,7 @@ int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
     struct fi_cq_err_entry entry;
     int err;
 
-    err = rdma_read_cq(ep_ctx, &entry, timeout);
+    err = libfabric_cq_ops.rdma_read_cq(ep_ctx, &entry, timeout);
     if (err)
         return err;
 
@@ -179,9 +185,15 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     struct fi_info *fi;
     struct fi_info *hints;
 
+    if (!ep_ctx || !cfg)
+        return -EINVAL;
+
+    if (cfg->rdma_ctx == NULL)
+        return -EINVAL;
+
     *ep_ctx = calloc(1, sizeof(ep_ctx_t));
     if (!(*ep_ctx)) {
-        printf("%s, libfabric ep context malloc fail\n", __func__);
+        RDMA_PRINTERR("libfabric ep context malloc fail\n", -ENOMEM);
         return -ENOMEM;
     }
     (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
@@ -202,28 +214,32 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     }
     if (ret) {
         RDMA_PRINTERR("fi_getinfo", ret);
+        libfabric_ep_ops.ep_destroy(ep_ctx);
         return ret;
     }
 
     ret = ep_alloc_res(*ep_ctx, (*ep_ctx)->rdma_ctx, fi, 1);
     if (ret) {
-        printf("%s, ep_alloc_res fail\n", __func__);
-        ep_destroy(ep_ctx);
+        RDMA_PRINTERR("ep_alloc_res fail\n", ret);
+        libfabric_ep_ops.ep_destroy(ep_ctx);
         return ret;
     }
 
     ret = enable_ep((*ep_ctx));
     if (ret) {
-        printf("%s, ep_enable fail\n", __func__);
-        ep_destroy(ep_ctx);
+        RDMA_PRINTERR("ep_enable fail\n", ret);
+        libfabric_ep_ops.ep_destroy(ep_ctx);
         return ret;
     }
 
     if (fi->dest_addr) {
         ret = ep_av_insert((*ep_ctx)->rdma_ctx, (*ep_ctx)->av, fi->dest_addr, 1,
                            &(*ep_ctx)->dest_av_entry, 0, NULL);
-        if (ret)
+        if (ret) {
+            RDMA_PRINTERR("ep_av_insert fail\n", ret);
+            libfabric_ep_ops.ep_destroy(ep_ctx);
             return ret;
+        }
     }
 
     fi_freeinfo(fi);
@@ -237,7 +253,7 @@ int ep_destroy(ep_ctx_t **ep_ctx)
     if (!ep_ctx || !(*ep_ctx))
         return -EINVAL;
 
-    RDMA_CLOSE_FID((*ep_ctx)->data_mr);
+    libfabric_mr_ops.rdma_unreg_mr((*ep_ctx)->data_mr);
     RDMA_CLOSE_FID((*ep_ctx)->ep);
 
     RDMA_CLOSE_FID((*ep_ctx)->cq_ctx.cq);
@@ -251,3 +267,12 @@ int ep_destroy(ep_ctx_t **ep_ctx)
 
     return 0;
 }
+
+struct libfabric_ep_ops_t libfabric_ep_ops = {
+    .ep_reg_mr = ep_reg_mr,
+    .ep_send_buf = ep_send_buf,
+    .ep_recv_buf = ep_recv_buf,
+    .ep_cq_read = ep_cq_read,
+    .ep_init = ep_init,
+    .ep_destroy = ep_destroy
+};

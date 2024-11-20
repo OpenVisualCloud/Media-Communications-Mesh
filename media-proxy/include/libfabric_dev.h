@@ -121,10 +121,21 @@ typedef struct {
     struct fi_info *info;
 } libfabric_ctx;
 
+#ifdef UNIT_TESTS_ENABLED
 int rdma_init(libfabric_ctx **ctx);
-
 /* Deinitialize RDMA */
 int rdma_deinit(libfabric_ctx **ctx);
+#endif /* UNIT_TESTS_ENABLED */
+
+/**
+ * Isolation interface for testability. Accessed from unit tests only.
+ */
+typedef struct {
+    int (*rdma_init)(libfabric_ctx **ctx);
+    int (*rdma_deinit)(libfabric_ctx **ctx);
+} libfabric_dev_ops_t;
+
+extern libfabric_dev_ops_t libfabric_dev_ops;
 
 #ifdef __cplusplus
 }

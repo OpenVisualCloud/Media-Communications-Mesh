@@ -11,7 +11,6 @@
 #include <rdma/fi_cm.h>
 
 #include "libfabric_dev.h"
-#include "rdma_hmem.h"
 
 /* We need to free any data that we allocated before freeing the
  * hints.
@@ -51,15 +50,11 @@ static int rdma_init_fabric(libfabric_ctx *rdma_ctx, struct fi_info *hints)
 {
     int ret;
 
-    ret = rdma_hmem_init(FI_HMEM_SYSTEM);
-    if (ret) {
-        return ret;
-        RDMA_PRINTERR("rdma_hmem_init", ret);
-    }
-
     ret = fi_getinfo(FI_VERSION(1, 21), NULL, NULL, 0, hints, &rdma_ctx->info);
-    if (ret)
+    if (ret) {
+        RDMA_PRINTERR("fi_getinfo", ret);
         return ret;
+    }
 
     ret = fi_fabric(rdma_ctx->info->fabric_attr, &rdma_ctx->fabric, NULL);
     if (ret) {
@@ -96,13 +91,14 @@ int rdma_init(libfabric_ctx **ctx)
     int op, ret = 0;
     *ctx = calloc(1, sizeof(libfabric_ctx));
     if (*ctx == NULL) {
-        printf("%s, TX session contex malloc fail\n", __func__);
+        RDMA_PRINTERR("calloc", -ENOMEM);
         return -ENOMEM;
     }
 
     hints = fi_allocinfo();
     if (!hints) {
-        *ctx = NULL;
+        RDMA_PRINTERR("fi_allocinfo", ret);
+        libfabric_dev_ops.rdma_deinit(ctx);
         return -ENOMEM;
     }
 
@@ -119,12 +115,11 @@ int rdma_init(libfabric_ctx **ctx)
     hints->tx_attr->tclass = FI_TC_BULK_DATA;
 
     ret = rdma_init_fabric(*ctx, hints);
+    rdma_freehints(hints);
     if (ret) {
-        *ctx = NULL;
+        libfabric_dev_ops.rdma_deinit(ctx);
         return ret;
     }
-
-    rdma_freehints(hints);
 
     return 0;
 }
@@ -140,10 +135,6 @@ static void rdma_free_res(libfabric_ctx *rdma_ctx)
         fi_freeinfo(rdma_ctx->info);
         rdma_ctx->info = NULL;
     }
-
-    ret = rdma_hmem_cleanup(FI_HMEM_SYSTEM);
-    if (ret)
-        RDMA_PRINTERR("rdma_hmem_cleanup", ret);
 }
 
 int rdma_deinit(libfabric_ctx **ctx)
@@ -166,3 +157,8 @@ int rdma_deinit(libfabric_ctx **ctx)
 
     return 0;
 }
+
+libfabric_dev_ops_t libfabric_dev_ops = {
+    .rdma_init = rdma_init,
+    .rdma_deinit = rdma_deinit,
+};

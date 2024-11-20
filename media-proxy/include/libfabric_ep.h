@@ -43,6 +43,21 @@ typedef struct {
     enum direction dir;
 } ep_cfg_t;
 
+/**
+ * Isolation interface for testability. Accessed from unit tests only.
+ */
+struct libfabric_ep_ops_t {
+    int (*ep_reg_mr)(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size);
+    int (*ep_send_buf)(ep_ctx_t *ep_ctx, void *buf, size_t buf_size);
+    int (*ep_recv_buf)(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx);
+    int (*ep_cq_read)(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
+    int (*ep_init)(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
+    int (*ep_destroy)(ep_ctx_t **ep_ctx);
+};
+
+extern struct libfabric_ep_ops_t libfabric_ep_ops;
+
+#ifdef UNIT_TESTS_ENABLED
 /* buf has to point to memory registered with ep_reg_mr */
 int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size);
 int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx);
@@ -50,6 +65,7 @@ int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
 int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size);
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
 int ep_destroy(ep_ctx_t **ep_ctx);
+#endif /* UNIT_TESTS_ENABLED */
 
 #ifdef __cplusplus
 }

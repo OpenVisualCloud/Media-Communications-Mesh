@@ -10,6 +10,12 @@
 #include "api_server_grpc.h"
 #include "api_server_tcp.h"
 
+#include <csignal>
+#include "concurrency.h"
+#include "client_api.h"
+#include "logger.h"
+#include "manager_local.h"
+
 #ifndef IMTL_CONFIG_PATH
 #define IMTL_CONFIG_PATH "./imtl.json"
 #endif
@@ -42,6 +48,11 @@ void usage(FILE* fp, const char* path)
                 "Port number for TCP socket controller (defaults: %s).\n",
         DEFAULT_TCP_PORT);
 }
+
+using namespace mesh;
+
+// Main context with cancellation
+auto ctx = context::WithCancel(context::Background());
 
 int main(int argc, char* argv[])
 {
@@ -96,20 +107,57 @@ int main(int argc, char* argv[])
         return 0;
     }
 
+    log::setFormatter(std::make_unique<log::StandardFormatter>());
+    log::info("Media Proxy started");
+
     if (getenv("KAHAWAI_CFG_PATH") == NULL) {
-        DEBUG("Set MTL configure file path to %s", IMTL_CONFIG_PATH);
+        log::debug("Set MTL configure file path to %s", IMTL_CONFIG_PATH);
         setenv("KAHAWAI_CFG_PATH", IMTL_CONFIG_PATH, 0);
     }
 
-    ProxyContext* ctx = new ProxyContext("0.0.0.0:" + grpc_port, "0.0.0.0:" + tcp_port);
-    ctx->setDevicePort(dev_port);
-    ctx->setDataPlaneAddress(dp_ip);
+    ProxyContext* proxy_ctx = new ProxyContext("0.0.0.0:" + grpc_port, "0.0.0.0:" + tcp_port);
+    proxy_ctx->setDevicePort(dev_port);
+    proxy_ctx->setDataPlaneAddress(dp_ip);
+
+    // mesh::Experiment1();
+
+    // Intercept shutdown signals to cancel the main context
+    auto signal_handler = [](int sig) {
+        if (sig == SIGINT || sig == SIGTERM) {
+            log::info("Shutdown signal received");
+            ctx.cancel();
+        }
+    };
+    std::signal(SIGINT, signal_handler);
+    std::signal(SIGTERM, signal_handler);
+
+    /* start gRPC server */
+    std::jthread rpcThread(RunRPCServer, proxy_ctx);
 
     /* start TCP server */
-    std::thread tcpThread(RunTCPServer, ctx);
+    std::thread tcpThread(RunTCPServer, proxy_ctx);
+
+    // Start ClientAPI server
+    std::thread clientApiThread([]() { RunClientAPIServer(ctx); });
+
+    // Wait until the main context is cancelled
+    ctx.done();
+
+    clientApiThread.join();
+
+    // Stop Local connection manager
+    log::info("Shutting down Local conn manager");
+    auto tctx = context::WithTimeout(context::Background(),
+                                     std::chrono::milliseconds(5000));
+    connection::local_manager.shutdown(ctx);
+
+    log::info("Media Proxy exited");
+    exit(0);
+
+    rpcThread.join();
     tcpThread.join();
 
-    delete (ctx);
+    delete (proxy_ctx);
 
     return 0;
 }

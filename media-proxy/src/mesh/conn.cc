@@ -1,13 +1,16 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include "conn.h"
 
-namespace mesh {
-
-namespace connection {
+namespace mesh::connection {
 
 Connection::Connection()
 {
     _kind = Kind::undefined;
-    _link = nullptr;
     _state = State::not_configured;
     _status = Status::initial;
     setting_link = false;
@@ -22,8 +25,8 @@ Connection::Connection()
 
 Connection::~Connection()
 {
-    context::WithTimeout ctx(context::Background(),
-                             std::chrono::milliseconds(5000));
+    auto ctx = context::WithTimeout(context::Background(),
+                                    std::chrono::milliseconds(5000));
     set_state(ctx, State::deleting);
     on_delete(ctx);
 }
@@ -208,6 +211,11 @@ Result Connection::set_link(context::Context& ctx, Connection *new_link)
     return set_result(Result::success); // TODO: return error if needed
 }
 
+Connection * Connection::link()
+{
+    return _link;
+}
+
 Result Connection::set_result(Result res)
 {
     if (res != Result::success)
@@ -218,12 +226,12 @@ Result Connection::set_result(Result res)
 
 static const char str_unknown[] = "?unknown?";
 
-const char * kind2str(Kind kind)
+const char * kind2str(Kind kind, bool brief)
 {
     switch (kind) {
-    case Kind::undefined:   return "undefined";
-    case Kind::transmitter: return "transmitter";
-    case Kind::receiver:    return "receiver";
+    case Kind::undefined:   return brief ? "Undef" : "undefined";
+    case Kind::transmitter: return brief ? "Tx" : "transmitter";
+    case Kind::receiver:    return brief ? "Rx" : "receiver";
     default:                return str_unknown;
     }
 }
@@ -269,6 +277,4 @@ const char * result2str(Result res)
     }
 }
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection
