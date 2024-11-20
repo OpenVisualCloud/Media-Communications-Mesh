@@ -23,6 +23,8 @@ int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg)
         return -ENOMEM;
     }
 
+    mc_ctx->init();
+
     *mc = (MeshClient *)mc_ctx;
 
     return 0;

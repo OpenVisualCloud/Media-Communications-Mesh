@@ -1,0 +1,31 @@
+// SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
+syntax = "proto3";
+
+package sdk;
+
+service ClientAPI {
+  rpc CreateConnection (CreateConnectionRequest) returns (CreateConnectionResponse);
+  rpc DeleteConnection (DeleteConnectionRequest) returns (DeleteConnectionResponse);
+}
+
+message CreateConnectionRequest {
+  string client_id = 1;
+  bytes mcm_conn_param = 2;
+}
+
+message CreateConnectionResponse {
+  string client_id = 2;
+  string conn_id = 3;
+  bytes memif_conn_param = 4;
+}
+
+message DeleteConnectionRequest {
+  string client_id = 1;
+  string conn_id = 2;
+}
+
+message DeleteConnectionResponse {
+}

@@ -40,6 +40,7 @@ set(MCMDP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(MCMDP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(MEMIF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libmemif)
 set(MCMDP_SAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/samples)
+set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 add_subdirectory(${MEMIF_DIR})
@@ -50,16 +51,73 @@ set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_INSTALL_RPATH ${CMAKE_INSTALL_PREFIX}/lib)
 set(CMAKE_INSTALL_IPATH ${CMAKE_INSTALL_PREFIX}/include)
 
+# Find Protobuf and gRPC
+find_package(Protobuf CONFIG REQUIRED)
+message(STATUS "Using protobuf ${Protobuf_VERSION}")
+find_package(gRPC CONFIG REQUIRED)
+message(STATUS "Using gRPC ${gRPC_VERSION}")
+
+# Ensure that the gRPC plugin is available
+find_program(GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin)
+if(NOT GRPC_CPP_PLUGIN_EXECUTABLE)
+    message(FATAL_ERROR "grpc_cpp_plugin not found")
+endif()
+
+# Define the .proto files
+set(PROTO_FILES
+    ${PROTO_DIR}/mediaproxy.proto
+    ${PROTO_DIR}/sdk.proto
+)
+
+# Generate the protobuf and gRPC source files
+set(PROTO_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
+
+if(CMAKE_CROSSCOMPILING)
+  find_program(Protobuf_PROTOC_EXECUTABLE protoc)
+else()
+  set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
+endif()
+
+foreach(proto_file ${PROTO_FILES})
+    get_filename_component(proto_name ${proto_file} NAME_WE)
+    set(proto_srcs "${PROTO_SRC_DIR}/${proto_name}.pb.cc")
+    set(proto_hdrs "${PROTO_SRC_DIR}/${proto_name}.pb.h")
+    set(grpc_srcs "${PROTO_SRC_DIR}/${proto_name}.grpc.pb.cc")
+    set(grpc_hdrs "${PROTO_SRC_DIR}/${proto_name}.grpc.pb.h")
+
+    add_custom_command(
+        OUTPUT ${proto_srcs} ${proto_hdrs} ${grpc_srcs} ${grpc_hdrs}
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+        ARGS --proto_path=${PROTO_DIR}
+             --grpc_out=${PROTO_SRC_DIR}
+             --cpp_out=${PROTO_SRC_DIR}
+             --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN_EXECUTABLE}
+             ${proto_file}
+        DEPENDS ${proto_file}
+        COMMENT "Generating Protobuf and gRPC files for ${proto_file}"
+    )
+
+    list(APPEND PROTO_SRCS ${proto_srcs})
+    list(APPEND PROTO_HDRS ${proto_hdrs})
+    list(APPEND GRPC_SRCS ${grpc_srcs})
+    list(APPEND GRPC_HDRS ${grpc_hdrs})
+endforeach()
+
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
-add_library(mcm_dp SHARED ${sdk_srcs})
+add_library(mcm_dp SHARED ${sdk_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
 set_target_properties(mcm_dp PROPERTIES VERSION ${VERSION})
 set_target_properties(mcm_dp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
 
 target_include_directories(mcm_dp PUBLIC
     ${MCMDP_INCLUDE_DIR}
-    ${MEMIF_DIR}/src)
-target_link_libraries(mcm_dp PUBLIC memif)
+    ${MEMIF_DIR}/src
+    ${Protobuf_INCLUDE_DIRS}
+    ${gRPC_INCLUDE_DIRS}
+    ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
+)
+target_link_libraries(mcm_dp PUBLIC memif gRPC::grpc++ protobuf::libprotobuf)
 
 add_subdirectory(${MCMDP_SAMPLE_DIR})
 

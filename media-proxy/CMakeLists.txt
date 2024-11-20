@@ -10,61 +10,78 @@ project(MediaProxy VERSION 0.0.1 LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
-set(protobuf_MODULE_COMPATIBLE TRUE)
-find_package(Protobuf CONFIG REQUIRED)
-message(STATUS "Using protobuf ${Protobuf_VERSION}")
+# Enabled by default
+option(ENABLE_ZERO_COPY "Enable zero-copy mode to avoid memory copying between Media Proxy and MTL" ON)
+IF(ENABLE_ZERO_COPY)
+	ADD_DEFINITIONS(-DZERO_COPY)
+ENDIF(ENABLE_ZERO_COPY)
 
-set(_PROTOBUF_LIBPROTOBUF protobuf::libprotobuf)
-set(_REFLECTION gRPC::grpc++_reflection)
-
-if(CMAKE_CROSSCOMPILING)
-  find_program(_PROTOBUF_PROTOC protoc)
-else()
-  set(_PROTOBUF_PROTOC $<TARGET_FILE:protobuf::protoc>)
-endif()
-
-# Find gRPC installation
-# Looks for gRPCConfig.cmake file installed by gRPC's cmake installation.
-find_package(gRPC CONFIG REQUIRED)
-message(STATUS "Using gRPC ${gRPC_VERSION}")
-
-set(_GRPC_GRPCPP gRPC::grpc++)
-if(CMAKE_CROSSCOMPILING)
-  find_program(_GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin)
-else()
-  set(_GRPC_CPP_PLUGIN_EXECUTABLE $<TARGET_FILE:gRPC::grpc_cpp_plugin>)
-endif()
-
-set(proto_name controller)
 set(target media_proxy)
 set(MTL_LIB mtl)
 set(MEMIF_LIB memif)
+set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
 
-# Get proto files
-get_filename_component(proto "./protos/${proto_name}.proto" ABSOLUTE)
-get_filename_component(proto_dir "${proto}" DIRECTORY)
+# Find Protobuf and gRPC
+find_package(Protobuf CONFIG REQUIRED)
+message(STATUS "Using protobuf ${Protobuf_VERSION}")
+find_package(gRPC CONFIG REQUIRED)
+message(STATUS "Using gRPC ${gRPC_VERSION}")
 
-# Generate source files
-set(proto_srcs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.pb.cc")
-set(proto_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.pb.h")
-set(grpc_srcs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.cc")
-set(grpc_hdrs "${CMAKE_CURRENT_BINARY_DIR}/${proto_name}.grpc.pb.h")
+# Ensure that the gRPC plugin is available
+find_program(GRPC_CPP_PLUGIN_EXECUTABLE grpc_cpp_plugin)
+if(NOT GRPC_CPP_PLUGIN_EXECUTABLE)
+    message(FATAL_ERROR "grpc_cpp_plugin not found")
+endif()
+
+# Define the .proto files
+set(PROTO_FILES
+    ${PROTO_DIR}/mediaproxy.proto
+    ${PROTO_DIR}/controller.proto
+    ${PROTO_DIR}/sdk.proto
+)
+
+# Generate the protobuf and gRPC source files
+set(PROTO_SRC_DIR "${CMAKE_CURRENT_BINARY_DIR}/generated")
+file(MAKE_DIRECTORY ${PROTO_SRC_DIR})
+
+if(CMAKE_CROSSCOMPILING)
+  find_program(Protobuf_PROTOC_EXECUTABLE protoc)
+else()
+  set(Protobuf_PROTOC_EXECUTABLE $<TARGET_FILE:protobuf::protoc>)
+endif()
+
+foreach(proto_file ${PROTO_FILES})
+    get_filename_component(proto_name ${proto_file} NAME_WE)
+    set(proto_srcs "${PROTO_SRC_DIR}/${proto_name}.pb.cc")
+    set(proto_hdrs "${PROTO_SRC_DIR}/${proto_name}.pb.h")
+    set(grpc_srcs "${PROTO_SRC_DIR}/${proto_name}.grpc.pb.cc")
+    set(grpc_hdrs "${PROTO_SRC_DIR}/${proto_name}.grpc.pb.h")
+
+    add_custom_command(
+        OUTPUT ${proto_srcs} ${proto_hdrs} ${grpc_srcs} ${grpc_hdrs}
+        COMMAND ${Protobuf_PROTOC_EXECUTABLE}
+        ARGS --proto_path=${PROTO_DIR}
+             --grpc_out=${PROTO_SRC_DIR}
+             --cpp_out=${PROTO_SRC_DIR}
+             --plugin=protoc-gen-grpc=${GRPC_CPP_PLUGIN_EXECUTABLE}
+             ${proto_file}
+        DEPENDS ${proto_file}
+        COMMENT "Generating Protobuf and gRPC files for ${proto_file}"
+    )
+
+    list(APPEND PROTO_SRCS ${proto_srcs})
+    list(APPEND PROTO_HDRS ${proto_hdrs})
+    list(APPEND GRPC_SRCS ${grpc_srcs})
+    list(APPEND GRPC_HDRS ${grpc_hdrs})
+endforeach()
 
 # Find source files recursively
 file(GLOB_RECURSE proxy_srcs "src/*")
 
-add_definitions(-DHAVE_MEMFD_CREATE)
+# Exclude media_proxy.cc from proxy_srcs
+list(REMOVE_ITEM proxy_srcs "${CMAKE_CURRENT_SOURCE_DIR}/src/media_proxy.cc")
 
-add_custom_command(
-    OUTPUT "${proto_srcs}" "${proto_hdrs}" "${grpc_srcs}" "${grpc_hdrs}"
-    COMMAND ${_PROTOBUF_PROTOC}
-    ARGS --grpc_out "${CMAKE_CURRENT_BINARY_DIR}"
-    --cpp_out "${CMAKE_CURRENT_BINARY_DIR}"
-    -I "${proto_dir}"
-    --plugin=protoc-gen-grpc="${_GRPC_CPP_PLUGIN_EXECUTABLE}"
-    "${proto}"
-    DEPENDS "${proto}"
-)
+add_definitions(-DHAVE_MEMFD_CREATE)
 
 # Find the libfabric library
 find_library(LIBFABRIC NAMES fabric)
@@ -77,18 +94,21 @@ set(CMAKE_CONFIG_PATH ${CMAKE_INSTALL_PREFIX}/etc)
 ADD_DEFINITIONS(-DIMTL_CONFIG_PATH=\"${CMAKE_INSTALL_PREFIX}/etc/imtl.json\")
 ADD_DEFINITIONS(-D_GNU_SOURCE)
 
-# Include generated *.pb.h files
-include_directories(${CMAKE_CURRENT_BINARY_DIR} ./include ./include/mesh ${LIBFABRIC_INCLUDE_DIR})
+include_directories(
+    ${CMAKE_CURRENT_BINARY_DIR}
+    ./include
+    ./include/mesh
+    ${LIBFABRIC_INCLUDE_DIR}
+    ${Protobuf_INCLUDE_DIRS}
+    ${gRPC_INCLUDE_DIRS}
+    ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
+)
 
-# Exclude the source file containing main() to avoid issues with GTest
-set(proxy_lib_srcs ${proxy_srcs})
-list(FILTER proxy_lib_srcs EXCLUDE REGEX ".*/media_proxy\\.cc")
+add_library(media_proxy_lib ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
+target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${MEMIF_LIB} ${LIBFABRIC}
+    gRPC::grpc++ protobuf::libprotobuf)
 
-add_library(media_proxy_lib ${proto_srcs} ${grpc_srcs} ${proxy_lib_srcs})
-target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${_REFLECTION}
-    ${_GRPC_GRPCPP} ${_PROTOBUF_LIBPROTOBUF} ${MEMIF_LIB} ${LIBFABRIC})
-
-add_executable(media_proxy ${proxy_srcs})
+add_executable(media_proxy ${proxy_srcs} src/media_proxy.cc)
 target_link_libraries(media_proxy PRIVATE media_proxy_lib)
 
 install(TARGETS media_proxy DESTINATION ${CMAKE_INSTALL_PATH} COMPONENT media_proxy)
