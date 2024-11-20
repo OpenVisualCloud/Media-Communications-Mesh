@@ -12,12 +12,12 @@
 
 ## Introduction
 
-The Media Communications Mesh (MCM) enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
+The Media Communications Mesh enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
 
 
 ## 1. Media Communications Mesh:
 
-- Framework Introduction: MCM is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
+- Framework Introduction: Media Communications Mesh is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
 - Purpose: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
 - Technological Basis: The Media Transport Library (MTL) helps form the media data plane, and a control-plane communications infrastructure adds support for media control protocols.
 
@@ -41,9 +41,9 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
 ✅ Key point: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
 
-✅ Detailed information about MCM SDK can be found in [sdk](../sdk/README.md) directory.
+✅ Detailed information about Media Communications Mesh SDK can be found in [sdk](../sdk/README.md) directory.
 
-✅ Detailed information about FFmpeg with MCM plugin can be found in [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
+✅ Detailed information about FFmpeg with Media Communications Mesh plugin can be found in [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
 
 ## Getting Started
 
@@ -203,7 +203,7 @@ INFO: gRPC Server listening on 0.0.0.0:8001
 
 This will start the "Media Proxy" program. When the "Media Proxy" program launches successfully, it will open two ports to listen for control messages:
 - gRPC port (default 8001) is for service mesh control plane connection.
-- TCP port (default 8002) is for the connection with MCM SDK.
+- TCP port (default 8002) is for the connection with Media Communications Mesh SDK.
 
 To get full list of all supported parameters, use the `-h` flag alongside `media_proxy` call:
 
