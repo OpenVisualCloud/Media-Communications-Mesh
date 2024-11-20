@@ -2,11 +2,13 @@
 BasedOnStyle: LLVM
 IndentWidth: 4
 UseTab: Never
-ColumnLimit: 100
+ColumnLimit: 80
 BreakBeforeBraces: Linux
 AllowShortIfStatementsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 IndentCaseLabels: false
 IncludeBlocks: Preserve
 SortIncludes: false
+PointerAlignment: Right
+ReferenceAlignment: Left
 ...

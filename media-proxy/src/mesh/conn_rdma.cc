@@ -1,6 +1,4 @@
 #include "conn_rdma.h"
-#include "concurrency.h" // Include concurrency support
-#include <cstring>       // For std::memset
 
 namespace mesh
 {
@@ -9,57 +7,18 @@ namespace connection
 {
 
 Rdma::Rdma()
-    : ep_ctx(nullptr), initialized(false), transfer_size(0), mDevHandle(nullptr),
-      thread_ctx(context::WithCancel(context::Background()))
+    : ep_ctx(nullptr), initialized(false), transfer_size(0), mDevHandle(nullptr)
 {
-    std::memset(&ep_cfg, 0, sizeof(ep_cfg));
+    std::memset(&ep_cfg, 0,
+                sizeof(ep_cfg)); // Ensure ep_cfg is fully zero-initialized
 }
 
-Rdma::~Rdma()
+Rdma::~Rdma() { shutdown_rdma(context::Background()); }
+
+Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
+                       const std::string& dev_port, libfabric_ctx *& dev_handle,
+                       Kind kind, direction dir)
 {
-    if (initialized) {
-        INFO("Rdma destructor called. Cleaning up resources...");
-        cleanup_resources(thread_ctx);
-    }
-}
-
-void Rdma::check_context_cancelled(context::Context &ctx)
-{
-    if (ctx.cancelled()) {
-        INFO("%s, Rdma::check_context_cancelled: Context is cancelled.", __func__);
-    } else {
-        INFO("%s, Rdma::check_context_cancelled: Context is still active.", __func__);
-    }
-}
-
- //  check_context_cancelled(ctx); // Check and log context status
-
-Result Rdma::configure(context::Context &ctx, const mcm_conn_param &request,
-                       const std::string &dev_port, libfabric_ctx *&dev_handle, Kind kind,
-                       direction dir)
-{
- 
-
-    if (initialized) {
-        ERROR("RDMA device is already initialized.");
-        return Result::error_already_initialized;
-    }
-
-    int ret;
-    Result res;
-
-    // Initialize the RDMA device if not already initialized
-    if (!dev_handle) {
-        ret = rdma_init(&dev_handle);
-        if (ret) {
-            ERROR("Failed to initialize RDMA device.");
-            return Result::error_initialization_failed;
-        }
-    }
-
-    // Store the device handle
-    this->mDevHandle = dev_handle;
-
     // Set transfer size
     this->transfer_size = request.payload_args.rdma_args.transfer_size;
 
@@ -69,22 +28,57 @@ Result Rdma::configure(context::Context &ctx, const mcm_conn_param &request,
     // Fill endpoint configuration
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
 
-    ep_cfg.rdma_ctx = dev_handle;
-    std::memcpy(&ep_cfg.remote_addr, &request.remote_addr, sizeof(request.remote_addr));
-    std::memcpy(&ep_cfg.local_addr, &request.local_addr, sizeof(request.local_addr));
+    std::memcpy(&ep_cfg.remote_addr, &request.remote_addr,
+                sizeof(request.remote_addr));
+    std::memcpy(&ep_cfg.local_addr, &request.local_addr,
+                sizeof(request.local_addr));
     ep_cfg.dir = dir;
+
+
+    set_state(ctx, State::configured);
+
+    log::info("RDMA configured successfully")("state", "configured")
+             ("transfer_size", transfer_size);
+    return Result::success;
+}
+
+Result Rdma::on_establish(context::Context& ctx)
+{
+    log::info("RDMA on_establish started")("thread", "starting");
+
+    if (initialized) {
+        log::error("RDMA device is already initialized")
+                  ("state","initialized");
+        return Result::error_already_initialized;
+    }
+
+    int ret;
+    Result res;
+
+    // Initialize the RDMA device if not already initialized
+    if (!mDevHandle) {
+        ret = rdma_init(&mDevHandle);
+        if (ret) {
+            log::error("Failed to initialize RDMA device")("ret", ret);
+            return Result::error_initialization_failed;
+        }
+    }
+
+    ep_cfg.rdma_ctx = mDevHandle;
 
     // Initialize the endpoint context
     ret = ep_init(&ep_ctx, &ep_cfg);
     if (ret) {
-        ERROR("Failed to initialize RDMA endpoint context: %s", fi_strerror(-ret));
+        log::error("Failed to initialize RDMA endpoint context")
+                  ("error", fi_strerror(-ret));
         return Result::error_initialization_failed;
     }
 
     // Allocate buffers
     res = allocate_buffer(1, transfer_size);
     if (res != Result::success) {
-        ERROR("Failed to allocate buffers");
+        log::error("Failed to allocate buffers")
+                  ("transfer_size",transfer_size);
         set_state(ctx, State::closed);
         return res;
     }
@@ -92,62 +86,43 @@ Result Rdma::configure(context::Context &ctx, const mcm_conn_param &request,
     // Configure the RDMA endpoint, including the completion queue
     res = configure_endpoint(ctx);
     if (res != Result::success) {
+        log::error("RDMA configing failed")("state", "closed");
         set_state(ctx, State::closed);
         return res;
     }
 
     // Mark as initialized and configured
     initialized = true;
-    INFO("Setting state to State::configured.");
-    set_state(ctx, State::configured);
 
-    INFO("Exiting Rdma::configure successfully.");
-    return Result::success;
-}
-
-Result Rdma::on_establish(context::Context &ctx)
-{
-    INFO("Entering Rdma::on_establish.");
-
-    if (state() != State::establishing) {
-        ERROR("Rdma::on_establish called in invalid state: %d. Expected State::establishing.", static_cast<int>(state()));
-        return Result::error_wrong_state;
-    }
-
-    INFO("Attempting to start RDMA frame thread.");
     // Start the frame thread with the context
-    Result res = start_thread(ctx);
+    res = start_thread(ctx);
     if (res != Result::success) {
-        ERROR("Failed to start RDMA frame thread with result: %d.", static_cast<int>(res));
-        INFO("Cleaning up resources due to frame thread failure.");
+        log::error("Failed to start RDMA frame thread")
+                  ("result",static_cast<int>(res));
+        log::info("Cleaning up resources due to frame thread failure.");
         cleanup_resources(ctx);
-        INFO("Setting state to State::closed.");
+        log::info("Setting state to State::closed.");
         set_state(ctx, State::closed);
         return res;
     }
 
-    INFO("RDMA frame thread started successfully.");
-    INFO("Setting state to State::active.");
+    log::info("RDMA on_establish completed successfully")("state", "active");
     set_state(ctx, State::active);
-
-    INFO("Exiting Rdma::on_establish successfully.");
     return Result::success;
 }
 
-
-Result Rdma::on_shutdown(context::Context &ctx)
+Result Rdma::on_shutdown(context::Context& ctx)
 {
-    if (state() == State::closed || state() == State::deleting) {
-        return Result::success; // Already shut down
-    }
+    // Note: this is a blocking call
+    shutdown_rdma(ctx);
 
-    set_state(ctx, State::closing);
-
-    if (initialized) {
-        cleanup_resources(ctx);
-    }
-    set_state(ctx, State::closed);
     return Result::success;
+}
+
+void Rdma::on_delete(context::Context& ctx)
+{
+    // Note: this is a blocking call
+    on_shutdown(ctx);
 }
 
 Result Rdma::allocate_buffer(size_t buffer_count, size_t buffer_size)
@@ -166,140 +141,147 @@ Result Rdma::allocate_buffer(size_t buffer_count, size_t buffer_size)
             buffers.clear();
             return Result::error_out_of_memory;
         }
-        std::memset(buffers[i], 0, buffer_size);
+        // Initialize the buffer to zero to avoid uninitialized warnings
+        // std::memset(buffers, 0, transfer_size);
     }
 
-    INFO("Allocated %zu buffers of size %zu bytes each", buffer_count, buffer_size);
+    log::info("Buffers allocated successfully")("buffer_count", buffer_count)(
+        "buffer_size", buffer_size);
     return Result::success;
 }
 
-Result Rdma::configure_endpoint(context::Context &ctx)
+Result Rdma::configure_endpoint(context::Context& ctx)
 {
+    // INFO("Entering configure_endpoint.");
+
     if (!ep_ctx) {
-        ERROR("Endpoint context is not initialized.");
+        log::error("Endpoint context is not initialized");
         return Result::error_wrong_state;
     }
 
-    for (auto &buffer : buffers) {
+    for (auto& buffer : buffers) {
         if (!buffer) {
             ERROR("Buffer allocation failed");
             return Result::error_out_of_memory;
         }
-        INFO("Registering buffer at address: %p with size: %zu", buffer, transfer_size);
+        log::info("Registering buffer")("address", buffer)("size",
+                                                           transfer_size);
         int ret = ep_reg_mr(ep_ctx, buffer, transfer_size);
         if (ret) {
-            ERROR("Memory registration failed: %s", fi_strerror(-ret));
+            log::error("Memory registration failed")("error",
+                                                     fi_strerror(-ret));
             return Result::error_memory_registration_failed;
         }
     }
     return Result::success;
 }
 
-Result Rdma::start_thread(context::Context &ctx)
+Result Rdma::start_thread(context::Context& ctx)
 {
-    stop_thread = false;
+    thread_ctx = context::WithCancel(ctx);
 
     try {
-        frame_thread_handle = new std::thread(&Rdma::frame_thread, this, std::ref(ctx));
-    } catch (const std::exception &e) {
-        ERROR("Failed to start frame thread: %s", e.what());
+        frame_thread_handle =
+            std::thread(&Rdma::frame_thread, this, std::ref(thread_ctx));
+    } catch (const std::system_error& e) {
+        log::fatal("Failed to start frame thread")("error", e.what());
         return Result::error_thread_creation_failed;
     }
-
+    log::info("Frame thread started successfully");
     return Result::success;
 }
 
-void Rdma::stop_thread_func()
+void Rdma::frame_thread(context::Context& ctx)
 {
-    stop_thread = true;
-
-    if (frame_thread_handle) {
-        if (frame_thread_handle
-                ->joinable()) { // Check joinable() before joining to avoid potential exceptions
-            frame_thread_handle->join();
-        }
-        delete frame_thread_handle;
-        frame_thread_handle = nullptr;
-    }
-}
-
-void Rdma::frame_thread(context::Context &ctx)
-{
-    INFO("%s, RDMA frame thread started", __func__);
+    log::info("RDMA frame_thread started");
 
     int iteration = 0; // To track loop iterations for debugging
 
-    while (!ctx.cancelled() && !stop_thread) {
-   //     INFO("Frame thread iteration: %d", iteration);
+    while (!ctx.cancelled()) {
 
         for (size_t i = 0; i < buffers.size(); ++i) {
-   //         INFO("Processing buffer index: %zu", i);
 
-            auto &buffer = buffers[i];
-            if (!buffer) {
-                INFO("Buffer index %zu is not allocated. Skipping.", i);
+            auto& buf = buffers[i];
+            if (!buf) {
+                log::error("Buffer index %zu is not allocated. Skipping.", i);
                 continue; // Skip unallocated buffers
             }
 
-            // Log buffer address and transfer size
-    //        INFO("Buffer index %zu, address: %p, transfer size: %zu", i, buffer, transfer_size);
-
-            // Call handle_buffers without throwing exceptions
-            Result res = handle_buffers(ctx, buffer, transfer_size);
+            Result res = process_buffers(ctx, buf, transfer_size);
             if (res != Result::success) {
-                ERROR("handle_buffers returned error: %d on buffer index %zu", static_cast<int>(res), i);
-                stop_thread = true;
+                log::error("Error processing buffers")("index", i)(
+                           "result", static_cast<int>(res));
+                // stop_thread = true;
                 break;
-            } else {
-    //            INFO("handle_buffers successfully processed buffer index %zu", i);
+            }
+
+            res = handle_buffers(ctx, buf, transfer_size);
+            if (res != Result::success) {
+                log::error("Error handling buffers")("index", i)("result", static_cast<int>(res));
+                // stop_thread = true;
+                break;
             }
         }
 
         iteration++; // Increment iteration count
     }
 
-    INFO("%s, RDMA frame thread stopping. Context cancelled: %s, Stop thread: %s", __func__,
-         ctx.cancelled() ? "true" : "false",
-         stop_thread ? "true" : "false");
-
-    INFO("%s, RDMA frame thread stopped", __func__);
+    log::info("RDMA frame thread cancelled")("thread_name", __func__);
 }
 
-Result Rdma::cleanup_resources(context::Context &ctx)
+Result Rdma::cleanup_resources(context::Context& ctx)
 {
-    INFO("Entering Rdma::cleanup_resources.");
-
-    // Stop the frame thread gracefully
-    if (frame_thread_handle) {
-        INFO("Stopping RDMA frame thread...");
-        stop_thread_func();
-    }
-
-    // Free allocated buffers
-    for (size_t i = 0; i < buffers.size(); ++i) {
-        if (buffers[i]) {
-            INFO("Freeing buffer at index %zu, address: %p", i, buffers[i]);
-            std::free(buffers[i]);
-            buffers[i] = nullptr; // Avoid dangling pointer
-        }
-    }
-    buffers.clear();
-    INFO("All buffers cleared.");
+    log::info("Cleaning up RDMA resources");
 
     // Clean up RDMA resources
     if (ep_ctx) {
+        log::info("Destroying RDMA endpoint...");
         int err = ep_destroy(&ep_ctx);
         if (err) {
-            ERROR("Failed to destroy RDMA endpoint: %s", fi_strerror(-err));
-            return Result::error_general_failure;
+            log::error("Failed to destroy RDMA endpoint")("error", fi_strerror(-err));
+        } else {
+            log::info("RDMA endpoint destroyed successfully");
         }
         ep_ctx = nullptr;
+    } else {
+        log::info("No RDMA endpoint to destroy. Skipping endpoint cleanup.");
     }
 
+    // Free allocated buffers
+    log::info("Starting to free allocated buffers")("total_buffers", buffers.size());
+    for (size_t i = 0; i < buffers.size(); ++i) {
+        if (buffers[i]) {
+            log::info("Freeing buffer")("index", i)("address", buffers[i]);
+            std::free(buffers[i]);
+            buffers[i] = nullptr; // Avoid dangling pointer
+            log::info("Buffer freed successfully")("index", i);
+        } else {
+            log::warn("Buffer already null, skipping")("index", i);
+        }
+    }
+    buffers.clear();
     initialized = false;
-
-    INFO("RDMA resources cleaned up successfully.");
+    log::info("RDMA resources cleaned up successfully");
     return Result::success;
+}
+
+void Rdma::shutdown_rdma(context::Context& ctx)
+{
+    log::debug("Shutting down RDMA");
+
+    thread_ctx.cancel();
+    // ctx.cancel();
+
+    if (frame_thread_handle.joinable())
+        frame_thread_handle.join();
+
+    if (initialized) {
+        log::info("Rdma cleanup_resources called. Cleaning up resources...");
+        cleanup_resources(ctx);
+    }
+
+    set_state(ctx, State::closed);
+    log::info("RDMA shutdown completed");
 }
 
 } // namespace connection

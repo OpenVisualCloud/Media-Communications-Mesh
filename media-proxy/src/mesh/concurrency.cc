@@ -4,6 +4,12 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include "concurrency.h"
 #include <stdio.h>
 
@@ -33,7 +39,7 @@ Context::Context(Context& parent,
                  std::chrono::milliseconds timeout_ms) : ss(std::stop_source()),
                                                          parent(&parent),
                                                          ch(new thread::Channel<bool>(1)),
-                                                         timeout_ms(timeout_ms)
+                                                         timeout_ms(std::chrono::milliseconds(0))
 {
     cb = std::make_unique<std::stop_callback<std::function<void()>>>(
         parent.ss.get_token(), [this] { cancel(); }
@@ -86,10 +92,19 @@ Context::~Context()
 
     if (ch)
         delete ch;
+
+    if (async_cb.valid())
+        async_cb.wait();
+
+    if (ch)
+        delete ch;
 }
 
 void Context::cancel() 
 {
+    if (ch)
+        ch->close();
+
     if (ch)
         ch->close();
 

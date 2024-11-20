@@ -1,124 +1,104 @@
 #include "conn_rdma_rx.h"
 #include <stdexcept>
 
-namespace mesh {
+namespace mesh
+{
 
-namespace connection {
+namespace connection
+{
 
-RdmaRx::RdmaRx() : Rdma() {}
+RdmaRx::RdmaRx() : Rdma()
+{
+    log::info("RdmaRx instance created.");
+}
 
 RdmaRx::~RdmaRx()
 {
+    log::info("RdmaRx destructor called, cleaning up resources");
     // Any specific cleanup for Rx can go here
 }
 
-Result RdmaRx::configure(context::Context &ctx, const mcm_conn_param &request, 
-                         const std::string &dev_port, libfabric_ctx *&dev_handle) {
-    return Rdma::configure(ctx, request, dev_port, dev_handle, Kind::receiver, direction::RX);
+Result RdmaRx::configure(context::Context& ctx, const mcm_conn_param& request,
+                         const std::string& dev_port,
+                         libfabric_ctx *& dev_handle)
+{
+    log::info("Configuring RdmaRx")("dev_port", dev_port)("kind", "receiver")
+             ("direction", "RX");
+    return Rdma::configure(ctx, request, dev_port, dev_handle, Kind::receiver,
+                           direction::RX);
 }
 
-void RdmaRx::frame_thread(context::Context &ctx)
+Result RdmaRx::process_buffers(context::Context& ctx, void *buf, size_t sz)
 {
-    INFO("RdmaRx frame thread started.");
-
-    while (!ctx.cancelled() && !stop_thread) {
-        for (size_t i = 0; i < buffers.size(); ++i) {
-            auto &buffer = buffers[i];
-            if (!buffer) {
-                continue;
-            }
-        
-        INFO("in frame_thread current buffer address is: %p", buffer);
-
-            INFO("Passing empty buffer to RDMA for receiving data: %p", buffer);
-            Result res = receive_data(ctx, buffer, transfer_size);
-            if (res != Result::success) {
-                ERROR("Failed to pass buffer to RDMA: %s", result2str(res));
-                stop_thread = true;
-                break;
-            }
-        
-        //    INFO("Handling received buffers.");
-            res = handle_buffers(ctx, buffer, transfer_size);
-            if (res != Result::success) {
-                ERROR("handle_buffers returned error: %s", result2str(res));
-                stop_thread = true;
-                break;
-            }
-        }
+    Result res = receive_data(ctx, buf, transfer_size);
+    if (res != Result::success) {
+        log::error("Failed to pass buffer to RDMA")("result", result2str(res));
     }
 
-    INFO("RdmaRx frame thread stopped.");
+    // ?????????????????? shutdown_rdma(ctx);
+    return res;
 }
 
-Result RdmaRx::handle_buffers(context::Context &ctx, void *buffer, size_t size)
+Result RdmaRx::handle_buffers(context::Context& ctx, void *buffer, size_t size)
 {
-   // INFO("Entering RdmaRx::handle_buffers.");
-    INFO("In handle_buffers current buffer address is: %p", buffer);
-    // Check if the context is cancelled
-    if (ctx.cancelled()) {
-        INFO("Context is cancelled. Exiting handle_buffers.");
-        return Result::error_operation_cancelled;
-    }
+    // INFO("Entering RdmaRx::handle_buffers.");
+    // INFO("In handle_buffers current buffer address is: %p", buffer);
 
-    while (true) {
+    while (!ctx.cancelled()) {
+
         // Try to read the completion queue with the provided buffer
         int err = ep_cq_read(ep_ctx, (void **)&buffer, RDMA_DEFAULT_TIMEOUT);
         if (err == -EAGAIN) {
             // No completion event yet; keep looping
-        //    INFO("No completion event yet for buffer: %p, retrying...", buffer);
+            //    INFO("No completion event yet for buffer: %p, retrying...",
+            //    buffer);
             continue;
         } else if (err) {
             // Handle errors other than -EAGAIN
-            ERROR("Completion queue read failed for buffer %p: %s", buffer, fi_strerror(-err));
+            log::error("Completion queue read failed")
+                      ("buffer_address", buffer)("error", fi_strerror(-err));
+            return Result::error_general_failure;
+        }
+
+        if (buffer == nullptr) {
+            log::error("Completion queue read returned a null buffer");
             return Result::error_general_failure;
         }
 
         // Break the loop when a completion event is received
-        INFO("Completion event received for buffer: %p", buffer);
+        log::info("Completion event received")("buffer_address", buffer);
         break;
     }
 
     // Process the completed buffer and forward to the emulated receiver
-    INFO("Processing buffer: %p, size: %zu", buffer, transfer_size);
+    log::info("Processing buffer for transmission")
+             ("buffer_address", buffer)("size", transfer_size);
     Result res = transmit(ctx, buffer, transfer_size);
-    if (res != Result::success) {
-        ERROR("Failed to transmit buffer: %p, size: %zu", buffer, transfer_size);
+    if (res != Result::success && !ctx.cancelled()) {
+        log::error("Failed to transmit buffer")("buffer_address",
+                   buffer)("size", transfer_size);
         return res;
     }
+
+    log::info("Successfully processed and forwarded buffer")
+             ("buffer_address", buffer);
+
+    return Result::success;
+}
+
+Result RdmaRx::receive_data(context::Context& ctx, void *buffer,
+                            size_t buffer_size)
+{
+    log::info("Receiving data")("buffer_size", buffer_size)
+             ("buffer_address", buffer);
     
-    INFO("Successfully processed and forwarded buffer: %p", buffer);
-
-    return Result::success;
-}
-
-Result RdmaRx::process_completion_event(void* buf_ctx)
-{
-    // Process Rx-specific completion events
-    INFO("Processed Rx buffer completion for context: %p", buf_ctx);
-
-    // Implement actual processing logic here
-
-    return Result::success;
-}
-
-Result RdmaRx::receive_data(context::Context& ctx, void* buffer, size_t buffer_size)
-{
-    // INFO("RdmaRx::receive_data called with buffer size: %zu", buffer_size);
-    INFO("In receive_data current buffer address is: %p", buffer);
-
-    if (state() != State::active) {
-        ERROR("RdmaRx is not in active state.");
-        return Result::error_wrong_state;
-    }
-
     int err = ep_recv_buf(ep_ctx, buffer, buffer_size, buffer);
     if (err) {
-        ERROR("ep_recv_buf failed for buffer %p: %s", buffer, fi_strerror(-err));
+        log::error("Failed to receive data into buffer")("buffer_address", buffer)
+                  ("error", fi_strerror(-err));
         return Result::error_general_failure;
     }
 
-   // INFO("Data successfully received into buffer.");
     return Result::success;
 }
 
