@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #ifndef CONN_H
 #define CONN_H
 
@@ -5,9 +11,7 @@
 #include <cstddef>
 #include "concurrency.h"
 
-namespace mesh {
-
-namespace connection {
+namespace mesh::connection {
 
 /**
  * Kind
@@ -83,6 +87,7 @@ public:
     Status status();
 
     Result set_link(context::Context& ctx, Connection *new_link);
+    Connection * link();
 
     Result establish(context::Context& ctx);
     Result suspend(context::Context& ctx);
@@ -115,12 +120,6 @@ protected:
     Kind _kind; // must be properly set in the derived classes ctor
     Connection *_link;
 
-private:
-    std::atomic<State> _state;
-    std::atomic<Status> _status;
-    std::atomic<bool> setting_link; // held in set_link()
-    std::atomic<bool> transmitting; // held in on_receive()
-
     struct {
         std::atomic<uint64_t> inbound_bytes;
         std::atomic<uint64_t> outbound_bytes;
@@ -128,15 +127,19 @@ private:
         std::atomic<uint32_t> transactions_failed;
         std::atomic<uint32_t> errors;
     } metrics;
+
+private:
+    std::atomic<State> _state;
+    std::atomic<Status> _status;
+    std::atomic<bool> setting_link; // held in set_link()
+    std::atomic<bool> transmitting; // held in on_receive()
 };
 
-const char * kind2str(Kind kind);
+const char * kind2str(Kind kind, bool brief = false);
 const char * state2str(State state);
 const char * status2str(Status status);
 const char * result2str(Result res);
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection
 
 #endif // CONN_H

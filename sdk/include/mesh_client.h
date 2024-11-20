@@ -20,6 +20,7 @@ class ConnectionContext;
 class ClientContext {
 public:
     ClientContext(MeshClientConfig *cfg);
+    int init();
     int shutdown();
     int create_conn(MeshConnection **conn);
 
@@ -27,6 +28,8 @@ public:
 
     std::list<ConnectionContext *> conns;
     std::mutex mx;
+
+    void *grpc_client;
 };
 
 } // namespace mesh

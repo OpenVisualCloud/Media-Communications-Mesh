@@ -8,6 +8,7 @@
 #include <bsd/string.h>
 #include <unistd.h>
 #include "mesh_buf.h"
+#include "mesh_client_api.h"
 
 /**
  * Isolation interface for testability. Accessed from unit tests only.
@@ -17,6 +18,11 @@ struct mesh_internal_ops_t mesh_internal_ops = {
     .destroy_conn = mcm_destroy_connection,
     .dequeue_buf = mcm_dequeue_buffer,
     .enqueue_buf = mcm_enqueue_buffer,
+
+    .grpc_create_client = mesh_grpc_create_client,
+    .grpc_destroy_client = mesh_grpc_destroy_client,
+    .grpc_create_conn = mesh_grpc_create_conn,
+    .grpc_destroy_conn = mesh_grpc_destroy_conn,
 };
 
 namespace mesh {
@@ -347,9 +353,21 @@ int ConnectionContext::establish(int kind)
     if (err)
         return err;
 
-    handle = mesh_internal_ops.create_conn(&param);
-    if (!handle)
-        return -MESH_ERR_CONN_FAILED;
+    if (mc_ctx->config.enable_grpc) {
+        grpc_conn = mesh_internal_ops.grpc_create_conn(mc_ctx->grpc_client,
+                                                       &param);
+        if (!grpc_conn) {
+            handle = NULL;
+            return -MESH_ERR_CONN_FAILED;
+        }
+        handle = *(mcm_conn_context **)grpc_conn; // unsafe type casting
+        if (!handle)
+            return -MESH_ERR_CONN_FAILED;
+    } else {
+        handle = mesh_internal_ops.create_conn(&param);
+        if (!handle)
+            return -MESH_ERR_CONN_FAILED;
+    }
 
     *(size_t *)&__public.buf_size = handle->frame_size;
 
@@ -358,19 +376,41 @@ int ConnectionContext::establish(int kind)
 
 int ConnectionContext::shutdown()
 {
-    if (handle) {
-        /** In Sender mode, delay for 50ms to allow for completing
-         * transmission of all buffers sitting in the memif queue
-         * before destroying the connection.
-         *
-         * TODO: Replace the delay with polling of the actual memif
-         * queue status.
-         */
-        if (cfg.kind == MESH_CONN_KIND_SENDER)
-            usleep(50000);
+    ClientContext *mc_ctx = (ClientContext *)__public.client;
+    if (!mc_ctx)
+        return -MESH_ERR_BAD_CLIENT_PTR;
 
-        mesh_internal_ops.destroy_conn(handle);
-        handle = NULL;
+    if (mc_ctx->config.enable_grpc) {
+        if (grpc_conn) {
+            /** In Sender mode, delay for 50ms to allow for completing
+             * transmission of all buffers sitting in the memif queue
+             * before destroying the connection.
+             *
+             * TODO: Replace the delay with polling of the actual memif
+             * queue status.
+             */
+            if (cfg.kind == MESH_CONN_KIND_SENDER)
+                usleep(50000);
+
+            mesh_internal_ops.grpc_destroy_conn(grpc_conn);
+            grpc_conn = NULL;
+            handle = NULL;
+        }
+    } else {
+        if (handle) {
+            /** In Sender mode, delay for 50ms to allow for completing
+             * transmission of all buffers sitting in the memif queue
+             * before destroying the connection.
+             *
+             * TODO: Replace the delay with polling of the actual memif
+             * queue status.
+             */
+            if (cfg.kind == MESH_CONN_KIND_SENDER)
+                usleep(50000);
+
+            mesh_internal_ops.destroy_conn(handle);
+            handle = NULL;
+        }
     }
 
     return 0;

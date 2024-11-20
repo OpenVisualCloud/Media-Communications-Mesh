@@ -15,7 +15,6 @@ BufferContext::BufferContext(ConnectionContext *conn)
 int BufferContext::dequeue(int timeout_ms)
 {
     ConnectionContext *conn = (ConnectionContext *)__public.conn;
-
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
 
@@ -32,7 +31,6 @@ int BufferContext::dequeue(int timeout_ms)
 int BufferContext::enqueue(int timeout_ms)
 {
     ConnectionContext *conn = (ConnectionContext *)__public.conn;
-
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
 

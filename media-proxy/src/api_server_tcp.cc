@@ -8,6 +8,7 @@
 #include <mcm_dp.h>
 #include <signal.h>
 #include <netinet/ip.h>
+#include "logger.h"
 
 static volatile bool keepRunning = true;
 
@@ -195,7 +196,7 @@ void* msg_loop(void* ptr)
 void handleSignals(int sig_num)
 {
     keepRunning = false;
-    exit(0);
+    // exit(0);
 }
 
 void registerSignals()
@@ -251,8 +252,8 @@ void RunTCPServer(ProxyContext* ctx)
         return;
     }
 
-    INFO("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
-    registerSignals();
+    mesh::log::info("TCP Server listening on %s", ctx->getTCPListenAddress().c_str());
+    // registerSignals();
 
     do {
         /* accept incoming connections */
@@ -278,6 +279,8 @@ void RunTCPServer(ProxyContext* ctx)
                 }
             } else {
                 free(connection);
+                if (errno == EINTR)
+                    break;
             }
         }
     } while (keepRunning);

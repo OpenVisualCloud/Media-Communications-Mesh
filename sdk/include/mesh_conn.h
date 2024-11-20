@@ -18,6 +18,11 @@ struct mesh_internal_ops_t {
     void (*destroy_conn)(mcm_conn_context *pctx);
     mcm_buffer * (*dequeue_buf)(mcm_conn_context *pctx, int timeout, int *error_code);
     int (*enqueue_buf)(mcm_conn_context *pctx, mcm_buffer *buf);
+
+    void * (*grpc_create_client)();
+    void (*grpc_destroy_client)(void *client);
+    void * (*grpc_create_conn)(void *client, mcm_conn_param *param);
+    void (*grpc_destroy_conn)(void *conn);
 };
 
 extern struct mesh_internal_ops_t mesh_internal_ops;
@@ -108,6 +113,7 @@ public:
         } payload;
     } cfg = {};
 
+    void *grpc_conn;
 };
 
 } // namespace mesh
