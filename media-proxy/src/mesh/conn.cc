@@ -15,6 +15,7 @@ Connection::Connection()
     _status = Status::initial;
     setting_link = false;
     transmitting = false;
+    _link = nullptr;
 
     metrics.inbound_bytes           = 0;
     metrics.outbound_bytes          = 0;
@@ -273,6 +274,7 @@ const char * result2str(Result res)
     case Result::error_bad_argument:     return "bad argument";
     case Result::error_out_of_memory:    return "out of memory";
     case Result::error_general_failure:  return "general failure";
+    case Result::error_shutdown:         return "processing shutdown";
     default:                             return str_unknown;
     }
 }
