@@ -22,7 +22,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         _ops = {0};
         _transfer_size = 0;
     };
-    ~ST2110Tx(){};
+    ~ST2110Tx() { shutdown(_ctx); };
 
   protected:
     HANDLE _handle;
