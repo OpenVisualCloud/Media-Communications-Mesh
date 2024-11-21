@@ -1,8 +1,6 @@
 name: Build SDK Dockerfile Ubuntu
 
 on:
-  push:
-    branches: [ "main", "dev", "maint-*" ]
   pull_request:
     branches: [ "main", "dev", "maint-*" ]
 
