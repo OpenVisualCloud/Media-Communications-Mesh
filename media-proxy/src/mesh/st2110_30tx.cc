@@ -1,10 +1,6 @@
 #include "st2110tx.h"
 
-namespace mesh
-{
-
-namespace connection
-{
+namespace mesh::connection {
 
 ST2110_30Tx::ST2110_30Tx()
 {
@@ -78,6 +74,4 @@ Result ST2110_30Tx::configure(context::Context &ctx, const std::string &dev_port
     return set_result(Result::success);
 }
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection

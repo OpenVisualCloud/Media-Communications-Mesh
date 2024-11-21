@@ -1,10 +1,6 @@
 #include "st2110.h"
 
-namespace mesh
-{
-
-namespace connection
-{
+namespace mesh::connection {
 
 st_frame_fmt ST2110::mesh_video_format_to_st_format(int fmt)
 {
@@ -154,6 +150,4 @@ mtl_handle ST2110::get_mtl_handle(const std::string &dev_port, mtl_log_level log
     return dev_handle;
 }
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection

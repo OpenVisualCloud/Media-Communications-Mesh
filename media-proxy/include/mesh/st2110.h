@@ -11,11 +11,7 @@
 #include "mesh_dp.h"
 #include "logger.h"
 
-namespace mesh
-{
-
-namespace connection
-{
+namespace mesh::connection {
 
 #define ST_APP_PAYLOAD_TYPE_ST30 (111)
 #define ST_APP_PAYLOAD_TYPE_ST20 (112)
@@ -27,8 +23,7 @@ namespace connection
  * Base abstract class of ST2110. ST2110Rx/ST2110Tx
  * inherit this class.
  */
-class ST2110 : public Connection
-{
+class ST2110 : public Connection {
   public:
     static st_frame_fmt mesh_video_format_to_st_format(int fmt);
     static st30_fmt mesh_audio_format_to_st_format(int fmt);
@@ -56,8 +51,6 @@ class ST2110 : public Connection
   private:
 };
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection
 
 #endif // ST2110_H

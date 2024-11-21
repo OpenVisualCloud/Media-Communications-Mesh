@@ -3,11 +3,7 @@
 
 #include "st2110.h"
 
-namespace mesh
-{
-
-namespace connection
-{
+namespace mesh::connection {
 
 /**
  * ST2110Rx
@@ -15,8 +11,7 @@ namespace connection
  * Base abstract class of ST2110Rx. ST2110_20Rx/ST2110_22Rx/ST2110_30Rx
  * inherit this class.
  */
-template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public ST2110
-{
+template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public ST2110 {
   public:
     ST2110Rx()
     {
@@ -105,8 +100,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
     }
 };
 
-class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops>
-{
+class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops> {
   public:
     ST2110_20Rx();
     ~ST2110_20Rx();
@@ -117,8 +111,7 @@ class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops>
   private:
 };
 
-class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops>
-{
+class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops> {
   public:
     ST2110_22Rx();
     ~ST2110_22Rx();
@@ -129,8 +122,7 @@ class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops>
   private:
 };
 
-class ST2110_30Rx : public ST2110Rx<st30_frame, st30p_rx_handle, st30p_rx_ops>
-{
+class ST2110_30Rx : public ST2110Rx<st30_frame, st30p_rx_handle, st30p_rx_ops> {
   public:
     ST2110_30Rx();
     ~ST2110_30Rx();
@@ -141,8 +133,6 @@ class ST2110_30Rx : public ST2110Rx<st30_frame, st30p_rx_handle, st30p_rx_ops>
   private:
 };
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection
 
 #endif // ST2110RX_H

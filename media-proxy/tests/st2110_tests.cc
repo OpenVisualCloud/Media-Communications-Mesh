@@ -43,8 +43,7 @@ struct wrapper {
 uint32_t wrapper::received_packets_dummy1;
 uint32_t wrapper::received_packets_dummy2;
 
-class EmulatedTransmitter : public connection::Connection
-{
+class EmulatedTransmitter : public connection::Connection {
   public:
     EmulatedTransmitter(context::Context &ctx)
     {
@@ -66,8 +65,7 @@ class EmulatedTransmitter : public connection::Connection
     }
 };
 
-class EmulatedReceiver : public connection::Connection
-{
+class EmulatedReceiver : public connection::Connection {
   public:
     uint32_t received_packets_lossless;
     uint32_t received_packets_lossy;
@@ -98,8 +96,7 @@ class EmulatedReceiver : public connection::Connection
     }
 };
 
-class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int>
-{
+class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int> {
   public:
     EmulatedST2110_Tx()
     {
@@ -118,8 +115,7 @@ class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int>
     }
 };
 
-class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, int>
-{
+class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, int> {
   public:
     EmulatedST2110_Rx()
     {
