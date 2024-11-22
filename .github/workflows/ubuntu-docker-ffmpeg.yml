@@ -1,21 +1,23 @@
 name: Build FFmpeg Dockerfile Ubuntu
 
 on:
-    push:
-      branches: [ "main", "dev", "maint-*" ]
-    pull_request:
-      branches: [ "main", "dev", "maint-*" ]
+  pull_request:
+    branches: [ "main", "dev", "maint-*" ]
 
 permissions:
   contents: read
 
+env:
+  BUILD_TYPE: "Release"
+  DOCKER_IMAGE_BASE: "ghcr.io/openvisualcloud/media-communications-mesh"
+  DOCKER_IMAGE_TAG: "${{ github.sha }}"
+
 jobs:
   docker:
-    runs-on: ubuntu-latest
-    timeout-minutes: 120
+    runs-on: ubuntu-22.04
+    timeout-minutes: 60
     permissions:
       contents: read
-      packages: write
     steps:
       - name: Harden Runner
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
@@ -37,4 +39,5 @@ jobs:
           allow: network.host
           context: .
           push: false
-          tags: "mcm/ffmpeg:${{ github.sha }}"
+          tags: "${{ env.DOCKER_IMAGE_BASE }}/ffmpeg:${{ env.DOCKER_IMAGE_TAG }}"
+          cache-from: type=registry,ref=${{ env.DOCKER_IMAGE_BASE }}/ffmpeg:buildcache
