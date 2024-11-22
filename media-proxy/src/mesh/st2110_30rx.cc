@@ -2,15 +2,20 @@
 
 namespace mesh::connection {
 
-ST2110_30Rx::ST2110_30Rx()
-{
-    _get_frame_fn = st30p_rx_get_frame;
-    _put_frame_fn = st30p_rx_put_frame;
-    _create_session_fn = st30p_rx_create;
-    _close_session_fn = st30p_rx_free;
-}
+ST2110_30Rx::ST2110_30Rx() {}
 
 ST2110_30Rx::~ST2110_30Rx() {}
+
+st30_frame *ST2110_30Rx::get_frame(st30p_rx_handle h) { return st30p_rx_get_frame(h); };
+
+int ST2110_30Rx::put_frame(st30p_rx_handle h, st30_frame *f) { return st30p_rx_put_frame(h, f); };
+
+st30p_rx_handle ST2110_30Rx::create_session(mtl_handle h, st30p_rx_ops *o)
+{
+    return st30p_rx_create(h, o);
+};
+
+int ST2110_30Rx::close_session(st30p_rx_handle h) { return st30p_rx_free(h); };
 
 Result ST2110_30Rx::configure(context::Context &ctx, const std::string &dev_port,
                               const MeshConfig_ST2110 &cfg_st2110,

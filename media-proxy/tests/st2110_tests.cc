@@ -7,42 +7,6 @@ using namespace mesh;
 #define DUMMY_DATA1 "DUMMY_DATA1"
 #define DUMMY_DATA2 "DUMMY_DATA2"
 
-struct wrapper {
-    static uint32_t received_packets_dummy1;
-    static uint32_t received_packets_dummy2;
-
-    static st_frame *get_frame_dummy(int *h)
-    {
-        st_frame *f = new st_frame;
-        f->addr[0] = calloc(1000, 1);
-        memcpy(f->addr[0], DUMMY_DATA1, sizeof(DUMMY_DATA1));
-        return f;
-    }
-
-    static int put_frame_dummy(int *d, st_frame *f)
-    {
-        if (memcmp(f->addr[0], DUMMY_DATA1, sizeof(DUMMY_DATA1)) == 0) {
-            received_packets_dummy1++;
-        } else if (memcmp(f->addr[0], DUMMY_DATA2, sizeof(DUMMY_DATA2)) == 0) {
-            received_packets_dummy2++;
-        }
-
-        free(f->addr[0]);
-        delete f;
-        return 0;
-    }
-
-    static int *create_dummy(mtl_handle, int *o) { return (int *)malloc(1); }
-
-    static int close_dummy(int *h)
-    {
-        free(h);
-        return 0;
-    }
-};
-uint32_t wrapper::received_packets_dummy1;
-uint32_t wrapper::received_packets_dummy2;
-
 class EmulatedTransmitter : public connection::Connection {
   public:
     EmulatedTransmitter(context::Context &ctx)
@@ -98,39 +62,98 @@ class EmulatedReceiver : public connection::Connection {
 
 class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int> {
   public:
+    uint32_t received_packets_dummy1;
+    uint32_t received_packets_dummy2;
+
     EmulatedST2110_Tx()
     {
-        _get_frame_fn = wrapper::get_frame_dummy;
-        _put_frame_fn = wrapper::put_frame_dummy;
-        _create_session_fn = wrapper::create_dummy;
-        _close_session_fn = wrapper::close_dummy;
+        received_packets_dummy1 = 0;
+        received_packets_dummy2 = 0;
         _transfer_size = 10000;
     };
-    ~EmulatedST2110_Tx(){};
+    ~EmulatedST2110_Tx() {};
 
     connection::Result configure(context::Context &ctx)
     {
         set_state(ctx, connection::State::configured);
         return connection::Result::success;
     }
+
+    st_frame *get_frame(int *h) override
+    {
+        st_frame *f = new st_frame;
+        f->addr[0] = calloc(1000, 1);
+        memcpy(f->addr[0], DUMMY_DATA1, sizeof(DUMMY_DATA1));
+        return f;
+    }
+
+    int put_frame(int *d, st_frame *f) override
+    {
+        if (memcmp(f->addr[0], DUMMY_DATA1, sizeof(DUMMY_DATA1)) == 0) {
+            received_packets_dummy1++;
+        } else if (memcmp(f->addr[0], DUMMY_DATA2, sizeof(DUMMY_DATA2)) == 0) {
+            received_packets_dummy2++;
+        }
+
+        free(f->addr[0]);
+        delete f;
+        return 0;
+    }
+
+    int *create_session(mtl_handle, int *o) override { return (int *)malloc(1); }
+
+    int close_session(int *h) override
+    {
+        free(h);
+        return 0;
+    }
 };
 
 class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, int> {
   public:
+    uint32_t received_packets_dummy1;
+    uint32_t received_packets_dummy2;
     EmulatedST2110_Rx()
     {
-        _get_frame_fn = wrapper::get_frame_dummy;
-        _put_frame_fn = wrapper::put_frame_dummy;
-        _create_session_fn = wrapper::create_dummy;
-        _close_session_fn = wrapper::close_dummy;
+        received_packets_dummy1 = 0;
+        received_packets_dummy2 = 0;
         _transfer_size = 10000;
     };
-    ~EmulatedST2110_Rx(){};
+    ~EmulatedST2110_Rx() {};
 
     connection::Result configure(context::Context &ctx)
     {
         set_state(ctx, connection::State::configured);
         return connection::Result::success;
+    }
+
+    st_frame *get_frame(int *h) override
+    {
+        st_frame *f = new st_frame;
+        f->addr[0] = calloc(1000, 1);
+        memcpy(f->addr[0], DUMMY_DATA1, sizeof(DUMMY_DATA1));
+        return f;
+    }
+
+    int put_frame(int *d, st_frame *f) override
+    {
+        if (memcmp(f->addr[0], DUMMY_DATA1, sizeof(DUMMY_DATA1)) == 0) {
+            received_packets_dummy1++;
+        } else if (memcmp(f->addr[0], DUMMY_DATA2, sizeof(DUMMY_DATA2)) == 0) {
+            received_packets_dummy2++;
+        }
+
+        free(f->addr[0]);
+        delete f;
+        return 0;
+    }
+
+    int *create_session(mtl_handle, int *o) override { return (int *)malloc(1); }
+
+    int close_session(int *h) override
+    {
+        free(h);
+        return 0;
     }
 };
 
@@ -331,7 +354,7 @@ TEST(st2110_tx, send_data)
         res = emulated_tx->transmit_wrapper(ctx, (void *)DUMMY_DATA2, sizeof(DUMMY_DATA2));
         ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
         ASSERT_EQ(conn_tx->state(), connection::State::active);
-        ASSERT_GT(wrapper::received_packets_dummy2, 0);
+        ASSERT_GT(conn_tx->received_packets_dummy2, 0);
     }
 
     // Shutdown Tx connection
@@ -374,7 +397,7 @@ TEST(st2110_rx, get_data)
     ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::closed);
 
-    ASSERT_GT(wrapper::received_packets_dummy1, 0);
+    ASSERT_GT(conn_rx->received_packets_dummy1, 0);
     // Destroy resources
     delete conn_rx;
     delete emulated_rx;

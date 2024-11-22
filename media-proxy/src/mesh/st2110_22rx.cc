@@ -2,15 +2,20 @@
 
 namespace mesh::connection {
 
-ST2110_22Rx::ST2110_22Rx()
-{
-    _get_frame_fn = st22p_rx_get_frame;
-    _put_frame_fn = st22p_rx_put_frame;
-    _create_session_fn = st22p_rx_create;
-    _close_session_fn = st22p_rx_free;
-}
+ST2110_22Rx::ST2110_22Rx() {}
 
 ST2110_22Rx::~ST2110_22Rx() {}
+
+st_frame *ST2110_22Rx::get_frame(st22p_rx_handle h) { return st22p_rx_get_frame(h); };
+
+int ST2110_22Rx::put_frame(st22p_rx_handle h, st_frame *f) { return st22p_rx_put_frame(h, f); };
+
+st22p_rx_handle ST2110_22Rx::create_session(mtl_handle h, st22p_rx_ops *o)
+{
+    return st22p_rx_create(h, o);
+};
+
+int ST2110_22Rx::close_session(st22p_rx_handle h) { return st22p_rx_free(h); };
 
 Result ST2110_22Rx::configure(context::Context &ctx, const std::string &dev_port,
                               const MeshConfig_ST2110 &cfg_st2110,

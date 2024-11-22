@@ -2,15 +2,20 @@
 
 namespace mesh::connection {
 
-ST2110_20Tx::ST2110_20Tx()
-{
-    _get_frame_fn = st20p_tx_get_frame;
-    _put_frame_fn = st20p_tx_put_frame;
-    _create_session_fn = st20p_tx_create;
-    _close_session_fn = st20p_tx_free;
-}
+ST2110_20Tx::ST2110_20Tx() {}
 
 ST2110_20Tx::~ST2110_20Tx() {}
+
+st_frame *ST2110_20Tx::get_frame(st20p_tx_handle h) { return st20p_tx_get_frame(h); };
+
+int ST2110_20Tx::put_frame(st20p_tx_handle h, st_frame *f) { return st20p_tx_put_frame(h, f); };
+
+st20p_tx_handle ST2110_20Tx::create_session(mtl_handle h, st20p_tx_ops *o)
+{
+    return st20p_tx_create(h, o);
+};
+
+int ST2110_20Tx::close_session(st20p_tx_handle h) { return st20p_tx_free(h); };
 
 Result ST2110_20Tx::configure(context::Context &ctx, const std::string &dev_port,
                               const MeshConfig_ST2110 &cfg_st2110,

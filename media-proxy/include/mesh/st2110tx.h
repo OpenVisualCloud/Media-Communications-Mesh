@@ -30,17 +30,17 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
     uint32_t _transfer_size;
     context::Context _ctx;
 
-    std::function<FRAME *(HANDLE)> _get_frame_fn;
-    std::function<int(HANDLE, FRAME *)> _put_frame_fn;
-    std::function<HANDLE(mtl_handle, OPS *)> _create_session_fn;
-    std::function<int(HANDLE)> _close_session_fn;
+    virtual FRAME *get_frame(HANDLE) = 0;
+    virtual int put_frame(HANDLE, FRAME *) = 0;
+    virtual HANDLE create_session(mtl_handle, OPS *) = 0;
+    virtual int close_session(HANDLE) = 0;
 
     Result on_establish(context::Context &ctx) override
     {
         _ctx = context::WithCancel(ctx);
         _stop = false;
 
-        _handle = _create_session_fn(_st, &_ops);
+        _handle = create_session(_st, &_ops);
         if (!_handle) {
             log::error("Failed to create session");
             set_state(ctx, State::closed);
@@ -56,7 +56,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         _ctx.cancel();
 
         if (_handle) {
-            _close_session_fn(_handle);
+            close_session(_handle);
             _handle = nullptr;
         }
         set_state(ctx, State::closed);
@@ -71,7 +71,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         FRAME *frame = NULL;
         do {
             // Get empty buffer from MTL
-            frame = _get_frame_fn(_handle);
+            frame = get_frame(_handle);
             if (!frame) {
                 std::mutex mx;
                 std::unique_lock lk(mx);
@@ -87,7 +87,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
             // Copy data from emulated transmitter to MTL empty buffer
             mtl_memcpy(get_frame_data_ptr(frame), ptr, sent);
             // Return full buffer to MTL
-            _put_frame_fn(_handle, frame);
+            put_frame(_handle, frame);
         } else {
             sent = 0;
             return set_result(Result::error_shutdown);
@@ -106,6 +106,12 @@ class ST2110_20Tx : public ST2110Tx<st_frame, st20p_tx_handle, st20p_tx_ops> {
     Result configure(context::Context &ctx, const std::string &dev_port,
                      const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Video &cfg_video);
 
+  protected:
+    st_frame *get_frame(st20p_tx_handle h) override;
+    int put_frame(st20p_tx_handle h, st_frame *f) override;
+    st20p_tx_handle create_session(mtl_handle h, st20p_tx_ops *o) override;
+    int close_session(st20p_tx_handle h) override;
+
   private:
 };
 
@@ -117,6 +123,12 @@ class ST2110_22Tx : public ST2110Tx<st_frame, st22p_tx_handle, st22p_tx_ops> {
     Result configure(context::Context &ctx, const std::string &dev_port,
                      const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Video &cfg_video);
 
+  protected:
+    st_frame *get_frame(st22p_tx_handle h) override;
+    int put_frame(st22p_tx_handle h, st_frame *f) override;
+    st22p_tx_handle create_session(mtl_handle h, st22p_tx_ops *o) override;
+    int close_session(st22p_tx_handle h) override;
+
   private:
 };
 
@@ -127,6 +139,12 @@ class ST2110_30Tx : public ST2110Tx<st30_frame, st30p_tx_handle, st30p_tx_ops> {
 
     Result configure(context::Context &ctx, const std::string &dev_port,
                      const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Audio &cfg_audio);
+
+  protected:
+    st30_frame *get_frame(st30p_tx_handle h) override;
+    int put_frame(st30p_tx_handle h, st30_frame *f) override;
+    st30p_tx_handle create_session(mtl_handle h, st30p_tx_ops *o) override;
+    int close_session(st30p_tx_handle h) override;
 
   private:
 };
