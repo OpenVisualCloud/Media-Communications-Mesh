@@ -83,7 +83,7 @@ int ST2110::frame_available_cb(void *ptr)
     if (!_this) {
         return -1;
     }
-
+    std::unique_lock lk(_this->_mx);
     _this->_stop.store(true);
     _this->_cv.notify_all();
 

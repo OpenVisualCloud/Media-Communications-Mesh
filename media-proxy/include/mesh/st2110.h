@@ -47,6 +47,7 @@ class ST2110 : public Connection {
     mtl_handle _st;
     std::atomic<bool> _stop;
     std::condition_variable_any _cv;
+    std::mutex _mx;
 
   private:
 };

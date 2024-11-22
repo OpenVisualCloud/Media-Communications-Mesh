@@ -73,8 +73,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
             // Get empty buffer from MTL
             frame = get_frame(_handle);
             if (!frame) {
-                std::mutex mx;
-                std::unique_lock lk(mx);
+                std::unique_lock lk(_mx);
                 _cv.wait(lk, _ctx.stop_token(), [this] { return _stop.load(); });
                 _stop = false;
                 if (_ctx.cancelled()) {
