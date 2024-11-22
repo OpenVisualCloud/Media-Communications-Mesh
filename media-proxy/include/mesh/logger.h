@@ -23,6 +23,8 @@ enum class Level {
     fatal
 };
 
+extern Level currentLogLevel;
+
 class Formatter {
 public:
     virtual void formatMessage(std::ostringstream& ostream,
@@ -68,14 +70,14 @@ extern std::unique_ptr<Formatter> formatter;
 class Logger {
 public:
     Logger(Level level, const char *format, va_list args);
-    Logger(Logger&& other) noexcept : ostream(std::move(other.ostream)) {}
+    Logger(Logger&& other) noexcept : level(other.level), ostream(std::move(other.ostream)) {}
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
     ~Logger();
 
     template<typename T>
     Logger& operator()(const char *key, const T& value) {
-        if (formatter) 
+         if (formatter && level >= currentLogLevel)
             formatter->formatKeyValueBefore(ostream, key);
 
         using DecayedT = std::decay_t<T>;
@@ -88,12 +90,13 @@ public:
         else
             ostream << value;
 
-        if (formatter) 
+        if (formatter && level >= currentLogLevel)
             formatter->formatKeyValueAfter(ostream, key);
         return *this;
     }
 
 private:
+    Level level;
     std::ostringstream ostream;
 };
 
@@ -130,6 +133,31 @@ private:
  * {"time":"2024-11-15T00:27:30.300Z","level":"error","msg":"High load","percent":99.8,"num_clients":9801}
  * {"time":"2024-11-15T00:27:30.300Z","level":"debug","msg":"Counter incremented","cnt":355}
  * {"time":"2024-11-15T00:27:30.300Z","level":"fatal","msg":"Emergency exit","err_code":312645}
+ * Example C: Setting the log level dynamically
+ * ============================================
+ * mesh::log::setLogLevel(mesh::log::Level::warn); // Set minimum log level to WARN
+ * 
+ * log::info("This message will not be displayed")("id", "123456");
+ * log::warn("Low memory warning")("available_mb", 512);
+ * log::error("Critical error occurred")("error_code", 5001);
+ * log::debug("Debugging details")("step", "init");
+ * 
+ * Output:
+ * Nov 15 00:26:07.672 [WARN] Low memory warning available_mb=512
+ * Nov 15 00:26:07.672 [ERRO] Critical error occurred error_code=5001
+ * 
+ * Example D: Adjusting log levels during runtime
+ * ==============================================
+ * mesh::log::setLogLevel(mesh::log::Level::debug); // Enable all log messages
+ * log::info("Re-enabled info logging")("reason", "debugging mode");
+ * 
+ * Output:
+ * Nov 15 00:26:07.672 [INFO] Re-enabled info logging reason="debugging mode"
+ * 
+ * Features:
+ *  - Use `mesh::log::setLogLevel(mesh::log::Level)` to dynamically adjust log filtering.
+ *  - Supported log levels: `info`, `warn`, `error`, `debug`, `fatal`.
+ *  - Messages below the set log level will be ignored.
  */
 Logger info(const char* format, ...);
 Logger warn(const char* format, ...);
@@ -138,8 +166,7 @@ Logger debug(const char* format, ...);
 Logger fatal(const char* format, ...);
 
 void setFormatter(std::unique_ptr<Formatter> new_formatter);
-
-// TODO: Add an option to set the log level.
+void setLogLevel(Level level);
 
 } // namespace mesh::log
 
