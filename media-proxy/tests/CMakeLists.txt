@@ -35,18 +35,38 @@ add_executable(memif_test_tx memif_test_tx.c)
 target_include_directories(memif_test_tx PRIVATE ../include)
 target_link_libraries(memif_test_tx PRIVATE mcm_dp)
 
-# Find source files for tests
+# Find source files for general tests
 file(GLOB TEST_SOURCES "*.cc")
+list(REMOVE_ITEM TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_rx_tests.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_tx_tests.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_test_mocks.cc"
+)
+
+# Find source files for RDMA-specific tests
+file(GLOB RDMA_TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_rx_tests.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_tx_tests.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_test_mocks.cc"
+)
 
 set(MP_LIB media_proxy_lib)
 
-# Add an executable for tests
+# Add an executable for general tests
 add_executable(media_proxy_unit_tests ${TEST_SOURCES})
 target_compile_definitions(media_proxy_unit_tests PRIVATE UNIT_TESTS_ENABLED)
-
-# Link the executable with gtest and gtest_main
 target_link_libraries(media_proxy_unit_tests PRIVATE gtest gtest_main ${MP_LIB})
 target_include_directories(media_proxy_unit_tests PUBLIC
+    ${CMAKE_SOURCE_DIR}/media-proxy/include
+    ${CMAKE_BINARY_DIR}/media-proxy/generated
+    ${FFF_DOWNLOAD_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+# Add an executable for RDMA-specific tests
+add_executable(conn_rdma_unit_tests ${RDMA_TEST_SOURCES})
+target_link_libraries(conn_rdma_unit_tests PRIVATE gmock gmock_main gtest gtest_main ${MP_LIB})
+target_include_directories(conn_rdma_unit_tests PUBLIC
     ${CMAKE_SOURCE_DIR}/media-proxy/include
     # Include generated *.pb.h files
     ${CMAKE_BINARY_DIR}/media-proxy/generated
@@ -55,4 +75,5 @@ target_include_directories(media_proxy_unit_tests PUBLIC
 )
 
 # Add tests to CTest
+add_test(NAME conn_rdma_unit_tests COMMAND conn_rdma_unit_tests)
 add_test(NAME media_proxy_unit_tests COMMAND media_proxy_unit_tests)

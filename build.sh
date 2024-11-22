@@ -11,7 +11,7 @@ SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 # Set build type. ("Debug" or "Release")
 # To disable the building of unit tests, set the value to "OFF".
 
-BUILD_TYPE="${BUILD_TYPE:-Release}"
+BUILD_TYPE="${BUILD_TYPE:-Debug}"
 BUILD_UNIT_TESTS="${BUILD_UNIT_TESTS:-ON}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
 
@@ -31,5 +31,6 @@ run_as_root_user ldconfig
 export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib"
 "${BUILD_DIR}/bin/sdk_unit_tests"
 "${BUILD_DIR}/bin/media_proxy_unit_tests"
+"${BUILD_DIR}/bin/conn_rdma_unit_tests"
 
 prompt "Build Succeeded"

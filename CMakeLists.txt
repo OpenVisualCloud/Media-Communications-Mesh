@@ -9,6 +9,10 @@ project(MCM)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_FLAGS "-std=c++20 -lstdc++fs")
+
+#set(CMAKE_C_FLAGS "-fsanitize=address -fsanitize-recover=all")
+#set(CMAKE_CXX_FLAGS "-std=c++20 -fsanitize=address -fsanitize-recover=all")
+
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS NO)
 

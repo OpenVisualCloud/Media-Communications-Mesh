@@ -92,19 +92,10 @@ Context::~Context()
 
     if (ch)
         delete ch;
-
-    if (async_cb.valid())
-        async_cb.wait();
-
-    if (ch)
-        delete ch;
 }
 
 void Context::cancel() 
 {
-    if (ch)
-        ch->close();
-
     if (ch)
         ch->close();
 

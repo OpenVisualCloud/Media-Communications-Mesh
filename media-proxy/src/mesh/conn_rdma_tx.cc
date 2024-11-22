@@ -18,66 +18,45 @@ Result RdmaTx::configure(context::Context& ctx, const mcm_conn_param& request,
                          const std::string& dev_port,
                          libfabric_ctx *& dev_handle)
 {
-    log::info("Configuring RdmaTx")("dev_port", dev_port)
-             ("kind", "transmitter")("direction", "TX");
     return Rdma::configure(ctx, request, dev_port, dev_handle,
                            Kind::transmitter, direction::TX);
 }
 
-Result RdmaTx::handle_buffers(context::Context& ctx, void *buffer, size_t size)
+Result RdmaTx::handle_buffers(context::Context& ctx, void *buf, size_t size)
 {
-    // Handle completion events for Tx
-    int err = libfabric_ep_ops.ep_cq_read(ep_ctx, &buffer, RDMA_DEFAULT_TIMEOUT);
+    int err = libfabric_ep_ops.ep_cq_read(ep_ctx, &buf, RDMA_DEFAULT_TIMEOUT);
     if (err == -EAGAIN) {
-        // No completion yet
         return Result::success;
     } else if (err) {
         log::error("Completion queue read failed")("error", fi_strerror(-err));
         return Result::error_general_failure;
     }
-
-    // Example: Increment a counter for sent buffers
-    log::info("Buffer successfully sent through completion queue")
-             ("buffer_address", buffer);
-
     return Result::success;
 }
 
 Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
                           uint32_t& sent)
 {
-    log::info("Entering RdmaTx::on_receive")("incoming_size", sz);
-
-    // Temporary variable for sent size
-    uint32_t temp_sent = std::min(static_cast<uint32_t>(transfer_size), sz);
-    if (temp_sent != transfer_size) {
+    uint32_t tmp_sent = std::min(static_cast<uint32_t>(trx_sz), sz);
+    if (tmp_sent != trx_sz) {
         log::warn("Sent size differs from transfer size")(
-                  "requested_size", temp_sent)("transfer_size", transfer_size);
+                  "requested_size", tmp_sent)("trx_sz", trx_sz);
     }
 
-    // Check for available pre-allocated buffer
-    if (buffers.empty() || !buffers[0]) {
+    if (bufs.empty() || !bufs[0]) {
         log::error("No pre-allocated buffer available for RDMA transmission");
         sent = 0;
         return set_result(Result::error_general_failure);
     }
 
-    void *registered_buffer = buffers[0];
-    log::info("Copying data to the registered buffer")
-             ("buffer_address", registered_buffer)("size", temp_sent);
+    void *reg_buf = bufs[0];
 
-    // Copy data to the registered buffer
-    std::memcpy(registered_buffer, ptr, temp_sent);
+    std::memcpy(reg_buf, ptr, tmp_sent);
 
-    // Print the contents of the registered buffer
-    std::string buffer_contents(static_cast<char *>(registered_buffer),
-                                temp_sent);
-    log::debug("Buffer contents")("size", temp_sent)("data",
-               buffer_contents.c_str());
+    std::string buffer_contents(static_cast<char *>(reg_buf),
+                                tmp_sent);
 
-    // Send the buffer using RDMA
-    log::info("Sending buffer through RDMA")("size", temp_sent);
-    int err = libfabric_ep_ops.ep_send_buf(ep_ctx, registered_buffer, temp_sent);
+    int err = libfabric_ep_ops.ep_send_buf(ep_ctx, reg_buf, tmp_sent);
     if (err) {
         log::error("Failed to send buffer through RDMA")
                   ("error",fi_strerror(-err));
@@ -85,10 +64,7 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
         return set_result(Result::error_general_failure);
     }
 
-    // Update the sent variable after successful transmission
-    sent = temp_sent;
-
-    log::info("Buffer successfully sent through RDMA")("sent_size", sent);
+    sent = tmp_sent;
     return set_result(Result::success);
 }
 

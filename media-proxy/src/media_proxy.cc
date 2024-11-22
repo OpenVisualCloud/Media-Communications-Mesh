@@ -62,10 +62,9 @@ void usage(FILE *fp, const char *path)
 
 using namespace mesh;
 
-// Main context with cancellation
-auto ctx = context::WithCancel(context::Background());
+    // Main context with cancellation
+    auto ctx = context::WithCancel(context::Background());
 
-using namespace mesh;
 
 class EmulatedReceiver : public connection::Connection
 {
@@ -258,16 +257,21 @@ int main(int argc, char *argv[])
         log::info("Establishing RDMA RX connection...");
         try {
             res = conn_rx->establish(ctx);
-            if (res != connection::Result::success) {
+            if (res == connection::Result::error_already_initialized) {
+                log::warn(
+                    "RDMA RX connection is already initialized. Continuing...");
+                // Continue execution as the connection is already in an
+                // established state
+            } else if (res != connection::Result::success) {
                 log::error("Failed to establish RDMA RX connection")(
-                           "result", connection::result2str(res));
+                    "result", connection::result2str(res));
                 delete conn_rx;
                 delete emulated_rx;
                 return 1;
             }
         } catch (const std::exception& e) {
             log::fatal("Exception during RDMA RX establishment")("error",
-                       e.what());
+                                                                 e.what());
             delete conn_rx;
             delete emulated_rx;
             return 1;

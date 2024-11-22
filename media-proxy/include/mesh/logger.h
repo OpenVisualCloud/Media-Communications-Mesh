@@ -23,6 +23,8 @@ enum class Level {
     fatal
 };
 
+extern Level currentLogLevel;
+
 class Formatter {
 public:
     virtual void formatMessage(std::ostringstream& ostream,
@@ -68,14 +70,14 @@ extern std::unique_ptr<Formatter> formatter;
 class Logger {
 public:
     Logger(Level level, const char *format, va_list args);
-    Logger(Logger&& other) noexcept : ostream(std::move(other.ostream)) {}
+    Logger(Logger&& other) noexcept : level(other.level), ostream(std::move(other.ostream)) {}
     Logger(const Logger&) = delete;
     Logger& operator=(const Logger&) = delete;
     ~Logger();
 
     template<typename T>
     Logger& operator()(const char *key, const T& value) {
-        if (formatter) 
+         if (formatter && level >= currentLogLevel)
             formatter->formatKeyValueBefore(ostream, key);
 
         using DecayedT = std::decay_t<T>;
@@ -88,12 +90,13 @@ public:
         else
             ostream << value;
 
-        if (formatter) 
+        if (formatter && level >= currentLogLevel)
             formatter->formatKeyValueAfter(ostream, key);
         return *this;
     }
 
 private:
+    Level level;  
     std::ostringstream ostream;
 };
 
@@ -138,6 +141,7 @@ Logger debug(const char* format, ...);
 Logger fatal(const char* format, ...);
 
 void setFormatter(std::unique_ptr<Formatter> new_formatter);
+void setLogLevel(Level level);
 
 // TODO: Add an option to set the log level.
 

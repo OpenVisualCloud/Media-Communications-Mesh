@@ -16,14 +16,12 @@
 #include <cstring> // For std::memcpy
 
 #ifndef RDMA_DEFAULT_TIMEOUT
-#define RDMA_DEFAULT_TIMEOUT 1 // Set to 1 millisecond or any appropriate value
+#define RDMA_DEFAULT_TIMEOUT 1 // Set to 1 millisecond || appropriate value
 #endif
 
-namespace mesh
-{
+namespace mesh {
 
-namespace connection
-{
+namespace connection {
 
 /**
  * Rdma
@@ -32,18 +30,15 @@ namespace connection
  * Provides common RDMA-related functionality and acts as a foundation
  * for specialized RDMA Tx and Rx classes.
  */
-class Rdma : public Connection
-{
+class Rdma : public Connection {
   public:
     Rdma();
     virtual ~Rdma();
 
   protected:
     // Configure the RDMA session
-    virtual Result configure(context::Context& ctx,
-                             const mcm_conn_param& request,
-                             const std::string& dev_port,
-                             libfabric_ctx *& dev_handle, Kind kind,
+    virtual Result configure(context::Context& ctx, const mcm_conn_param& request,
+                             const std::string& dev_port, libfabric_ctx *& dev_handle, Kind kind,
                              direction dir);
 
     // Overrides from Connection
@@ -57,34 +52,35 @@ class Rdma : public Connection
     Result configure_endpoint(context::Context& ctx);
 
     // Handle buffers
-    virtual Result handle_buffers(context::Context& ctx, void *buffer,
-                                  size_t size) = 0;
-    Result cleanup_resources(context::Context& ctx); // Cleanup RDMA resources
+    virtual Result handle_buffers(context::Context& ctx, void *buffer, size_t size) = 0;
+    
+    // Cleanup RDMA resources
+    Result cleanup_resources(context::Context& ctx);
 
     // Allocate shared buffer
     Result allocate_buffer(size_t buffer_count, size_t buffer_size);
 
-    // Start and stop the RDMA frame thread
-    Result start_thread(context::Context& ctx);
+    // Handle error
+    void handle_error(context::Context& ctx, const char *step);
 
     // RDMA-specific members
     libfabric_ctx *mDevHandle; // RDMA device handle
     ep_ctx_t *ep_ctx;          // Endpoint context
     ep_cfg_t ep_cfg;           // Endpoint configuration
-    size_t transfer_size;      // Data transfer size
-    bool initialized;          // Initialization flag
+    size_t trx_sz;             // Data transfer size
+    bool init;                 // Initialization flag
     virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz)
     {
         return Result::success;
     }
 
-    virtual void frame_thread(context::Context& ctx); // RDMA frame thread logic
+    virtual void frame_thread(); // RDMA frame thread logic
 
     // Member variables
-    std::vector<void *> buffers;     // Shared buffers
-    size_t buffer_count;             // Number of allocated buffers
-    std::thread frame_thread_handle; // frame thread handle
-    context::Context thread_ctx;     // Context for the frame thread
+    std::vector<void *> bufs;         // Shared buffers
+    size_t buf_cnt;                   // Number of allocated buffers
+    std::jthread frame_thread_handle; // frame thread handle
+    context::Context _ctx;            // Inner class context
   private:
     void shutdown_rdma(context::Context& ctx);
 };
