@@ -186,6 +186,7 @@ int ProxyContext::RxStart_rdma(const mcm_conn_param *request)
     }
 
     INFO("%s, session id: %d", __func__, session_ptr->get_id());
+    std::lock_guard<std::mutex> lock(ctx_mtx);
     mDpCtx.push_back(session_ptr);
     return session_ptr->get_id();
 }
@@ -251,6 +252,7 @@ int ProxyContext::RxStart_mtl(const mcm_conn_param *request)
     }
 
     INFO("%s, session id: %d", __func__, session_ptr->get_id());
+    std::lock_guard<std::mutex> lock(ctx_mtx);
     mDpCtx.push_back(session_ptr);
     return session_ptr->get_id();
 }
@@ -287,6 +289,7 @@ int ProxyContext::TxStart_rdma(const mcm_conn_param *request)
     }
 
     INFO("%s, session id: %d", __func__, session_ptr->get_id());
+    std::lock_guard<std::mutex> lock(ctx_mtx);
     mDpCtx.push_back(session_ptr);
     return session_ptr->get_id();
 }
@@ -351,6 +354,7 @@ int ProxyContext::TxStart_mtl(const mcm_conn_param *request)
     }
 
     INFO("%s, session id: %d", __func__, session_ptr->get_id());
+    std::lock_guard<std::mutex> lock(ctx_mtx);
     mDpCtx.push_back(session_ptr);
     return session_ptr->get_id();
 }
@@ -366,6 +370,7 @@ int ProxyContext::TxStart(const mcm_conn_param *request)
 int ProxyContext::Stop(const int32_t session_id)
 {
     int ret = 0;
+    std::lock_guard<std::mutex> lock(ctx_mtx);
     auto ctx = std::find_if(mDpCtx.begin(), mDpCtx.end(),
                             [session_id](auto it) { return it->get_id() == session_id; });
     if (ctx != mDpCtx.end()) {
