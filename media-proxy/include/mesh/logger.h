@@ -77,7 +77,7 @@ public:
 
     template<typename T>
     Logger& operator()(const char *key, const T& value) {
-         if (formatter && level >= currentLogLevel)
+        if (formatter && level >= currentLogLevel)
             formatter->formatKeyValueBefore(ostream, key);
 
         using DecayedT = std::decay_t<T>;
@@ -145,10 +145,10 @@ private:
  * Output:
  * Nov 15 00:26:07.672 [WARN] Low memory warning available_mb=512
  * Nov 15 00:26:07.672 [ERRO] Critical error occurred error_code=5001
- * 
+ * Nov 15 00:26:07.672 [DEBU] Debugging details step=init
  * Example D: Adjusting log levels during runtime
  * ==============================================
- * mesh::log::setLogLevel(mesh::log::Level::debug); // Enable all log messages
+ * mesh::log::setLogLevel(mesh::log::Level::info); // Enable all log messages
  * log::info("Re-enabled info logging")("reason", "debugging mode");
  * 
  * Output:
