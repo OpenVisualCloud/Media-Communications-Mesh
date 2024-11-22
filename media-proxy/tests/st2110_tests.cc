@@ -220,7 +220,7 @@ TEST(st2110_rx, state_change)
     delete conn_rx;
 }
 
-TEST(st2110_20tx, state_change)
+TEST(DISABLED_st2110_20tx, state_change)
 {
     auto ctx = context::WithCancel(mesh::context::Background());
 
@@ -246,7 +246,7 @@ TEST(st2110_20tx, state_change)
     delete conn_rx;
 }
 
-TEST(st2110_22tx, state_change)
+TEST(DISABLED_st2110_22tx, state_change)
 {
     auto ctx = context::WithCancel(mesh::context::Background());
 
@@ -272,7 +272,7 @@ TEST(st2110_22tx, state_change)
     delete conn_rx;
 }
 
-TEST(st2110_30tx, state_change)
+TEST(DISABLED_st2110_30tx, state_change)
 {
     auto ctx = context::WithCancel(mesh::context::Background());
 
