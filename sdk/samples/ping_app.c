@@ -229,6 +229,8 @@ void * sender_thread(void *arg)
         }
     }
 
+    sleep(1);
+
     /* Clean up */
     err = mesh_delete_connection(&conn);
     if (err)
