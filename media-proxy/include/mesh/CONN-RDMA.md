@@ -1,5 +1,6 @@
 Mermaid flow of RdmaRx:
 
+```mermaid
 flowchart TD
     start([Start]) --> init[RdmaRx Constructor]
     init --> config[configure]
@@ -38,12 +39,13 @@ flowchart TD
     style close5 fill:#ff9999,stroke:#333,stroke-width:2px
     style close6 fill:#ff9999,stroke:#333,stroke-width:2px
     style close7 fill:#ff9999,stroke:#333,stroke-width:2px
-
+```
 
 -------------------------------------------------------------------------------
 
 Mermaid flow of RdmaRx frame_thread:
 
+```mermaid
 flowchart TD
     start([Start Frame Thread]) --> loopStart[Loop Until Canceled]
     loopStart -->|If cancelled| cleanup3[Log Cancellation and Cleanup Resources]
@@ -78,12 +80,13 @@ flowchart TD
     style cleanup2 fill:#ff9999,stroke:#333,stroke-width:2px
     style cleanup3 fill:#ff9999,stroke:#333,stroke-width:2px
     style exitThread fill:#ff9999,stroke:#333,stroke-width:2px
-
+```
 
 -------------------------------------------------------------------------------
 
 Mermaid flow of RdmaTx frame_thread:
 
+```mermaid
 flowchart TD
     start([Start Frame Thread]) --> loopStart[Loop Until Canceled]
     loopStart -->|If Cancelled| cleanup3[Log Cancellation and Cleanup Resources]
@@ -120,5 +123,5 @@ flowchart TD
     style cleanup2 fill:#ff9999,stroke:#333,stroke-width:2px
     style cleanup3 fill:#ff9999,stroke:#333,stroke-width:2px
     style exitThread fill:#ff9999,stroke:#333,stroke-width:2px
-
+```
 
