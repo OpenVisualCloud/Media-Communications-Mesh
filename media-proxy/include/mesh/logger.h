@@ -77,7 +77,7 @@ public:
 
     template<typename T>
     Logger& operator()(const char *key, const T& value) {
-         if (formatter && level >= currentLogLevel)
+        if (formatter && level >= currentLogLevel)
             formatter->formatKeyValueBefore(ostream, key);
 
         using DecayedT = std::decay_t<T>;
@@ -133,6 +133,31 @@ private:
  * {"time":"2024-11-15T00:27:30.300Z","level":"error","msg":"High load","percent":99.8,"num_clients":9801}
  * {"time":"2024-11-15T00:27:30.300Z","level":"debug","msg":"Counter incremented","cnt":355}
  * {"time":"2024-11-15T00:27:30.300Z","level":"fatal","msg":"Emergency exit","err_code":312645}
+* Example C: Setting the log level dynamically
+ * ============================================
+ * mesh::log::setLogLevel(mesh::log::Level::warn); // Set minimum log level to WARN
+ * 
+ * log::info("This message will not be displayed")("id", "123456");
+ * log::warn("Low memory warning")("available_mb", 512);
+ * log::error("Critical error occurred")("error_code", 5001);
+ * log::debug("Debugging details")("step", "init");
+ * 
+ * Output:
+ * Nov 15 00:26:07.672 [WARN] Low memory warning available_mb=512
+ * Nov 15 00:26:07.672 [ERRO] Critical error occurred error_code=5001
+ * Nov 15 00:26:07.672 [DEBU] Debugging details step=init
+ * Example D: Adjusting log levels during runtime
+ * ==============================================
+ * mesh::log::setLogLevel(mesh::log::Level::info); // Enable all log messages
+ * log::info("Re-enabled info logging")("reason", "debugging mode");
+ * 
+ * Output:
+ * Nov 15 00:26:07.672 [INFO] Re-enabled info logging reason="debugging mode"
+ * 
+ * Features:
+ *  - Use `mesh::log::setLogLevel(mesh::log::Level)` to dynamically adjust log filtering.
+ *  - Supported log levels: `info`, `warn`, `error`, `debug`, `fatal`.
+ *  - Messages below the set log level will be ignored.
  */
 Logger info(const char* format, ...);
 Logger warn(const char* format, ...);
@@ -142,8 +167,6 @@ Logger fatal(const char* format, ...);
 
 void setFormatter(std::unique_ptr<Formatter> new_formatter);
 void setLogLevel(Level level);
-
-// TODO: Add an option to set the log level.
 
 } // namespace mesh::log
 
