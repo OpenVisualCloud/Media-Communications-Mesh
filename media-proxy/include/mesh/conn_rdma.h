@@ -54,12 +54,10 @@ class Rdma : public Connection {
 
     // Handle buffers (must be implemented in derived classes)
     virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size) = 0;
+    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz) = 0;
 
     // Cleanup RDMA resources
     Result cleanup_resources(context::Context& ctx);
-
-    // Allocate shared buffers
-    Result allocate_buffer(size_t count, size_t size);
 
     // Error handler for logging and recovery
     void handle_error(context::Context& ctx, const char *step);
@@ -70,22 +68,21 @@ class Rdma : public Connection {
     ep_cfg_t ep_cfg;           // Endpoint configuration
     size_t trx_sz;             // Data transfer size
     bool init;                 // Initialization flag
-    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz)
-    {
-        return Result::success;
-    }
 
-    // RDMA frame thread logic
-    virtual void frame_thread();
+    // RDMA thread logic
+    virtual void process_buffers_thread(context::Context& ctx) = 0;
+    virtual void rdma_cq_thread(context::Context& ctx) = 0;
+    virtual Result start_threads(context::Context& ctx) = 0;
 
     // Shared ring buffer for buffer management
-    struct RingBuffer {
-        std::vector<void *> buf; // Ring buffer for holding pointers
-        size_t head;              // Head index of the ring
-        size_t tail;              // Tail index of the ring
-        size_t capacity;          // Capacity of the ring buffer
-        std::mutex mtx;           // Mutex for thread safety
-    };
+struct RingBuffer {
+    std::vector<void*> buf;  // Ring buffer for holding pointers
+    size_t head;             // Head index of the ring
+    size_t tail;             // Tail index of the ring
+    size_t capacity;         // Capacity of the ring buffer
+    std::mutex mtx;          // Mutex for thread safety
+    std::condition_variable cv; // Condition variable for signaling
+};
 
     RingBuffer ring_buffer;
 
@@ -96,7 +93,7 @@ class Rdma : public Connection {
     Result add_to_ring(void *element);
 
     // Consume an element from the ring buffer
-    Result consume_from_ring(void **element);
+    Result consume_from_ring(context::Context& ctx, void **element);
 
     // Cleanup the ring buffer
     void cleanup_ring();
@@ -104,7 +101,8 @@ class Rdma : public Connection {
     // Member variables
     std::vector<void *> bufs;         // Shared buffers
     size_t buf_cnt;                   // Number of allocated buffers
-    std::jthread frame_thread_handle; // frame thread handle
+    std::jthread handle_process_buffers_thread; // thread handle
+    std::jthread handle_rdma_cq_thread; // thread handle
     context::Context _ctx;            // Inner class context
 
   private:

@@ -23,8 +23,6 @@ Result Rdma::init_ring_with_elements(size_t capacity, size_t trx_sz) {
     // Resize the ring buffer
     ring_buffer.buf.resize(capacity, nullptr);
     ring_buffer.capacity = capacity;
-    ring_buffer.head = 0;
-    ring_buffer.tail = 0;
 
     // Allocate memory for each slot using calloc for zero-initialization
     for (size_t i = 0; i < capacity; ++i) {
@@ -36,17 +34,21 @@ Result Rdma::init_ring_with_elements(size_t capacity, size_t trx_sz) {
         }
     }
 
-    log::info("Ring buffer initialized and filled with elements successfully")("capacity", capacity)("element_size", trx_sz);
+    // Pre-fill the ring buffer: all buffers are ready for consumption
+    ring_buffer.head = capacity; // All slots are filled
+    ring_buffer.tail = 0;        // Start consuming from the first slot
+
+    log::info("Ring buffer pre-filled with elements")("capacity", capacity)("element_size", trx_sz);
     return Result::success;
 }
 
-Result Rdma::add_to_ring(void *element) {
+Result Rdma::add_to_ring(void* element) {
     if (!element) {
         log::error("Cannot add a nullptr to the ring buffer");
         return Result::error_bad_argument;
     }
 
-    std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+    std::unique_lock<std::mutex> lock(ring_buffer.mtx);
 
     size_t next_head = (ring_buffer.head + 1) % ring_buffer.capacity;
     if (next_head == ring_buffer.tail) {
@@ -58,28 +60,46 @@ Result Rdma::add_to_ring(void *element) {
     ring_buffer.head = next_head;
 
     log::debug("Element added to ring buffer")("head", ring_buffer.head);
+
+    // Notify one waiting thread that a buffer is available
+    ring_buffer.cv.notify_one();
+
     return Result::success;
 }
 
-Result Rdma::consume_from_ring(void **element) {
+Result Rdma::consume_from_ring(context::Context& ctx, void** element) {
     if (!element) {
         log::error("Output parameter for consume_from_ring is null");
         return Result::error_bad_argument;
     }
 
-    std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+    std::unique_lock<std::mutex> lock(ring_buffer.mtx);
+
+    // Wait until there is a valid buffer in the ring or the context is canceled
+    ring_buffer.cv.wait(lock, [this, &ctx]() {
+        return ctx.cancelled() || 
+               (ring_buffer.head != ring_buffer.tail && ring_buffer.buf[ring_buffer.tail] != nullptr);
+    });
+
+    // Break the loop if context is canceled
+    if (ctx.cancelled()) {
+        log::debug("Context canceled during consume_from_ring");
+        return Result::error_operation_cancelled;
+    }
 
     if (ring_buffer.buf.empty() || ring_buffer.capacity == 0) {
         log::error("Ring buffer not initialized or empty");
         return Result::error_general_failure;
     }
 
-    if (ring_buffer.head == ring_buffer.tail) {
-        log::error("Ring buffer underflow: no element to consume");
-        return Result::error_buffer_underflow;
+    *element = ring_buffer.buf[ring_buffer.tail];
+
+    // Check if the buffer is valid before consuming
+    if (*element == nullptr) {
+        log::error("Attempted to consume a null buffer from the ring");
+        return Result::error_general_failure;
     }
 
-    *element = ring_buffer.buf[ring_buffer.tail];
     ring_buffer.buf[ring_buffer.tail] = nullptr; // Clear the consumed slot
     ring_buffer.tail = (ring_buffer.tail + 1) % ring_buffer.capacity;
 
@@ -157,17 +177,23 @@ Result Rdma::on_establish(context::Context& ctx)
         return Result::error_initialization_failed;
     }
 
-    res = allocate_buffer(16, trx_sz);
+    res = init_ring_with_elements(16, trx_sz); // Assuming 16 slots in the ring buffer
     if (res != Result::success) {
-        log::error("Failed to allocate buffers")("trx_sz", trx_sz);
+        log::error("Failed to initialize ring buffer")("trx_sz", trx_sz);
         if (ep_ctx) {
-            log::debug("Destroying endpoint due to buffer allocation failure");
+            log::debug("Destroying endpoint due to ring buffer initialization failure");
             libfabric_ep_ops.ep_destroy(&ep_ctx);
         }
         set_state(ctx, State::closed);
         return res;
     }
 
+    log::debug("Ring buffer initialized")("capacity", ring_buffer.capacity);
+    for (size_t i = 0; i < ring_buffer.capacity; ++i) {
+        log::debug("Ring buffer element at index")("index", i)("value", ring_buffer.buf[i]);
+    }
+
+    // Configure RDMA endpoint
     res = configure_endpoint(_ctx);
     if (res != Result::success) {
         log::error("RDMA configuring failed")("state", "closed");
@@ -175,24 +201,14 @@ Result Rdma::on_establish(context::Context& ctx)
             log::debug("Destroying endpoint due to configuration failure");
             libfabric_ep_ops.ep_destroy(&ep_ctx);
         }
+        cleanup_ring(); // Clean up ring buffer in case of failure
         set_state(ctx, State::closed);
         return res;
     }
 
     init = true;
 
-    try {
-        frame_thread_handle = std::jthread(&Rdma::frame_thread, this);
-    } catch (const std::system_error& e) {
-        log::fatal("Failed to start frame thread")("error", e.what());
-        return Result::error_thread_creation_failed;
-    }
-    if (res != Result::success) {
-        log::error("Failed to start RDMA frame thread")("result", static_cast<int>(res));
-        cleanup_resources(_ctx);
-        set_state(ctx, State::closed);
-        return res;
-    }
+    res = start_threads(ctx);
 
     set_state(ctx, State::active);
     return Result::success;
@@ -212,25 +228,6 @@ void Rdma::on_delete(context::Context& ctx)
     on_shutdown(_ctx);
 }
 
-Result Rdma::allocate_buffer(size_t buf_cnt, size_t buffer_size)
-{
-    this->buf_cnt = buf_cnt;
-    bufs.resize(buf_cnt);
-
-    for (size_t i = 0; i < buf_cnt; ++i) {
-        bufs[i] = std::malloc(buffer_size);
-        if (!bufs[i]) {
-            for (size_t j = 0; j < i; ++j) {
-                std::free(bufs[j]);
-                bufs[j] = nullptr;
-            }
-            bufs.clear();
-            return Result::error_out_of_memory;
-        }
-    }
-    return Result::success;
-}
-
 Result Rdma::configure_endpoint(context::Context& ctx)
 {
     if (!ep_ctx) {
@@ -238,51 +235,28 @@ Result Rdma::configure_endpoint(context::Context& ctx)
         return Result::error_wrong_state;
     }
 
-    for (auto& buf : bufs) {
-        if (!buf) {
-            ERROR("Buffer allocation failed");
+    std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+
+    for (size_t i = 0; i < ring_buffer.capacity; ++i) {
+        if (!ring_buffer.buf[i]) {
+            log::error("Ring buffer element is not allocated")("index", i);
             return Result::error_out_of_memory;
         }
-        int ret = libfabric_ep_ops.ep_reg_mr(ep_ctx, buf, trx_sz);
+
+        int ret = libfabric_ep_ops.ep_reg_mr(ep_ctx, ring_buffer.buf[i], trx_sz);
         if (ret) {
-            log::error("Memory registration failed")("error", fi_strerror(-ret));
+            log::error("Memory registration failed for ring buffer element")("index", i)("error", fi_strerror(-ret));
             return Result::error_memory_registration_failed;
         }
     }
+
+    log::info("All ring buffer elements registered successfully");
     return Result::success;
-}
-
-void Rdma::frame_thread()
-{
-    while (!_ctx.cancelled()) {
-
-        for (size_t i = 0; i < bufs.size(); ++i) {
-
-            auto& buf = bufs[i];
-            if (!buf) {
-                log::error("Buffer index %zu is not allocated. Skipping.", i);
-                continue; // Skip unallocated buffers
-            }
-
-            Result res = process_buffers(_ctx, buf, trx_sz);
-            if (res != Result::success) {
-                log::error("Error processing buffers")("index", i)("result", static_cast<int>(res));
-                break;
-            }
-
-            res = handle_rdma_cq(_ctx, buf, trx_sz);
-            if (res != Result::success) {
-                log::error("Error handling buffers")("index", i)("result", static_cast<int>(res));
-                break;
-            }
-        }
-
-    }
-
 }
 
 Result Rdma::cleanup_resources(context::Context& ctx)
 {
+
     if (ep_ctx) {
         int err = libfabric_ep_ops.ep_destroy(&ep_ctx);
         if (err) {
@@ -291,14 +265,13 @@ Result Rdma::cleanup_resources(context::Context& ctx)
         ep_ctx = nullptr;
     }
 
-    for (size_t i = 0; i < bufs.size(); ++i) {
-        if (bufs[i]) {
-            std::free(bufs[i]);
-            bufs[i] = nullptr;
-        }
-    }
-    bufs.clear();
+    // Clean up the ring buffer
+    cleanup_ring();
+
+    // Mark RDMA as uninitialized
     init = false;
+
+    log::info("RDMA resources cleaned up successfully");
     return Result::success;
 }
 
@@ -306,8 +279,11 @@ void Rdma::shutdown_rdma(context::Context& ctx)
 {
     _ctx.cancel();
 
-    if (frame_thread_handle.joinable())
-        frame_thread_handle.join();
+    if (handle_rdma_cq_thread.joinable())
+        handle_rdma_cq_thread.join();
+
+    if (handle_process_buffers_thread.joinable())
+        handle_process_buffers_thread.join();
 
     if (init) {
         cleanup_resources(_ctx);

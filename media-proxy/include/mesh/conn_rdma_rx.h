@@ -26,13 +26,14 @@ class RdmaRx : public Rdma
 
   protected:
     // Override buffer handling for Rx
-    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer,
-                                  size_t size) override;
+    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size) override;
+    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz) override;
+    virtual Result start_threads(context::Context& ctx) override;
     // void frame_thread(context::Context &ctx) override;
 
     // Receive data using RDMA
-    Result process_buffers(context::Context& ctx, void *buf,
-                           size_t sz) override;
+    void process_buffers_thread(context::Context& ctx) override;
+    void rdma_cq_thread(context::Context& ctx) override;
 };
 
 } // namespace connection
