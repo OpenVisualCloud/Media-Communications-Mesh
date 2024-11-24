@@ -26,7 +26,7 @@ class RdmaTx : public Rdma
 
   protected:
     // Override buffer handling for Tx
-    virtual Result handle_buffers(context::Context& ctx, void *buffer,
+    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer,
                                   size_t size) override;
 
     // Transmit data using RDMA when received from connection class

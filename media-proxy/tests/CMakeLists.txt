@@ -41,6 +41,7 @@ list(REMOVE_ITEM TEST_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_rx_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_tx_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_test_mocks.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_real_ep_test.cc"
 )
 
 # Find source files for RDMA-specific tests
@@ -48,6 +49,11 @@ file(GLOB RDMA_TEST_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_rx_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_tx_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_test_mocks.cc"
+)
+
+# Find source files for physical-RDMA-specific tests
+file(GLOB PHYS_RDMA_TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_real_ep_test.cc"
 )
 
 set(MP_LIB media_proxy_lib)
@@ -74,6 +80,18 @@ target_include_directories(conn_rdma_unit_tests PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
+# Add an executable for physical-RDMA-specific tests
+add_executable(conn_rdma_real_ep_test ${PHYS_RDMA_TEST_SOURCES})
+target_link_libraries(conn_rdma_real_ep_test PRIVATE gtest gtest_main ${MP_LIB})
+target_include_directories(conn_rdma_real_ep_test PUBLIC
+    ${CMAKE_SOURCE_DIR}/media-proxy/include
+    # Include generated *.pb.h files
+    ${CMAKE_BINARY_DIR}/media-proxy/generated
+    ${FFF_DOWNLOAD_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
 # Add tests to CTest
 add_test(NAME conn_rdma_unit_tests COMMAND conn_rdma_unit_tests)
 add_test(NAME media_proxy_unit_tests COMMAND media_proxy_unit_tests)
+add_test(NAME conn_rdma_real_ep_test COMMAND conn_rdma_real_ep_test)

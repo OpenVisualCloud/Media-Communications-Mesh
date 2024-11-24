@@ -208,8 +208,8 @@ int main(int argc, char *argv[])
         }
 
         // Initialize other required fields of request
-        request.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
-        request.payload_codec = PAYLOAD_CODEC_NONE;
+        // request.payload_type = PAYLOAD_TYPE_ST20_VIDEO;
+        // request.payload_codec = PAYLOAD_CODEC_NONE;
         // Initialize payload_args if needed
         request.payload_args.rdma_args.transfer_size =
             12; // Example transfer size

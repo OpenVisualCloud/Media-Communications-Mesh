@@ -32,5 +32,6 @@ export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib"
 "${BUILD_DIR}/bin/sdk_unit_tests"
 "${BUILD_DIR}/bin/media_proxy_unit_tests"
 "${BUILD_DIR}/bin/conn_rdma_unit_tests"
+"${BUILD_DIR}/bin/conn_rdma_real_ep_test"
 
 prompt "Build Succeeded"

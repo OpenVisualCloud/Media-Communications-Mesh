@@ -9,9 +9,101 @@ Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr)
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
 }
 
-Rdma::~Rdma()
-{
-    shutdown_rdma(_ctx);
+Rdma::~Rdma() { shutdown_rdma(_ctx); }
+
+Result Rdma::init_ring_with_elements(size_t capacity, size_t trx_sz) {
+    std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+
+    // Check if already initialized
+    if (!ring_buffer.buf.empty()) {
+        log::error("Ring buffer already initialized");
+        return Result::error_already_initialized;
+    }
+
+    // Resize the ring buffer
+    ring_buffer.buf.resize(capacity, nullptr);
+    ring_buffer.capacity = capacity;
+    ring_buffer.head = 0;
+    ring_buffer.tail = 0;
+
+    // Allocate memory for each slot using calloc for zero-initialization
+    for (size_t i = 0; i < capacity; ++i) {
+        ring_buffer.buf[i] = std::calloc(1, trx_sz);
+        if (!ring_buffer.buf[i]) {
+            log::error("Failed to allocate memory for ring buffer element")("index", i)("trx_sz", trx_sz);
+            cleanup_ring(); // Free already allocated memory
+            return Result::error_out_of_memory;
+        }
+    }
+
+    log::info("Ring buffer initialized and filled with elements successfully")("capacity", capacity)("element_size", trx_sz);
+    return Result::success;
+}
+
+Result Rdma::add_to_ring(void *element) {
+    if (!element) {
+        log::error("Cannot add a nullptr to the ring buffer");
+        return Result::error_bad_argument;
+    }
+
+    std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+
+    size_t next_head = (ring_buffer.head + 1) % ring_buffer.capacity;
+    if (next_head == ring_buffer.tail) {
+        log::error("Ring buffer overflow: unable to add element");
+        return Result::error_buffer_overflow;
+    }
+
+    ring_buffer.buf[ring_buffer.head] = element;
+    ring_buffer.head = next_head;
+
+    log::debug("Element added to ring buffer")("head", ring_buffer.head);
+    return Result::success;
+}
+
+Result Rdma::consume_from_ring(void **element) {
+    if (!element) {
+        log::error("Output parameter for consume_from_ring is null");
+        return Result::error_bad_argument;
+    }
+
+    std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+
+    if (ring_buffer.buf.empty() || ring_buffer.capacity == 0) {
+        log::error("Ring buffer not initialized or empty");
+        return Result::error_general_failure;
+    }
+
+    if (ring_buffer.head == ring_buffer.tail) {
+        log::error("Ring buffer underflow: no element to consume");
+        return Result::error_buffer_underflow;
+    }
+
+    *element = ring_buffer.buf[ring_buffer.tail];
+    ring_buffer.buf[ring_buffer.tail] = nullptr; // Clear the consumed slot
+    ring_buffer.tail = (ring_buffer.tail + 1) % ring_buffer.capacity;
+
+    log::debug("Element consumed from ring buffer")("tail", ring_buffer.tail);
+    return Result::success;
+}
+
+void Rdma::cleanup_ring() {
+    std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+
+    for (size_t i = 0; i < ring_buffer.capacity; ++i) {
+        if (ring_buffer.buf[i]) {
+            std::free(ring_buffer.buf[i]);
+            ring_buffer.buf[i] = nullptr; // Clear slot after deallocation
+            log::debug("Deallocated buffer at index")("index", i);
+        }
+    }
+
+    ring_buffer.buf.clear();
+    ring_buffer.capacity = 0;
+    ring_buffer.head = 0;
+    ring_buffer.tail = 0;
+
+    log::info("Ring buffer cleaned up successfully");
 }
 
 Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
@@ -27,6 +119,8 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
     std::memcpy(&ep_cfg.remote_addr, &request.remote_addr, sizeof(request.remote_addr));
     std::memcpy(&ep_cfg.local_addr, &request.local_addr, sizeof(request.local_addr));
     ep_cfg.dir = dir;
+
+    mDevHandle = dev_handle;
 
     set_state(ctx, State::configured);
     return Result::success;
@@ -176,7 +270,7 @@ void Rdma::frame_thread()
                 break;
             }
 
-            res = handle_buffers(_ctx, buf, trx_sz);
+            res = handle_rdma_cq(_ctx, buf, trx_sz);
             if (res != Result::success) {
                 log::error("Error handling buffers")("index", i)("result", static_cast<int>(res));
                 break;

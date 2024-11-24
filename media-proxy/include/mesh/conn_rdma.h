@@ -1,19 +1,20 @@
 #ifndef CONN_RDMA_H
 #define CONN_RDMA_H
 
-#include "mesh/conn.h"
-#include "concurrency.h" // Include concurrency support
 #include "logger.h"
+#include "mesh/conn.h"
+#include "concurrency.h"   // Include concurrency support
 #include "libfabric_ep.h"  // For ep_init, ep_destroy, etc.
 #include "libfabric_mr.h"  // For ep_reg_mr
 #include "libfabric_cq.h"  // For ep_cq_read, ep_cq_open
 #include "libfabric_dev.h" // For libfabric_ctx
 #include "mcm_dp.h"        // For mcm_conn_param
-#include <cstring>         // For std::memset
+#include <vector>          // For buffer storage
+#include <mutex>           // For thread safety
+#include <cstring>         // For std::memcpy/memset
+#include <cstddef>         // For size_t
 #include <thread>
 #include <atomic>
-#include <vector>  // For buffer storage
-#include <cstring> // For std::memcpy
 
 #ifndef RDMA_DEFAULT_TIMEOUT
 #define RDMA_DEFAULT_TIMEOUT 1 // Set to 1 millisecond || appropriate value
@@ -43,7 +44,7 @@ class Rdma : public Connection {
 
     // Overrides from Connection
     virtual Result on_establish(context::Context& ctx) override;
-    virtual void on_delete(context::Context& ctx);
+    virtual void on_delete(context::Context& ctx) override;
     virtual Result on_shutdown(context::Context& ctx) override;
 
     // RDMA-specific methods
@@ -51,16 +52,16 @@ class Rdma : public Connection {
     // Configure RDMA endpoint
     Result configure_endpoint(context::Context& ctx);
 
-    // Handle buffers
-    virtual Result handle_buffers(context::Context& ctx, void *buffer, size_t size) = 0;
-    
+    // Handle buffers (must be implemented in derived classes)
+    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size) = 0;
+
     // Cleanup RDMA resources
     Result cleanup_resources(context::Context& ctx);
 
-    // Allocate shared buffer
-    Result allocate_buffer(size_t buffer_count, size_t buffer_size);
+    // Allocate shared buffers
+    Result allocate_buffer(size_t count, size_t size);
 
-    // Handle error
+    // Error handler for logging and recovery
     void handle_error(context::Context& ctx, const char *step);
 
     // RDMA-specific members
@@ -74,13 +75,38 @@ class Rdma : public Connection {
         return Result::success;
     }
 
-    virtual void frame_thread(); // RDMA frame thread logic
+    // RDMA frame thread logic
+    virtual void frame_thread();
+
+    // Shared ring buffer for buffer management
+    struct RingBuffer {
+        std::vector<void *> buf; // Ring buffer for holding pointers
+        size_t head;              // Head index of the ring
+        size_t tail;              // Tail index of the ring
+        size_t capacity;          // Capacity of the ring buffer
+        std::mutex mtx;           // Mutex for thread safety
+    };
+
+    RingBuffer ring_buffer;
+
+    // Initialize the ring buffer
+    Result init_ring_with_elements(size_t capacity, size_t trx_sz);
+
+    // Add an element to the ring buffer
+    Result add_to_ring(void *element);
+
+    // Consume an element from the ring buffer
+    Result consume_from_ring(void **element);
+
+    // Cleanup the ring buffer
+    void cleanup_ring();
 
     // Member variables
     std::vector<void *> bufs;         // Shared buffers
     size_t buf_cnt;                   // Number of allocated buffers
     std::jthread frame_thread_handle; // frame thread handle
     context::Context _ctx;            // Inner class context
+
   private:
     void shutdown_rdma(context::Context& ctx);
 };

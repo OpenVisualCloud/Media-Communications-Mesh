@@ -22,7 +22,7 @@ Result RdmaTx::configure(context::Context& ctx, const mcm_conn_param& request,
                            Kind::transmitter, direction::TX);
 }
 
-Result RdmaTx::handle_buffers(context::Context& ctx, void *buf, size_t size)
+Result RdmaTx::handle_rdma_cq(context::Context& ctx, void *buf, size_t size)
 {
     int err = libfabric_ep_ops.ep_cq_read(ep_ctx, &buf, RDMA_DEFAULT_TIMEOUT);
     if (err == -EAGAIN) {

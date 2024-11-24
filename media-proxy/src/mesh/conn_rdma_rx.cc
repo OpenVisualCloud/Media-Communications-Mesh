@@ -20,14 +20,17 @@ Result RdmaRx::configure(context::Context& ctx, const mcm_conn_param& request,
 
 Result RdmaRx::process_buffers(context::Context& ctx, void *buf, size_t sz)
 {
-    Result res = receive_data(_ctx, buf, trx_sz);
-    if (res != Result::success) {
-        log::error("Failed to pass buffer to RDMA")("result", result2str(res));
+    int err = libfabric_ep_ops.ep_recv_buf(ep_ctx, buf, sz, buf);
+    if (err) {
+        log::error("Failed to pass empty buffer to RDMA to receive into")
+        ("buffer_address",buf)("error", fi_strerror(-err));
+        return Result::error_general_failure;
     }
-    return res;
+
+    return Result::success;
 }
 
-Result RdmaRx::handle_buffers(context::Context& ctx, void *buf, size_t sz)
+Result RdmaRx::handle_rdma_cq(context::Context& ctx, void *buf, size_t sz)
 {
     while (!_ctx.cancelled()) {
 
@@ -51,18 +54,6 @@ Result RdmaRx::handle_buffers(context::Context& ctx, void *buf, size_t sz)
         log::error("Failed to transmit buffer")("buffer_address", buf)("size", trx_sz);
         return res;
     }
-    return Result::success;
-}
-
-Result RdmaRx::receive_data(context::Context& ctx, void *buf, size_t sz)
-{
-    int err = libfabric_ep_ops.ep_recv_buf(ep_ctx, buf, sz, buf);
-    if (err) {
-        log::error("Failed to receive data into buffer")
-        ("buffer_address",buf)("error", fi_strerror(-err));
-        return Result::error_general_failure;
-    }
-
     return Result::success;
 }
 

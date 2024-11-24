@@ -71,6 +71,8 @@ enum class Result {
     error_memory_registration_failed,
     error_thread_creation_failed,
     error_operation_cancelled,
+    error_buffer_overflow,
+    error_buffer_underflow,
 
     // TODO: more error codes to be added...
 };

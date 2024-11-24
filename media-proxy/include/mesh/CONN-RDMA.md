@@ -25,7 +25,7 @@ flowchart TD
 
     active --> frameThread[frame_thread]
     frameThread -->|Loop Until Canceled| processBuf[process_buffers]
-    processBuf --> handleBuf[handle_buffers]
+    processBuf --> handleBuf[handle_rdma_cq]
     handleBuf -->|Success| processBuf
     handleBuf -->|Failure| cleanup4[cleanup_resources]
     cleanup4 --> close7[Set state to CLOSED]
@@ -59,11 +59,11 @@ flowchart TD
     cqRead -->|No CQ Event| retry[Wait/Retry]
     retry --> cqRead
 
-    process -->|Success| passToHandler[Pass Buffer to handle_buffers]
+    process -->|Success| passToHandler[Pass Buffer to handle_rdma_cq]
     process -->|Failure| cleanup1[Log Error and Cleanup Resources]
 
-    passToHandler -->|handle_buffers Success| continueLoop[Continue to Next Buffer]
-    passToHandler -->|handle_buffers Failure| cleanup2[Log Error and Cleanup Resources]
+    passToHandler -->|handle_rdma_cq Success| continueLoop[Continue to Next Buffer]
+    passToHandler -->|handle_rdma_cq Failure| cleanup2[Log Error and Cleanup Resources]
     
     cleanup1 --> exitThread[Set State to CLOSED and Exit]
     cleanup2 --> exitThread
@@ -101,11 +101,11 @@ flowchart TD
     cqRead -->|No CQ Event| retry[Wait/Retry]
     retry --> cqRead
 
-    transmit -->|Success| passToHandler[Pass Buffer to handle_buffers]
+    transmit -->|Success| passToHandler[Pass Buffer to handle_rdma_cq]
     transmit -->|Failure| cleanup1[Log Error and Cleanup Resources]
 
-    passToHandler -->|handle_buffers Success| continueLoop[Continue to Next Buffer]
-    passToHandler -->|handle_buffers Failure| cleanup2[Log Error and Cleanup Resources]
+    passToHandler -->|handle_rdma_cq Success| continueLoop[Continue to Next Buffer]
+    passToHandler -->|handle_rdma_cq Failure| cleanup2[Log Error and Cleanup Resources]
 
     cleanup1 --> exitThread[Set State to CLOSED and Exit]
     cleanup2 --> exitThread
