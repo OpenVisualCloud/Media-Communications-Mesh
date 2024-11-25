@@ -186,17 +186,20 @@ function get_download_unpack_dependencies()
 
 function get_and_patch_intel_drivers()
 {
+    log_info "Intel drivers: Starting download and patching actions."
     if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
     wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
-    git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
-
-    pushd "${ICE_DIR}"
-    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch)
-    popd
+    git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}" && \
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}" && \
+    pushd "${ICE_DIR}" && \
+    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
+    popd && \
+    log_info "Intel drivers: Finished download and patching actions."
+    { log_success "Intel drivers: Finished download and patching actions." && return 0; } ||
+    { log_error "Intel drivers: Failed to download or patch." && return 1; }
 }
 
 function build_install_and_config_intel_drivers()
@@ -339,6 +342,7 @@ function lib_build_install_sdk_mcm()
 
 function full_build_and_install_workflow()
 {
+    log_info Starting: Dependencies build, install and configation.
     lib_install_grpc && \
     lib_install_xdp_bpf_tools && \
     lib_install_fabrics && \
@@ -347,7 +351,8 @@ function full_build_and_install_workflow()
     lib_install_jpeg_xs && \
     lib_install_mtl_jpeg_xs_plugin && \
     chmod -R a+r "${BUILD_DIR}" && \
-    return 0 || return 1
+    { log_success "Finished: Dependencies build, install and configation." && return 0; } ||
+    { log_error "Dependencies build, install and configation failed." && return 1; }
 }
 # cp -f "${REPO_DIR}/media-proxy/imtl.json" "/usr/local/etc/imtl.json"
 # export KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"
@@ -358,34 +363,29 @@ then
     if [ "${EUID}" != "0" ]; then
         log_error "Must be run as root. Try running bellow command:"
         log_error "sudo \"${BASH_SOURCE[0]}\""
-        exit 1
+        exit 3
     fi
-    print_logo_anim "2" "0.04"
-    sleep 1
+    if [ "${NO_LOGO_PRINT:-0}" != "0" ]; then
+        print_logo_anim "2" "0.04"
+        sleep 2
+    fi
     trap_error_print_debug
-    sleep 1
     set -x
     log_info Starting: OS packages installation, MTL and DPDK download.
     install_package_dependencies
     get_download_unpack_dependencies
     log_info Finished: OS packages installation, MTL and DPDK download.
-    log_info Starting: Intel drivers download and patch apply.
     get_and_patch_intel_drivers
-    log_info Finished: Intel drivers download and patch apply.
-    log_info Starting: Dependencies build, install and configation.
     full_build_and_install_workflow || \
-    { log_error  Dependencies build, install and configation failed. && exit 1; }
-    log_info Finished: Dependencies build, install and configation.
     log_info Starting: Build, install and configuration of Intel drivers.
     build_install_and_config_intel_drivers || \
     { log_error  Intel drivers configuration/installation failed. && exit 1; }
     build_install_and_config_irdma_drivers || \
     { log_error  Intel irdma configuration/installation failed. && exit 1; }
-    log_info Finished: Build, install and configuration of Intel drivers.
-    log_info All tasks compleated. Reboot required.
+    log_success Finished: Build, install and configuration of Intel drivers.
+    log_success All tasks compleated. Reboot required.
     log_warning ""
     log_warning OS reboot is required for all of the changes to take place.
-    sleep 2
     set +x
     exit 0
 fi
