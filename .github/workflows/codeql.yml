@@ -12,6 +12,7 @@ env:
   PREFIX_DIR: "${{ github.workspace }}/_install"
   MTL_BUILD_DISABLE_PCAPNG: true
   DEBIAN_FRONTEND: noninteractive
+  TRY_CACHE_REFRESH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
 permissions:
   contents: read
@@ -80,7 +81,7 @@ jobs:
       run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
 
     - name: 'Save local dependencies build cache'
-      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      if: env.TRY_CACHE_REFRESH == 'true' && steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
       id: save-local-dependencies-cache
       uses: actions/cache/save@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
       with:

@@ -5,12 +5,10 @@ set +x
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
-VERSIONS_FILE_PATH="$(readlink -f "${VERSIONS_FILE_PATH:-${REPO_DIR}/versions.env}")"
 BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
 PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
 DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
 
-. "${VERSIONS_FILE_PATH}"
 . "${SCRIPT_DIR}/common.sh"
 
 ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
@@ -18,8 +16,6 @@ IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
 IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
 
 export PM="${PM:-apt-get}"
-export TZ="${TZ:-Europe/Warsaw}"
-export NPROC="${NPROC:-$(nproc)}"
 export DEBIAN_FRONTEND="noninteractive"
 
 export KERNEL_VERSION="${KERNEL_VERSION:-$(uname -r)}"
@@ -45,7 +41,6 @@ LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
 LIBFDT_DIR="${BUILD_DIR}/libfdt"
 JSONC_DIR="${BUILD_DIR}/json-c"
 NASM_DIR="${BUILD_DIR}/nasm"
-MCM_SDK_DIR="${BUILD_DIR}/mcm-sdk"
 
 function install_package_dependencies()
 {
@@ -197,16 +192,18 @@ function get_and_patch_intel_drivers()
     pushd "${ICE_DIR}" && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
     popd && \
-    log_info "Intel drivers: Finished download and patching actions."
     { log_success "Intel drivers: Finished download and patching actions." && return 0; } ||
     { log_error "Intel drivers: Failed to download or patch." && return 1; }
 }
 
 function build_install_and_config_intel_drivers()
 {
+    log_info "Intel IAVF: Driver starting the build and install workflow." && \
     as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install && \
+    log_info "Intel ICE: Driver starting the build and install workflow." && \
     as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install && \
-    return 0 || return 1
+    { log_success "Intel IAVF and ICE: Drivers finished install process." && return 0; } ||
+    { log_error "Intel IAVF and ICE: Failed to build and install drivers" && return 1; }
 }
 
 function build_install_and_config_irdma_drivers()
@@ -216,7 +213,8 @@ function build_install_and_config_irdma_drivers()
     popd && \
     as_root config_intel_rdma_driver && \
     as_root modprobe irdma && \
-    return 0 || return 1
+    { log_success "Intel irdma: Finished configuration and installation successfully." && return 0; } || \
+    { log_error   "Intel irdma: Error while performing configuration/installation." && return 1; }
 }
 
 # Download and install rpm repo for nasm
@@ -376,12 +374,10 @@ then
     get_download_unpack_dependencies
     log_info Finished: OS packages installation, MTL and DPDK download.
     get_and_patch_intel_drivers
-    full_build_and_install_workflow || \
-    log_info Starting: Build, install and configuration of Intel drivers.
+    full_build_and_install_workflow
+    build_install_and_config_irdma_drivers
     build_install_and_config_intel_drivers || \
     { log_error  Intel drivers configuration/installation failed. && exit 1; }
-    build_install_and_config_irdma_drivers || \
-    { log_error  Intel irdma configuration/installation failed. && exit 1; }
     log_success Finished: Build, install and configuration of Intel drivers.
     log_success All tasks compleated. Reboot required.
     log_warning ""
