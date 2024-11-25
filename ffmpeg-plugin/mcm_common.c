@@ -92,6 +92,20 @@ int mcm_parse_conn_param(AVFormatContext* avctx, MeshConnection *conn,
         err = mesh_apply_connection_config_memif(conn, &cfg);
         if (err)
             return err;
+    } else if (!strcmp(payload_type, "rdma")) {
+        MeshConfig_RDMA cfg;
+
+        if (kind == MESH_CONN_KIND_SENDER) {
+            cfg.remote_port = atoi(port);
+            strlcpy(cfg.remote_ip_addr, ip_addr, sizeof(cfg.remote_ip_addr));
+        } else {
+            cfg.local_port = atoi(port);
+            strlcpy(cfg.local_ip_addr, ip_addr, sizeof(cfg.local_ip_addr));
+        }
+
+        err = mesh_apply_connection_config_rdma(conn, &cfg);
+        if (err)
+           return err;
     } else {
         MeshConfig_ST2110 cfg;
 
