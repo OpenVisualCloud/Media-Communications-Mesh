@@ -2,9 +2,10 @@ name: Build Baremetal Ubuntu
 
 on:
   push:
-    branches: [ "main", "dev", "maint-*" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "dev", "maint-*" ]
+    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
@@ -19,6 +20,10 @@ env:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
