@@ -233,10 +233,13 @@ mcm_conn_context* mcm_create_connection(mcm_conn_param* param)
     switch (param->protocol) {
     case PROTO_AUTO:
         /**
-         * This is a temporary workaround to calculate the RDMA transfer size
+         * TODO: This is a temporary workaround to calculate the RDMA transfer size
          * from video payload parameters provided by the user. It will be
          * removed after the Control Plane implementation supporting Multipoint
          * Groups is implemented in Media Proxy.
+         * 
+         * In the new implementation the transfer size of audio payload should be calculated too,
+         * PAYLOAD_TYPE_RDMA_VIDEO should be renamed to PAYLOAD_TYPE_RDMA, as it will support both.
          */
         if (param->payload_type == PAYLOAD_TYPE_RDMA_VIDEO) {
             size_t sz = (size_t)param->payload_args.video_args.width *
