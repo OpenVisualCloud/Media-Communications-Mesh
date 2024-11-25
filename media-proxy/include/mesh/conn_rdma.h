@@ -35,7 +35,7 @@ class Rdma : public Connection {
   public:
     Rdma();
     virtual ~Rdma();
-
+  
   protected:
     // Configure the RDMA session
     virtual Result configure(context::Context& ctx, const mcm_conn_param& request,
@@ -73,6 +73,8 @@ class Rdma : public Connection {
     virtual void process_buffers_thread(context::Context& ctx) = 0;
     virtual void rdma_cq_thread(context::Context& ctx) = 0;
     virtual Result start_threads(context::Context& ctx) = 0;
+    context::Context process_buffers_thread_ctx;
+    context::Context rdma_cq_thread_ctx;
 
     // Shared ring buffer for buffer management
 struct RingBuffer {

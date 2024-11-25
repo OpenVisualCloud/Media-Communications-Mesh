@@ -21,7 +21,7 @@ Result RdmaTx::configure(context::Context& ctx, const mcm_conn_param& request,
 Result RdmaTx::start_threads(context::Context& ctx)
 {
     try {
-        handle_rdma_cq_thread = std::jthread([this, &ctx]() { this->rdma_cq_thread(_ctx); });
+        handle_rdma_cq_thread = std::jthread([this, &ctx]() { this->rdma_cq_thread(ctx); });
     } catch (const std::system_error& e) {
         log::fatal("Failed to start threads")("error", e.what());
         return Result::error_thread_creation_failed;
@@ -38,35 +38,59 @@ void RdmaTx::notify_cq_event() {
 // Thread to handle CQ events and pass buffers back to the ring buffer
 void RdmaTx::rdma_cq_thread(context::Context& ctx)
 {
-    while (!_ctx.cancelled()) {
+    log::info("rdma_cq_thread started");
+
+    while (!ctx.cancelled()) {
         void* buf = nullptr;
 
+        // Wait for a CQ event or cancellation signal
         {
             std::unique_lock<std::mutex> lock(cq_mutex);
-            cq_cv.wait(lock, [&]() { return event_ready || _ctx.cancelled(); });
-            event_ready = false; // Reset the event
+
+            bool wait_result = cq_cv.wait_for(lock, std::chrono::milliseconds(1000),
+                                              [&]() { return event_ready || ctx.cancelled(); });
+            if (ctx.cancelled()) {
+                log::info("rdma_cq_thread detected ctx.cancelled(), exiting...");
+                break;
+            }
+            if (!wait_result || !event_ready) {
+                continue;
+            }
+
+            // Reset event_ready if it was signaled
+            event_ready = false;
         }
 
-        // Wait for a CQ event
-        Result res = handle_rdma_cq(_ctx, buf, trx_sz);
-        if (res != Result::success) {
-            log::error("handle_rdma_cq failed")("buffer_address", buf)("result",
-                                                                       static_cast<int>(res));
+        usleep(5);
+        
+        // Wait for CQ events
+        struct fi_cq_entry cq_entry;
+        int ret = fi_cq_read(ep_ctx->cq_ctx.cq, &cq_entry, 1);
+        if (ret > 0) {
+            buf = cq_entry.op_context; // Retrieve the buffer address
+        } else if (ret == -EAGAIN) {
+            log::debug("No new CQ event, retrying...");
+            continue;
+        } else {
+            log::error("Completion queue read failed")("error", fi_strerror(-ret));
+            continue;
         }
+
         if (buf == nullptr) {
-            log::error("Completion queue provided a null buffer");
+            log::error("Completion queue provided a null buffer, skipping...");
+            continue;
         }
 
         // Add the buffer back to the ring
-        if (buf == nullptr) {
-            log::error("Attempted to add a null buffer to the ring, skipping");
+        Result res = add_to_ring(buf);
+        if (res != Result::success) {
+            log::error("Failed to add buffer back to the ring buffer")("buffer_address", buf);
         } else {
-            res = add_to_ring(buf);
-            if (res != Result::success) {
-                log::error("Failed to add buffer back to the ring buffer")("buffer_address", buf);
-            }
+            log::debug("Buffer successfully added back to ring buffer")("buffer_address", buf);
         }
     }
+
+    log::info("Exiting rdma_cq_thread");
 }
 
 Result RdmaTx::handle_rdma_cq(context::Context& ctx, void *buf, size_t size)
@@ -87,7 +111,7 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
     void *reg_buf = nullptr;
 
     // Consume a buffer from the ring
-    Result res = consume_from_ring(_ctx, &reg_buf);
+    Result res = consume_from_ring(ctx, &reg_buf);
     if (res == Result::error_buffer_underflow) {
         log::error("No available buffer in the ring for RDMA transmission");
         sent = 0;
@@ -130,6 +154,7 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
 
     // Successfully transmitted; update sent size
     sent = tmp_sent;
+    notify_cq_event();
 
     return set_result(Result::success);
 }

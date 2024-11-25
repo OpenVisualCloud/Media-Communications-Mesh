@@ -34,6 +34,10 @@ class RdmaRx : public Rdma
     // Receive data using RDMA
     void process_buffers_thread(context::Context& ctx) override;
     void rdma_cq_thread(context::Context& ctx) override;
+    std::mutex cq_mutex;
+    std::condition_variable_any cq_cv;
+    bool event_ready = false;
+    void notify_cq_event();
 };
 
 } // namespace connection

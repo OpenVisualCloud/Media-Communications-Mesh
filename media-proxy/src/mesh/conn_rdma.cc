@@ -1,5 +1,6 @@
 #include "conn_rdma.h"
 
+
 namespace mesh {
 
 namespace connection {
@@ -9,7 +10,7 @@ Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr)
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
 }
 
-Rdma::~Rdma() { shutdown_rdma(_ctx); }
+Rdma::~Rdma() { shutdown_rdma(context::Background()); }
 
 Result Rdma::init_ring_with_elements(size_t capacity, size_t trx_sz) {
     std::lock_guard<std::mutex> lock(ring_buffer.mtx);
@@ -59,31 +60,21 @@ Result Rdma::add_to_ring(void* element) {
     ring_buffer.buf[ring_buffer.head] = element;
     ring_buffer.head = next_head;
 
-    log::debug("Element added to ring buffer")("head", ring_buffer.head);
-
-    // Notify one waiting thread that a buffer is available
-    ring_buffer.cv.notify_one();
+    log::debug("Element added to ring buffer")("head", ring_buffer.head)("tail", ring_buffer.tail);
 
     return Result::success;
 }
 
 Result Rdma::consume_from_ring(context::Context& ctx, void** element) {
-    if (!element) {
+    log::debug("consume_from_ring: Attempting to acquire buffer");
+
+    if (!(*element)) {
         log::error("Output parameter for consume_from_ring is null");
         return Result::error_bad_argument;
     }
 
-    std::unique_lock<std::mutex> lock(ring_buffer.mtx);
-
-    // Wait until there is a valid buffer in the ring or the context is canceled
-    ring_buffer.cv.wait(lock, [this, &ctx]() {
-        return ctx.cancelled() || 
-               (ring_buffer.head != ring_buffer.tail && ring_buffer.buf[ring_buffer.tail] != nullptr);
-    });
-
-    // Break the loop if context is canceled
     if (ctx.cancelled()) {
-        log::debug("Context canceled during consume_from_ring");
+        log::info("consume_from_ring: Context canceled, exiting wait");
         return Result::error_operation_cancelled;
     }
 
@@ -92,18 +83,16 @@ Result Rdma::consume_from_ring(context::Context& ctx, void** element) {
         return Result::error_general_failure;
     }
 
-    *element = ring_buffer.buf[ring_buffer.tail];
-
-    // Check if the buffer is valid before consuming
+    *element = ring_buffer.buf[ring_buffer.tail+1];
     if (*element == nullptr) {
-        log::error("Attempted to consume a null buffer from the ring");
+        log::error("consume_from_ring: Null buffer encountered");
         return Result::error_general_failure;
     }
 
-    ring_buffer.buf[ring_buffer.tail] = nullptr; // Clear the consumed slot
+    ring_buffer.buf[ring_buffer.tail+1] = nullptr;
     ring_buffer.tail = (ring_buffer.tail + 1) % ring_buffer.capacity;
 
-    log::debug("Element consumed from ring buffer")("tail", ring_buffer.tail);
+    log::debug("consume_from_ring: Buffer consumed")("tail", ring_buffer.tail);
     return Result::success;
 }
 
@@ -148,8 +137,6 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
 
 Result Rdma::on_establish(context::Context& ctx)
 {
-    _ctx = context::WithCancel(ctx);
-
     if (init) {
         log::error("RDMA device is already initialized")("state", "initialized");
         set_state(ctx, State::active);
@@ -194,7 +181,7 @@ Result Rdma::on_establish(context::Context& ctx)
     }
 
     // Configure RDMA endpoint
-    res = configure_endpoint(_ctx);
+    res = configure_endpoint(ctx);
     if (res != Result::success) {
         log::error("RDMA configuring failed")("state", "closed");
         if (ep_ctx) {
@@ -217,7 +204,7 @@ Result Rdma::on_establish(context::Context& ctx)
 Result Rdma::on_shutdown(context::Context& ctx)
 {
     // Note: this is a blocking call
-    shutdown_rdma(_ctx);
+    shutdown_rdma(ctx);
 
     return Result::success;
 }
@@ -225,7 +212,7 @@ Result Rdma::on_shutdown(context::Context& ctx)
 void Rdma::on_delete(context::Context& ctx)
 {
     // Note: this is a blocking call
-    on_shutdown(_ctx);
+    on_shutdown(ctx);
 }
 
 Result Rdma::configure_endpoint(context::Context& ctx)
@@ -277,20 +264,54 @@ Result Rdma::cleanup_resources(context::Context& ctx)
 
 void Rdma::shutdown_rdma(context::Context& ctx)
 {
-    _ctx.cancel();
+    log::info("shutdown_rdma: Initiating RDMA shutdown");
 
-    if (handle_rdma_cq_thread.joinable())
-        handle_rdma_cq_thread.join();
-
-    if (handle_process_buffers_thread.joinable())
-        handle_process_buffers_thread.join();
-
-    if (init) {
-        cleanup_resources(_ctx);
+    // Notify all waiting threads in consume_from_ring
+    {
+        log::debug("shutdown_rdma: Notifying all threads waiting on condition variable");
+        std::lock_guard<std::mutex> lock(ring_buffer.mtx);
+        ring_buffer.cv.notify_one();
     }
 
+    // Cancel the rdma_cq_thread context
+    log::info("shutdown_rdma: Cancelling rdma_cq_thread context");
+    rdma_cq_thread_ctx.cancel();
+
+    // Join the rdma_cq_thread if joinable
+    if (handle_rdma_cq_thread.joinable()) {
+        log::info("shutdown_rdma: Joining rdma_cq_thread");
+        handle_rdma_cq_thread.join();
+        log::info("shutdown_rdma: rdma_cq_thread joined successfully");
+    } else {
+        log::warn("shutdown_rdma: rdma_cq_thread is not joinable");
+    }
+
+    // Cancel the process_buffers_thread context
+    log::info("shutdown_rdma: Cancelling process_buffers_thread context");
+    process_buffers_thread_ctx.cancel();
+
+    // Join the process_buffers_thread if joinable
+    if (handle_process_buffers_thread.joinable()) {
+        log::info("shutdown_rdma: Joining process_buffers_thread");
+        handle_process_buffers_thread.join();
+        log::info("shutdown_rdma: process_buffers_thread joined successfully");
+    } else {
+        log::warn("shutdown_rdma: process_buffers_thread is not joinable");
+    }
+
+    // Clean up resources if initialized
+    if (init) {
+        log::info("shutdown_rdma: Cleaning up RDMA resources");
+        cleanup_resources(ctx);
+    } else {
+        log::warn("shutdown_rdma: RDMA not initialized, skipping resource cleanup");
+    }
+
+    // Set the RDMA state to closed
     set_state(ctx, State::closed);
+    log::info("shutdown_rdma: RDMA shutdown completed successfully");
 }
+
 
 } // namespace connection
 

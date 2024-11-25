@@ -138,15 +138,25 @@ int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
     return ret;
 }
 
-int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size)
-{
+int ep_send_buf(ep_ctx_t* ep_ctx, void* buf, size_t buf_size) {
+    if (!ep_ctx || !buf || buf_size == 0) {
+        ERROR("Invalid parameters provided to ep_send_buf: ep_ctx=%p, buf=%p, buf_size=%zu",
+              ep_ctx, buf, buf_size);
+        return -EINVAL;
+    }
+
     int ret;
+    int attempts = 0;
 
     do {
-        ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, NULL);
-        if (ret == -EAGAIN)
-            (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
-    } while (ret == -EAGAIN);
+        // Pass the buffer address as the context to fi_send
+        ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, buf);
+        if (ret == -EAGAIN) {
+            struct fi_cq_entry cq_entry;
+            (void)fi_cq_read(ep_ctx->cq_ctx.cq, &cq_entry, 1); // Drain CQ
+            ++attempts;
+        }
+    } while (ret == -EAGAIN && attempts);
 
     return ret;
 }

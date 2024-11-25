@@ -280,7 +280,7 @@ int main(int argc, char *argv[])
         log::info("Linking RDMA RX to Emulated Receiver...");
         conn_rx->set_link(ctx, emulated_rx);
 
-        int sleep_duration = 5000;
+        int sleep_duration = 3600000;
         log::info("Sleeping to allow RX processing")("duration_ms",
                   sleep_duration);
         mesh::thread::Sleep(ctx, std::chrono::milliseconds(sleep_duration));
@@ -356,7 +356,7 @@ int main(int argc, char *argv[])
         const char *plaintext = "Hello World";
         size_t text_size = strlen(plaintext) + 1; // Include null terminator
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 20; i++) {
             log::info("Transmitting plaintext")("iteration", i + 1)("size",
                                                                     text_size);
             res = emulated_tx->transmit_plaintext(ctx, plaintext, text_size);
@@ -366,6 +366,7 @@ int main(int argc, char *argv[])
                 break;
             }
             log::info("Transmission iteration %d successful.", i + 1);
+            usleep(5000);
         }
 
         log::info("Shutting down RDMA TX connection...");
