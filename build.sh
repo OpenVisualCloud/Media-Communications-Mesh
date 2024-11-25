@@ -6,6 +6,7 @@
 set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 
+# shellcheck source="scripts/common.sh"
 . "${SCRIPT_DIR}/scripts/common.sh"
 
 # Set build type. ("Debug" or "Release")
@@ -23,13 +24,13 @@ cmake -B "${BUILD_DIR}" \
 cmake --build "${BUILD_DIR}" -j
 
 # Install
-run_as_root_user cmake --install "${BUILD_DIR}"
-run_as_root_user ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.so.1 2>/dev/null || true
-run_as_root_user ldconfig
+as_root cmake --install "${BUILD_DIR}"
+as_root ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.so.1 2>/dev/null || true
+as_root ldconfig
 
 # Run unit tests
 export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
 "${BUILD_DIR}/bin/sdk_unit_tests"
 "${BUILD_DIR}/bin/media_proxy_unit_tests"
 
-prompt "Build Succeeded"
+log_info "Build Succeeded"
