@@ -7,6 +7,7 @@ set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
 
+# shellcheck source="../scripts/common.sh"
 . "${REPO_DIR}/scripts/common.sh"
 
 # Set build type. ("Debug" or "Release")
@@ -20,4 +21,4 @@ cmake -B "${SCRIPT_DIR}/out" \
 cmake --build "${SCRIPT_DIR}/out" -j
 
 # Install
-run_as_root_user cmake --install "${SCRIPT_DIR}/out"
+as_root cmake --install "${SCRIPT_DIR}/out"
