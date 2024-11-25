@@ -5,6 +5,16 @@
 
 COMMON_SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPOSITORY_DIR="$(readlink -f "${COMMON_SCRIPT_DIR}/..")"
+VERSIONS_FILE_PATH="$(readlink -f "${VERSIONS_FILE_PATH:-${REPOSITORY_DIR}/versions.env}")"
+export VERSIONS_FILE_PATH
+
+# shellcheck source="versions.env"
+. "${VERSIONS_FILE_PATH}"
+
+PM="${PM:-apt-get}"
+KERNEL_VERSION="${KERNEL_VERSION:-$(uname -r)}"
+export TZ="${TZ:-Europe/Warsaw}"
+export NPROC="${NPROC:-$(nproc)}"
 
 if ! grep "/root/.local/bin" <<< "${PATH}" > /dev/null 2>&1; then
     export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"

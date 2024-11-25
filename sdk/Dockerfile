@@ -33,8 +33,9 @@ RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
     make install
 
 COPY . ${MCM_DIR}
+
 WORKDIR ${MCM_DIR}/sdk
-RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh
+RUN ./build.sh "${PREFIX_DIR}"
 
 ARG IMAGE_CACHE_REGISTRY
 ARG IMAGE_NAME
@@ -46,7 +47,6 @@ LABEL org.opencontainers.image.description="Media Communications Mesh SDK sample
 LABEL org.opencontainers.image.version="1.0.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
-
 
 ARG MCM_DIR="/opt/mcm"
 ARG PREFIX_DIR="/install"
@@ -71,8 +71,6 @@ RUN apt-get update && \
     usermod -aG sudo mcm
 
 COPY --chown=1002 --from=builder "${PREFIX_DIR}" /
-COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/recver_app" "${MCM_DIR}/recver_app"
-COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/sender_app" "${MCM_DIR}/sender_app"
 
 RUN ldconfig
 WORKDIR /opt/mcm/

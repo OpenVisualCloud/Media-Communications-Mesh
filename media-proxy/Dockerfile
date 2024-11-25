@@ -109,7 +109,7 @@ RUN ./build.sh build-only && \
 # Build MCM
 WORKDIR ${MCM_DIR}
 COPY . ${MCM_DIR}
-RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh && \
+RUN ./build.sh "${PREFIX_DIR}" && \
     cp "${MTL_DIR}/build/manager/MtlManager" "${PREFIX_DIR}/usr/local/bin/" && \
     cp -fR "/usr/local/lib/bpf/"* "${PREFIX_DIR}/usr/local/lib/bpf/" && \
     rm -rf "${PREFIX_DIR}/usr/lib64/"*.a && \

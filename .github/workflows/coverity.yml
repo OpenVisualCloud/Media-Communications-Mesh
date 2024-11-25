@@ -39,17 +39,8 @@ jobs:
       with:
         ref: ${{ inputs.branch }}
 
-    - name: 'Install dependencies'
-      run: |
-        sudo apt-get update -y && \
-        sudo apt-get install -y --no-install-recommends \
-            git build-essential meson python3 python3-pyelftools pkg-config \
-            libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev \
-            libsdl2-ttf-dev libssl-dev ca-certificates m4 clang llvm zlib1g-dev \
-            libelf-dev libcap-ng-dev libcap2-bin gcc-multilib systemtap-sdt-dev ninja-build \
-            nasm dpdk-dev librdmacm-dev && \
-        sudo apt-get clean && \
-        sudo rm -rf /var/lib/apt/lists/*
+    - name: 'Install OS level dependencies'
+      run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
 
     - name: 'Build and Install xdp and libbpf'
       run: |
@@ -102,10 +93,7 @@ jobs:
 
     - name: 'Patch and configure MCM FFmpeg plugin'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
-      run: |
-          git config --global user.email "milosz.linkiewicz@intel.com"
-          git config --global user.name "Milosz Linkiewicz"
-          ./clone-and-patch-ffmpeg.sh
+      run: ./clone-and-patch-ffmpeg.sh
 
     - name: 'Run coverity'
       uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
