@@ -2,6 +2,9 @@
 #define RDMA_RX_H
 
 #include "conn_rdma.h"
+#include <queue>
+#include <mutex>
+#include <condition_variable>
 
 namespace mesh
 {
@@ -26,18 +29,33 @@ class RdmaRx : public Rdma
 
   protected:
     // Override buffer handling for Rx
-    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size) override;
-    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz) override;
+    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size)
+    {
+        // Shouldn't be invoked in this ctx
+        return Result::error_general_failure;
+    };  
+    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz)
+    {
+        // Shouldn't be invoked in this ctx
+        return Result::error_general_failure;
+    };
     virtual Result start_threads(context::Context& ctx) override;
-    // void frame_thread(context::Context &ctx) override;
 
     // Receive data using RDMA
     void process_buffers_thread(context::Context& ctx) override;
     void rdma_cq_thread(context::Context& ctx) override;
+
+    // Queue for managing buffers
+    std::queue<void*> buffer_queue;
+    std::mutex queue_mutex;
+    std::condition_variable_any queue_cv;
+
     std::mutex cq_mutex;
     std::condition_variable_any cq_cv;
     bool event_ready = false;
+
     void notify_cq_event();
+
 };
 
 } // namespace connection

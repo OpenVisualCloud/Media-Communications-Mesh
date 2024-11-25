@@ -16,6 +16,11 @@
 #include <thread>
 #include <atomic>
 
+#include <queue>
+
+#include <thread>
+#include <atomic>
+#include <condition_variable>
 #ifndef RDMA_DEFAULT_TIMEOUT
 #define RDMA_DEFAULT_TIMEOUT 1 // Set to 1 millisecond || appropriate value
 #endif
@@ -35,11 +40,11 @@ class Rdma : public Connection {
   public:
     Rdma();
     virtual ~Rdma();
-  
+
   protected:
     // Configure the RDMA session
     virtual Result configure(context::Context& ctx, const mcm_conn_param& request,
-                             const std::string& dev_port, libfabric_ctx *& dev_handle, Kind kind,
+                             const std::string& dev_port, libfabric_ctx*& dev_handle, Kind kind,
                              direction dir);
 
     // Overrides from Connection
@@ -73,39 +78,23 @@ class Rdma : public Connection {
     virtual void process_buffers_thread(context::Context& ctx) = 0;
     virtual void rdma_cq_thread(context::Context& ctx) = 0;
     virtual Result start_threads(context::Context& ctx) = 0;
+
+    Result init_queue_with_elements(size_t capacity, size_t trx_sz);
+    Result add_to_queue(void* element);
+    Result consume_from_queue(context::Context& ctx, void** element);
+    void cleanup_queue();
+
+
+    // Queue for managing buffers
+    std::queue<void*> buffer_queue;
+    std::mutex queue_mutex;
+    std::condition_variable_any queue_cv;
+
+    std::jthread handle_process_buffers_thread; // thread handle
+    std::jthread handle_rdma_cq_thread; // thread handle
     context::Context process_buffers_thread_ctx;
     context::Context rdma_cq_thread_ctx;
 
-    // Shared ring buffer for buffer management
-struct RingBuffer {
-    std::vector<void*> buf;  // Ring buffer for holding pointers
-    size_t head;             // Head index of the ring
-    size_t tail;             // Tail index of the ring
-    size_t capacity;         // Capacity of the ring buffer
-    std::mutex mtx;          // Mutex for thread safety
-    std::condition_variable cv; // Condition variable for signaling
-};
-
-    RingBuffer ring_buffer;
-
-    // Initialize the ring buffer
-    Result init_ring_with_elements(size_t capacity, size_t trx_sz);
-
-    // Add an element to the ring buffer
-    Result add_to_ring(void *element);
-
-    // Consume an element from the ring buffer
-    Result consume_from_ring(context::Context& ctx, void **element);
-
-    // Cleanup the ring buffer
-    void cleanup_ring();
-
-    // Member variables
-    std::vector<void *> bufs;         // Shared buffers
-    size_t buf_cnt;                   // Number of allocated buffers
-    std::jthread handle_process_buffers_thread; // thread handle
-    std::jthread handle_rdma_cq_thread; // thread handle
-    context::Context _ctx;            // Inner class context
 
   private:
     void shutdown_rdma(context::Context& ctx);
