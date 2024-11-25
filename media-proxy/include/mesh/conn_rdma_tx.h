@@ -47,11 +47,6 @@ class RdmaTx : public Rdma {
     void process_buffers_thread(context::Context& ctx) {
         // Shouldn't be invoked in this ctx
     };
-
-    std::mutex cq_mutex;
-    std::condition_variable_any cq_cv;
-    bool event_ready = false;
-    void notify_cq_event();
 };
 
 } // namespace connection

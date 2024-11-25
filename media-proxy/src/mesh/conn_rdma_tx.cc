@@ -30,26 +30,23 @@ Result RdmaTx::start_threads(context::Context& ctx)
     return Result::success;
 }
 
-void RdmaTx::notify_cq_event() {
-    std::lock_guard<std::mutex> lock(cq_mutex);
-    event_ready = true;
-    cq_cv.notify_one();
-}
-
-// Thread to handle CQ events and pass buffers back to the queue
 void RdmaTx::rdma_cq_thread(context::Context& ctx)
 {
     log::info("rdma_cq_thread started");
 
-    while (!ctx.stop_token().stop_requested()) {
+    while (!ctx.cancelled()) {
         void* buf = nullptr;
 
         // Wait for a CQ event or cancellation signal
         {
             std::unique_lock<std::mutex> lock(cq_mutex);
 
-            cq_cv.wait(lock, ctx.stop_token(), [&]() { return event_ready; });
+            bool notified = cq_cv.wait(lock, ctx.stop_token(), [&]() { return event_ready; });
 
+            if (!notified) {
+                log::warn("CQ wait interrupted without an event. Context canceled?")("ctx_cancelled", ctx.cancelled());
+            }
+            
             if (ctx.stop_token().stop_requested()) {
                 log::info("rdma_cq_thread detected ctx.cancelled(), exiting...");
                 break;
@@ -59,35 +56,51 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
             event_ready = false;
         }
 
-        // Wait for CQ events
-        struct fi_cq_entry cq_entry;
-        int ret = fi_cq_read(ep_ctx->cq_ctx.cq, &cq_entry, 1);
-        if (ret > 0) {
-            buf = cq_entry.op_context; // Retrieve the buffer address
-        } else if (ret == -EAGAIN) {
-            log::debug("No new CQ event, retrying...");
-            continue;
-        } else {
-            log::error("Completion queue read failed")("error", fi_strerror(-ret));
-            continue;
+        // Process available CQ events in a loop
+        while (true) {
+            struct fi_cq_entry cq_entry;
+            int ret = fi_cq_read(ep_ctx->cq_ctx.cq, &cq_entry, 1); // TODO: Adjust batch size if supported
+            if (ret > 0) {
+                buf = cq_entry.op_context; // Retrieve the buffer address
+                log::debug("CQ entry read successfully")("buffer_address", buf);
+
+                if (buf == nullptr) {
+                    log::error("Completion queue provided a null buffer, skipping...");
+                    continue;
+                }
+
+                // Add the buffer back to the queue
+                Result res = add_to_queue(buf);
+                if (res != Result::success) {
+                    log::error("Failed to add buffer back to the queue")("buffer_address", buf);
+                } else {
+                    log::debug("Buffer successfully added back to queue")("buffer_address", buf);
+                }
+            } else if (ret == -EAGAIN) {
+                // No new CQ events, exit the loop to avoid spinning
+                log::debug("No new CQ event, breaking CQ poll loop...");
+                break;
+            } else {
+                // Handle CQ read errors
+                log::error("Completion queue read failed")("error", fi_strerror(-ret));
+                break;
+            }
         }
 
-        if (buf == nullptr) {
-            log::error("Completion queue provided a null buffer, skipping...");
-            continue;
-        }
+        // // Sleep briefly to allow transmissions to progress before checking again
+        // std::this_thread::sleep_for(std::chrono::microseconds(50));
 
-        // Add the buffer back to the queue
-        Result res = add_to_queue(buf);
-        if (res != Result::success) {
-            log::error("Failed to add buffer back to the queue")("buffer_address", buf);
-        } else {
-            log::debug("Buffer successfully added back to queue")("buffer_address", buf);
-        }
+        // // Signal readiness to continue if the queue is empty
+        // {
+        //     std::unique_lock<std::mutex> lock(cq_mutex);
+        //     event_ready = !buffer_queue.empty();
+        // }
     }
 
     log::info("Exiting rdma_cq_thread");
 }
+
+
 
 Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_t& sent)
 {
@@ -116,6 +129,7 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
 
     // Transmit the buffer through RDMA
     int err = libfabric_ep_ops.ep_send_buf(ep_ctx, reg_buf, tmp_sent);
+    notify_cq_event();
     if (err) {
         log::error("Failed to send buffer through RDMA")("error", fi_strerror(-err));
 
@@ -127,7 +141,7 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
     }
 
     sent = tmp_sent;
-    notify_cq_event();
+    
 
     return Result::success;
 }

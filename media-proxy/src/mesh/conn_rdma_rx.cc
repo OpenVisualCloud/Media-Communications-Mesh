@@ -49,12 +49,6 @@ Result RdmaRx::start_threads(context::Context& ctx) {
     return Result::success;
 }
 
-void RdmaRx::notify_cq_event() {
-    std::lock_guard<std::mutex> lock(cq_mutex);
-    event_ready = true;
-    cq_cv.notify_one();
-}
-
 // Thread to process available buffers in the queue
 void RdmaRx::process_buffers_thread(context::Context& ctx)
 {
@@ -166,7 +160,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
             log::error("Failed to add buffer back to the queue")("buffer_address", buf);
         }
 
-        notify_cq_event();
+ //       notify_cq_event();
     }
 
     log::info("Exiting rdma_cq_thread");

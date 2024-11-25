@@ -12,6 +12,12 @@ Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr)
 
 Rdma::~Rdma() { shutdown_rdma(context::Background()); }
 
+void Rdma::notify_cq_event() {
+    std::lock_guard<std::mutex> lock(cq_mutex);
+    event_ready = true;
+    cq_cv.notify_one();
+}
+
 // Add to queue
 Result Rdma::add_to_queue(void* element) {
     if (!element) {
@@ -25,8 +31,8 @@ Result Rdma::add_to_queue(void* element) {
     }
 
     log::debug("Element added to queue")("queue_size", buffer_queue.size());
-    
-    queue_cv.notify_one();
+    //notify_cq_event();
+    //queue_cv.notify_one();
     return Result::success;
 }
 

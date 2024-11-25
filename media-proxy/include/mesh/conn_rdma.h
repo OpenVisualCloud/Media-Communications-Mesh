@@ -95,6 +95,12 @@ class Rdma : public Connection {
     context::Context process_buffers_thread_ctx;
     context::Context rdma_cq_thread_ctx;
 
+    std::mutex cq_mutex;
+    std::condition_variable_any cq_cv;
+    bool event_ready = false;
+
+    void notify_cq_event();
+
 
   private:
     void shutdown_rdma(context::Context& ctx);
