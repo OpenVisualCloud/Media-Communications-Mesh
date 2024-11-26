@@ -104,7 +104,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
     Result on_receive(context::Context &ctx, void *ptr, uint32_t sz, uint32_t &sent) override
     {
-        int _sent = std::min(transfer_size, sz);
+        int to_be_sent = std::min(transfer_size, sz);
         // TODO: add error/warning if sent is different than _transfer_size
 
         FRAME *frame = NULL;
@@ -123,14 +123,14 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
         if (frame) {
             // Copy data from emulated transmitter to MTL empty buffer
-            mtl_memcpy(get_frame_data_ptr(frame), ptr, _sent);
+            mtl_memcpy(get_frame_data_ptr(frame), ptr, to_be_sent);
             // Return full buffer to MTL
             put_frame(mtl_session, frame);
         } else {
             return set_result(Result::error_shutdown);
         }
 
-        sent = _sent;
+        sent = to_be_sent;
         return set_result(Result::success);
     };
 };
