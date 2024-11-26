@@ -69,7 +69,7 @@ class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int> {
     {
         received_packets_dummy1 = 0;
         received_packets_dummy2 = 0;
-        _transfer_size = 10000;
+        transfer_size = 10000;
     };
     ~EmulatedST2110_Tx() {};
 
@@ -117,7 +117,7 @@ class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, int> {
     {
         received_packets_dummy1 = 0;
         received_packets_dummy2 = 0;
-        _transfer_size = 10000;
+        transfer_size = 10000;
     };
     ~EmulatedST2110_Rx() {};
 

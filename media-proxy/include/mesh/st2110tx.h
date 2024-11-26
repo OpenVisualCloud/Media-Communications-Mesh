@@ -14,20 +14,13 @@ namespace mesh::connection {
  */
 template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public ST2110 {
   public:
-    ST2110Tx()
-    {
-        _kind = Kind::transmitter;
-
-        _handle = nullptr;
-        _ops = {0};
-        _transfer_size = 0;
-    };
+    ST2110Tx() : mtl_session(nullptr), ops({0}), transfer_size(0) { _kind = Kind::transmitter; };
     ~ST2110Tx() { shutdown(_ctx); };
 
   protected:
-    HANDLE _handle;
-    OPS _ops;
-    uint32_t _transfer_size;
+    HANDLE mtl_session;
+    OPS ops;
+    uint32_t transfer_size;
     context::Context _ctx;
 
     virtual FRAME *get_frame(HANDLE) = 0;
@@ -38,10 +31,10 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
     Result on_establish(context::Context &ctx) override
     {
         _ctx = context::WithCancel(ctx);
-        _stop = false;
+        stop = false;
 
-        _handle = create_session(mtl_device, &_ops);
-        if (!_handle) {
+        mtl_session = create_session(mtl_device, &ops);
+        if (!mtl_session) {
             log::error("Failed to create session");
             set_state(ctx, State::closed);
             return set_result(Result::error_general_failure);
@@ -55,9 +48,9 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
     {
         _ctx.cancel();
 
-        if (_handle) {
-            close_session(_handle);
-            _handle = nullptr;
+        if (mtl_session) {
+            close_session(mtl_session);
+            mtl_session = nullptr;
         }
         set_state(ctx, State::closed);
         return set_result(Result::success);
@@ -65,17 +58,17 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
     Result on_receive(context::Context &ctx, void *ptr, uint32_t sz, uint32_t &sent) override
     {
-        sent = std::min(_transfer_size, sz);
+        sent = std::min(transfer_size, sz);
         // TODO: add error/warning if sent is different than _transfer_size
 
         FRAME *frame = NULL;
         do {
             // Get empty buffer from MTL
-            frame = get_frame(_handle);
+            frame = get_frame(mtl_session);
             if (!frame) {
-                std::unique_lock lk(_mx);
-                _cv.wait(lk, _ctx.stop_token(), [this] { return _stop.load(); });
-                _stop = false;
+                std::unique_lock lk(mx);
+                cv.wait(lk, _ctx.stop_token(), [this] { return stop.load(); });
+                stop = false;
                 if (_ctx.cancelled()) {
                     break;
                 }
@@ -86,15 +79,13 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
             // Copy data from emulated transmitter to MTL empty buffer
             mtl_memcpy(get_frame_data_ptr(frame), ptr, sent);
             // Return full buffer to MTL
-            put_frame(_handle, frame);
+            put_frame(mtl_session, frame);
         } else {
             sent = 0;
             return set_result(Result::error_shutdown);
         }
         return set_result(Result::success);
     };
-
-  private:
 };
 
 class ST2110_20Tx : public ST2110Tx<st_frame, st20p_tx_handle, st20p_tx_ops> {
@@ -110,8 +101,6 @@ class ST2110_20Tx : public ST2110Tx<st_frame, st20p_tx_handle, st20p_tx_ops> {
     int put_frame(st20p_tx_handle h, st_frame *f) override;
     st20p_tx_handle create_session(mtl_handle h, st20p_tx_ops *o) override;
     int close_session(st20p_tx_handle h) override;
-
-  private:
 };
 
 class ST2110_22Tx : public ST2110Tx<st_frame, st22p_tx_handle, st22p_tx_ops> {
@@ -127,8 +116,6 @@ class ST2110_22Tx : public ST2110Tx<st_frame, st22p_tx_handle, st22p_tx_ops> {
     int put_frame(st22p_tx_handle h, st_frame *f) override;
     st22p_tx_handle create_session(mtl_handle h, st22p_tx_ops *o) override;
     int close_session(st22p_tx_handle h) override;
-
-  private:
 };
 
 class ST2110_30Tx : public ST2110Tx<st30_frame, st30p_tx_handle, st30p_tx_ops> {
@@ -144,8 +131,6 @@ class ST2110_30Tx : public ST2110Tx<st30_frame, st30p_tx_handle, st30p_tx_ops> {
     int put_frame(st30p_tx_handle h, st30_frame *f) override;
     st30p_tx_handle create_session(mtl_handle h, st30p_tx_ops *o) override;
     int close_session(st30p_tx_handle h) override;
-
-  private:
 };
 
 } // namespace mesh::connection

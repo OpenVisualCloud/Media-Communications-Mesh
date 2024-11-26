@@ -45,11 +45,9 @@ class ST2110 : public Connection {
     static int frame_available_cb(void *ptr);
 
     mtl_handle mtl_device;
-    std::atomic<bool> _stop;
-    std::condition_variable_any _cv;
-    std::mutex _mx;
-
-  private:
+    std::atomic<bool> stop;
+    std::condition_variable_any cv;
+    std::mutex mx;
 };
 
 } // namespace mesh::connection
