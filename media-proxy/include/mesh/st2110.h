@@ -25,10 +25,11 @@ namespace mesh::connection {
  */
 class ST2110 : public Connection {
   public:
-    static st_frame_fmt mesh_video_format_to_st_format(int fmt);
-    static st30_fmt mesh_audio_format_to_st_format(int fmt);
-    static st30_sampling mesh_audio_sampling_to_st_sampling(int sampling);
-    static st30_ptime mesh_audio_ptime_to_st_ptime(int ptime);
+    static int mesh_video_format_to_st_format(int fmt, st_frame_fmt &st_fmt);
+    static int mesh_audio_format_to_st_format(int fmt, st30_fmt &st_fmt);
+    static int mesh_audio_sampling_to_st_sampling(int sampling, st30_sampling &st_sampling);
+    static int mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime &st_ptime);
+
     static void *get_frame_data_ptr(st_frame *src);
     static void *get_frame_data_ptr(st30_frame *src);
 

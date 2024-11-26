@@ -61,7 +61,10 @@ Result ST2110_20Tx::configure(context::Context &ctx, const std::string &dev_port
     ops.width = cfg_video.width;
     ops.height = cfg_video.height;
     ops.fps = st_frame_rate_to_st_fps(cfg_video.fps);
-    ops.input_fmt = mesh_video_format_to_st_format(cfg_video.pixel_format);
+
+    if (mesh_video_format_to_st_format(cfg_video.pixel_format, ops.input_fmt))
+        return set_result(Result::error_bad_argument);
+
     ops.transport_fmt = ST20_FMT_YUV_422_PLANAR10LE;
     ops.device = ST_PLUGIN_DEVICE_AUTO;
     ops.framebuff_cnt = 4;

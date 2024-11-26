@@ -60,10 +60,15 @@ Result ST2110_30Rx::configure(context::Context &ctx, const std::string &dev_port
         free((void *)ops.name);
     ops.name = strdup(session_name);
     ops.framebuff_cnt = 4;
-    ops.fmt = mesh_audio_format_to_st_format(cfg_audio.format);
+    if(mesh_audio_format_to_st_format(cfg_audio.format, ops.fmt))
+        return set_result(Result::error_bad_argument);
+
     ops.channel = cfg_audio.channels;
-    ops.sampling = mesh_audio_sampling_to_st_sampling(cfg_audio.sample_rate);
-    ops.ptime = mesh_audio_ptime_to_st_ptime(cfg_audio.packet_time);
+    if(mesh_audio_sampling_to_st_sampling(cfg_audio.sample_rate, ops.sampling))
+        return set_result(Result::error_bad_argument);
+
+    if(mesh_audio_ptime_to_st_ptime(cfg_audio.packet_time, ops.ptime))
+        return set_result(Result::error_bad_argument);
 
     log::info("ProxyContext: %s...", __func__);
     log::info("port          : %s", ops.port.port[MTL_PORT_P]);

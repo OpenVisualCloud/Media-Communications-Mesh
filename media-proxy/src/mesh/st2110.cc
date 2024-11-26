@@ -2,76 +2,104 @@
 
 namespace mesh::connection {
 
-st_frame_fmt ST2110::mesh_video_format_to_st_format(int fmt)
+int ST2110::mesh_video_format_to_st_format(int mesh_fmt, st_frame_fmt &st_fmt)
 {
-    switch (fmt) {
+    switch (mesh_fmt) {
     case MESH_VIDEO_PIXEL_FORMAT_NV12:
-        return ST_FRAME_FMT_YUV420CUSTOM8;
+        st_fmt = ST_FRAME_FMT_YUV420CUSTOM8;
+        break;
     case MESH_VIDEO_PIXEL_FORMAT_YUV422P:
-        return ST_FRAME_FMT_YUV422PLANAR8;
+        st_fmt = ST_FRAME_FMT_YUV422PLANAR8;
+        break;
     case MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE:
-        return ST_FRAME_FMT_YUV422PLANAR10LE;
+        st_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
+        break;
     case MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE:
-        return ST_FRAME_FMT_YUV444PLANAR10LE;
+        st_fmt = ST_FRAME_FMT_YUV444PLANAR10LE;
+        break;
     case MESH_VIDEO_PIXEL_FORMAT_RGB8:
-        return ST_FRAME_FMT_RGB8;
+        st_fmt = ST_FRAME_FMT_RGB8;
+        break;
     default:
-        return ST_FRAME_FMT_YUV422PLANAR10LE;
+        return -1; // Error: unknown format
     }
+
+    return 0; // Success
 }
 
-st30_fmt ST2110::mesh_audio_format_to_st_format(int fmt)
+int ST2110::mesh_audio_format_to_st_format(int mesh_fmt, st30_fmt &st_fmt)
 {
-    switch (fmt) {
+    switch (mesh_fmt) {
     case MESH_AUDIO_FORMAT_PCM_S8:
-        return ST30_FMT_PCM8;
+        st_fmt = ST30_FMT_PCM8;
+        break;
     case MESH_AUDIO_FORMAT_PCM_S16BE:
-        return ST30_FMT_PCM16;
+        st_fmt = ST30_FMT_PCM16;
+        break;
     case MESH_AUDIO_FORMAT_PCM_S24BE:
-        return ST30_FMT_PCM24;
+        st_fmt = ST30_FMT_PCM24;
+        break;
     default:
-        return ST30_FMT_MAX;
+        return -1; // Error: unknown format
     }
+
+    return 0; // Success
 }
 
-st30_sampling ST2110::mesh_audio_sampling_to_st_sampling(int sampling)
+int ST2110::mesh_audio_sampling_to_st_sampling(int sampling, st30_sampling &st_sampling)
 {
     switch (sampling) {
     case MESH_AUDIO_SAMPLE_RATE_48000:
-        return ST30_SAMPLING_48K;
+        st_sampling = ST30_SAMPLING_48K;
+        break;
     case MESH_AUDIO_SAMPLE_RATE_96000:
-        return ST30_SAMPLING_96K;
+        st_sampling = ST30_SAMPLING_96K;
+        break;
     case MESH_AUDIO_SAMPLE_RATE_44100:
-        return ST31_SAMPLING_44K;
+        st_sampling = ST31_SAMPLING_44K;
+        break;
     default:
-        return ST30_SAMPLING_MAX;
+        return -1; // Error: unknown sampling rate
     }
+
+    return 0; // Success
 }
 
-st30_ptime ST2110::mesh_audio_ptime_to_st_ptime(int ptime)
+int ST2110::mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime &st_ptime)
 {
     switch (ptime) {
     case MESH_AUDIO_PACKET_TIME_1MS:
-        return ST30_PTIME_1MS;
+        st_ptime = ST30_PTIME_1MS;
+        break;
     case MESH_AUDIO_PACKET_TIME_125US:
-        return ST30_PTIME_125US;
+        st_ptime = ST30_PTIME_125US;
+        break;
     case MESH_AUDIO_PACKET_TIME_250US:
-        return ST30_PTIME_250US;
+        st_ptime = ST30_PTIME_250US;
+        break;
     case MESH_AUDIO_PACKET_TIME_333US:
-        return ST30_PTIME_333US;
+        st_ptime = ST30_PTIME_333US;
+        break;
     case MESH_AUDIO_PACKET_TIME_4MS:
-        return ST30_PTIME_4MS;
+        st_ptime = ST30_PTIME_4MS;
+        break;
     case MESH_AUDIO_PACKET_TIME_80US:
-        return ST31_PTIME_80US;
+        st_ptime = ST31_PTIME_80US;
+        break;
     case MESH_AUDIO_PACKET_TIME_1_09MS:
-        return ST31_PTIME_1_09MS;
+        st_ptime = ST31_PTIME_1_09MS;
+        break;
     case MESH_AUDIO_PACKET_TIME_0_14MS:
-        return ST31_PTIME_0_14MS;
+        st_ptime = ST31_PTIME_0_14MS;
+        break;
     case MESH_AUDIO_PACKET_TIME_0_09MS:
-        return ST31_PTIME_0_09MS;
+        st_ptime = ST31_PTIME_0_09MS;
+        break;
     default:
-        return ST30_PTIME_MAX;
+        return -1; // Error: unknown packet time
     }
+
+    return 0; // Success
 }
 
 void *ST2110::get_frame_data_ptr(st_frame *src)
