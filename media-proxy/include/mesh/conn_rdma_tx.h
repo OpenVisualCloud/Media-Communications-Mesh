@@ -28,25 +28,9 @@ class RdmaTx : public Rdma {
     Result on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_t& sent);
 
   protected:
-    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size)
-    {
-        // Shouldn't be invoked in this ctx
-        return Result::error_general_failure;
-    };    
+    virtual Result start_threads(context::Context& ctx);
 
-    virtual Result start_threads(context::Context& ctx) override;
-
-    void rdma_cq_thread(context::Context& ctx) override;
-
-    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz)
-    {
-        // Shouldn't be invoked in this ctx
-        return Result::error_general_failure;
-    };
-
-    void process_buffers_thread(context::Context& ctx) {
-        // Shouldn't be invoked in this ctx
-    };
+    void rdma_cq_thread(context::Context& ctx);
 };
 
 } // namespace connection

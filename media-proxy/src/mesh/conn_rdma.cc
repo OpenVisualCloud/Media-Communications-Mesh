@@ -256,6 +256,12 @@ void Rdma::shutdown_rdma(context::Context& ctx)
         queue_cv.notify_all();
     }
 
+    {
+        std::lock_guard<std::mutex> lock(cq_mutex);
+        cq_cv.notify_all();
+    }
+    
+
     // Cancel the `rdma_cq_thread` context
     log::info("shutdown_rdma: Cancelling rdma_cq_thread context");
     rdma_cq_thread_ctx.cancel();

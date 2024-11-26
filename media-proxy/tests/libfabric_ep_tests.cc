@@ -149,8 +149,9 @@ struct fi_ops_cq LibfabricEpTest::ops_cq;
 TEST_F(LibfabricEpTest, TestEpSendBufSuccess)
 {
     send_fake.return_val = 0;
+    char dummy_buf[10] = {0}; // Valid buffer
 
-    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, nullptr, 0);
+    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, dummy_buf, 0);
 
     ASSERT_EQ(ret, 0);
     ASSERT_EQ(send_fake.call_count, 1);

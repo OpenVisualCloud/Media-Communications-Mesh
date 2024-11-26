@@ -28,22 +28,11 @@ class RdmaRx : public Rdma
                      const std::string& dev_port, libfabric_ctx *& dev_handle);
 
   protected:
-    // Override buffer handling for Rx
-    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size)
-    {
-        // Shouldn't be invoked in this ctx
-        return Result::error_general_failure;
-    };  
-    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz)
-    {
-        // Shouldn't be invoked in this ctx
-        return Result::error_general_failure;
-    };
-    virtual Result start_threads(context::Context& ctx) override;
+    virtual Result start_threads(context::Context& ctx);
 
     // Receive data using RDMA
-    void process_buffers_thread(context::Context& ctx) override;
-    void rdma_cq_thread(context::Context& ctx) override;
+    void process_buffers_thread(context::Context& ctx);
+    void rdma_cq_thread(context::Context& ctx);
 };
 
 } // namespace connection

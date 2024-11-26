@@ -57,10 +57,6 @@ class Rdma : public Connection {
     // Configure RDMA endpoint
     Result configure_endpoint(context::Context& ctx);
 
-    // Handle buffers (must be implemented in derived classes)
-    virtual Result handle_rdma_cq(context::Context& ctx, void *buffer, size_t size) = 0;
-    virtual Result process_buffers(context::Context& ctx, void *buf, size_t sz) = 0;
-
     // Cleanup RDMA resources
     Result cleanup_resources(context::Context& ctx);
 
@@ -74,10 +70,13 @@ class Rdma : public Connection {
     size_t trx_sz;             // Data transfer size
     bool init;                 // Initialization flag
 
-    // RDMA thread logic
-    virtual void process_buffers_thread(context::Context& ctx) = 0;
-    virtual void rdma_cq_thread(context::Context& ctx) = 0;
-    virtual Result start_threads(context::Context& ctx) = 0;
+    // // RDMA thread logic
+    // virtual void process_buffers_thread(context::Context& ctx) = 0;
+    // virtual void rdma_cq_thread(context::Context& ctx) = 0;
+    virtual Result start_threads(context::Context& ctx)
+    {
+        return Result::success;
+    }
 
     Result init_queue_with_elements(size_t capacity, size_t trx_sz);
     Result add_to_queue(void* element);

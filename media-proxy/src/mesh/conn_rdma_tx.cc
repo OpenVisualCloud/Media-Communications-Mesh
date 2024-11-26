@@ -21,8 +21,14 @@ Result RdmaTx::configure(context::Context& ctx, const mcm_conn_param& request,
 
 Result RdmaTx::start_threads(context::Context& ctx)
 {
+    rdma_cq_thread_ctx = context::WithCancel(ctx);
+    
     try {
-        handle_rdma_cq_thread = std::jthread([this, &ctx]() { this->rdma_cq_thread(ctx); });
+        handle_rdma_cq_thread = std::jthread([this]() {
+            log::info("Starting rdma_cq_thread");
+            this->rdma_cq_thread(this->rdma_cq_thread_ctx);
+            log::info("Exiting rdma_cq_thread");
+        });
     } catch (const std::system_error& e) {
         log::fatal("Failed to start threads")("error", e.what());
         return Result::error_thread_creation_failed;
@@ -99,8 +105,6 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
 
     log::info("Exiting rdma_cq_thread");
 }
-
-
 
 Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_t& sent)
 {

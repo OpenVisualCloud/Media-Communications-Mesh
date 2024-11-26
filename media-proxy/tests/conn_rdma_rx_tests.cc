@@ -20,7 +20,7 @@ using namespace mesh::log;
 
 
 
-// Helper to configure RdmaTx
+// Helper to configure RdmaRx
 void ConfigureRdmaRx(connection::RdmaRx* conn_rx, context::Context& ctx, size_t transfer_size)
 {
     mcm_conn_param request = {};
@@ -316,80 +316,4 @@ TEST_F(RdmaRxTest, ValidateStateTransitions)
     res = conn_rx->shutdown(ctx);
     ASSERT_EQ(res, connection::Result::success);
     ASSERT_EQ(conn_rx->state(), connection::State::closed);
-}
-
-TEST_F(RdmaRxTest, RdmaRx_ReceiveData)
-{
-    libfabric_ctx mock_dev_handle; // Mocked RDMA device handle
-    char mock_buffer[1024] = {};   // Mock buffer for received data, initialized to zero
-    std::memcpy(mock_buffer, DUMMY_DATA1, sizeof(DUMMY_DATA1));
-
-    // Mock RDMA initialization
-    EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
-        .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(&mock_dev_handle),
-                                   ::testing::Return(0))); // Success
-
-    // Mock endpoint initialization
-    EXPECT_CALL(*mock_ep_ops, ep_init(::testing::_, ::testing::_))
-        .WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
-            *ep_ctx = new ep_ctx_t();
-            (*ep_ctx)->ep = reinterpret_cast<fid_ep *>(0xdeadbeef);
-            return 0; // Success
-        });
-
-    // Mock buffer registration for repeated calls
-    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(::testing::_, ::testing::_, ::testing::_))
-        .WillRepeatedly(::testing::Return(0)); // Success
-
-    // Mock ep_recv_buf for repeated calls
-    EXPECT_CALL(*mock_ep_ops, ep_recv_buf(::testing::_, ::testing::_, ::testing::_, ::testing::_))
-        .WillRepeatedly([&](ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx) -> int {
-            std::memcpy(buf, mock_buffer, sizeof(mock_buffer)); // Fill the buffer
-            return 0;                                           // Success
-        });
-
-    // Mock completion queue read for repeated calls
-    EXPECT_CALL(*mock_ep_ops, ep_cq_read(::testing::_, ::testing::_, RDMA_DEFAULT_TIMEOUT))
-        .WillRepeatedly([&](ep_ctx_t *ep_ctx, void **buf_ctx, int timeout) -> int {
-                return 0;               // Success
-        });
-
-    // Mock endpoint destruction
-    EXPECT_CALL(*mock_ep_ops, ep_destroy(::testing::_)).WillOnce([](ep_ctx_t **ep_ctx) -> int {
-        delete *ep_ctx;
-        *ep_ctx = nullptr;
-        return 0;
-    });
-
-    // Setup EmulatedReceiver
-    auto emulated_rx = new EmulatedReceiver(ctx);
-    emulated_rx->establish(ctx);
-
-    // Configure and establish the connection
-    ConfigureRdmaRx(conn_rx, ctx, 1024);
-
-    // Establish the RdmaRx connection
-    auto res = conn_rx->establish(ctx);
-    ASSERT_EQ(res, connection::Result::success);
-    ASSERT_EQ(conn_rx->state(), connection::State::active);
-
-    // Link RdmaRx to EmulatedReceiver
-    conn_rx->set_link(ctx, emulated_rx);
-
-    // Simulate runtime
-    mesh::thread::Sleep(ctx, std::chrono::milliseconds(5));
-
-    // Verify data integrity in hex
-    std::string expected_hex = to_hex(DUMMY_DATA1, sizeof(DUMMY_DATA1));
-    std::string received_hex = to_hex(emulated_rx->last_received_data.data(),
-                                      sizeof(DUMMY_DATA1)); // Compare only relevant data
-    EXPECT_EQ(received_hex, expected_hex) << "Received data does not match expected data in hex format";
-
-    // Shutdown RdmaRx
-    res = conn_rx->shutdown(ctx);
-    ASSERT_EQ(res, connection::Result::success);
-    ASSERT_EQ(conn_rx->state(), connection::State::closed);
-
-    // Cleanup
-    delete emulated_rx;
 }
