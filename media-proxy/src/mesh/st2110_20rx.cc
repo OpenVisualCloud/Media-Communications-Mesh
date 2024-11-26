@@ -26,10 +26,10 @@ Result ST2110_20Rx::configure(context::Context &ctx, const std::string &dev_port
                               const MeshConfig_ST2110 &cfg_st2110,
                               const MeshConfig_Video &cfg_video)
 {
-    if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_20) {
-        set_state(ctx, State::not_configured);
+    set_state(ctx, State::not_configured);
+
+    if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_20)
         return set_result(Result::error_bad_argument);
-    }
 
     if (configure_common(ctx, dev_port, cfg_st2110))
         return set_result(Result::error_bad_argument);
