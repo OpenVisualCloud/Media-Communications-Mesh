@@ -41,7 +41,7 @@ Result ST2110_30Rx::configure(context::Context& ctx, const std::string& dev_port
     if (mesh_audio_ptime_to_st_ptime(cfg_audio.packet_time, ops.ptime))
         return set_result(Result::error_bad_argument);
 
-    log::info("ST2110_22Rx: configure")
+    log::info("ST2110_30Rx: configure")
         ("payload_type", (int)ops.port.payload_type)
         ("audio_fmt", ops.fmt)
         ("audio_chan", ops.channel)
