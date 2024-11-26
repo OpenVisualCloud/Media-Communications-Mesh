@@ -397,5 +397,5 @@ int main(int argc, char **argv)
 
     mesh_delete_client(&client);
 
-    exit(-1);
+    return 0;
 }

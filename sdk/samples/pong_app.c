@@ -291,8 +291,8 @@ int main(int argc, char **argv)
         exit(-1);
     }
 
-    pthread_t *pong_threads = malloc(config.threads_num * sizeof(pthread_t *));
-    int *threads_id = malloc(config.threads_num * sizeof(int *));
+    pthread_t *pong_threads = malloc(config.threads_num * sizeof(pthread_t));
+    int *threads_id = malloc(config.threads_num * sizeof(int));
 
     for (int i = 0; i < config.threads_num; i++) {
         threads_id[i] = i;
@@ -311,9 +311,7 @@ int main(int argc, char **argv)
     free(pong_threads);
     free(threads_id);
 
-    return 0;
-
     mesh_delete_client(&client);
 
-    exit(-1);
+    return 0;
 }
