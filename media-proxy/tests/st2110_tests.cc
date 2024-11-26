@@ -60,7 +60,7 @@ class EmulatedReceiver : public connection::Connection {
     }
 };
 
-class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int> {
+class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, st20p_rx_ops> {
   public:
     uint32_t received_packets_dummy1;
     uint32_t received_packets_dummy2;
@@ -100,7 +100,7 @@ class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int> {
         return 0;
     }
 
-    int *create_session(mtl_handle, int *o) override { return (int *)malloc(1); }
+    int *create_session(mtl_handle, st20p_rx_ops *o) override { return (int *)malloc(1); }
 
     int close_session(int *h) override
     {
@@ -109,7 +109,7 @@ class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, int> {
     }
 };
 
-class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, int> {
+class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, st20p_rx_ops> {
   public:
     uint32_t received_packets_dummy1;
     uint32_t received_packets_dummy2;
@@ -148,7 +148,7 @@ class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, int> {
         return 0;
     }
 
-    int *create_session(mtl_handle, int *o) override { return (int *)malloc(1); }
+    int *create_session(mtl_handle, st20p_rx_ops *o) override { return (int *)malloc(1); }
 
     int close_session(int *h) override
     {

@@ -36,8 +36,9 @@ class ST2110 : public Connection {
     static void get_mtl_dev_params(mtl_init_params &st_param, const std::string &dev_port,
                                    mtl_log_level log_level,
                                    const char local_ip_addr[MESH_IP_ADDRESS_SIZE]);
-    static mtl_handle get_mtl_handle(const std::string &dev_port, mtl_log_level log_level,
-                                     const char local_ip_addr[MESH_IP_ADDRESS_SIZE]);
+    static mtl_handle get_mtl_device(const std::string &dev_port, mtl_log_level log_level,
+                                     const char local_ip_addr[MESH_IP_ADDRESS_SIZE],
+                                     int &session_id);
 
     ST2110() : mtl_device(nullptr) {};
     virtual ~ST2110(){};

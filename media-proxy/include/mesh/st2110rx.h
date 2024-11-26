@@ -15,19 +15,69 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
   public:
     ST2110Rx() : mtl_session(nullptr), ops{0}, transfer_size(0) { _kind = Kind::receiver; }
 
-    ~ST2110Rx() { shutdown(_ctx); }
+    ~ST2110Rx()
+    {
+        shutdown(_ctx);
+        if (ops.name)
+            free((void *)ops.name);
+    }
 
   protected:
     HANDLE mtl_session;
     OPS ops;
     size_t transfer_size;
     std::jthread frame_thread_handle;
-    context::Context _ctx;
+    context::Context _ctx = context::WithCancel(context::Background());
 
     virtual FRAME *get_frame(HANDLE) = 0;
     virtual int put_frame(HANDLE, FRAME *) = 0;
     virtual HANDLE create_session(mtl_handle, OPS *) = 0;
     virtual int close_session(HANDLE) = 0;
+
+    int configure_common(context::Context &ctx, const std::string &dev_port,
+                         const MeshConfig_ST2110 &cfg_st2110)
+    {
+        int session_id = 0;
+        mtl_device = get_mtl_device(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr, session_id);
+        if (mtl_device == nullptr) {
+            log::error("Failed to get MTL device");
+            return -1;
+        }
+
+        inet_pton(AF_INET, cfg_st2110.remote_ip_addr, ops.port.ip_addr[MTL_PORT_P]);
+        inet_pton(AF_INET, cfg_st2110.local_ip_addr, ops.port.mcast_sip_addr[MTL_PORT_P]);
+        ops.port.udp_port[MTL_PORT_P] = cfg_st2110.local_port;
+
+        strlcpy(ops.port.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
+        ops.port.num_port = 1;
+
+        char session_name[NAME_MAX] = "";
+        snprintf(session_name, NAME_MAX, "mcm_mtl_rx_%d", session_id);
+        if (ops.name)
+            free((void *)ops.name);
+        ops.name = strdup(session_name);
+        ops.framebuff_cnt = 4;
+
+        ops.priv = this; // app handle register to lib
+        ops.notify_frame_available = frame_available_cb;
+
+        log::info("ST2110Rx: configure")
+          ("port", ops.port.port[MTL_PORT_P])
+          ("ip_addr", std::to_string(ops.port.ip_addr[MTL_PORT_P][0]) + " " +
+                      std::to_string(ops.port.ip_addr[MTL_PORT_P][1]) + " " +
+                      std::to_string(ops.port.ip_addr[MTL_PORT_P][2]) + " " +
+                      std::to_string(ops.port.ip_addr[MTL_PORT_P][3]))
+          ("mcast_sip_addr", std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][0]) + " " +
+                            std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][1]) + " " +
+                            std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][2]) + " " +
+                            std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][3]))
+          ("num_port", ops.port.num_port)
+          ("udp_port", ops.port.udp_port[MTL_PORT_P])
+          ("name", ops.name)
+          ("framebuff_cnt", ops.framebuff_cnt);
+
+        return 0;
+    }
 
     Result on_establish(context::Context &ctx) override
     {
@@ -95,9 +145,6 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
 
 class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops> {
   public:
-    ST2110_20Rx() {};
-    ~ST2110_20Rx();
-
     Result configure(context::Context &ctx, const std::string &dev_port,
                      const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Video &cfg_video);
 
@@ -110,9 +157,6 @@ class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops> {
 
 class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops> {
   public:
-    ST2110_22Rx() {};
-    ~ST2110_22Rx();
-
     Result configure(context::Context &ctx, const std::string &dev_port,
                      const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Video &cfg_video);
 
@@ -125,9 +169,6 @@ class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops> {
 
 class ST2110_30Rx : public ST2110Rx<st30_frame, st30p_rx_handle, st30p_rx_ops> {
   public:
-    ST2110_30Rx() {};
-    ~ST2110_30Rx();
-
     Result configure(context::Context &ctx, const std::string &dev_port,
                      const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Audio &cfg_audio);
 

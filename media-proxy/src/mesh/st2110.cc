@@ -156,12 +156,15 @@ void ST2110::get_mtl_dev_params(mtl_init_params &st_param, const std::string &de
     st_param.memzone_max = 9000;
 }
 
-mtl_handle ST2110::get_mtl_handle(const std::string &dev_port, mtl_log_level log_level,
-                                  const char local_ip_addr[MESH_IP_ADDRESS_SIZE])
+mtl_handle ST2110::get_mtl_device(const std::string &dev_port, mtl_log_level log_level,
+                                  const char local_ip_addr[MESH_IP_ADDRESS_SIZE], int &session_id)
 {
     static mtl_handle dev_handle;
+    static int _session_id;
     static std::mutex mtx;
     std::lock_guard<std::mutex> lock(mtx);
+
+    session_id = _session_id++;
 
     if (dev_handle) {
         return dev_handle;
