@@ -48,8 +48,6 @@ class ST2110 : public Connection {
 
     mtl_handle mtl_device;
     std::atomic<bool> stop;
-    std::condition_variable_any cv;
-    std::mutex mx;
 };
 
 } // namespace mesh::connection

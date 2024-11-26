@@ -100,6 +100,8 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
 
     Result on_shutdown(context::Context& ctx) override {
         _ctx.cancel();
+        stop = true;
+        stop.notify_all();
 
         frame_thread_handle.join();
 
@@ -119,12 +121,8 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
             // Get full buffer from MTL
             FRAME *frame_ptr = get_frame(mtl_session);
             if (!frame_ptr) { /* no frame */
-                std::unique_lock lk(mx);
-                cv.wait(lk, _ctx.stop_token(), [this] { return stop.load(); });
+                stop.wait(false);
                 stop = false;
-                if (_ctx.cancelled()) {
-                    return;
-                }
                 continue;
             }
             // Forward buffer to emulated receiver

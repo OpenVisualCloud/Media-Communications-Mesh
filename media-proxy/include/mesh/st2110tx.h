@@ -86,6 +86,8 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
     Result on_shutdown(context::Context& ctx) override {
         _ctx.cancel();
+        stop = true;
+        stop.notify_all();
 
         if (mtl_session) {
             close_session(mtl_session);
@@ -104,8 +106,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
             // Get empty buffer from MTL
             frame = get_frame(mtl_session);
             if (!frame) {
-                std::unique_lock lk(mx);
-                cv.wait(lk, _ctx.stop_token(), [this] { return stop.load(); });
+                stop.wait(false);
                 stop = false;
                 if (_ctx.cancelled()) {
                     return set_result(Result::error_shutdown);
@@ -113,14 +114,10 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
             }
         } while (!frame);
 
-        if (frame) {
-            // Copy data from emulated transmitter to MTL empty buffer
-            mtl_memcpy(get_frame_data_ptr(frame), ptr, to_be_sent);
-            // Return full buffer to MTL
-            put_frame(mtl_session, frame);
-        } else {
-            return set_result(Result::error_shutdown);
-        }
+        // Copy data from emulated transmitter to MTL empty buffer
+        mtl_memcpy(get_frame_data_ptr(frame), ptr, to_be_sent);
+        // Return full buffer to MTL
+        put_frame(mtl_session, frame);
 
         sent = to_be_sent;
         return set_result(Result::success);
