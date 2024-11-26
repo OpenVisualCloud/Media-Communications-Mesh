@@ -3,13 +3,31 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
-COMMON_SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-REPOSITORY_DIR="$(readlink -f "${COMMON_SCRIPT_DIR}/..")"
-VERSIONS_FILE_PATH="$(readlink -f "${VERSIONS_FILE_PATH:-${REPOSITORY_DIR}/versions.env}")"
+export REPO_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")/..")"
+export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
+export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
+export PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
+
+VERSIONS_FILE_PATH="$(readlink -f "${VERSIONS_FILE:-${REPO_DIR}/versions.env}")"
 export VERSIONS_FILE_PATH
 
 # shellcheck source="versions.env"
 . "${VERSIONS_FILE_PATH}"
+
+export MTL_DIR="${BUILD_DIR}/mtl"
+export DPDK_DIR="${BUILD_DIR}/dpdk"
+export XDP_DIR="${BUILD_DIR}/xdp"
+export BPF_DIR="${XDP_DIR}/lib/libbpf"
+export GRPC_DIR="${BUILD_DIR}/grpc"
+export JPEGXS_DIR="${BUILD_DIR}/jpegxs"
+export LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
+export LIBFDT_DIR="${BUILD_DIR}/libfdt"
+export JSONC_DIR="${BUILD_DIR}/json-c"
+export NASM_DIR="${BUILD_DIR}/nasm"
+
+export ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
+export IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
+export IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
 
 PM="${PM:-apt-get}"
 KERNEL_VERSION="${KERNEL_VERSION:-$(uname -r)}"
@@ -262,6 +280,7 @@ function print_logo()
 
 function print_logo_sequence()
 {
+    set +x
     local wait_between_frames="${1:-0}"
     local wait_cmd=""
     if [ ! "${wait_between_frames}" = "0" ]; then
@@ -289,6 +308,7 @@ function print_logo_sequence()
 
 function print_logo_anim()
 {
+    set +x
     local number_of_sequences="${1:-2}"
     local wait_between_frames="${2:-0.025}"
     clear
@@ -298,7 +318,8 @@ function print_logo_anim()
     done
 }
 
-function catch_error_print_debug() {
+function catch_error_print_debug()
+{
     local _last_command_height=""
     local -n _lineno="${1:-LINENO}"
     local -n _bash_lineno="${2:-BASH_LINENO}"
@@ -380,37 +401,6 @@ function wget_download_strip_unpack()
     curl -Lf "${source_url}" -o "${dest_dir}/${filename}.tar.gz"
     tar -zx --strip-components=1 -C "${dest_dir}" -f "${dest_dir}/${filename}.tar.gz"
     rm -f "${dest_dir}/${filename}.tar.gz"
-}
-
-function config_intel_rdma_driver() {
-    #   \s - single (s)pace or tabulator
-    #   \d - single (d)igit
-    # ^\s* - starts with zero or more space/tabulators
-    # \s\+ - at least one or more space/tabulators
-    local PREFIX_REGEX='^\s*options\s\+irdma\s\+'
-    local PREFIX_NORM_ROCE='options irdma roce_ena=1'
-    local PREFIX_NORM_SEL='options irdma limits_sel=5'
-
-    log_info "Configuration of iRDMA starting."
-    touch "/etc/modprobe.d/irdma.conf"
-
-    log_info "Enabling RoCE."
-    if grep -e "${PREFIX_REGEX}roce_ena=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
-        sudo sed -i "s/${PREFIX_REGEX}roce_ena=\d/${PREFIX_NORM_ROCE}/g" /etc/modprobe.d/irdma.conf
-    else
-        echo "${PREFIX_NORM_ROCE}" | sudo tee -a /etc/modprobe.d/irdma.conf
-    fi
-    log_info "RoCE enabled."
-
-    log_info "Increasing Queue Pair limit."
-    if grep -e "${PREFIX_REGEX}limits_sel=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
-        sudo sed -i "s/${PREFIX_REGEX}limits_sel=\d/${PREFIX_NORM_SEL}/g" /etc/modprobe.d/irdma.conf
-    else
-        echo "${PREFIX_NORM_SEL}" | sudo tee -a /etc/modprobe.d/irdma.conf
-    fi
-    sudo dracut -f
-    log_info "Queue Pair limits_sel set to 5."
-    log_info "Configuration of iRDMA finished."
 }
 
 # Example usage:

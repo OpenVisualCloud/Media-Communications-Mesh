@@ -14,7 +14,7 @@ To set up your Minikube cluster and deploy resources, please ensure that the fol
 To build Dockerfiles Media-Proxy, FFmpeg and SDK follow the guide [](./README.md#build-the-docker-images). Sample applications will be available inside `mcm/SDK:latest` Docker image at `/opt/mcm` path. For more information refer to [sample applications](../sdk/README.md#sample-applications). For more advanced and/or production environment usage, we encourage use the FFmpeg based workflow, either minimalistic [MCM FFmpeg plugin](../ffmpeg-plugin/README.md) version or full-capabilities all-in-one [Intel® Tiber™ Broadcast Suite](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite).
 
 ```bash
-# Bellow script accept all docker build parameters, for example fresh rebuild:
+# below script accept all docker build parameters, for example fresh rebuild:
 # ./build_docker.sh --no-cache
 # This depending on your Docker installation type may require using sudo:
 # sudo ./build_docker.sh
@@ -37,7 +37,7 @@ docker build --build-arg=http_proxy --build-arg=https_proxy --build-arg=no_proxy
 
 ### MTL Manager build:
 
-To build MTL Manager you need to fetch and build MTL Library from the source, this can be done by following bellow commands:
+To build MTL Manager you need to fetch and build MTL Library from the source, this can be done by following below commands:
 
 ```bash
 git clone https://github.com/OpenVisualCloud/Media-Transport-Library.git <mtl-dir>

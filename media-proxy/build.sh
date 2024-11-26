@@ -9,12 +9,11 @@
 set -eo pipefail
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
-BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
-MCM_MEDIA_PROXY_DIR="${MCM_MEDIA_PROXY_DIR:-${BUILD_DIR}/mcm-media-proxy}"
 
 # shellcheck source="../scripts/common.sh"
 . "${REPO_DIR}/scripts/common.sh"
 
+MCM_MEDIA_PROXY_DIR="${MCM_MEDIA_PROXY_DIR:-${BUILD_DIR}/mcm-media-proxy}"
 # Set build type. ("Debug" or "Release")
 BUILD_TYPE="${BUILD_TYPE:-Release}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
@@ -26,3 +25,4 @@ as_root make -C "${MCM_MEDIA_PROXY_DIR}" install
 if [[ $# -ne 0 ]]; then
     DESTDIR="${1:-$DESTDIR}" make -C "${MCM_MEDIA_PROXY_DIR}" install
 fi
+ln -s "${MCM_MEDIA_PROXY_DIR}" "${SCRIPT_DIR}/build"

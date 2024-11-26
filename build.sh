@@ -7,10 +7,7 @@
 # SDK in to default path and the one pointed as $1
 
 set -eo pipefail
-
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/_build}"
-MCM_BUILD_DIR="${MCM_BUILD_DIR:-${BUILD_DIR}/mcm}"
 
 # shellcheck source="scripts/common.sh"
 . "${SCRIPT_DIR}/scripts/common.sh"
@@ -18,6 +15,7 @@ MCM_BUILD_DIR="${MCM_BUILD_DIR:-${BUILD_DIR}/mcm}"
 # Set build type. ("Debug" or "Release")
 # To disable the building of unit tests, set the value to "OFF".
 
+MCM_BUILD_DIR="${MCM_BUILD_DIR:-${BUILD_DIR}/mcm}"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
 BUILD_UNIT_TESTS="${BUILD_UNIT_TESTS:-ON}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
@@ -40,5 +38,6 @@ as_root ldconfig
 export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
 "${MCM_BUILD_DIR}/bin/sdk_unit_tests"
 "${MCM_BUILD_DIR}/bin/media_proxy_unit_tests"
+ln -s "${MCM_BUILD_DIR}" "${SCRIPT_DIR}/build"
 
 log_info "Build Succeeded"

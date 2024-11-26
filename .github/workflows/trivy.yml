@@ -1,4 +1,4 @@
-name: scaner-trivy-workflow
+name: scan-trivy-workflow
 on:
   push:
     branches: [ "main", "master", "dev", "devel", "develop", "maint-*" ]
@@ -39,7 +39,7 @@ jobs:
         uses: aquasecurity/trivy-action@7c2007bcb556501da015201bcba5aa14069b74e2 # v0.23.0
         with:
           scan-type: config
-          skip-dirs: deployment #helm charts not supported 
+          skip-dirs: deployment #helm charts not supported
           exit-code: '0'
           format: 'sarif'
           output: "trivy-config-scan-results-${{ github.event.pull_request.number || github.ref }}.sarif"
@@ -49,7 +49,7 @@ jobs:
         uses: aquasecurity/trivy-action@7c2007bcb556501da015201bcba5aa14069b74e2 # v0.23.0
         with:
           scan-type: config
-          skip-dirs: deployment #helm charts not supported 
+          skip-dirs: deployment #helm charts not supported
           exit-code: '0'
           format: 'table'
           output: "trivy-config-scan-results-${{ github.event.pull_request.number || github.ref }}.txt"
