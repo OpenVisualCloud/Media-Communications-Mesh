@@ -40,7 +40,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         _ctx = context::WithCancel(ctx);
         _stop = false;
 
-        _handle = create_session(_st, &_ops);
+        _handle = create_session(mtl_device, &_ops);
         if (!_handle) {
             log::error("Failed to create session");
             set_state(ctx, State::closed);

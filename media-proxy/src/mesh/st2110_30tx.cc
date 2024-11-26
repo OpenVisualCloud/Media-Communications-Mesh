@@ -4,7 +4,11 @@ namespace mesh::connection {
 
 ST2110_30Tx::ST2110_30Tx() {}
 
-ST2110_30Tx::~ST2110_30Tx() {}
+ST2110_30Tx::~ST2110_30Tx()
+{
+    if (_ops.name)
+        free((void *)_ops.name);
+}
 
 st30_frame *ST2110_30Tx::get_frame(st30p_tx_handle h) { return st30p_tx_get_frame(h); };
 
@@ -30,8 +34,8 @@ Result ST2110_30Tx::configure(context::Context &ctx, const std::string &dev_port
         return set_result(Result::error_bad_argument);
     }
 
-    _st = get_mtl_handle(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr);
-    if (_st == nullptr) {
+    mtl_device = get_mtl_handle(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr);
+    if (mtl_device == nullptr) {
         log::error("Failed to get MTL device");
         set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
@@ -47,6 +51,8 @@ Result ST2110_30Tx::configure(context::Context &ctx, const std::string &dev_port
     _ops.port.udp_src_port[MTL_PORT_P] = cfg_st2110.local_port;
     _ops.port.num_port = 1;
     _ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST30;
+    if (_ops.name)
+        free((void *)_ops.name);
     _ops.name = strdup(session_name);
     _ops.framebuff_cnt = 4;
     _ops.fmt = mesh_audio_format_to_st_format(cfg_audio.format);

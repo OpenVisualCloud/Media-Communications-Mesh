@@ -20,7 +20,7 @@ namespace mesh::connection {
 /**
  * ST2110
  *
- * Base abstract class of ST2110. ST2110Rx/ST2110Tx
+ * Base abstract class of SPMTE ST2110-xx bridge. ST2110Rx/ST2110Tx
  * inherit this class.
  */
 class ST2110 : public Connection {
@@ -38,13 +38,13 @@ class ST2110 : public Connection {
     static mtl_handle get_mtl_handle(const std::string &dev_port, mtl_log_level log_level,
                                      const char local_ip_addr[MESH_IP_ADDRESS_SIZE]);
 
-    ST2110() : _st(0){};
+    ST2110() : mtl_device(nullptr) {};
     virtual ~ST2110(){};
 
   protected:
     static int frame_available_cb(void *ptr);
 
-    mtl_handle _st;
+    mtl_handle mtl_device;
     std::atomic<bool> _stop;
     std::condition_variable_any _cv;
     std::mutex _mx;

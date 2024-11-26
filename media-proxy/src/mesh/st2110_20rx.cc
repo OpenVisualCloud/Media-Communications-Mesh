@@ -4,7 +4,11 @@ namespace mesh::connection {
 
 ST2110_20Rx::ST2110_20Rx() {}
 
-ST2110_20Rx::~ST2110_20Rx() {}
+ST2110_20Rx::~ST2110_20Rx()
+{
+    if (_ops.name)
+        free((void *)_ops.name);
+}
 
 st_frame *ST2110_20Rx::get_frame(st20p_rx_handle h) { return st20p_rx_get_frame(h); };
 
@@ -30,8 +34,8 @@ Result ST2110_20Rx::configure(context::Context &ctx, const std::string &dev_port
         return set_result(Result::error_bad_argument);
     }
 
-    _st = get_mtl_handle(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr);
-    if (_st == nullptr) {
+    mtl_device = get_mtl_handle(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr);
+    if (mtl_device == nullptr) {
         log::error("Failed to get MTL device");
         set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
@@ -48,6 +52,8 @@ Result ST2110_20Rx::configure(context::Context &ctx, const std::string &dev_port
     strlcpy(_ops.port.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
     _ops.port.num_port = 1;
     _ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST20;
+    if (_ops.name)
+        free((void *)_ops.name);
     _ops.name = strdup(session_name);
     _ops.width = cfg_video.width;
     _ops.height = cfg_video.height;
