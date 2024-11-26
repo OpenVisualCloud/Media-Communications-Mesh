@@ -10,13 +10,12 @@ set -eo pipefail
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
-BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
-MCM_SDK_DIR="${MCM_SDK_DIR:-${BUILD_DIR}/mcm-sdk}"
 
 # shellcheck source="../scripts/common.sh"
-. "${SCRIPT_DIR}/../scripts/common.sh"
+. "${REPO_DIR}/scripts/common.sh"
 
 # Set build type. ("Debug" or "Release")
+MCM_SDK_DIR="${MCM_SDK_DIR:-${BUILD_DIR}/mcm-sdk}"
 BUILD_TYPE="${BUILD_TYPE:-Release}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
 
@@ -27,3 +26,4 @@ as_root make -C "${MCM_SDK_DIR}" install
 if [[ $# -ne 0 ]]; then
     DESTDIR="${1:-$DESTDIR}" make -C "${MCM_SDK_DIR}" install
 fi
+ln -s "${MCM_SDK_DIR}" "${SCRIPT_DIR}/build"

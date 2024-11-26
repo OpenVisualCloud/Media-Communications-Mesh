@@ -1,19 +1,9 @@
 #!/bin/bash
 
 set -eEo pipefail
-set +x
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-REPO_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
-BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
-PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
-DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
-
 . "${SCRIPT_DIR}/common.sh"
-
-ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
-IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
-IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
 
 export PM="${PM:-apt-get}"
 export DEBIAN_FRONTEND="noninteractive"
@@ -31,28 +21,24 @@ mkdir -p "${PREFIX_DIR}/usr/lib/x86_64-linux-gnu" \
          "${PREFIX_DIR}/usr/local/include" \
          "${PREFIX_DIR}/usr/include"
 
-MTL_DIR="${BUILD_DIR}/mtl"
-DPDK_DIR="${BUILD_DIR}/dpdk"
-XDP_DIR="${BUILD_DIR}/xdp"
-BPF_DIR="${XDP_DIR}/lib/libbpf"
-GRPC_DIR="${BUILD_DIR}/grpc"
-JPEGXS_DIR="${BUILD_DIR}/jpegxs"
-LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
-LIBFDT_DIR="${BUILD_DIR}/libfdt"
-JSONC_DIR="${BUILD_DIR}/json-c"
-NASM_DIR="${BUILD_DIR}/nasm"
-
 function install_package_dependencies()
 {
+    log_info Starting: OS packages installation.
+    log_info Starting: OS package manager auto-detection.
     setup_package_manager "apt-get"
     if [[ "${PM}" == "apt" || "${PM}" == "apt-get" ]]; then
+        log_success "Found ${PM}. Using Ubuntu package dependencies approach"
         install_ubuntu_package_dependencies
     elif [[ "${PM}" == "yum" || "${PM}" == "dnf" ]]; then
+        log_success "Found ${PM}. Using CentOS package dependencies approach"
         install_yum_package_dependencies
     else
-        log_error  No supported package manager found
+        log_error "Exiting: No supported package manager found. Contact support"
         exit 1
     fi
+    log_info "Finished: Successful OS packages installation."
+    log_warning OS reboot is required for all of the changes to take place.
+    return 0
 }
 function install_ubuntu_package_dependencies()
 {
@@ -163,6 +149,7 @@ function install_yum_package_dependencies()
     lib_build_and_install_jsonc && \
     return 0 || return 1
 }
+
 # Download and unpack dependencies from source code.
 function get_download_unpack_dependencies()
 {
@@ -177,44 +164,6 @@ function get_download_unpack_dependencies()
     git_download_strip_unpack "dpdk/dpdk" "refs/tags/v${DPDK_VER}" "${DPDK_DIR}"
     git_download_strip_unpack "OpenVisualCloud/SVT-JPEG-XS" "${JPEGXS_VER}" "${JPEGXS_DIR}"
     patch -d "${DPDK_DIR}" -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
-}
-
-function get_and_patch_intel_drivers()
-{
-    log_info "Intel drivers: Starting download and patching actions."
-    if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
-        log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
-        return 1
-    fi
-    wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
-    git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}" && \
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}" && \
-    pushd "${ICE_DIR}" && \
-    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
-    popd && \
-    { log_success "Intel drivers: Finished download and patching actions." && return 0; } ||
-    { log_error "Intel drivers: Failed to download or patch." && return 1; }
-}
-
-function build_install_and_config_intel_drivers()
-{
-    log_info "Intel IAVF: Driver starting the build and install workflow." && \
-    as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install && \
-    log_info "Intel ICE: Driver starting the build and install workflow." && \
-    as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install && \
-    { log_success "Intel IAVF and ICE: Drivers finished install process." && return 0; } ||
-    { log_error "Intel IAVF and ICE: Failed to build and install drivers" && return 1; }
-}
-
-function build_install_and_config_irdma_drivers()
-{
-    pushd "${IRDMA_DIR}" && \
-    as_root ./build.sh && \
-    popd && \
-    as_root config_intel_rdma_driver && \
-    as_root modprobe irdma && \
-    { log_success "Intel irdma: Finished configuration and installation successfully." && return 0; } || \
-    { log_error   "Intel irdma: Error while performing configuration/installation." && return 1; }
 }
 
 # Download and install rpm repo for nasm
@@ -347,10 +296,14 @@ function full_build_and_install_workflow()
     lib_install_dpdk && \
     lib_install_mtl && \
     lib_install_jpeg_xs && \
-    lib_install_mtl_jpeg_xs_plugin && \
-    chmod -R a+r "${BUILD_DIR}" && \
-    { log_success "Finished: Dependencies build, install and configation." && return 0; } ||
-    { log_error "Dependencies build, install and configation failed." && return 1; }
+    lib_install_mtl_jpeg_xs_plugin
+    return_code="$?"
+    if [[ "${return_code}" != "0" ]]; then
+        log_error "Dependencies build, install and configation failed."
+    else
+        log_success "Finished: Dependencies build, install and configation."
+    fi
+    return "${return_code}"
 }
 # cp -f "${REPO_DIR}/media-proxy/imtl.json" "/usr/local/etc/imtl.json"
 # export KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"
@@ -359,7 +312,7 @@ function full_build_and_install_workflow()
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
     if [ "${EUID}" != "0" ]; then
-        log_error "Must be run as root. Try running bellow command:"
+        log_error "Must be run as root. Try running below command:"
         log_error "sudo \"${BASH_SOURCE[0]}\""
         exit 3
     fi
@@ -368,20 +321,9 @@ then
         sleep 2
     fi
     trap_error_print_debug
-    set -x
-    log_info Starting: OS packages installation, MTL and DPDK download.
     install_package_dependencies
     get_download_unpack_dependencies
-    log_info Finished: OS packages installation, MTL and DPDK download.
-    get_and_patch_intel_drivers
     full_build_and_install_workflow
-    build_install_and_config_irdma_drivers
-    build_install_and_config_intel_drivers || \
-    { log_error  Intel drivers configuration/installation failed. && exit 1; }
-    log_success Finished: Build, install and configuration of Intel drivers.
-    log_success All tasks compleated. Reboot required.
-    log_warning ""
-    log_warning OS reboot is required for all of the changes to take place.
-    set +x
+    log_success "All tasks compleated successfuly. Happy MCM'ing ;-)"
     exit 0
 fi

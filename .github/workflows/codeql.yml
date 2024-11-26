@@ -1,4 +1,4 @@
-name: Scan CodeQL
+name: scan-codeql-workflow
 
 on:
   push:
@@ -58,6 +58,12 @@ jobs:
     - name: 'Download, unpack and patch build dependencies'
       if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
       run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
+
+    - name: 'Clone and patch ffmpeg 6.1 and 7.0'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      run: |
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
 
     - name: 'Build and Install xdp and libbpf'
       run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
