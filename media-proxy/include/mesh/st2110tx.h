@@ -14,7 +14,7 @@ namespace mesh::connection {
  */
 template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public ST2110 {
   public:
-    ST2110Tx() : mtl_session(nullptr), ops({0}), transfer_size(0) { _kind = Kind::transmitter; };
+    ST2110Tx() : mtl_session(nullptr), ops{0}, transfer_size(0) { _kind = Kind::transmitter; };
     ~ST2110Tx() { shutdown(_ctx); };
 
   protected:
@@ -90,7 +90,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
 class ST2110_20Tx : public ST2110Tx<st_frame, st20p_tx_handle, st20p_tx_ops> {
   public:
-    ST2110_20Tx();
+    ST2110_20Tx() {};
     ~ST2110_20Tx();
 
     Result configure(context::Context &ctx, const std::string &dev_port,
@@ -105,7 +105,7 @@ class ST2110_20Tx : public ST2110Tx<st_frame, st20p_tx_handle, st20p_tx_ops> {
 
 class ST2110_22Tx : public ST2110Tx<st_frame, st22p_tx_handle, st22p_tx_ops> {
   public:
-    ST2110_22Tx();
+    ST2110_22Tx() {};
     ~ST2110_22Tx();
 
     Result configure(context::Context &ctx, const std::string &dev_port,
@@ -120,7 +120,7 @@ class ST2110_22Tx : public ST2110Tx<st_frame, st22p_tx_handle, st22p_tx_ops> {
 
 class ST2110_30Tx : public ST2110Tx<st30_frame, st30p_tx_handle, st30p_tx_ops> {
   public:
-    ST2110_30Tx();
+    ST2110_30Tx() {};
     ~ST2110_30Tx();
 
     Result configure(context::Context &ctx, const std::string &dev_port,

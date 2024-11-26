@@ -13,7 +13,7 @@ namespace mesh::connection {
  */
 template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public ST2110 {
   public:
-    ST2110Rx() : mtl_session(nullptr), ops({0}), transfer_size(0) { _kind = Kind::receiver; }
+    ST2110Rx() : mtl_session(nullptr), ops{0}, transfer_size(0) { _kind = Kind::receiver; }
 
     ~ST2110Rx() { shutdown(_ctx); }
 
@@ -95,7 +95,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
 
 class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops> {
   public:
-    ST2110_20Rx();
+    ST2110_20Rx() {};
     ~ST2110_20Rx();
 
     Result configure(context::Context &ctx, const std::string &dev_port,
@@ -110,7 +110,7 @@ class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops> {
 
 class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops> {
   public:
-    ST2110_22Rx();
+    ST2110_22Rx() {};
     ~ST2110_22Rx();
 
     Result configure(context::Context &ctx, const std::string &dev_port,
@@ -125,7 +125,7 @@ class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops> {
 
 class ST2110_30Rx : public ST2110Rx<st30_frame, st30p_rx_handle, st30p_rx_ops> {
   public:
-    ST2110_30Rx();
+    ST2110_30Rx() {};
     ~ST2110_30Rx();
 
     Result configure(context::Context &ctx, const std::string &dev_port,

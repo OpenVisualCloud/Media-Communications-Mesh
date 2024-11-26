@@ -74,8 +74,15 @@ st30_ptime ST2110::mesh_audio_ptime_to_st_ptime(int ptime)
     }
 }
 
-void *ST2110::get_frame_data_ptr(st_frame *src) { return src->addr[0]; }
-void *ST2110::get_frame_data_ptr(st30_frame *src) { return src->addr; }
+void *ST2110::get_frame_data_ptr(st_frame *src)
+{
+    return src->addr[0];
+}
+
+void *ST2110::get_frame_data_ptr(st30_frame *src)
+{
+    return src->addr;
+}
 
 int ST2110::frame_available_cb(void *ptr)
 {

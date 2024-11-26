@@ -2,17 +2,21 @@
 
 namespace mesh::connection {
 
-ST2110_30Rx::ST2110_30Rx() {}
-
 ST2110_30Rx::~ST2110_30Rx()
 {
     if (ops.name)
         free((void *)ops.name);
 }
 
-st30_frame *ST2110_30Rx::get_frame(st30p_rx_handle h) { return st30p_rx_get_frame(h); };
+st30_frame *ST2110_30Rx::get_frame(st30p_rx_handle h)
+{
+    return st30p_rx_get_frame(h);
+};
 
-int ST2110_30Rx::put_frame(st30p_rx_handle h, st30_frame *f) { return st30p_rx_put_frame(h, f); };
+int ST2110_30Rx::put_frame(st30p_rx_handle h, st30_frame *f)
+{
+    return st30p_rx_put_frame(h, f);
+};
 
 st30p_rx_handle ST2110_30Rx::create_session(mtl_handle h, st30p_rx_ops *o)
 {
