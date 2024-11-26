@@ -7,10 +7,11 @@ BreakBeforeBraces: Custom
 BraceWrapping:
   AfterClass: false
   AfterNamespace: false
-  AfterFunction: true
+  AfterFunction: false
 AllowShortIfStatementsOnASingleLine: false
 AllowShortEnumsOnASingleLine: false
 IndentCaseLabels: false
 IncludeBlocks: Preserve
 SortIncludes: false
+ReferenceAlignment: Left
 ...

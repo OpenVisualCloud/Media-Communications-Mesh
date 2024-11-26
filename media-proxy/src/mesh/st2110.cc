@@ -2,8 +2,7 @@
 
 namespace mesh::connection {
 
-int ST2110::mesh_video_format_to_st_format(int mesh_fmt, st_frame_fmt &st_fmt)
-{
+int ST2110::mesh_video_format_to_st_format(int mesh_fmt, st_frame_fmt& st_fmt) {
     switch (mesh_fmt) {
     case MESH_VIDEO_PIXEL_FORMAT_NV12:
         st_fmt = ST_FRAME_FMT_YUV420CUSTOM8;
@@ -27,8 +26,7 @@ int ST2110::mesh_video_format_to_st_format(int mesh_fmt, st_frame_fmt &st_fmt)
     return 0; // Success
 }
 
-int ST2110::mesh_audio_format_to_st_format(int mesh_fmt, st30_fmt &st_fmt)
-{
+int ST2110::mesh_audio_format_to_st_format(int mesh_fmt, st30_fmt& st_fmt) {
     switch (mesh_fmt) {
     case MESH_AUDIO_FORMAT_PCM_S8:
         st_fmt = ST30_FMT_PCM8;
@@ -46,8 +44,7 @@ int ST2110::mesh_audio_format_to_st_format(int mesh_fmt, st30_fmt &st_fmt)
     return 0; // Success
 }
 
-int ST2110::mesh_audio_sampling_to_st_sampling(int sampling, st30_sampling &st_sampling)
-{
+int ST2110::mesh_audio_sampling_to_st_sampling(int sampling, st30_sampling& st_sampling) {
     switch (sampling) {
     case MESH_AUDIO_SAMPLE_RATE_48000:
         st_sampling = ST30_SAMPLING_48K;
@@ -65,8 +62,7 @@ int ST2110::mesh_audio_sampling_to_st_sampling(int sampling, st30_sampling &st_s
     return 0; // Success
 }
 
-int ST2110::mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime &st_ptime)
-{
+int ST2110::mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime& st_ptime) {
     switch (ptime) {
     case MESH_AUDIO_PACKET_TIME_1MS:
         st_ptime = ST30_PTIME_1MS;
@@ -102,18 +98,15 @@ int ST2110::mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime &st_ptime)
     return 0; // Success
 }
 
-void *ST2110::get_frame_data_ptr(st_frame *src)
-{
+void *ST2110::get_frame_data_ptr(st_frame *src) {
     return src->addr[0];
 }
 
-void *ST2110::get_frame_data_ptr(st30_frame *src)
-{
+void *ST2110::get_frame_data_ptr(st30_frame *src) {
     return src->addr;
 }
 
-int ST2110::frame_available_cb(void *ptr)
-{
+int ST2110::frame_available_cb(void *ptr) {
     auto _this = static_cast<ST2110 *>(ptr);
     if (!_this) {
         return -1;
@@ -125,10 +118,9 @@ int ST2110::frame_available_cb(void *ptr)
     return 0;
 }
 
-void ST2110::get_mtl_dev_params(mtl_init_params &st_param, const std::string &dev_port,
+void ST2110::get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
                                 mtl_log_level log_level,
-                                const char local_ip_addr[MESH_IP_ADDRESS_SIZE])
-{
+                                const char local_ip_addr[MESH_IP_ADDRESS_SIZE]) {
     if (getenv("KAHAWAI_CFG_PATH") == NULL) {
         setenv("KAHAWAI_CFG_PATH", "/usr/local/etc/imtl.json", 0);
     }
@@ -156,9 +148,8 @@ void ST2110::get_mtl_dev_params(mtl_init_params &st_param, const std::string &de
     st_param.memzone_max = 9000;
 }
 
-mtl_handle ST2110::get_mtl_device(const std::string &dev_port, mtl_log_level log_level,
-                                  const char local_ip_addr[MESH_IP_ADDRESS_SIZE], int &session_id)
-{
+mtl_handle ST2110::get_mtl_device(const std::string& dev_port, mtl_log_level log_level,
+                                  const char local_ip_addr[MESH_IP_ADDRESS_SIZE], int& session_id) {
     static mtl_handle dev_handle;
     static int _session_id;
     static std::mutex mtx;

@@ -2,30 +2,25 @@
 
 namespace mesh::connection {
 
-st30_frame *ST2110_30Rx::get_frame(st30p_rx_handle h)
-{
+st30_frame *ST2110_30Rx::get_frame(st30p_rx_handle h) {
     return st30p_rx_get_frame(h);
 };
 
-int ST2110_30Rx::put_frame(st30p_rx_handle h, st30_frame *f)
-{
+int ST2110_30Rx::put_frame(st30p_rx_handle h, st30_frame *f) {
     return st30p_rx_put_frame(h, f);
 };
 
-st30p_rx_handle ST2110_30Rx::create_session(mtl_handle h, st30p_rx_ops *o)
-{
+st30p_rx_handle ST2110_30Rx::create_session(mtl_handle h, st30p_rx_ops *o) {
     return st30p_rx_create(h, o);
 };
 
-int ST2110_30Rx::close_session(st30p_rx_handle h)
-{
+int ST2110_30Rx::close_session(st30p_rx_handle h) {
     return st30p_rx_free(h);
 };
 
-Result ST2110_30Rx::configure(context::Context &ctx, const std::string &dev_port,
-                              const MeshConfig_ST2110 &cfg_st2110,
-                              const MeshConfig_Audio &cfg_audio)
-{
+Result ST2110_30Rx::configure(context::Context& ctx, const std::string& dev_port,
+                              const MeshConfig_ST2110& cfg_st2110,
+                              const MeshConfig_Audio& cfg_audio) {
     set_state(ctx, State::not_configured);
 
     if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_30)

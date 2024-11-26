@@ -2,30 +2,25 @@
 
 namespace mesh::connection {
 
-st_frame *ST2110_22Tx::get_frame(st22p_tx_handle h)
-{
+st_frame *ST2110_22Tx::get_frame(st22p_tx_handle h) {
     return st22p_tx_get_frame(h);
 };
 
-int ST2110_22Tx::put_frame(st22p_tx_handle h, st_frame *f)
-{
+int ST2110_22Tx::put_frame(st22p_tx_handle h, st_frame *f) {
     return st22p_tx_put_frame(h, f);
 };
 
-st22p_tx_handle ST2110_22Tx::create_session(mtl_handle h, st22p_tx_ops *o)
-{
+st22p_tx_handle ST2110_22Tx::create_session(mtl_handle h, st22p_tx_ops *o) {
     return st22p_tx_create(h, o);
 };
 
-int ST2110_22Tx::close_session(st22p_tx_handle h)
-{
+int ST2110_22Tx::close_session(st22p_tx_handle h) {
     return st22p_tx_free(h);
 };
 
-Result ST2110_22Tx::configure(context::Context &ctx, const std::string &dev_port,
-                              const MeshConfig_ST2110 &cfg_st2110,
-                              const MeshConfig_Video &cfg_video)
-{
+Result ST2110_22Tx::configure(context::Context& ctx, const std::string& dev_port,
+                              const MeshConfig_ST2110& cfg_st2110,
+                              const MeshConfig_Video& cfg_video) {
     set_state(ctx, State::not_configured);
 
     if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_22)

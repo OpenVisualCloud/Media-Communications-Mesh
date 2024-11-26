@@ -15,8 +15,7 @@ namespace mesh::connection {
 template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public ST2110 {
   public:
     ST2110Tx() : mtl_session(nullptr), ops{0}, transfer_size(0) { _kind = Kind::transmitter; };
-    ~ST2110Tx()
-    {
+    ~ST2110Tx() {
         shutdown(_ctx);
         if (ops.name)
             free((void *)ops.name);
@@ -33,9 +32,8 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
     virtual HANDLE create_session(mtl_handle, OPS *) = 0;
     virtual int close_session(HANDLE) = 0;
 
-    int configure_common(context::Context &ctx, const std::string &dev_port,
-                         const MeshConfig_ST2110 &cfg_st2110)
-    {
+    int configure_common(context::Context& ctx, const std::string& dev_port,
+                         const MeshConfig_ST2110& cfg_st2110) {
         int session_id = 0;
         mtl_device = get_mtl_device(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr, session_id);
         if (mtl_device == nullptr) {
@@ -59,23 +57,19 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         ops.priv = this; // app handle register to lib
         ops.notify_frame_available = frame_available_cb;
 
-        log::info("ST2110Tx: configure")
-          ("port", ops.port.port[MTL_PORT_P])
-          ("dip_addr", std::to_string(ops.port.dip_addr[MTL_PORT_P][0]) + " " +
-                      std::to_string(ops.port.dip_addr[MTL_PORT_P][1]) + " " +
-                      std::to_string(ops.port.dip_addr[MTL_PORT_P][2]) + " " +
-                      std::to_string(ops.port.dip_addr[MTL_PORT_P][3]))
-          ("num_port", ops.port.num_port)
-          ("udp_port", ops.port.udp_port[MTL_PORT_P])
-          ("udp_src_port", ops.port.udp_src_port[MTL_PORT_P])
-          ("name", ops.name)
-          ("framebuff_cnt", ops.framebuff_cnt);
+        log::info("ST2110Tx: configure")("port", ops.port.port[MTL_PORT_P])(
+            "dip_addr", std::to_string(ops.port.dip_addr[MTL_PORT_P][0]) + " " +
+                            std::to_string(ops.port.dip_addr[MTL_PORT_P][1]) + " " +
+                            std::to_string(ops.port.dip_addr[MTL_PORT_P][2]) + " " +
+                            std::to_string(ops.port.dip_addr[MTL_PORT_P][3]))(
+            "num_port", ops.port.num_port)("udp_port", ops.port.udp_port[MTL_PORT_P])(
+            "udp_src_port", ops.port.udp_src_port[MTL_PORT_P])("name", ops.name)("framebuff_cnt",
+                                                                                 ops.framebuff_cnt);
 
         return 0;
     }
 
-    Result on_establish(context::Context &ctx) override
-    {
+    Result on_establish(context::Context& ctx) override {
         _ctx = context::WithCancel(ctx);
         stop = false;
 
@@ -90,8 +84,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         return set_result(Result::success);
     };
 
-    Result on_shutdown(context::Context &ctx) override
-    {
+    Result on_shutdown(context::Context& ctx) override {
         _ctx.cancel();
 
         if (mtl_session) {
@@ -102,8 +95,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         return set_result(Result::success);
     };
 
-    Result on_receive(context::Context &ctx, void *ptr, uint32_t sz, uint32_t &sent) override
-    {
+    Result on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_t& sent) override {
         int to_be_sent = std::min(transfer_size, sz);
         // TODO: add error/warning if sent is different than _transfer_size
 
@@ -137,8 +129,8 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
 class ST2110_20Tx : public ST2110Tx<st_frame, st20p_tx_handle, st20p_tx_ops> {
   public:
-    Result configure(context::Context &ctx, const std::string &dev_port,
-                     const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Video &cfg_video);
+    Result configure(context::Context& ctx, const std::string& dev_port,
+                     const MeshConfig_ST2110& cfg_st2110, const MeshConfig_Video& cfg_video);
 
   protected:
     st_frame *get_frame(st20p_tx_handle h) override;
@@ -149,8 +141,8 @@ class ST2110_20Tx : public ST2110Tx<st_frame, st20p_tx_handle, st20p_tx_ops> {
 
 class ST2110_22Tx : public ST2110Tx<st_frame, st22p_tx_handle, st22p_tx_ops> {
   public:
-    Result configure(context::Context &ctx, const std::string &dev_port,
-                     const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Video &cfg_video);
+    Result configure(context::Context& ctx, const std::string& dev_port,
+                     const MeshConfig_ST2110& cfg_st2110, const MeshConfig_Video& cfg_video);
 
   protected:
     st_frame *get_frame(st22p_tx_handle h) override;
@@ -161,8 +153,8 @@ class ST2110_22Tx : public ST2110Tx<st_frame, st22p_tx_handle, st22p_tx_ops> {
 
 class ST2110_30Tx : public ST2110Tx<st30_frame, st30p_tx_handle, st30p_tx_ops> {
   public:
-    Result configure(context::Context &ctx, const std::string &dev_port,
-                     const MeshConfig_ST2110 &cfg_st2110, const MeshConfig_Audio &cfg_audio);
+    Result configure(context::Context& ctx, const std::string& dev_port,
+                     const MeshConfig_ST2110& cfg_st2110, const MeshConfig_Audio& cfg_audio);
 
   protected:
     st30_frame *get_frame(st30p_tx_handle h) override;
