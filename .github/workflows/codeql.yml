@@ -5,7 +5,9 @@ on:
     branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
-
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
 env:
   BUILD_TYPE: Release
   BUILD_DIR: "${{ github.workspace }}/_build"
