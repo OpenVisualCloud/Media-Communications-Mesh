@@ -42,8 +42,32 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: "${{ env.DOCKER_IMAGE_NAME }}:Checkout repository"
+      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: sarif
+          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+          no-fail: true
+          failure-threshold: info
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
+        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        with:
+          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty output"
+        if: always()
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: tty
+          failure-threshold: warning
 
       - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
@@ -100,8 +124,32 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: 'Checkout repository'
+      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: sarif
+          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+          no-fail: true
+          failure-threshold: info
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
+        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        with:
+          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty format."
+        if: always()
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: tty
+          failure-threshold: warning
 
       - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
@@ -158,8 +206,32 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: 'Checkout repository'
+      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: sarif
+          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+          no-fail: true
+          failure-threshold: info
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
+        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        with:
+          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty output"
+        if: always()
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: tty
+          failure-threshold: warning
 
       - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
@@ -215,8 +287,32 @@ jobs:
         with:
           egress-policy: audit
 
-      - name: 'Checkout repository'
+      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: sarif
+          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+          no-fail: true
+          failure-threshold: info
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
+        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
+        with:
+          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+
+      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty output"
+        if: always()
+        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
+        with:
+          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
+          config: .github/configs/hadolint.yaml
+          format: tty
+          failure-threshold: warning
 
       - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
         uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
