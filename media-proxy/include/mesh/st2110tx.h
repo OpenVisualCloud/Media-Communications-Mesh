@@ -14,7 +14,7 @@ namespace mesh::connection {
  */
 template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public ST2110 {
   public:
-    ST2110Tx() : mtl_session(nullptr), ops{0}, transfer_size(0) { _kind = Kind::transmitter; };
+    ST2110Tx() { _kind = Kind::transmitter; };
     ~ST2110Tx() {
         shutdown(_ctx);
         if (ops.name)
@@ -22,9 +22,9 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
     };
 
   protected:
-    HANDLE mtl_session;
-    OPS ops;
-    uint32_t transfer_size;
+    HANDLE mtl_session = nullptr;
+    OPS ops = {0};
+    uint32_t transfer_size = 0;
     context::Context _ctx = context::WithCancel(context::Background());
 
     virtual FRAME *get_frame(HANDLE) = 0;

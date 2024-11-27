@@ -13,7 +13,7 @@ namespace mesh::connection {
  */
 template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public ST2110 {
   public:
-    ST2110Rx() : mtl_session(nullptr), ops{0}, transfer_size(0) { _kind = Kind::receiver; }
+    ST2110Rx() { _kind = Kind::receiver; }
 
     ~ST2110Rx() {
         shutdown(_ctx);
@@ -22,9 +22,9 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
     }
 
   protected:
-    HANDLE mtl_session;
-    OPS ops;
-    size_t transfer_size;
+    HANDLE mtl_session = nullptr;
+    OPS ops = {0};
+    size_t transfer_size = 0;
     std::jthread frame_thread_handle;
     context::Context _ctx = context::WithCancel(context::Background());
 

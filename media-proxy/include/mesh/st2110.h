@@ -40,13 +40,12 @@ class ST2110 : public Connection {
                                      const char local_ip_addr[MESH_IP_ADDRESS_SIZE],
                                      int& session_id);
 
-    ST2110() : mtl_device(nullptr) {};
     virtual ~ST2110() {};
 
   protected:
     static int frame_available_cb(void *ptr);
 
-    mtl_handle mtl_device;
+    mtl_handle mtl_device = nullptr;
     std::atomic<bool> stop;
 };
 
