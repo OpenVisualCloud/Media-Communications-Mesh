@@ -12,9 +12,6 @@ namespace mesh {
 namespace context {
 
 Context::Context() : ss(std::stop_source()),
-                     parent(nullptr),
-                     cb(nullptr),
-                     ch(nullptr),
                      timeout_ms(std::chrono::milliseconds(0))
 {
 }
@@ -55,7 +52,7 @@ Context& Context::operator=(Context&& other) noexcept {
         ss = std::stop_source();
         parent = other.parent;
 
-        if(parent){
+        if (parent) {
             cb = std::make_unique<std::stop_callback<std::function<void()>>>(
                 parent->ss.get_token(), [this] { cancel(); }
             );
