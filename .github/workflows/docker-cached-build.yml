@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  CONCURRENCY_GROUP: "${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}"
+  CONCURRENCY_GROUP: "${{ github.workflow }}-${{ github.event.pull_request.number || env.GITHUB_SHA }}"
   BUILD_TYPE: "Release"
   DOCKER_REGISTRY: "ghcr.io"
   DOCKER_REGISTRY_LOGIN: "${{ github.repository == 'openvisualcloud/media-communications-mesh' && false }}"
@@ -22,7 +22,7 @@ env:
   DOCKER_IMAGE_TAG: "${{ github.sha }}"
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || env.GITHUB_SHA }}
   cancel-in-progress: true
 
 jobs:

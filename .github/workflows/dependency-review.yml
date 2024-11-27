@@ -1,21 +1,52 @@
 # Source repository: https://github.com/actions/dependency-review-action
+
 name: scan-dependency-review
 on: [pull_request]
 
 permissions:
   contents: read
+env:
+  LINTER_RULES_PATH: .github/configs/super-linter
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || env.GITHUB_SHA }}
+  cancel-in-progress: true
 
 jobs:
   dependency-review:
-    runs-on: ubuntu-latest
+    name: 'Super-linter: Workflow initializing'
+    runs-on: 'ubuntu-22.04'
     steps:
-      - name: 'Harden Runner'
+      - name: 'dependency-review: harden runner'
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
         with:
           egress-policy: audit
 
-      - name: 'Checkout Repository'
+      - name: 'dependency-review: checkout repository'
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-      - name: 'Dependency Review'
+      - name: 'dependency-review: perform dependency-review action'
         uses: actions/dependency-review-action@72eb03d02c7872a771aacd928f3123ac62ad6d3a # v4.3.3
+
+  super-linter:
+    name: 'super-linter: Workflow initializing'
+    runs-on: 'ubuntu-22.04'
+    permissions:
+      statuses: write
+    timeout-minutes: 90
+    steps:
+    - name: 'super-linter: Harden Runner'
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
+
+    - name: 'super-linter: checkout repository [fetch-depth=0]'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+      with:
+        fetch-depth: 0
+        ref: ${{ inputs.branch }}
+
+    - name: 'super-linter: perform supe-linter scan workflow.'
+      uses: super-linter/super-linter@v7.2.0 # x-release-please-version
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
