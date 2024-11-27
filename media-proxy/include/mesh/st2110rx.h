@@ -37,7 +37,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
                          const MeshConfig_ST2110& cfg_st2110) {
         int session_id = 0;
         mtl_device = get_mtl_device(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr, session_id);
-        if (mtl_device == nullptr) {
+        if (!mtl_device) {
             log::error("Failed to get MTL device");
             return -1;
         }
@@ -59,17 +59,20 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
         ops.priv = this; // app handle register to lib
         ops.notify_frame_available = frame_available_cb;
 
-        log::info("ST2110Rx: configure")("port", ops.port.port[MTL_PORT_P])(
-            "ip_addr", std::to_string(ops.port.ip_addr[MTL_PORT_P][0]) + " " +
-                           std::to_string(ops.port.ip_addr[MTL_PORT_P][1]) + " " +
-                           std::to_string(ops.port.ip_addr[MTL_PORT_P][2]) + " " +
-                           std::to_string(ops.port.ip_addr[MTL_PORT_P][3]))(
-            "mcast_sip_addr", std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][0]) + " " +
-                                  std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][1]) + " " +
-                                  std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][2]) + " " +
-                                  std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][3]))(
-            "num_port", ops.port.num_port)("udp_port", ops.port.udp_port[MTL_PORT_P])(
-            "name", ops.name)("framebuff_cnt", ops.framebuff_cnt);
+        log::info("ST2110Rx: configure")
+            ("port", ops.port.port[MTL_PORT_P])
+            ("ip_addr", std::to_string(ops.port.ip_addr[MTL_PORT_P][0]) + " " +
+                        std::to_string(ops.port.ip_addr[MTL_PORT_P][1]) + " " +
+                        std::to_string(ops.port.ip_addr[MTL_PORT_P][2]) + " " +
+                        std::to_string(ops.port.ip_addr[MTL_PORT_P][3]))
+            ("mcast_sip_addr", std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][0]) + " " +
+                               std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][1]) + " " +
+                               std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][2]) + " " +
+                               std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][3]))
+            ("num_port", ops.port.num_port)
+            ("udp_port", ops.port.udp_port[MTL_PORT_P])
+            ("name", ops.name)
+            ("framebuff_cnt", ops.framebuff_cnt);
 
         return 0;
     }
