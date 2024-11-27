@@ -15,7 +15,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || env.GITHUB_SHA }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
@@ -42,7 +42,7 @@ jobs:
       - name: "scorecard: Run analysis"
         uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534 # v2.3.3
         with:
-          results_file: "scorecard-scan-results-${{ github.event.pull_request.number || env.GITHUB_SHA }}.sarif"
+          results_file: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
           results_format: sarif
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           publish_results: true
@@ -51,11 +51,11 @@ jobs:
       - name: "scorecard: Upload results artifact"
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
-          name: "scorecard-scan-results-${{ github.event.pull_request.number || env.GITHUB_SHA }}"
-          path: "scorecard-scan-results-${{ github.event.pull_request.number || env.GITHUB_SHA }}.sarif"
+          name: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}"
+          path: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
           retention-days: 5
 
       - name: "scorecard: Upload results to code-scanning"
         uses: github/codeql-action/upload-sarif@b611370bb5703a7efb587f9d136a52ea24c5c38c # v3.25.11
         with:
-          sarif_file: "scorecard-scan-results-${{ github.event.pull_request.number || env.GITHUB_SHA }}.sarif"
+          sarif_file: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"

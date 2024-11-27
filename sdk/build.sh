@@ -20,10 +20,11 @@ BUILD_TYPE="${BUILD_TYPE:-Release}"
 INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
 
 cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" -B "${MCM_SDK_DIR}" -S "${SCRIPT_DIR}"
-
-as_root make -C "${MCM_SDK_DIR}" install
+make -j "${NPROC}" -C "${MCM_SDK_DIR}"
 
 if [[ $# -ne 0 ]]; then
     DESTDIR="${1:-$DESTDIR}" make -C "${MCM_SDK_DIR}" install
 fi
+as_root make -C "${MCM_SDK_DIR}" install
+
 ln -s "${MCM_SDK_DIR}" "${SCRIPT_DIR}/build"

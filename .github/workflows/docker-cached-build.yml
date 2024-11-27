@@ -10,344 +10,49 @@ on:
 permissions:
   contents: read
 
-env:
-  CONCURRENCY_GROUP: "${{ github.workflow }}-${{ github.event.pull_request.number || env.GITHUB_SHA }}"
-  BUILD_TYPE: "Release"
-  DOCKER_REGISTRY: "ghcr.io"
-  DOCKER_REGISTRY_LOGIN: "${{ github.repository == 'openvisualcloud/media-communications-mesh' && false }}"
-  DOCKER_BUILD_ARGS: ""
-  DOCKER_PLATFORMS: "linux/amd64"
-  DOCKER_IMAGE_PUSH: "${{ github.repository == 'openvisualcloud/media-communications-mesh' && github.event_name == 'push' && false }}"
-  DOCKER_IMAGE_BASE: "ghcr.io/openvisualcloud/media-communications-mesh"
-  DOCKER_IMAGE_TAG: "${{ github.sha }}"
-
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || env.GITHUB_SHA }}
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
   cancel-in-progress: true
 
 jobs:
   sdk-image-build:
-    name: Build sdk Docker Image
-    runs-on: ubuntu-22.04
     permissions:
-      contents: read
       security-events: write
-    timeout-minutes: 60
-    env:
-      DOCKER_FILE_PATH: "sdk/Dockerfile"
-      DOCKER_IMAGE_NAME: "sdk"
-    steps:
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Harden Runner"
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-        with:
-          egress-policy: audit
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: sarif
-          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-          no-fail: true
-          failure-threshold: info
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty output"
-        if: always()
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: tty
-          failure-threshold: warning
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-        with:
-          buildkitd-flags: --debug
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Login to Docker Container Registry"
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
-        if: ${{ env.DOCKER_REGISTRY_LOGIN == 'true' }}
-        with:
-          registry: "${{ env.DOCKER_REGISTRY }}"
-          username: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_USER || env.GITHUB_ACTOR }}
-          password: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_KEY || secrets.GITHUB_TOKEN }}
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Build and push image"
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          load: true
-          push: "${{ env.DOCKER_IMAGE_PUSH }}"
-          outputs: type=docker
-          platforms: "${{ env.DOCKER_PLATFORMS }}"
-          file: "${{ env.DOCKER_FILE_PATH }}"
-          tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
-          cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
-          build-args: "${{ env.DOCKER_BUILD_ARGS }}"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy run vulnerability scanner on image"
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
-        with:
-          image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          format: "sarif"
-          output: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+      contents: read
+    name: Build sdk Docker Image
+    uses: ./.github/workflows/template-docker-cached-build.yml
+    with:
+      docker_file_path:  "sdk/Dockerfile"
+      docker_image_name: "sdk"
 
   ffmpeg-6-1-image-build:
-    name: Build ffmpeg v6.1 Docker Image
-    runs-on: ubuntu-22.04
     permissions:
-      contents: read
       security-events: write
-    timeout-minutes: 60
-    env:
-      DOCKER_FILE_PATH: "ffmpeg-plugin/Dockerfile"
-      DOCKER_IMAGE_NAME: "ffmpeg-6-1"
-      DOCKER_BUILD_ARGS: "FFMPEG_VER=6.1"
-    steps:
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Harden Runner"
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-        with:
-          egress-policy: audit
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: sarif
-          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-          no-fail: true
-          failure-threshold: info
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty format."
-        if: always()
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: tty
-          failure-threshold: warning
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-        with:
-          buildkitd-flags: --debug
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Login to Docker Container Registry"
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
-        if: ${{ env.DOCKER_REGISTRY_LOGIN == 'true' }}
-        with:
-          registry: "${{ env.DOCKER_REGISTRY }}"
-          username: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_USER || env.GITHUB_ACTOR }}
-          password: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_KEY || secrets.GITHUB_TOKEN }}
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Build and push image"
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          load: true
-          push: "${{ env.DOCKER_IMAGE_PUSH }}"
-          outputs: type=docker
-          platforms: "${{ env.DOCKER_PLATFORMS }}"
-          file: "${{ env.DOCKER_FILE_PATH }}"
-          tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
-          cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
-          build-args: "${{ env.DOCKER_BUILD_ARGS }}"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy run vulnerability scanner on image"
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
-        with:
-          image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          format: "sarif"
-          output: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+      contents: read
+    name: Build ffmpeg v6.1 Docker Image
+    uses: ./.github/workflows/template-docker-cached-build.yml
+    with:
+      docker_file_path:  "ffmpeg-plugin/Dockerfile"
+      docker_image_name: "ffmpeg-6-1"
+      docker_build_args: "FFMPEG_VER=6.1"
 
   ffmpeg-7-0-image-build:
-    name: Build ffmpeg v7.0 Docker Image
-    runs-on: ubuntu-22.04
     permissions:
-      contents: read
       security-events: write
-    timeout-minutes: 60
-    env:
-      DOCKER_FILE_PATH: "ffmpeg-plugin/Dockerfile"
-      DOCKER_IMAGE_NAME: "ffmpeg-7-0"
-      DOCKER_BUILD_ARGS: "FFMPEG_VER=7.0"
-    steps:
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Harden Runner"
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-        with:
-          egress-policy: audit
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: sarif
-          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-          no-fail: true
-          failure-threshold: info
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty output"
-        if: always()
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: tty
-          failure-threshold: warning
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-        with:
-          buildkitd-flags: --debug
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Login to Docker Container Registry"
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
-        if: ${{ env.DOCKER_REGISTRY_LOGIN == 'true' }}
-        with:
-          registry: "${{ env.DOCKER_REGISTRY }}"
-          username: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_USER || env.GITHUB_ACTOR }}
-          password: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_KEY || secrets.GITHUB_TOKEN }}
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Build and push image"
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          load: true
-          push: "${{ env.DOCKER_IMAGE_PUSH }}"
-          outputs: type=docker
-          platforms: "${{ env.DOCKER_PLATFORMS }}"
-          file: "${{ env.DOCKER_FILE_PATH }}"
-          tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
-          cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
-          build-args: "${{ env.DOCKER_BUILD_ARGS }}"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy run vulnerability scanner on image"
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
-        with:
-          image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          format: "sarif"
-          output: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+      contents: read
+    name: Build ffmpeg v7.0 Docker Image
+    uses: ./.github/workflows/template-docker-cached-build.yml
+    with:
+      docker_file_path:  "ffmpeg-plugin/Dockerfile"
+      docker_image_name: "ffmpeg-7-0"
+      docker_build_args: "FFMPEG_VER=7.0"
 
   media-proxy-image-build:
-    name: Build Media-Proxy Docker Image
-    runs-on: ubuntu-22.04
     permissions:
-      contents: read
       security-events: write
-    timeout-minutes: 60
-    env:
-      DOCKER_FILE_PATH: media-proxy/Dockerfile
-      DOCKER_IMAGE_NAME: media-proxy
-    steps:
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Harden Runner"
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-        with:
-          egress-policy: audit
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Checkout repository"
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan sarif format"
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: sarif
-          output-file:  "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-          no-fail: true
-          failure-threshold: info
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "hadolint-${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Hadolint Dockerfile scan tty output"
-        if: always()
-        uses: hadolint/hadolint-action@54c9adbab1582c2ef04b2016b760714a4bfde3cf # v3.1.0
-        with:
-          dockerfile: "${{ env.DOCKER_FILE_PATH }}"
-          config: .github/configs/hadolint.yaml
-          format: tty
-          failure-threshold: warning
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Set up Docker Buildx"
-        uses: docker/setup-buildx-action@4fd812986e6c8c2a69e18311145f9371337f27d4 # v3.4.0
-        with:
-          buildkitd-flags: --debug
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Login to Docker Container Registry"
-        uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
-        if: ${{ env.DOCKER_REGISTRY_LOGIN == 'true' }}
-        with:
-          registry: "${{ env.DOCKER_REGISTRY }}"
-          username: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_USER || env.GITHUB_ACTOR }}
-          password: ${{ secrets.ACTION_DOCKER_REGISTRY_LOGIN_KEY || secrets.GITHUB_TOKEN }}
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }}: Build and push image"
-        uses: docker/build-push-action@1a162644f9a7e87d8f4b053101d1d9a712edc18c # v6.3.0
-        with:
-          load: true
-          push: "${{ env.DOCKER_IMAGE_PUSH }}"
-          outputs: type=docker
-          platforms: "${{ env.DOCKER_PLATFORMS }}"
-          file: "${{ env.DOCKER_FILE_PATH }}"
-          tags: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          cache-from: type=gha,scope=${{ env.DOCKER_IMAGE_NAME }}
-          cache-to: type=gha,mode=max,scope=${{ env.DOCKER_IMAGE_NAME }}
-          build-args: "${{ env.DOCKER_BUILD_ARGS }}"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy run vulnerability scanner on image"
-        uses: aquasecurity/trivy-action@18f2510ee396bbf400402947b394f2dd8c87dbb0 # v0.29.0
-        with:
-          image-ref: "${{ env.DOCKER_IMAGE_BASE }}/${{ env.DOCKER_IMAGE_NAME }}:${{ env.DOCKER_IMAGE_TAG }}"
-          format: "sarif"
-          output: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
-
-      - name: "${{ env.DOCKER_IMAGE_NAME }} Scanner: Trivy upload results to Security tab"
-        uses: github/codeql-action/upload-sarif@2e230e8fe0ad3a14a340ad0815ddb96d599d2aff # v3.25.8
-        with:
-          sarif_file: "${{ env.CONCURRENCY_GROUP }}-${{ env.DOCKER_IMAGE_NAME }}-${{ env.DOCKER_IMAGE_TAG }}.sarif"
+      contents: read
+    name: Build Media-Proxy Docker Image
+    uses: ./.github/workflows/template-docker-cached-build.yml
+    with:
+      docker_file_path:  "media-proxy/Dockerfile"
+      docker_image_name: "media-proxy"

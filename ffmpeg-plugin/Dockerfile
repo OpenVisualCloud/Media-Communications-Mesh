@@ -49,11 +49,11 @@ COPY . ${MCM_DIR}
 WORKDIR ${MCM_DIR}
 RUN ./sdk/build.sh && \
     INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./sdk/build.sh && \
-    ./ffmpeg-plugin/clone-and-patch-ffmpeg.sh && \
-    ./ffmpeg-plugin/configure-ffmpeg.sh --enable-libx264 --enable-gpl --prefix="${PREFIX_DIR}/usr/local"
+    ./ffmpeg-plugin/clone-and-patch-ffmpeg.sh "${FFMPEG_VER}" && \
+    ./ffmpeg-plugin/configure-ffmpeg.sh "${FFMPEG_VER}" --enable-libx264 --enable-gpl --prefix="${PREFIX_DIR}/usr/local"
 
 WORKDIR ${MCM_DIR}/ffmpeg-plugin
-RUN ./build-ffmpeg.sh
+RUN ./build-ffmpeg.sh "${FFMPEG_VER}"
 
 ARG IMAGE_CACHE_REGISTRY
 ARG IMAGE_NAME
