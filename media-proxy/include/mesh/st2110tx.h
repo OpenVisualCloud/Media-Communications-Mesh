@@ -103,17 +103,18 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
         int to_be_sent = std::min(transfer_size, sz);
         // TODO: add error/warning if sent is different than _transfer_size
 
-        FRAME *frame = NULL;
-        do {
+        FRAME *frame;
+        for (;;) {
+            if (ctx.cancelled() || _ctx.cancelled())
+                return set_result(Result::error_context_cancelled);
+            
             // Get empty buffer from MTL
             frame = get_frame(mtl_session);
-            if (!frame) {
-                wait_frame_available();
-                if (_ctx.cancelled()) {
-                    return set_result(Result::error_context_cancelled);
-                }
-            }
-        } while (!frame);
+            if (frame)
+                break;
+            
+            wait_frame_available();
+        }
 
         // Copy data from emulated transmitter to MTL empty buffer
         mtl_memcpy(get_frame_data_ptr(frame), ptr, to_be_sent);
