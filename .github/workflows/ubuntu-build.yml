@@ -2,15 +2,10 @@ name: build-baremetal-ubuntu
 
 on:
   push:
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
-    branches: [ "main", "dev", "maint-*" ]
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "dev", "maint-*" ]
-    paths-ignore:
-      - 'docs/**'
-      - '/*.md'
+    branches: [ "main" ]
+  workflow_dispatch:
 
 env:
   BUILD_TYPE: Release
