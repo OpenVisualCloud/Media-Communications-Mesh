@@ -3,7 +3,9 @@ name: docker-publish
 on:
   push:
     branches: [ "main", "maint-*" ]
-
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
 permissions:
   contents: read
 

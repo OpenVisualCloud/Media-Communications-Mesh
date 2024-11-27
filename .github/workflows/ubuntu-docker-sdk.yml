@@ -3,7 +3,9 @@ name: Build SDK Dockerfile Ubuntu
 on:
   pull_request:
     branches: [ "main", "dev", "maint-*" ]
-
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
 permissions:
   contents: read
 
