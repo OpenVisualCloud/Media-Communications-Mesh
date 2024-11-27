@@ -106,14 +106,38 @@ void *ST2110::get_frame_data_ptr(st30_frame *src) {
     return src->addr;
 }
 
+/**
+ * Use this function in on_establish() to initialize frame_available flag.
+ */
+void ST2110::init_frame_available() {
+    frame_available = false;
+}
+
+/**
+ * Use this function in on_shutdown() and frame_available_cb() to properly notify another thread
+ *
+ */
+void ST2110::notify_frame_available() {
+    frame_available.store(true, std::memory_order_release);
+    frame_available.notify_one();
+}
+
+/**
+ * Use this function in on_receive() to wait for notification
+ *
+ */
+void ST2110::wait_frame_available() {
+    frame_available.wait(false, std::memory_order_acquire);
+    frame_available = false;
+}
+
 int ST2110::frame_available_cb(void *ptr) {
     auto _this = static_cast<ST2110 *>(ptr);
     if (!_this) {
         return -1;
     }
 
-    _this->stop = true;
-    _this->stop.notify_all();
+    _this->notify_frame_available();
 
     return 0;
 }

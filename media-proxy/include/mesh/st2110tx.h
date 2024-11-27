@@ -74,7 +74,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
     Result on_establish(context::Context& ctx) override {
         _ctx = context::WithCancel(ctx);
-        stop = false;
+        init_frame_available();
 
         mtl_session = create_session(mtl_device, &ops);
         if (!mtl_session) {
@@ -89,8 +89,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
 
     Result on_shutdown(context::Context& ctx) override {
         _ctx.cancel();
-        stop = true;
-        stop.notify_all();
+        notify_frame_available();
 
         if (mtl_session) {
             close_session(mtl_session);
@@ -109,8 +108,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
             // Get empty buffer from MTL
             frame = get_frame(mtl_session);
             if (!frame) {
-                stop.wait(false);
-                stop = false;
+                wait_frame_available();
                 if (_ctx.cancelled()) {
                     return set_result(Result::error_context_cancelled);
                 }

@@ -44,9 +44,12 @@ class ST2110 : public Connection {
 
   protected:
     static int frame_available_cb(void *ptr);
+    void init_frame_available();
+    void notify_frame_available();
+    void wait_frame_available();
 
     mtl_handle mtl_device = nullptr;
-    std::atomic<bool> stop;
+    std::atomic<bool> frame_available;
 };
 
 } // namespace mesh::connection

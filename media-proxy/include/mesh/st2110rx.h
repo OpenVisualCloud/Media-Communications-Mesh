@@ -79,7 +79,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
 
     Result on_establish(context::Context& ctx) override {
         _ctx = context::WithCancel(ctx);
-        stop = false;
+        init_frame_available();
 
         mtl_session = create_session(mtl_device, &ops);
         if (!mtl_session) {
@@ -103,8 +103,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
 
     Result on_shutdown(context::Context& ctx) override {
         _ctx.cancel();
-        stop = true;
-        stop.notify_all();
+        notify_frame_available();
 
         frame_thread_handle.join();
 
@@ -123,15 +122,14 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
         while (!_ctx.cancelled()) {
             // Get full buffer from MTL
             FRAME *frame_ptr = get_frame(mtl_session);
-            if (!frame_ptr) { /* no frame */
-                stop.wait(false);
-                stop = false;
-                continue;
+            if (frame_ptr) {
+                // Forward buffer to emulated receiver
+                transmit(_ctx, get_frame_data_ptr(frame_ptr), transfer_size);
+                // Return used buffer to MTL
+                put_frame(mtl_session, frame_ptr);
+            } else {
+                wait_frame_available();
             }
-            // Forward buffer to emulated receiver
-            transmit(_ctx, get_frame_data_ptr(frame_ptr), transfer_size);
-            // Return used buffer to MTL
-            put_frame(mtl_session, frame_ptr);
         }
     }
 };
