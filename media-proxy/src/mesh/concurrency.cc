@@ -14,7 +14,7 @@ namespace context {
 Context::Context() : ss(std::stop_source()),
                      parent(nullptr),
                      cb(nullptr),
-                     ch(new thread::Channel<bool>(1)),
+                     ch(nullptr),
                      timeout_ms(std::chrono::milliseconds(0))
 {
 }
@@ -55,9 +55,11 @@ Context& Context::operator=(Context&& other) noexcept {
         ss = std::stop_source();
         parent = other.parent;
 
-        cb = std::make_unique<std::stop_callback<std::function<void()>>>(
-            parent->ss.get_token(), [this] { cancel(); }
-        );
+        if(parent){
+            cb = std::make_unique<std::stop_callback<std::function<void()>>>(
+                parent->ss.get_token(), [this] { cancel(); }
+            );
+        }
 
         timeout_ms = other.timeout_ms;
 
@@ -69,6 +71,10 @@ Context& Context::operator=(Context&& other) noexcept {
                 cv.wait_for(lk, ss.get_token(), timeout_ms, [] { return false; });
                 cancel();
             });
+        }
+
+        if (ch) {
+            delete ch;
         }
 
         ch = other.ch;
