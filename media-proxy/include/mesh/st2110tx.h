@@ -109,7 +109,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Tx : public
                 stop.wait(false);
                 stop = false;
                 if (_ctx.cancelled()) {
-                    return set_result(Result::error_shutdown);
+                    return set_result(Result::error_context_cancelled);
                 }
             }
         } while (!frame);

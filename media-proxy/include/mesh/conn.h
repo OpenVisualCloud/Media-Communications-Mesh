@@ -66,7 +66,7 @@ enum class Result {
     error_bad_argument,
     error_out_of_memory,
     error_general_failure,
-    error_shutdown,
+    error_context_cancelled,
     // TODO: more error codes to be added...
 };
 
