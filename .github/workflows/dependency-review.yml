@@ -1,6 +1,5 @@
-
 # Source repository: https://github.com/actions/dependency-review-action
-name: Scan Dependency Review
+name: scan-dependency-review
 on: [pull_request]
 
 permissions:

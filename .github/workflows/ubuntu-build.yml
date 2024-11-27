@@ -1,4 +1,4 @@
-name: Build Baremetal Ubuntu
+name: build-baremetal-ubuntu
 
 on:
   push:
@@ -14,17 +14,17 @@ on:
 
 env:
   BUILD_TYPE: Release
-  MTL_BUILD_DISABLE_PCAPNG: true
-  LIBFABRIC_DIR: /tmp/libfabric
-  XDP_VERSION: 5c88569dd15e55db678b897b8ea2a73aeaf956f4
-  XDP_DIR: /tmp/xdp
-  GRPC_VERSION: v1.58.0
-  GRPC_DIR: /tmp/grpc
-  PREFIX_DIR: /usr/local
+  BUILD_DIR: "${{ github.workspace }}/_build"
   DEBIAN_FRONTEND: noninteractive
+  MTL_BUILD_DISABLE_PCAPNG: true
+  PREFIX_DIR: "${{ github.workspace }}/_install"
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -43,71 +43,46 @@ jobs:
     - name: 'Checkout repository'
       uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-    - name: 'Install dependencies'
+    - name: 'Install OS level dependencies'
+      run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
+
+    - name: 'Check local dependencies build cache'
+      id: load-local-dependencies-cache
+      uses: actions/cache/restore@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+      with:
+        path: ${{ env.BUILD_DIR }}
+        key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
+
+    - name: 'Download, unpack and patch build dependencies'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
+
+    - name: 'Clone and patch ffmpeg 6.1 and 7.0'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
       run: |
-        sudo apt-get update -y && \
-        sudo apt-get install -y --no-install-recommends \
-            git build-essential meson python3 python3-pyelftools pkg-config \
-            libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev \
-            libsdl2-ttf-dev libssl-dev ca-certificates m4 clang llvm zlib1g-dev \
-            libelf-dev libcap-ng-dev libcap2-bin gcc-multilib systemtap-sdt-dev ninja-build \
-            nasm dpdk-dev librdmacm-dev && \
-        sudo apt-get clean && \
-        sudo rm -rf /var/lib/apt/lists/*
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
 
     - name: 'Build and Install xdp and libbpf'
-      run: |
-        git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git "${XDP_DIR}" && \
-        pushd "${XDP_DIR}" && \
-        ./configure && \
-        make -j$(nproc) && \
-        sudo make install && \
-        make -j$(nproc) -C "${XDP_DIR}/lib/libbpf/src" && \
-        sudo make -C "${XDP_DIR}/lib/libbpf/src" install && popd
+      run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
 
     - name: 'Build and Install libfabric'
-      run: |
-        git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric "${LIBFABRIC_DIR}" && \
-        pushd "${LIBFABRIC_DIR}" && \
-        ./autogen.sh && ./configure && \
-        make -j$(nproc) && \
-        sudo make install && popd
+      run: eval 'source scripts/setup_build_env.sh && lib_install_fabrics'
 
-    - name: 'Install MTL'
-      run: |
-        git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
-        pushd imtl && ./build.sh && popd
+    - name: 'Build and Install the DPDK'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_dpdk'
 
-    - name: 'Restore cached for gRPC build'
-      id: grpc-cache-restore
-      uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-      with:
-        path: ${{ env.GRPC_DIR }}
-        key: Linux-grpc${{ env.GRPC_VERSION }}
+    - name: 'Build and Install the MTL'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_mtl'
 
-    - name: 'Build gRPC'
-      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
-      run: |
-          git clone --branch ${GRPC_VERSION} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc "${GRPC_DIR}" && \
-          cmake -DgRPC_INSTALL=ON \
-                -DgRPC_BUILD_TESTS=OFF \
-                -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} \
-                -B "${GRPC_DIR}/cmake/build"
-                -S "${GRPC_DIR}" && \
-          cmake --build "${GRPC_DIR}/cmake/build" -j `nproc`
+    - name: 'Build and Install JPEG XS'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_jpeg_xs'
 
-    - name: 'Save cache for gRPC build'
-      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
-      id: grpc-cache-save
-      uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-      with:
-        path: ${{ env.GRPC_DIR }}
-        key: ${{ steps.grpc-cache-restore.outputs.cache-primary-key }}
+    - name: 'Build and Install JPEG XS ffmpeg plugin'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_mtl_jpeg_xs_plugin'
 
-    - name: 'Install gRPC'
-      run: |
-          sudo cmake --install "${GRPC_DIR}/cmake/build" && \
-          rm -rf "${GRPC_DIR}"
+    - name: 'Build gRPC and dependencies'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
 
     - name: 'Build MCM SDK and Media Proxy'
       run: ./build.sh
@@ -115,8 +90,5 @@ jobs:
     - name: 'Build MCM FFmpeg plugin'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
-          git config --global user.email "you@intel.com"
-          git config --global user.name "Your Name"
-          ./clone-and-patch-ffmpeg.sh && \
-          ./configure-ffmpeg.sh && \
-          ./build-ffmpeg.sh
+        ./configure-ffmpeg.sh && \
+        ./build-ffmpeg.sh

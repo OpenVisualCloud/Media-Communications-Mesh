@@ -1,5 +1,4 @@
-
-name: Documentation Build and Publish
+name: documentation-build-and-publish
 on:
   workflow_call:
   workflow_dispatch:

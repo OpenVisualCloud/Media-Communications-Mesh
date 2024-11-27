@@ -5,9 +5,10 @@
 
 # Directories
 script_dir="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
+repository_dir="$(readlink -f "${script_dir}/../..")"
 . "${script_dir}/test_memif.sh"
 . "${script_dir}/test_af_xdp.sh"
-bin_dir="$(readlink -f "${script_dir}/../../out/bin")"
+bin_dir="$(readlink -f "${repository_dir}/build/bin")"
 out_dir="$(readlink -f "${script_dir}/out")"
 
 # Colors enablement
