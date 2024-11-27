@@ -42,7 +42,7 @@ RUN apt-get update && \
 # gRPC
 WORKDIR ${GRPC_DIR}/cmake/build
 RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
-    make -j `nproc` && \
+    make "-j$(nproc)" && \
     make install
 
 COPY . ${MCM_DIR}
