@@ -68,8 +68,8 @@ RUN ./configure && \
 
 WORKDIR ${LIBFABRIC_DIR}
 RUN ./autogen.sh && \
-    ./configure && \
-    make -j$(nproc) && \
+    ./configure --enable-verbs && \
+    make "-j$(nproc)" && \
     make install && \
     DESTDIR="${PREFIX_DIR}" make install
 
@@ -88,10 +88,10 @@ RUN ./build.sh && \
 # gRPC
 WORKDIR ${GRPC_DIR}/cmake/build
 RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
-    make -j `nproc` && \
+    make "-j$(nproc)" && \
     make install && \
     cmake -DgRPC_BUILD_TESTS=ON -DgRPC_INSTALL=ON ../.. && \
-    make -j `nproc` grpc_cli && \
+    make "-j$(nproc)" grpc_cli && \
     cp grpc_cli "${PREFIX_DIR}/usr/local/bin/"
 
 # Build and install JPEG XS
@@ -109,7 +109,7 @@ RUN ./build.sh build-only && \
 # Build MCM
 WORKDIR ${MCM_DIR}
 COPY . ${MCM_DIR}
-RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh && \
+RUN ./build.sh "${PREFIX_DIR}" && \
     cp "${MTL_DIR}/build/manager/MtlManager" "${PREFIX_DIR}/usr/local/bin/" && \
     cp -fR "/usr/local/lib/bpf/"* "${PREFIX_DIR}/usr/local/lib/bpf/" && \
     rm -rf "${PREFIX_DIR}/usr/lib64/"*.a && \
@@ -157,7 +157,7 @@ RUN apt-get update --fix-missing && \
 COPY --chown=mcm --from=builder /install /
 
 RUN ldconfig && \
-    apt-get purge -y *sound* *systemtap* *libdrm* *vorbis* *wayland* *x11* *python* *readline* *avahi* '^libx[a-w,y-z].*' make media-types libopus0 \
+    apt-get purge -y '.*sound.*' '.*systemtap.*' '.*libdrm.*' '.*vorbis.*' '.*wayland.*' '.*x11.*' '.*python.*' '.*readline.*' '.*avahi.*' '^libx[a-w,y-z].*' make media-types libopus0 \
         libexpat1 libflac8 libfreetype6 libsndfile1 libgbm1 libglib2.0-0 libgraphite2-3 libharfbuzz0b libogg0 libpulse0 libmpdec3 libnspr4 libpng16-16 \
         xkb-data distro-info-data libdw1 libbrotli1 libdecor-0-0 libxxf86vm1 libapparmor1 libasyncns0 libnss3 libsqlite3-0 lsb-release
 USER mcm

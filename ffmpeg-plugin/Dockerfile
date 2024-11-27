@@ -21,7 +21,19 @@ SHELL ["/bin/bash", "-exo", "pipefail", "-c"]
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        sudo apt-utils build-essential make cmake git ca-certificates pkg-config nasm libbsd-dev libx264-dev && \
+        build-essential \
+        ca-certificates \
+        libbsd-dev \
+        libx264-dev \
+        pkg-config \
+        apt-utils \
+        sudo \
+        make \
+        cmake \
+        git \
+        nasm \
+        curl \
+        tar && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     mkdir -p "${GRPC_DIR}" && \
@@ -30,14 +42,12 @@ RUN apt-get update && \
 # gRPC
 WORKDIR ${GRPC_DIR}/cmake/build
 RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
-    make -j `nproc` && \
+    make "-j$(nproc)" && \
     make install
 
 COPY . ${MCM_DIR}
 WORKDIR ${MCM_DIR}
-RUN git config --global user.email "intel@intel.com" && \
-    git config --global user.name "Intel" && \
-    ./sdk/build.sh && \
+RUN ./sdk/build.sh && \
     INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./sdk/build.sh && \
     ./ffmpeg-plugin/clone-and-patch-ffmpeg.sh && \
     ./ffmpeg-plugin/configure-ffmpeg.sh --enable-libx264 --enable-gpl --prefix="${PREFIX_DIR}/usr/local"
@@ -67,7 +77,11 @@ SHELL ["/bin/bash", "-exc"]
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        libbsd0 vim net-tools ca-certificates sudo libx264-163 && \
+        ca-certificates \
+        vim net-tools \
+        libx264-163 \
+        libbsd0 \
+        sudo && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \
@@ -76,9 +90,6 @@ RUN apt-get update && \
     usermod -aG sudo mcm
 
 COPY --chown=mcm --from=builder "${PREFIX_DIR}" /
-COPY --chown=mcm --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/recver_app" "${MCM_DIR}/recver_app"
-COPY --chown=mcm --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/sender_app" "${MCM_DIR}/sender_app"
-
 RUN ldconfig
 
 USER mcm
