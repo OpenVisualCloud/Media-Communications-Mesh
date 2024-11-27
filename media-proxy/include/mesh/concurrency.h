@@ -50,11 +50,11 @@ protected:
     Context(Context& parent);
     Context(Context& parent, std::chrono::milliseconds timeout_ms);
 
-    Context *parent;
-    thread::Channel<bool> *ch;
+    Context *parent = nullptr;
+    thread::Channel<bool> *ch = nullptr;
     std::future<void> async_cb;
     std::chrono::milliseconds timeout_ms;
-    std::unique_ptr<std::stop_callback<std::function<void()>>> cb;
+    std::unique_ptr<std::stop_callback<std::function<void()>>> cb = nullptr;
 
     friend Context& Background();
     friend class WithCancel;
