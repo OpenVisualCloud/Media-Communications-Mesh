@@ -21,21 +21,25 @@ int ST2110_22Tx::close_session(st22p_tx_handle h) {
 Result ST2110_22Tx::configure(context::Context& ctx, const std::string& dev_port,
                               const MeshConfig_ST2110& cfg_st2110,
                               const MeshConfig_Video& cfg_video) {
-    set_state(ctx, State::not_configured);
-
-    if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_22)
+    if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_22) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
-    if (configure_common(ctx, dev_port, cfg_st2110))
+    if (configure_common(ctx, dev_port, cfg_st2110)) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
     ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST22;
     ops.width = cfg_video.width;
     ops.height = cfg_video.height;
     ops.fps = st_frame_rate_to_st_fps(cfg_video.fps);
 
-    if (mesh_video_format_to_st_format(cfg_video.pixel_format, ops.input_fmt))
+    if (mesh_video_format_to_st_format(cfg_video.pixel_format, ops.input_fmt)) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
     ops.device = ST_PLUGIN_DEVICE_AUTO;
     ops.pack_type = ST22_PACK_CODESTREAM;
@@ -53,8 +57,10 @@ Result ST2110_22Tx::configure(context::Context& ctx, const std::string& dev_port
         ("device", ops.device);
 
     transfer_size = st_frame_size(ops.input_fmt, ops.width, ops.height, false);
-    if (transfer_size == 0)
+    if (transfer_size == 0) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
     set_state(ctx, State::configured);
     return set_result(Result::success);

@@ -21,25 +21,33 @@ int ST2110_30Tx::close_session(st30p_tx_handle h) {
 Result ST2110_30Tx::configure(context::Context& ctx, const std::string& dev_port,
                               const MeshConfig_ST2110& cfg_st2110,
                               const MeshConfig_Audio& cfg_audio) {
-    set_state(ctx, State::not_configured);
-
-    if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_30)
+    if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_30) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
-    if (configure_common(ctx, dev_port, cfg_st2110))
+    if (configure_common(ctx, dev_port, cfg_st2110)) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
     ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST30;
 
-    if (mesh_audio_format_to_st_format(cfg_audio.format, ops.fmt))
+    if (mesh_audio_format_to_st_format(cfg_audio.format, ops.fmt)) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
     ops.channel = cfg_audio.channels;
-    if (mesh_audio_sampling_to_st_sampling(cfg_audio.sample_rate, ops.sampling))
+    if (mesh_audio_sampling_to_st_sampling(cfg_audio.sample_rate, ops.sampling)) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
-    if (mesh_audio_ptime_to_st_ptime(cfg_audio.packet_time, ops.ptime))
+    if (mesh_audio_ptime_to_st_ptime(cfg_audio.packet_time, ops.ptime)) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
     log::info("ST2110_30Tx: configure")
         ("payload_type", (int)ops.port.payload_type)
@@ -50,8 +58,10 @@ Result ST2110_30Tx::configure(context::Context& ctx, const std::string& dev_port
 
     ops.framebuff_size = transfer_size =
         st30_get_packet_size(ops.fmt, ops.ptime, ops.sampling, ops.channel);
-    if (transfer_size == 0)
+    if (transfer_size == 0) {
+        set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
+    }
 
     set_state(ctx, State::configured);
     return set_result(Result::success);
