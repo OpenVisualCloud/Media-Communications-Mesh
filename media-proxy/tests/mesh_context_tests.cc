@@ -17,7 +17,7 @@ class test_class {
  * valgrind --leak-check=full ./media_proxy_unit_tests --gtest_filter=*Context*
  */
 TEST(MeshContext, constructor) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
     test_class t;
     t.init(ctx);
     {
