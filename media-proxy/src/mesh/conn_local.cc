@@ -58,12 +58,9 @@ Result Local::on_establish(context::Context& ctx)
 {
     // Unlink socket file
     if (memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
-        if (stat("/run/mcm", &st) == -1) {
-            auto err = mkdir("/run/mcm", 0666);
-            if (err) {
-                return Result::error_general_failure;
-            }
+        auto err = mkdir("/run/mcm", 0666);
+        if (err && errno != EEXIST) {
+            return Result::error_general_failure;
         }
         unlink(memif_socket_args.path);
     }
