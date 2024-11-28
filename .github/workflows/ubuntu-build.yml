@@ -98,6 +98,7 @@ jobs:
         ./build-ffmpeg.sh "7.0"
 
     - name: 'Scanner: Send to VirusTotal for analysis'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       id: vt
       uses: cssnr/virustotal-action@331c320c79202fdaa7a30f16163390f8d09c3f45 # v1.2.0
       with:
@@ -111,4 +112,6 @@ jobs:
             _build/ffmpeg-7-0/ffmpeg
 
     - name: 'Scanner: Print scan results'
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+      id: vt-out
       run: echo ${{ steps.vt.outputs.results }}
