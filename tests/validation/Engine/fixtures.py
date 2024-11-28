@@ -36,7 +36,7 @@ def media(request):
 def build(request):
     build = request.config.getoption("--build")
     if build is None:
-        build = "../Media-Transport-Library"
+        build = "../.."
     os.environ["build"] = build
     return build
 
