@@ -72,7 +72,7 @@ public:
                             DeleteConnectionResponse* resp) override {
 
         auto ctx = context::WithCancel(context::Background());
-        auto conn_id = req->conn_id();
+        const auto& conn_id = req->conn_id();
 
         auto& mgr = connection::local_manager;
         int err = mgr.delete_connection(ctx, conn_id);
