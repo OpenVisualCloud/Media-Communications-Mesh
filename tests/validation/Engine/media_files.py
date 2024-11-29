@@ -4,6 +4,16 @@
 
 # This file is a copy retreived from an MTL project
 
+jxs_files = dict(
+    i720p25={
+        "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.jxs",
+        "format": "YUV_422_10bit",
+        "width": 1280,
+        "height": 720,
+        "fps": 25,
+    }
+)
+
 yuv_files = dict(
     i720p23={
         "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.yuv",
