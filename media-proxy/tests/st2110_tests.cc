@@ -146,22 +146,22 @@ static void validate_state_change(context::Context& ctx, connection::Connection 
 
     // Change state Configured -> Active
     res = c->establish(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(c->state(), connection::State::active);
 
     // Change state Active -> Suspended
     res = c->suspend(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(c->state(), connection::State::suspended);
 
     // Change state Suspended -> Active
     res = c->resume(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(c->state(), connection::State::active);
 
     // Change state Active -> Closed
     res = c->shutdown(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(c->state(), connection::State::closed);
 }
 
@@ -188,7 +188,7 @@ static void get_ST2110_audio_cfg(MeshConfig_Audio& cfg_audio) {
 }
 
 TEST(st2110_tx, state_change) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
 
     auto conn_tx = new EmulatedST2110_Tx;
     ASSERT_EQ(conn_tx->kind(), connection::Kind::transmitter);
@@ -196,7 +196,7 @@ TEST(st2110_tx, state_change) {
 
     // Change state: Not Configured -> Configured
     connection::Result res = conn_tx->configure(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::configured);
 
     validate_state_change(ctx, dynamic_cast<connection::Connection *>(conn_tx));
@@ -205,7 +205,7 @@ TEST(st2110_tx, state_change) {
 }
 
 TEST(st2110_rx, state_change) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
 
     auto conn_rx = new EmulatedST2110_Rx;
     ASSERT_EQ(conn_rx->kind(), connection::Kind::receiver);
@@ -213,7 +213,7 @@ TEST(st2110_rx, state_change) {
 
     // Change state: Not Configured -> Configured
     connection::Result res = conn_rx->configure(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
 
     validate_state_change(ctx, dynamic_cast<connection::Connection *>(conn_rx));
@@ -222,7 +222,7 @@ TEST(st2110_rx, state_change) {
 }
 
 TEST(DISABLED_st2110_20tx, state_change) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
 
     auto conn_rx = new connection::ST2110_20Tx;
     ASSERT_EQ(conn_rx->kind(), connection::Kind::transmitter);
@@ -237,7 +237,7 @@ TEST(DISABLED_st2110_20tx, state_change) {
     // Change state: Not Configured -> Configured
     std::string dev_port("kernel:lo");
     connection::Result res = conn_rx->configure(ctx, dev_port, cfg_st2110, cfg_video);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
 
     validate_state_change(ctx, dynamic_cast<connection::Connection *>(conn_rx));
@@ -247,7 +247,7 @@ TEST(DISABLED_st2110_20tx, state_change) {
 }
 
 TEST(DISABLED_st2110_22tx, state_change) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
 
     auto conn_rx = new connection::ST2110_22Tx;
     ASSERT_EQ(conn_rx->kind(), connection::Kind::transmitter);
@@ -262,7 +262,7 @@ TEST(DISABLED_st2110_22tx, state_change) {
     // Change state: Not Configured -> Configured
     std::string dev_port("kernel:lo");
     connection::Result res = conn_rx->configure(ctx, dev_port, cfg_st2110, cfg_video);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
 
     validate_state_change(ctx, dynamic_cast<connection::Connection *>(conn_rx));
@@ -272,7 +272,7 @@ TEST(DISABLED_st2110_22tx, state_change) {
 }
 
 TEST(DISABLED_st2110_30tx, state_change) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
 
     auto conn_rx = new connection::ST2110_30Tx;
     ASSERT_EQ(conn_rx->kind(), connection::Kind::transmitter);
@@ -287,14 +287,14 @@ TEST(DISABLED_st2110_30tx, state_change) {
     // Change state: Not Configured -> Configured
     std::string dev_port("kernel:lo");
     connection::Result res = conn_rx->configure(ctx, dev_port, cfg_st2110, cfg_audio);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
 
     validate_state_change(ctx, dynamic_cast<connection::Connection *>(conn_rx));
 
     // Change state: Closed -> Configured
     res = conn_rx->configure(ctx, dev_port, cfg_st2110, cfg_audio);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
     validate_state_change(ctx, dynamic_cast<connection::Connection *>(conn_rx));
 
@@ -302,7 +302,7 @@ TEST(DISABLED_st2110_30tx, state_change) {
 }
 
 TEST(st2110_tx, send_data) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
     connection::Result res;
 
     auto conn_tx = new EmulatedST2110_Tx;
@@ -310,12 +310,12 @@ TEST(st2110_tx, send_data) {
 
     // Setup Tx connection
     res = conn_tx->configure(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::configured);
 
     // Change state Configured -> Active
     res = conn_tx->establish(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::active);
 
     // Setup Emulated Transmitter
@@ -326,14 +326,14 @@ TEST(st2110_tx, send_data) {
 
     for (int i = 0; i < 5; i++) {
         res = emulated_tx->transmit_wrapper(ctx, (void *)DUMMY_DATA2, sizeof(DUMMY_DATA2));
-        ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+        ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
         ASSERT_EQ(conn_tx->state(), connection::State::active);
         ASSERT_GT(conn_tx->received_packets_dummy2, 0);
     }
 
     // Shutdown Tx connection
     res = conn_tx->shutdown(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::closed);
 
     // Destroy resources
@@ -342,7 +342,7 @@ TEST(st2110_tx, send_data) {
 }
 
 TEST(st2110_rx, get_data) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
     connection::Result res;
 
     // Setup Emulated Receiver
@@ -353,10 +353,10 @@ TEST(st2110_rx, get_data) {
     auto conn_rx = new EmulatedST2110_Rx;
 
     res = conn_rx->configure(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
     res = conn_rx->establish(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::active);
 
     // Connect Rx connection to Emulated Receiver
@@ -367,7 +367,7 @@ TEST(st2110_rx, get_data) {
 
     // Shutdown Rx connection
     res = conn_rx->shutdown(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::closed);
 
     ASSERT_GT(conn_rx->received_packets_dummy1, 0);
@@ -381,7 +381,7 @@ static void tx_thread(context::Context& ctx, connection::Connection *conn_tx) {
     auto emulated_tx = new EmulatedTransmitter(ctx);
     // Change state Configured -> Active
     connection::Result res = conn_tx->establish(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::active);
 
     // Setup Emulated Transmitter
@@ -392,13 +392,13 @@ static void tx_thread(context::Context& ctx, connection::Connection *conn_tx) {
 
     for (int i = 0; i < 50; i++) {
         res = emulated_tx->transmit_wrapper(ctx, (void *)DUMMY_DATA1, sizeof(DUMMY_DATA1));
-        ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+        ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
         ASSERT_EQ(conn_tx->state(), connection::State::active);
     }
 
     // Shutdown Tx connection
     res = conn_tx->shutdown(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::closed);
 
     // Destroy resources
@@ -412,7 +412,7 @@ static void rx_thread(context::Context& ctx, connection::Connection *conn_rx, bo
     conn_rx->set_link(ctx, emulated_rx);
     // Connect Rx connection to Emulated Receiver
     connection::Result res = conn_rx->establish(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::active);
 
     // Sleep some sufficient time to allow receiving the data from transmitter
@@ -420,7 +420,7 @@ static void rx_thread(context::Context& ctx, connection::Connection *conn_rx, bo
 
     // Shutdown Rx connection
     res = conn_rx->shutdown(ctx);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::closed);
 
     if (is_lossless) {
@@ -435,7 +435,7 @@ static void rx_thread(context::Context& ctx, connection::Connection *conn_rx, bo
 }
 
 TEST(DISABLED_st2110_20, send_and_receive_data) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
     connection::Result res;
 
     // Setup Tx connection
@@ -449,13 +449,13 @@ TEST(DISABLED_st2110_20, send_and_receive_data) {
     std::string dev_port("kernel:lo");
     auto conn_tx = new connection::ST2110_20Tx;
     res = conn_tx->configure(ctx, dev_port, cfg_st2110, cfg_video);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::configured);
 
     // Configure Rx
     auto conn_rx = new connection::ST2110_20Rx;
     res = conn_rx->configure(ctx, dev_port, cfg_st2110, cfg_video);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
 
     std::jthread rx_th, tx_th;
@@ -474,7 +474,7 @@ TEST(DISABLED_st2110_20, send_and_receive_data) {
 }
 
 TEST(DISABLED_st2110_22, send_and_receive_data) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
     connection::Result res;
 
     // Setup Tx connection
@@ -488,13 +488,13 @@ TEST(DISABLED_st2110_22, send_and_receive_data) {
     std::string dev_port("kernel:lo");
     auto conn_tx = new connection::ST2110_22Tx;
     res = conn_tx->configure(ctx, dev_port, cfg_st2110, cfg_video);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::configured);
 
     // Configure Rx
     auto conn_rx = new connection::ST2110_22Rx;
     res = conn_rx->configure(ctx, dev_port, cfg_st2110, cfg_video);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
 
     std::jthread rx_th, tx_th;
@@ -513,7 +513,7 @@ TEST(DISABLED_st2110_22, send_and_receive_data) {
 }
 
 TEST(DISABLED_st2110_30, send_and_receive_data) {
-    auto ctx = context::WithCancel(mesh::context::Background());
+    auto ctx = context::WithCancel(context::Background());
     connection::Result res;
 
     // Setup Tx connection
@@ -527,13 +527,13 @@ TEST(DISABLED_st2110_30, send_and_receive_data) {
     std::string dev_port("kernel:lo");
     auto conn_tx = new connection::ST2110_30Tx;
     res = conn_tx->configure(ctx, dev_port, cfg_st2110, cfg_audio);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_tx->state(), connection::State::configured);
 
     // Configure Rx
     auto conn_rx = new connection::ST2110_30Rx;
     res = conn_rx->configure(ctx, dev_port, cfg_st2110, cfg_audio);
-    ASSERT_EQ(res, connection::Result::success) << mesh::connection::result2str(res);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
     ASSERT_EQ(conn_rx->state(), connection::State::configured);
 
     std::jthread rx_th, tx_th;
