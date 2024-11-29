@@ -56,13 +56,10 @@ int Session::shm_init(uint32_t buffer_size, uint32_t log2_ring_size)
 
     /* unlink socket file */
     if (memif_conn_args.is_master && memif_socket_args.path[0] != '@') {
-        struct stat st = {0};
-        if (stat("/run/mcm", &st) == -1) {
-            ret = mkdir("/run/mcm", 0666);
-            if (ret != 0) {
-                perror("Create directory for MemIF socket.");
-                return -1;
-            }
+        ret = mkdir("/run/mcm", 0666);
+        if (ret && errno != EEXIST) {
+            perror("Create directory for MemIF socket.");
+            return -1;
         }
         unlink(memif_socket_args.path);
     }
