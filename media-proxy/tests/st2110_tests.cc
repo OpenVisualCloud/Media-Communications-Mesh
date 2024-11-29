@@ -550,3 +550,115 @@ TEST(DISABLED_st2110_30, send_and_receive_data) {
     delete conn_tx;
     delete conn_rx;
 }
+
+/********************************************CONCEPT.md scenario**************************************** */
+/**
+ * How to run the test:
+ * 1) Modify two variables port_card0 and port_card1 with the correct values of the network interfaces of the machine.
+ * 2) Open 2 consoles
+ * 2a) In the first console run the following command:
+ *     ./media_proxy_unit_tests --gtest_also_run_disabled_tests --gtest_filter=*concept_scenarion.mtl_st20_rx
+ * 2b) In the second console run the following command:
+ *     ./media_proxy_unit_tests --gtest_also_run_disabled_tests --gtest_filter=*concept_scenarion.mtl_st20_tx
+ * 3) Wait until test ends ~120s
+ * 4) Check the output of the first console, it should show the number of received packets ~2000
+ * example:
+ *  received_packets_lossless: 2000
+ *  received_packets_lossy: 0
+ */
+
+std::string port_card0("0000:4b:01.1");
+std::string port_card1("0000:4b:11.1");
+
+TEST(DISABLED_concept_scenarion, mtl_st20_tx) {
+    auto ctx = context::WithCancel(context::Background());
+    connection::Result res;
+
+    MeshConfig_Video cfg_video;
+    get_ST2110_video_cfg(cfg_video);
+
+    MeshConfig_ST2110 cfg_st2110;
+    get_ST2110_session_config(cfg_st2110, MESH_CONN_TRANSPORT_ST2110_20);
+    memcpy(cfg_st2110.local_ip_addr, "192.168.96.2", sizeof("192.168.96.2"));
+    memcpy(cfg_st2110.remote_ip_addr, "192.168.96.1", sizeof("192.168.96.1"));
+
+    // Configure Tx
+    auto conn_tx = new connection::ST2110_20Tx;
+    res = conn_tx->configure(ctx, port_card0, cfg_st2110, cfg_video);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
+    ASSERT_EQ(conn_tx->state(), connection::State::configured);
+
+    auto emulated_tx = new EmulatedTransmitter(ctx);
+    // Change state Configured -> Active
+    res = conn_tx->establish(ctx);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
+    ASSERT_EQ(conn_tx->state(), connection::State::active);
+
+    // Setup Emulated Transmitter
+    emulated_tx->establish(ctx);
+
+    // Connect Emulated Transmitter to Tx connection
+    emulated_tx->set_link(ctx, conn_tx);
+
+    uint32_t data_size = cfg_video.width * cfg_video.height * 4;
+    void *data = malloc(data_size);
+    memcpy(data, DUMMY_DATA1, sizeof(DUMMY_DATA1));
+
+    for (int i = 0; i < 2000; i++) {
+        res = emulated_tx->transmit_wrapper(ctx, data, data_size);
+        ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
+        ASSERT_EQ(conn_tx->state(), connection::State::active);
+    }
+
+    // Shutdown Tx connection
+    res = conn_tx->shutdown(ctx);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
+    ASSERT_EQ(conn_tx->state(), connection::State::closed);
+
+    // Destroy resources
+    delete emulated_tx;
+    delete conn_tx;
+    free(data);
+}
+
+TEST(DISABLED_concept_scenarion, mtl_st20_rx) {
+    auto ctx = context::WithCancel(context::Background());
+    connection::Result res;
+
+    MeshConfig_Video cfg_video;
+    get_ST2110_video_cfg(cfg_video);
+
+    MeshConfig_ST2110 cfg_st2110;
+    get_ST2110_session_config(cfg_st2110, MESH_CONN_TRANSPORT_ST2110_20);
+    memcpy(cfg_st2110.local_ip_addr, "192.168.96.1", sizeof("192.168.96.1"));
+    memcpy(cfg_st2110.remote_ip_addr, "192.168.96.2", sizeof("192.168.96.2"));
+
+    // Configure Rx
+    auto conn_rx = new connection::ST2110_20Rx;
+    res = conn_rx->configure(ctx, port_card1, cfg_st2110, cfg_video);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
+    ASSERT_EQ(conn_rx->state(), connection::State::configured);
+
+    auto emulated_rx = new EmulatedReceiver(ctx);
+    emulated_rx->establish(ctx);
+
+    conn_rx->set_link(ctx, emulated_rx);
+    // Connect Rx connection to Emulated Receiver
+    res = conn_rx->establish(ctx);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
+    ASSERT_EQ(conn_rx->state(), connection::State::active);
+
+    // Sleep some sufficient time to allow receiving the data from transmitter
+    mesh::thread::Sleep(ctx, std::chrono::milliseconds(1000 * 120)); // 120s
+
+    // Shutdown Rx connection
+    res = conn_rx->shutdown(ctx);
+    ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
+    ASSERT_EQ(conn_rx->state(), connection::State::closed);
+
+    printf("received_packets_lossless: %d\n", emulated_rx->received_packets_lossless);
+    printf("received_packets_lossy: %d\n", emulated_rx->received_packets_lossy);
+
+    delete emulated_rx;
+    delete conn_rx;
+}
