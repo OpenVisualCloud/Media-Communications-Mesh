@@ -4,7 +4,9 @@ The diagram in this document shows interaction between a user app and Mesh Data 
 
 ### Rx flow stages
 1. Create client.
-1. Create Rx connection.
+1. Create connection.
+1. Configure connection.
+1. Establish Rx connection.
 1. Receive video frames.
 1. Shutdown connection.
 1. Delete connection.
@@ -23,11 +25,20 @@ sequenceDiagram
    app ->>+ sdk: Create client
    sdk ->>- app: Client created
 
-   note over app, network: Create Receiver connection
+   note over app, network: Create connection
    app ->>+ sdk: Create connection
    sdk ->> sdk: Register connection in the client
+   sdk ->>- app: Connection created
+
+   note over app, network: Configure connection
+   app ->> sdk: Apply SMPTE ST2110-XX configuration
+   app ->> sdk: Apply video configuration
+
+   note over app, network: Establish Rx connection
+   app ->>+ sdk: Establish Rx connection
    sdk ->>+ proxy: Open TCP connection to Proxy
    proxy ->>+ mtl: Start Rx session
+   note right of mtl: SMPTE ST2110-22
    mtl ->>+ network: Update ARP table
    mtl ->>- proxy: Session started
    proxy ->>+ memif: Create Memif Tx connection
@@ -39,7 +50,7 @@ sequenceDiagram
 
    sdk ->>+ memif: Create Memif Rx connection
    memif ->>- sdk: Connection created
-   sdk ->>- app: Connection created
+   sdk ->>- app: Connection established
 
    note over app, network: Receive video frames
    loop
@@ -75,6 +86,7 @@ sequenceDiagram
    app ->>+ sdk: Shutdown connection
    sdk ->>+ proxy: Close TCP connection to Proxy
    proxy ->> mtl: Stop Rx session
+   note right of mtl: SMPTE ST2110-22
    mtl ->> network: Terminate connection
    proxy ->>- memif: Close Memif Tx connection
    sdk ->> memif: Close Memif Rx connection
