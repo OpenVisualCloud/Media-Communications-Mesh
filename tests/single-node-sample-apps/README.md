@@ -3,10 +3,12 @@
 Functional test performed on single baremetal node environment. Tested on `Ubuntu 20.04` and `Ubuntu 22.04` with kernel version `5.15`.
 
 ## Prerequisites
+
 1. The platform should have an MTL-compatible NIC installed (e.g. E810-C).
 2. Clone the [MTL repository](https://github.com/OpenVisualCloud/Media-Transport-Library).
 
 ## How it works
+
 1. Initial cleanup.
 2. Initialize NIC PF and create VFs using the MTL `nicctl.sh` script.
 3. Run Tx media_proxy in the background.
@@ -35,19 +37,20 @@ If any issues arise during the tests, refer to the logs for detailed error messa
 sudo ./test.sh <test-option> <pf-bdf> <input-file> <duration> <frames_number> <width> <height> <fps> <pixel-format>
 ```
 
-* `test-option`
-   * `memif` – use a memif direct connection
-   * `st20` – use an ST 2110-20 connection via media proxy
-   * `st22` – use an ST 2110-22 connection via media proxy using JPEG XS compression.
-   * `af_xdp` - use a native_af_xdp connection for media proxy. MtlManager is required to be available in $PATH.
+- `test-option`
 
-* `pf-bdf` – NIC PF bus device function, default `0000:32:00.1`. VFs will be created on top of this PF.
-* `input-file` – input video file path
-* `duration` – video file duration in seconds, default `10`. Used to set a transmission timeout.
-* `frames-count` – number of frames to transmit, default `300`
-* `width` `height` – frame size, default `640` x `360`
-* `fps` – frames per second, default `60`
-* `pixel-format` – pixel format, default `yuv422p10le`
+  - `memif` – use a memif direct connection
+  - `st20` – use an ST 2110-20 connection via media proxy
+  - `st22` – use an ST 2110-22 connection via media proxy using JPEG XS compression.
+  - `af_xdp` - use a native_af_xdp connection for media proxy. MtlManager is required to be available in $PATH.
+
+- `pf-bdf` – NIC PF bus device function, default `0000:32:00.1`. VFs will be created on top of this PF.
+- `input-file` – input video file path
+- `duration` – video file duration in seconds, default `10`. Used to set a transmission timeout.
+- `frames-count` – number of frames to transmit, default `300`
+- `width` `height` – frame size, default `640` x `360`
+- `fps` – frames per second, default `60`
+- `pixel-format` – pixel format, default `yuv422p10le`
 
 ## Expected outcome
 
@@ -120,6 +123,7 @@ sudo ./test.sh memif 0000:32:00.1 video.yuv 30 300 640 360 60 yuv422p10le
 ```bash
 sudo ./test.sh st20 0000:32:00.1 video.yuv 30 300 640 360 60 yuv422p10le
 ```
+
 TBD
 
 ## Run test – ST22
@@ -127,6 +131,7 @@ TBD
 ```bash
 sudo ./test.sh st22 0000:32:00.1 video.yuv 30 300 640 360 60 yuv422p10le
 ```
+
 TBD
 
 ## Run test – af_xdp
@@ -134,7 +139,7 @@ TBD
 ### Prerequisites
 
 1. MtlManager from [MTL repository](https://github.com/OpenVisualCloud/Media-Transport-Library/tree/main/manager) must be running.
-It is installed in framework pre-required steps and can be run by:
+   It is installed in framework pre-required steps and can be run by:
 
 ```bash
 sudo MtlManager

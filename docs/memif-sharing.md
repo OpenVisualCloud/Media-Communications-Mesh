@@ -1,6 +1,7 @@
 # Memif sharing
 
-## Getting started:
+## Getting started
+
 The micro-services running in one node can share memory to transfer data directly. The following is the SW stack architecture and user interface API.
 
 ![instance](_static/memif-sharing-in-one-node.png)
@@ -13,6 +14,7 @@ For detailed information on api calls and structures please refer to `mcm_dp.h`.
 - `PROTO_MEMIF` defined in proto_type struct in `mcm_dp.h` is used for services memory sharing in one node.
 
 ## 1. Set up memif connection
+
 First fill out the `mcm_conn_param` structure for master micro-service. The minimum required configuration is the `memif_interface`, `type`, `protocol`, `width`, `height`; > Example implementation `sdk/samples/common/recver_app.c`.
 
 ```c

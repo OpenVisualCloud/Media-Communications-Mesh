@@ -7,7 +7,7 @@ int main(void)
 {
     /* Default client configuration */
     MeshClientConfig client_config = { 0 };
-    
+
     /* ST2110-XX configuration */
     MeshConfig_ST2110 conn_config = {
         .remote_ip_addr = "192.168.96.2",
@@ -106,12 +106,13 @@ exit_delete_client:
 ```
 
 ## SMPTE ST2110-22 compressed video receiver example
+
 ```c
 int main(void)
 {
     /* Default client configuration */
     MeshClientConfig client_config = { 0 };
-    
+
     /* ST2110-XX configuration */
     MeshConfig_ST2110 conn_config = {
         .remote_ip_addr = "192.168.96.1",

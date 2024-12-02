@@ -1,27 +1,27 @@
 # Development – New Architecture of Media Proxy to Support Multipoint Groups
 
 ## Scope
+
 1. **`DONE`** Local connection (memif based)
-   * **`IN PROGRESS`** Local base class – `mesh::connection::Local`, derived from `mesh::connection::Connection`.
-      * **`IN PROGRESS`** Local Tx class – `mesh::connection::LocalTx`
-      * **`IN PROGRESS`** Local Rx class – `mesh::connection::LocalRx`
+   - **`IN PROGRESS`** Local base class – `mesh::connection::Local`, derived from `mesh::connection::Connection`.
+     - **`IN PROGRESS`** Local Tx class – `mesh::connection::LocalTx`
+     - **`IN PROGRESS`** Local Rx class – `mesh::connection::LocalRx`
 1. RDMA connection
-   * RDMA base class – `mesh::connection::Rdma`, derived from `mesh::connection::Connection`.
-      * RDMA Tx class – `mesh::connection::RdmaTx`
-      * RDMA Rx class – `mesh::connection::RdmaRx`
+   - RDMA base class – `mesh::connection::Rdma`, derived from `mesh::connection::Connection`.
+     - RDMA Tx class – `mesh::connection::RdmaTx`
+     - RDMA Rx class – `mesh::connection::RdmaRx`
 1. ST2110 connection
-   * ST2110 base class – `mesh::connection::ST2110`, derived from `mesh::connection::Connection`.
-      * ST2110 Tx base class – `mesh::connection::ST2110Tx`
-         * ST2110-20 Tx class – `mesh::connection::ST2110_20Tx`
-         * ST2110-22 Tx class – `mesh::connection::ST2110_22Tx`
-         * ST2110-30 Tx class – `mesh::connection::ST2110_30Tx`
-      * ST2110 Rx base class – `mesh::connection::ST2110Rx`
-         * ST2110-20 Rx class – `mesh::connection::ST2110_20Rx`
-         * ST2110-22 Rx class – `mesh::connection::ST2110_22Rx`
-         * ST2110-30 Rx class – `mesh::connection::ST2110_30Rx`
+   - ST2110 base class – `mesh::connection::ST2110`, derived from `mesh::connection::Connection`.
+     - ST2110 Tx base class – `mesh::connection::ST2110Tx`
+       - ST2110-20 Tx class – `mesh::connection::ST2110_20Tx`
+       - ST2110-22 Tx class – `mesh::connection::ST2110_22Tx`
+       - ST2110-30 Tx class – `mesh::connection::ST2110_30Tx`
+     - ST2110 Rx base class – `mesh::connection::ST2110Rx`
+       - ST2110-20 Rx class – `mesh::connection::ST2110_20Rx`
+       - ST2110-22 Rx class – `mesh::connection::ST2110_22Rx`
+       - ST2110-30 Rx class – `mesh::connection::ST2110_30Rx`
 
 ## How Is It Supposed To Work?
-
 
 ### Tx/Rx Test Scenario
 
@@ -122,6 +122,7 @@ exit:
 ```
 
 ### Tx Side
+
 ```cpp
 using namespace mesh;
 
@@ -196,9 +197,11 @@ exit:
 ```
 
 ### Test Scenario
+
 1. Start **Rx Side**.
 2. Start **Tx Side**.
 3. Check the **Rx Side** log output to be as the following
+
 ```bash
 Received Hello world (12)
 Received Hello world (12)
