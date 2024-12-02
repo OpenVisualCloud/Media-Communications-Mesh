@@ -177,7 +177,7 @@ RUN ldconfig && \
     groupadd -g 2110 vfio && \
     groupadd -g 993 imtl && \
     getent group ${MCM_GROUP} > /dev/null || groupadd -r ${MCM_GROUP} -g "${MCM_GID}" && \
-    getent passwd ${MCM_USER} > /dev/null || useradd -r -g ${MCM_GROUP} -u "${MCM_UID}" -s /sbin/nologin ${MCM_USER} -d /opt/mcm && \
+    getent passwd ${MCM_USER} > /dev/null || useradd -r -g ${MCM_GROUP} -l -u "${MCM_UID}" -s /sbin/nologin ${MCM_USER} -d /opt/mcm && \
     usermod -aG sudo,vfio,imtl ${MCM_USER} && \
     chown -R ${MCM_USER}:${MCM_GROUP} /opt/mcm /opt/grpc && \
     chown -R root:${MCM_GROUP} /usr/lib64 /usr/local /run /var/run && \
