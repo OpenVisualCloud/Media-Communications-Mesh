@@ -110,7 +110,13 @@ jobs:
             _install/usr/local/sbin/*
             _build/ffmpeg-6-1/ffmpeg
             _build/ffmpeg-7-0/ffmpeg
+
     - name: 'Scanner: Print scan results'
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       id: vt-out
-      run: echo ${{ steps.vt.outputs.results }}
+      run: |
+        echo -e "|file name|scan link|\n|---|---|\n" >> "$GITHUB_STEP_SUMMARY"
+        VIRUS_SCAN_RESULTS="${{ steps.vt.outputs.results }},"
+        RESULTS="${VIRUS_SCAN_RESULTS//\// | https:\/\/www.virustotal.com\/gui\/file-analysis\/},"
+        echo -e "${RESULTS//,/ |\\n}" >> "$GITHUB_STEP_SUMMARY"
+        echo "${{ steps.vt.outputs.results }}"
