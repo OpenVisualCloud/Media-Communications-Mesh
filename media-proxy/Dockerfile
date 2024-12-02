@@ -183,7 +183,9 @@ RUN ldconfig && \
     chown -R root:${MCM_GROUP} /usr/lib64 /usr/local /run /var/run && \
     chmod -R 2775 /usr/lib64 /usr/local /run /var/run /opt/mcm  && \
     passwd -d ${MCM_USER} && \
-    setcap "cap_ipc_lock,cap_bpf,cap_net_raw,cap_net_admin,cap_net_bind_service=+eip" /usr/local/bin/media_proxy
+    ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.so.1 && \
+    setcap "cap_sys_nice,cap_bpf,cap_dac_override,cap_ipc_lock,cap_setgid,cap_sys_rawio,cap_net_raw,cap_sys_admin,cap_net_admin+eip" /usr/local/bin/media_proxy
+    # add docker flags --cap-add sys_nice --cap-add bpf --cap-add dac_override --cap-add ipc_lock --cap-add setgid --cap-add sys_rawio --cap-add net_raw --cap-add sys_admin --cap-add net_admin
 
 USER mcm
 EXPOSE 8001/tcp 8002/tcp
