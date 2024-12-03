@@ -23,6 +23,10 @@ def get_receiver_default(app_path = f"{os.environ['build']}/tests/tools/recver_v
         "socketpath": "/run/mcm/mcm_rx_memif.sock",
         "interfaceid": 0,
         "loop": 0,
+        "audio_channels": 1,
+        "audio_sample": 48000,
+        "audio_format": "PCM16",
+        "audio_packet": "1"
     }
 
 
@@ -37,5 +41,29 @@ def get_receiver_cmd(config: dict) -> str:
     -p {send_port} \
     -r {recv_ip} \
     -i {recv_port} \
+    -b {file_name}
+    """.format(**config)
+
+def get_receiver_st20_cmd(config: dict) -> str:
+    return """sudo MCM_MEDIA_PROXY_PORT={media_proxy_port} \
+    {app_path} \
+    -w {width} \
+    -h {height} \
+    -f {fps} \
+    -x {pix_fmt} \
+    -s {send_ip} \
+    -p {send_port} \
+    -b {file_name}
+    """.format(**config)
+
+def get_receiver_st30_cmd(config: dict) -> str:
+    return """sudo MCM_MEDIA_PROXY_PORT={media_proxy_port} \
+    {app_path} \
+    -ac {audio_channels} \
+    -as {audio_sample} \
+    -af {audio_format} \
+    -ap {audio_packet} \
+    -s {send_ip} \
+    -p {send_port} \
     -b {file_name}
     """.format(**config)
