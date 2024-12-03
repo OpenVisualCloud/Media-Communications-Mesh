@@ -19,10 +19,10 @@ spec:
       containers:
         - name: sample-app-rx
           image: mcm/sample-app:latest
-          imagePullPolicy: Never
-          workingDir: /opt/mcm/sdk/out/samples
-          command: ["./recver_app"]
-          args: ["-w", "1920", "-h", "1080", "-f", "30", "-r", "192.168.96.10", "-p", "10000", "-t", "st20"]
+          imagePullPolicy: IfNotPresent
+          workingDir: /opt/mcm
+          command: ["/usr/local/bin/recver_app"]
+          args: ["-w", "1920", "-h", "1080", "-f", "30", "-r", "192.168.96.10", "-p", "10000", "-t", "st20", "-x", "yuv422p10le", "-o", "auto"]
           securityContext:
             runAsUser: 0
             runAsGroup: 0
@@ -45,7 +45,7 @@ spec:
       volumes:
         - name: memif-dir  # Using hostPath volume
           hostPath:
-            path: /tmp/mcm/memif
+            path: /run/mcm
         - name: mtl-mgr
           persistentVolumeClaim:
             claimName: mtl-pvc
