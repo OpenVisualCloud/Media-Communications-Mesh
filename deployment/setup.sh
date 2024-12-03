@@ -16,9 +16,10 @@ display_step_info() {
 # Default number of nodes
 num_nodes=3
 step_num=0
+minikube_ops=( )
 
 while getopts "n:h" opt; do
-    case ${opt} in
+    case "${opt}" in
         n)
             display_step_info "Setting number of nodes to $OPTARG"
             num_nodes=$OPTARG
@@ -27,11 +28,12 @@ while getopts "n:h" opt; do
             echo "Usage: $0 [-n NUM_NODES]" >&2
             exit 0
             ;;
+        *)  pass_to_minikube+=( "${opt}" ) ;;
     esac
 done
 
-display_step_info "Starting the Minikube cluster with $num_nodes nodes"
-minikube start --nodes $num_nodes --namespace mcm --mount-string="/var/run/imtl:/var/run/imtl" --mount
+display_step_info "Starting the Minikube cluster with ${num_nodes} nodes"
+minikube start --nodes "${num_nodes}" --namespace mcm --mount-string="/var/run/imtl:/var/run/imtl" "${minikube_ops[@]}" --mount #  --extra-config=kubelet.node-ip=192.168.0.3
 
 # Enable minikube addons
 display_step_info "Enabling metrics-server addon"
@@ -61,14 +63,14 @@ kubectl label nodes minikube-m03 mcm-type=rx
 
 # Create the custom namespace
 display_step_info "Creating the mcm namespace"
-kubectl create -f namespace.yaml
+kubectl create -f "${SCRIPT_DIR}/namespace.yaml"
 
 # Create PVC
 display_step_info "Creating the PVC"
-kubectl apply -f pv.yaml
-kubectl apply -f pvc.yaml
+kubectl apply -f "${SCRIPT_DIR}/pv.yaml"
+kubectl apply -f "${SCRIPT_DIR}/pvc.yaml"
 
 display_step_info "Deploy Media Proxy DaemonSet"
 # kubectl apply -f DaemonSet/media-proxy.yaml
-kubectl apply -f DaemonSet/media-proxy-rx.yaml
-kubectl apply -f DaemonSet/media-proxy-tx.yaml
+kubectl apply -f "${SCRIPT_DIR}/DaemonSet/media-proxy-rx.yaml"
+kubectl apply -f "${SCRIPT_DIR}/DaemonSet/media-proxy-tx.yaml"
