@@ -2,27 +2,34 @@
 
 ## Context
 
-* Include the concurrency support header file
+- Include the concurrency support header file
+
 ```cpp
 #include "concurrency.h"
 ```
-* The main app context has to be created as shown below
+
+- The main app context has to be created as shown below
+
 ```cpp
 auto ctx = context::WithCancel(context::Background()); // Correct example.
 ```
-* Never use `context::Background()` directly. The following example is wrong
+
+- Never use `context::Background()` directly. The following example is wrong
+
 ```cpp
 auto ctx = context::Background(); // Bad example, don't do that.
 ```
 
-* Pass `context::Context& ctx` as an argument to function calls if you want them to support graceful centralized cancellation. Then, check `ctx.cancelled()` periodically and exit if the result is `true`. Pass `ctx` to other function calls to propagate the cancellation event.
-* When you want to cancel some processing automatically after some time, create a child context and pass it to the function call the following way
+- Pass `context::Context& ctx` as an argument to function calls if you want them to support graceful centralized cancellation. Then, check `ctx.cancelled()` periodically and exit if the result is `true`. Pass `ctx` to other function calls to propagate the cancellation event.
+- When you want to cancel some processing automatically after some time, create a child context and pass it to the function call the following way
+
 ```cpp
 // Assume ctx is the main context created somewhere at the app startup.
 auto tctx = context::WithTimeout(ctx, std::chrono::milliseconds(1000));
 process_user_data(tctx, user_data);
 ...
 ```
+
 ```cpp
 void process_user_data(context::Context ctx, void *data)
 {
@@ -45,11 +52,13 @@ void process_user_data(context::Context ctx, void *data)
     process_stage_5(data);
 }
 ```
-* You can cancel any context explicitly by calling `ctx.cancel()`.
-* If the top level (main) context is cancelled, all child contexts are cancelled recursively as well. This is called **Graceful Shutdown**.
-* Always pass the context by reference. Don't use pointers to the context.
+
+- You can cancel any context explicitly by calling `ctx.cancel()`.
+- If the top level (main) context is cancelled, all child contexts are cancelled recursively as well. This is called **Graceful Shutdown**.
+- Always pass the context by reference. Don't use pointers to the context.
 
 ## C++ Exceptions
-* Rule 1 – **Catch**: We catch and handle all exceptions that can happen in the standard library or in 3rd party components.
-* Rule 2 – **Don't Propagate**: We don't allow exceptions to propagate to upper layers of the call stack. Instead, we return with an error from the function where the exception was caught.
-* Rule 3 – **Don't Throw**: We never throw our own exceptions. Instead, we return an error.
+
+- Rule 1 – **Catch**: We catch and handle all exceptions that can happen in the standard library or in 3rd party components.
+- Rule 2 – **Don't Propagate**: We don't allow exceptions to propagate to upper layers of the call stack. Instead, we return with an error from the function where the exception was caught.
+- Rule 3 – **Don't Throw**: We never throw our own exceptions. Instead, we return an error.

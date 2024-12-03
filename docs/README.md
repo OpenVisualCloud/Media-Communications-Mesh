@@ -1,7 +1,6 @@
 # Intel® Media Communications Mesh
 
-> [!TIP]
-> [Full Documentation](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html) for [Intel®](https://intel.com) [Media Communications Mesh](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html).
+> [!TIP] > [Full Documentation](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html) for [Intel®](https://intel.com) [Media Communications Mesh](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html).
 
 [![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml)
 [![Coverity status](https://scan.coverity.com/projects/30272/badge.svg?flat=1)](https://scan.coverity.com/projects/media-communications-mesh)
@@ -14,8 +13,7 @@
 
 The Media Communications Mesh (MCM) enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
 
-
-## 1. Media Communications Mesh:
+## 1. Media Communications Mesh
 
 - Framework Introduction: MCM is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
 - Purpose: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
@@ -23,7 +21,7 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
 ✅ Key point: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
 
-## 2. Media Proxy Introduction:
+## 2. Media Proxy Introduction
 
 - Core Functionality: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
 - Low Latency & Efficiency: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
@@ -33,7 +31,7 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 
 ✅ More information about the Media Proxy component can be found in the [media-proxy](../media-proxy/README.md) subdirectory.
 
-## 3. SDK and FFmpeg plugins:
+## 3. SDK and FFmpeg plugins
 
 - Key Features: Zero Memory Copy, uses a zero-copy memory techniques for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
 - Media Stream Compatibility: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
@@ -60,61 +58,64 @@ The Media Communications Mesh (MCM) enables efficient, low-latency media transpo
 1. **Clone the repository**
 
    ```bash
-   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
+   git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
 2. **Navigate to the Media-Communications-Mesh directory**
 
-    ```bash
-    $ cd Media-Communications-Mesh
-    ```
+   ```bash
+   cd Media-Communications-Mesh
+   ```
 
 3. **Install Dependencies**, choose between options `a)` or `b)`.
 
-    a) Use all-in-one environment preparation script. The script was tested under `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, `CentOS Stream9` and kernel version `5.15` environments.
+   a) Use all-in-one environment preparation script. The script was tested under `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, `CentOS Stream9` and kernel version `5.15` environments.
 
-    To use this option run the following command:
+   To use this option run the following command:
 
-    ```bash
-    sudo ./scripts/setup_build_env.sh
-    ```
+   ```bash
+   sudo ./scripts/setup_build_env.sh
+   ```
 
-    b) The following method is universal and should work for most Linux OS distributions.
+   b) The following method is universal and should work for most Linux OS distributions.
 
-    - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
-    - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation instructions.
-    - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation instructions.
-    - E810 driver: Follow the [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md) for installation instructions.
-    - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
-    - Install required packages:
+   - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
+   - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation instructions.
+   - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation instructions.
+   - E810 driver: Follow the [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md) for installation instructions.
+   - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
+   - Install required packages:
 
-        - Ubuntu/Debian
-        ```bash
-        sudo apt-get update
-        sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
-        ```
-        - Centos stream
-        ```bash
-        sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
-        ```
+     - Ubuntu/Debian
 
-    - Install the irdma driver and libfabric
+     ```bash
+     sudo apt-get update
+     sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
+     ```
 
-    ```bash
-    ./scripts/setup_rdma_env.sh install
-    ```
+     - Centos stream
 
-    - Reboot
+     ```bash
+     sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
+     ```
+
+   - Install the irdma driver and libfabric
+
+   ```bash
+   ./scripts/setup_rdma_env.sh install
+   ```
+
+   - Reboot
 
 4. **Build the Media Proxy binary**
 
-    To build Media Communications Mesh and make SDK available for development, run:
+   To build Media Communications Mesh and make SDK available for development, run:
 
-    ```bash
-    $ ./build.sh
-    ```
+   ```bash
+   ./build.sh
+   ```
 
-    By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
+   By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
 
 ### Basic usage
 
@@ -142,14 +143,14 @@ This will start the media proxy in blocking mode and confirm that build was succ
 1. **Clone the repository**
 
    ```bash
-   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
+   git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
    ```
 
 2. **Navigate to the Media-Communications-Mesh directory**
 
-    ```bash
-    $ cd Media-Communications-Mesh
-    ```
+   ```bash
+   cd Media-Communications-Mesh
+   ```
 
 3. **Build the Dockerfiles**
 
@@ -158,13 +159,14 @@ This will start the media proxy in blocking mode and confirm that build was succ
 
     run below command from the root directory of the repository to build all of the Dockerfiles:
 
-    ```bash
-    $ ./build_docker.sh
-    ```
+   ```bash
+   ./build_docker.sh
+   ```
 
 ### Basic usage
 
 After running the `build_docker.sh` the following docker images will be available in current docker context if the script run successfully:
+
 - `mcm/sample-app:latest`
 - `mcm/media-proxy:latest`
 - `mcm/ffmpeg:latest`
@@ -191,6 +193,7 @@ INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
 This will start the "Media Proxy" program. When the "Media Proxy" program launches successfully, it will open two ports to listen for control messages:
+
 - gRPC port (default 8001) is for service mesh control plane connection.
 - TCP port (default 8002) is for the connection with MCM SDK.
 
@@ -232,5 +235,6 @@ This project is under development.
 All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
 
 <!-- References -->
+
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
 [license]: https://opensource.org/license/bsd-3-clause
