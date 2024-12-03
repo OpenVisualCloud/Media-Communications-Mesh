@@ -11,81 +11,39 @@ namespace mesh::connection {
  * Base abstract class of ST2110Rx. ST2110_20Rx/ST2110_22Rx/ST2110_30Rx
  * inherit this class.
  */
-template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public ST2110 {
+template <typename FRAME, typename HANDLE, typename OPS>
+class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
   public:
-    ST2110Rx() { _kind = Kind::receiver; }
-
-    ~ST2110Rx() {
-        shutdown(_ctx);
-        if (ops.name)
-            free((void *)ops.name);
-    }
+    ST2110Rx() { this->_kind = Kind::receiver; }
 
   protected:
-    HANDLE mtl_session = nullptr;
-    OPS ops = {0};
-    size_t transfer_size = 0;
     std::jthread frame_thread_handle;
-    context::Context _ctx = context::WithCancel(context::Background());
-
-    virtual FRAME *get_frame(HANDLE) = 0;
-    virtual int put_frame(HANDLE, FRAME *) = 0;
-    virtual HANDLE create_session(mtl_handle, OPS *) = 0;
-    virtual int close_session(HANDLE) = 0;
 
     int configure_common(context::Context& ctx, const std::string& dev_port,
-                         const MeshConfig_ST2110& cfg_st2110) {
-        int session_id = 0;
-        mtl_device = get_mtl_device(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr, session_id);
-        if (!mtl_device) {
-            log::error("Failed to get MTL device");
-            return -1;
-        }
+                         const MeshConfig_ST2110& cfg_st2110) override{
+        ST2110<FRAME, HANDLE, OPS>::configure_common(ctx, dev_port, cfg_st2110);
 
-        inet_pton(AF_INET, cfg_st2110.remote_ip_addr, ops.port.ip_addr[MTL_PORT_P]);
-        inet_pton(AF_INET, cfg_st2110.local_ip_addr, ops.port.mcast_sip_addr[MTL_PORT_P]);
-        ops.port.udp_port[MTL_PORT_P] = cfg_st2110.local_port;
-
-        strlcpy(ops.port.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
-        ops.port.num_port = 1;
-
-        char session_name[NAME_MAX] = "";
-        snprintf(session_name, NAME_MAX, "mcm_mtl_rx_%d", session_id);
-        if (ops.name)
-            free((void *)ops.name);
-        ops.name = strdup(session_name);
-        ops.framebuff_cnt = 4;
-
-        ops.priv = this; // app handle register to lib
-        ops.notify_frame_available = frame_available_cb;
+        inet_pton(AF_INET, cfg_st2110.remote_ip_addr, this->ops.port.ip_addr[MTL_PORT_P]);
+        inet_pton(AF_INET, cfg_st2110.local_ip_addr, this->ops.port.mcast_sip_addr[MTL_PORT_P]);
+        this->ops.port.udp_port[MTL_PORT_P] = cfg_st2110.local_port;
 
         log::info("ST2110Rx: configure")
-            ("port", ops.port.port[MTL_PORT_P])
-            ("ip_addr", std::to_string(ops.port.ip_addr[MTL_PORT_P][0]) + " " +
-                        std::to_string(ops.port.ip_addr[MTL_PORT_P][1]) + " " +
-                        std::to_string(ops.port.ip_addr[MTL_PORT_P][2]) + " " +
-                        std::to_string(ops.port.ip_addr[MTL_PORT_P][3]))
-            ("mcast_sip_addr", std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][0]) + " " +
-                               std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][1]) + " " +
-                               std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][2]) + " " +
-                               std::to_string(ops.port.mcast_sip_addr[MTL_PORT_P][3]))
-            ("num_port", ops.port.num_port)
-            ("udp_port", ops.port.udp_port[MTL_PORT_P])
-            ("name", ops.name)
-            ("framebuff_cnt", ops.framebuff_cnt);
-
+            ("ip_addr", std::to_string(this->ops.port.ip_addr[MTL_PORT_P][0]) + " " +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][1]) + " " +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][2]) + " " +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][3]))
+            ("mcast_sip_addr", std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][0]) + " " +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][1]) + " " +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][2]) + " " +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][3]))
+            ("udp_port", this->ops.port.udp_port[MTL_PORT_P]);
         return 0;
     }
 
     Result on_establish(context::Context& ctx) override {
-        _ctx = context::WithCancel(ctx);
-        init_frame_available();
-
-        mtl_session = create_session(mtl_device, &ops);
-        if (!mtl_session) {
-            log::error("Failed to create session");
-            set_state(ctx, State::closed);
-            return set_result(Result::error_general_failure);
+        Result res = ST2110<FRAME, HANDLE, OPS>::on_establish(ctx);
+        if (res != Result::success) {
+            return res;
         }
 
         /* Start MTL session thread. */
@@ -93,42 +51,38 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110Rx : public
             frame_thread_handle = std::jthread(&ST2110Rx::frame_thread, this);
         } catch (const std::system_error& e) {
             log::error("Failed to create thread");
-            set_state(ctx, State::closed);
-            return set_result(Result::error_out_of_memory);
+            this->set_state(ctx, State::closed);
+            return this->set_result(Result::error_out_of_memory);
         }
 
-        set_state(ctx, State::active);
-        return set_result(Result::success);
+        this->set_state(ctx, State::active);
+        return this->set_result(Result::success);
     }
 
     Result on_shutdown(context::Context& ctx) override {
-        _ctx.cancel();
-        notify_frame_available();
+        Result res = ST2110<FRAME, HANDLE, OPS>::on_shutdown(ctx);
+        if (res != Result::success) {
+            return res;
+        }
 
         frame_thread_handle.join();
 
-        if (mtl_session) {
-            close_session(mtl_session);
-            mtl_session = nullptr;
-        }
-        set_state(ctx, State::closed);
-        return set_result(Result::success);
+        this->set_state(ctx, State::closed);
+        return this->set_result(Result::success);
     };
-
-    virtual void on_delete(context::Context& ctx) override {}
 
   private:
     void frame_thread() {
-        while (!_ctx.cancelled()) {
+        while (!this->_ctx.cancelled()) {
             // Get full buffer from MTL
-            FRAME *frame_ptr = get_frame(mtl_session);
+            FRAME *frame_ptr = this->get_frame(this->mtl_session);
             if (frame_ptr) {
                 // Forward buffer to emulated receiver
-                transmit(_ctx, get_frame_data_ptr(frame_ptr), transfer_size);
+                this->transmit(this->_ctx, get_frame_data_ptr(frame_ptr), this->transfer_size);
                 // Return used buffer to MTL
-                put_frame(mtl_session, frame_ptr);
+                this->put_frame(this->mtl_session, frame_ptr);
             } else {
-                wait_frame_available();
+                this->wait_frame_available();
             }
         }
     }
