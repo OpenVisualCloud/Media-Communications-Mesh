@@ -16,10 +16,11 @@ spec:
     spec:
       nodeSelector:
         node-role.kubernetes.io/worker: "true"
+      hostNetwork: true
       containers:
         - name: media-proxy
           image: mcm/media-proxy:latest
-          imagePullPolicy: Never
+          imagePullPolicy: IfNotPresent
           env:
           - name: NODE_NAME
             valueFrom:
@@ -34,7 +35,7 @@ spec:
               fieldRef:
                 fieldPath: status.podIP
           command: [ "media_proxy" ]
-          args: [ "-d", "kernel:eth0", "-i", $(POD_IP) ]
+          args: [ "-d", "kernel:ens25", "-i", $(POD_IP) ]
           resources:
             limits:
               cpu: 2
@@ -67,14 +68,46 @@ spec:
               name: cache-volume
             - name: mtl-mgr  # Communicate with MTL manager
               mountPath: /var/run/imtl  # Mount path in the pod
+        - name: mtl-manager
+          image: mcm/media-proxy:latest
+          imagePullPolicy: IfNotPresent
+          command: [ "MtlManager" ]
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+          env:
+          - name: NODE_NAME
+            valueFrom:
+              fieldRef:
+                fieldPath: spec.nodeName
+          - name: NODE_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.hostIP
+          - name: POD_IP
+            valueFrom:
+              fieldRef:
+                fieldPath: status.podIP
+          volumeMounts:
+            - name: memif-dir  # Using hostPath volume
+              mountPath: /run/mcm  # Mount path in the pod
+            - name: dev-vfio
+              mountPath: /dev/vfio
+            - mountPath: /hugepages-2Mi
+              name: hugepage-2mi
+            - mountPath: /hugepages-1Gi
+              name: hugepage-1gi
+            - mountPath: /dev/shm
+              name: cache-volume
+            - name: mtl-mgr  # Communicate with MTL manager
+              mountPath: /var/run/imtl  # Mount path in the pod
       volumes:
         - name: memif-dir  # Using hostPath volume
           hostPath:
             path: /tmp/mcm/memif
         - name: dev-vfio
           hostPath:
-            # Do not mount the top-level /dev/ directory for security reasons.
-            # Instead mount a sub directory underneath the /dev/ directory, e.g. /dev/vfio/
             path: /dev/vfio
         - name: hugepage-2mi
           emptyDir:
