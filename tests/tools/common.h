@@ -18,6 +18,7 @@
 #include <sys/stat.h>
 #include <time.h>
 #include <unistd.h>
+#include <math.h>
 
 #include "mesh_dp.h"
 #include "mcm_dp.h"
@@ -37,8 +38,15 @@
 #define DEFAULT_TOTAL_NUM 300
 #define DEFAULT_INFINITE_LOOP 0
 #define EXAMPLE_LOCAL_FILE "sample_video.yuv"
+#define DEFAULT_AUDIO_CHANNELS 1
+#define DEFAULT_AUDIO_SAMPLE_RATE 48.0
+#define DEFAULT_AUDIO_FORMAT "pcm8"
+#define DEFAULT_AUDIO_PACKET_TIME 1.0
 
 void usage(FILE* fp, const char* path, int sender);
 void set_video_pix_fmt(int* pix_fmt, char* pix_fmt_string);
+void set_audio_fmt(int* audio_fmt, char* audio_fmt_string);
+void set_audio_sampling(int* audio_smpl, double audio_smpl_double);
+void set_audio_ptime(int* audio_ptime, double audio_ptime_double);
 
 #endif /* __COMMON_VAL_H */

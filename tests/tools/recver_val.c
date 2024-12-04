@@ -33,6 +33,12 @@ int main(int argc, char** argv)
     uint32_t height = DEFAULT_FRAME_HEIGHT;
     double vid_fps = DEFAULT_FPS;
 
+    /* audio config */
+    uint32_t audio_channels = DEFAULT_AUDIO_CHANNELS;
+    double audio_sample = DEFAULT_AUDIO_SAMPLE_RATE;
+    char audio_format_string[32] = DEFAULT_AUDIO_FORMAT;
+    double audio_ptime = DEFAULT_AUDIO_PACKET_TIME;
+
     MeshClient *client;
     MeshConnection *conn;
     MeshBuffer *buf;
@@ -49,6 +55,11 @@ int main(int argc, char** argv)
         { "fps", required_argument, NULL, 'f' },
         { "pix_fmt", required_argument, NULL, 'x' },
 
+        { "audio_channels", required_argument, NULL, 'ac' },
+        { "audio_sample", required_argument, NULL, 'as' },
+        { "audio_format", required_argument, NULL, 'af' },
+        { "audio_ptime", required_argument, NULL, 'ap' },
+
         { "recv_ip", required_argument, NULL, 'r' },
         { "recv_port", required_argument, NULL, 'i' },
         { "send_ip", required_argument, NULL, 's' },
@@ -64,7 +75,7 @@ int main(int argc, char** argv)
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "Hb:w:h:f:x:r:i:s:p:o:t:k:d:", longopts, 0);
+        opt = getopt_long(argc, argv, "Hb:w:h:f:x:ac:as:af:ap:r:i:s:p:o:t:k:d:", longopts, 0);
         if (opt == -1)
             break;
 
@@ -110,6 +121,18 @@ int main(int argc, char** argv)
             break;
         case 'd':
             interface_id = atoi(optarg);
+            break;
+        case 'ac':
+            audio_channels = atoi(optarg);
+            break;
+        case 'as':
+            audio_sample = atof(optarg);
+            break;
+        case 'af':
+            strlcpy(audio_format_string, optarg, sizeof(audio_format_string));
+            break;
+        case 'ap':
+            audio_ptime = atof(optarg);
             break;
         default:
             break;
@@ -209,10 +232,11 @@ int main(int argc, char** argv)
         /* audio */
         MeshConfig_Audio cfg;
 
-        cfg.channels = 2;
-        cfg.format = MESH_AUDIO_FORMAT_PCM_S16BE;
-        cfg.sample_rate = MESH_AUDIO_SAMPLE_RATE_48000;
-        cfg.packet_time = MESH_AUDIO_PACKET_TIME_1MS;
+        set_audio_fmt(&cfg.format, audio_format_string);
+        set_audio_sampling(&cfg.sample_rate, audio_sample);
+        set_audio_ptime(&cfg.packet_time, audio_ptime);
+
+        cfg.channels = audio_channels;
 
         err = mesh_apply_connection_config_audio(conn, &cfg);
         if (err) {

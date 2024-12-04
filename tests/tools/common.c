@@ -41,6 +41,18 @@ void usage(FILE* fp, const char* path, int sender)
     fprintf(fp, "-p, --port=port_number\t\t"
                 "Receive data from Port (default: %s)\n",
         DEFAULT_RECV_PORT);
+    fprintf(fp, "-ac, --audio_channels=<audio_channel>\t"
+                "Set audio channels (default: %i)\n",
+        DEFAULT_AUDIO_CHANNELS);
+    fprintf(fp, "-as, --audio_sample=<audio_sample>\t"
+                "Set audio sample rate (default: %0.2f)\n",
+        DEFAULT_AUDIO_SAMPLE_RATE);
+    fprintf(fp, "-af, --audio_format=<audio_format>\t"
+                "Set audio format (default: %s)\n",
+        DEFAULT_AUDIO_FORMAT);
+    fprintf(fp, "-ap, --audio_ptime=<audio_ptime>\t"
+                "Set audio packet time (default: %0.2f)\n",
+        DEFAULT_AUDIO_PACKET_TIME);
 
     if (sender) {
         fprintf(fp, "-i, --file=input_file\t\t"
@@ -80,5 +92,57 @@ void set_video_pix_fmt(int* pix_fmt, char* pix_fmt_string) {
         *pix_fmt = PIX_FMT_RGB8; /* 4 */
     } else {
         *pix_fmt = PIX_FMT_NV12; /* 0 */
+    }
+}
+
+void set_audio_fmt(int* audio_fmt, char* audio_fmt_string) {
+    if (!strcmp(audio_fmt_string, "pcm8")) {
+        *audio_fmt = AUDIO_FMT_PCM8; /* 0 */
+    } else if (!strcmp(audio_fmt_string, "pcm16")) {
+        *audio_fmt = AUDIO_FMT_PCM16; /* 1 */
+    } else if (!strcmp(audio_fmt_string, "pcm24")) {
+        *audio_fmt = AUDIO_FMT_PCM24; /* 2 */
+    } else if (!strcmp(audio_fmt_string, "am824")) {
+        *audio_fmt = AUDIO_FMT_AM824; /* 3 */
+    } else {
+        *audio_fmt = AUDIO_FMT_MAX; /* 4 */
+    }
+}
+
+void set_audio_sampling(int* audio_smpl, double audio_smpl_double) {
+    const double epsilon = 0.0001;
+    if (fabs(audio_smpl_double - 48.0) < epsilon) {
+        *audio_smpl = AUDIO_SAMPLING_48K; /* 0 */
+    } else if (fabs(audio_smpl_double - 96.0) < epsilon) {
+        *audio_smpl = AUDIO_SAMPLING_96K; /* 1 */
+    } else if (fabs(audio_smpl_double - 44.1) < epsilon) {
+        *audio_smpl = AUDIO_SAMPLING_44K; /* 2 */
+    } else {
+        *audio_smpl = AUDIO_SAMPLING_MAX; /* 3 */
+    }
+}
+
+void set_audio_ptime(int* audio_ptime, double audio_ptime_double) {
+    const double epsilon = 0.0001;
+    if (fabs(audio_ptime_double - 1.0) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_1MS; /* 0 */
+    } else if (fabs(audio_ptime_double - 0.125) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_125US; /* 1 */
+    } else if (fabs(audio_ptime_double - 0.250) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_250US; /* 2 */
+    } else if (fabs(audio_ptime_double - 0.333) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_333US; /* 3 */
+    } else if (fabs(audio_ptime_double - 4.0) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_4MS; /* 4 */
+    } else if (fabs(audio_ptime_double - 0.08) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_80US; /* 5 */
+    } else if (fabs(audio_ptime_double - 1.09) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_1_09MS; /* 6 */
+    } else if (fabs(audio_ptime_double - 0.14) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_0_14MS; /* 7 */
+    } else if (fabs(audio_ptime_double - 0.09) < epsilon) {
+        *audio_ptime = AUDIO_PTIME_0_09MS; /* 8 */
+    } else {
+        *audio_ptime = AUDIO_PTIME_MAX; /* 9 */
     }
 }
