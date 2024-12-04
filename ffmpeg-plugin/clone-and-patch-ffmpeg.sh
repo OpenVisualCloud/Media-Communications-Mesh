@@ -5,23 +5,18 @@
 
 set -eo pipefail
 
+FFMPEG_VER="${1:-${FFMPEG_VER}}"
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPOSITORY_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
-BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build}"
+BUILD_DIR="${BUILD_DIR:-${REPOSITORY_DIR}/_build}"
 
 # shellcheck source="../scripts/common.sh"
 . "${REPOSITORY_DIR}/scripts/common.sh"
+lib_setup_ffmpeg_dir_and_version "${FFMPEG_VER:-7.0}"
+export FFMPEG_DIR="${BUILD_DIR}/${FFMPEG_SUB_DIR}"
 
-# Default to latest 7.0
-FFMPEG_VER="${FFMPEG_VER:-7.0}"
+git_download_strip_unpack "FFmpeg/FFmpeg" "release/${FFMPEG_VER}" "${FFMPEG_DIR}"
+patch --directory="${FFMPEG_DIR}" -p1 -i <(cat "${SCRIPT_DIR}/${FFMPEG_VER}/"*.patch)
 
-rm -rf "${BUILD_DIR}"
-mkdir -p "${BUILD_DIR}"
-
-# Clone FFmpeg:
-git clone --branch "release/${FFMPEG_VER}" --depth 1 https://github.com/FFmpeg/FFmpeg.git "${BUILD_DIR}/FFmpeg"
-
-patch --directory="${BUILD_DIR}/FFmpeg" -p1 -i <(cat "${SCRIPT_DIR}/${FFMPEG_VER}/"*.patch)
-
-prompt "FFmpeg ${FFMPEG_VER} cloned and patched successfully."
-prompt "\t${BUILD_DIR}/FFmpeg"
+log_info "FFmpeg ${FFMPEG_VER} cloned and patched successfully."
+log_info "\t${FFMPEG_DIR}"

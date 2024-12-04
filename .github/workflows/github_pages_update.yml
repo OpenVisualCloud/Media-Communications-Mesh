@@ -1,5 +1,4 @@
-
-name: Documentation Build and Publish
+name: documentation-build-and-publish
 on:
   workflow_call:
   workflow_dispatch:
@@ -11,6 +10,10 @@ env:
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   publishGitHubPages:

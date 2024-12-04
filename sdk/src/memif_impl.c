@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 
 void print_memif_details(memif_conn_handle_t conn)
 {
@@ -211,12 +212,10 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
 
     /* unlink socket file */
     if (memif_args->conn_args.is_master && memif_args->socket_args.path[0] != '@') {
-        struct stat st = { 0 };
-        if (stat("/run/mcm", &st) == -1) {
-            if (mkdir("/run/mcm", 0666) == -1) {
-                perror("Fail to create directory for memif.");
-                return NULL;
-            }
+        int err = mkdir("/run/mcm", 0666);
+        if (err && errno != EEXIST) {
+            perror("Fail to create directory for memif.");
+            return NULL;
         }
         unlink(memif_args->socket_args.path);
     }

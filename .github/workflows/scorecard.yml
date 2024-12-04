@@ -1,8 +1,4 @@
-# This workflow uses actions that are not certified by GitHub. They are provided
-# by a third-party and are governed by separate terms of service, privacy
-# policy, and support documentation.
-
-name: Scan Scorecard Security
+name: scan-scorecard-security
 on:
   # For Branch-Protection check. Only the default branch is supported. See
   # https://github.com/ossf/scorecard/blob/main/docs/checks.md#branch-protection
@@ -18,53 +14,48 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   analysis:
     name: Scorecard analysis
     runs-on: ubuntu-latest
     if: ${{ github.repository == 'OpenVisualCloud/Media-Communications-Mesh' }}
     permissions:
-      # Needed to upload the results to code-scanning dashboard.
       security-events: write
-      # Needed to publish results and get a badge (see publish_results below).
       id-token: write
       contents: read
       actions: read
-
     steps:
-      - name: Harden Runner
+      - name: "scorecard: Harden Runner security"
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
         with:
           egress-policy: audit
 
-      - name: "Checkout code"
+      - name: "scorecard: Checkout code"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           persist-credentials: false
 
-      - name: "Run analysis"
+      - name: "scorecard: Run analysis"
         uses: ossf/scorecard-action@dc50aa9510b46c811795eb24b2f1ba02a914e534 # v2.3.3
         with:
-          results_file: results.sarif
+          results_file: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
           results_format: sarif
-          # (Optional) "write" PAT token. Uncomment the `repo_token` line below if:
-          # - you want to enable the Branch-Protection check on a *public* repository, or
-          # - you are installing Scorecards on a *private* repository
-          # To create the PAT, follow the steps in https://github.com/ossf/scorecard-action#authentication-with-pat.
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           publish_results: true
 
-      # Upload the results as artifacts (optional). Commenting out will disable uploads of run results in SARIF
-      # format to the repository Actions tab.
-      - name: "Upload artifact"
+      # Upload the results as artifacts (optional).
+      - name: "scorecard: Upload results artifact"
         uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4.3.3
         with:
-          name: SARIF file
-          path: results.sarif
+          name: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}"
+          path: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
           retention-days: 5
 
-      # Upload the results to GitHub's code scanning dashboard.
-      - name: "Upload to code-scanning"
+      - name: "scorecard: Upload results to code-scanning"
         uses: github/codeql-action/upload-sarif@b611370bb5703a7efb587f9d136a52ea24c5c38c # v3.25.11
         with:
-          sarif_file: results.sarif
+          sarif_file: "scorecard-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"

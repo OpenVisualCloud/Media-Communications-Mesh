@@ -126,12 +126,13 @@ void* msg_loop(void* ptr)
             DEBUG("MCM_QUERY_MEMIF_ID: Case entry.");
             /* TODO: return memdif ID */
             break;
-        case MCM_QUERY_MEMIF_PARAM:
+        case MCM_QUERY_MEMIF_PARAM: {
             DEBUG("MCM_QUERY_MEMIF_PARAM: Case entry.");
             if (buffer == NULL || msg.command.data_len < 4) {
                 INFO("Invalid parameters.");
                 break;
             }
+            std::lock_guard<std::mutex> lock(proxy_ctx->ctx_mtx);
             session_id = *(uint32_t*)buffer;
             for (auto it : proxy_ctx->mDpCtx) {
                 if (it->get_id() == session_id) {
@@ -154,6 +155,7 @@ void* msg_loop(void* ptr)
                 }
             }
             break;
+        }
         case MCM_DESTROY_SESSION:
             DEBUG("MCM_DESTROY_SESSION: Case entry.");
             if (buffer == NULL || msg.command.data_len < 4) {

@@ -33,14 +33,14 @@ Install dependencies and build MCM as described in the top level README.md, para
 
 The next arguments are supported to configure a connection to MCM
 
-| Argument        | Type    | Description                                              | Default          |
-| --------------- | :-----: | -------------------------------------------------------- | :--------------: |
-| `ip_addr`       | String  | Remote IP address                                        | `"192.168.96.1"` |
-| `port`          | String  | Remote port (Sender), or Local port (Receiver)           | `"9001"`         |
-| `protocol_type` | String  | MCM Protocol type (`"auto"`, `"memif"`, etc.)            | `"auto"`         |
-| `payload_type`  | String  | ST2110 payload type (`"st20"`, `"st22"`, `"st30"`, etc.) | `"st20"`         |
-| `socket_name`   | String  | Memif socket name                                        | -                |
-| `interface_id`  | Integer | Memif interface id                                       | `0`              |
+| Argument        | Type    | Description                                               | Default          |
+| --------------- | :-----: | --------------------------------------------------------- | :--------------: |
+| `ip_addr`       | String  | Remote IP address                                         | `"192.168.96.1"` |
+| `port`          | String  | Remote port (Sender), or Local port (Receiver)            | `"9001"`         |
+| `protocol_type` | String  | MCM Protocol type (`"auto"`, `"memif"`, etc.)             | `"auto"`         |
+| `payload_type`  | String  | Payload type (`"st20"`, `"st22"`, `"st30", "rdma"`, etc.) | `"st20"`         |
+| `socket_name`   | String  | Memif socket name                                         | -                |
+| `interface_id`  | Integer | Memif interface id                                        | `0`              |
 
 ## Video configuration
 
@@ -98,6 +98,13 @@ TBD
       -ip_addr 192.168.96.2 \
       -port 9001 -
    ```
+
+   When working with raw video files that lack metadata, you must explicitly provide FFmpeg with the necessary video frame details. This includes specifying the format `-f rawvideo`, pixel format `-pix_fmt`, and resolution `-s WxH`. For example:
+
+    ```bash
+    ffmpeg -f rawvideo -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
+   ```
+
 
 ### VLC player setup
 
