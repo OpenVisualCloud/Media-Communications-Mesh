@@ -29,8 +29,9 @@ class RdmaTx : public Rdma {
 
   protected:
     virtual Result start_threads(context::Context& ctx);
-
     void rdma_cq_thread(context::Context& ctx);
+
+    size_t total_sent = 0;
 };
 
 } // namespace connection

@@ -18,8 +18,6 @@
 using namespace mesh;
 using namespace mesh::log;
 
-
-
 // Helper to configure RdmaRx
 void ConfigureRdmaRx(connection::RdmaRx* conn_rx, context::Context& ctx, size_t transfer_size)
 {

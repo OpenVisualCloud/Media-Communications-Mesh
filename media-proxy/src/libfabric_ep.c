@@ -42,6 +42,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <sys/types.h>
+#include <netinet/in.h> // For struct sockaddr_in
 
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
@@ -189,6 +190,21 @@ int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
     return 0;
 }
 
+int ep_cq_read_batch(ep_ctx_t* ep_ctx, void** buf_batch, size_t batch_size, int timeout) {
+    size_t count = 0;
+    for (size_t i = 0; i < batch_size; ++i) {
+        int ret = libfabric_ep_ops.ep_cq_read(ep_ctx, &buf_batch[count], timeout);
+        if (ret == -EAGAIN) {
+            break; // No more completions
+        } else if (ret < 0) {
+            return ret; // Return the error
+        } else if (buf_batch[count] != NULL) {
+            ++count; // Successfully read a buffer
+        }
+    }
+    return count; // Return the number of entries read
+}
+
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
 {
     int ret;
@@ -209,16 +225,22 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
 
     hints = fi_dupinfo((*ep_ctx)->rdma_ctx->info);
+    if (!hints) {
+        RDMA_PRINTERR("fi_dupinfo failed\n", -ENOMEM);
+        libfabric_ep_ops.ep_destroy(ep_ctx);
+        return -ENOMEM;
+    }
 
-    hints->src_addr = NULL;
-    hints->src_addrlen = 0;
-    hints->dest_addr = NULL;
-    hints->dest_addrlen = 0;
-    hints->addr_format = FI_SOCKADDR_IN;
+        hints->src_addr = NULL;
+        hints->src_addrlen = 0;
+        hints->dest_addr = NULL;
+        hints->dest_addrlen = 0;
 
     if (cfg->dir == RX) {
+        // hints->domain_attr->name = strdup("rocep49s0f1");
         ret = fi_getinfo(FI_VERSION(1, 21), NULL, cfg->local_addr.port, FI_SOURCE, hints, &fi);
     } else {
+        // hints->domain_attr->name = strdup("rocep202s0f1");
         ret = fi_getinfo(FI_VERSION(1, 21), cfg->remote_addr.ip, cfg->remote_addr.port, 0, hints,
                          &fi);
     }
@@ -227,6 +249,12 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         libfabric_ep_ops.ep_destroy(ep_ctx);
         return ret;
     }
+
+if (ret) {
+    RDMA_PRINTERR("fi_getinfo", ret);
+    libfabric_ep_ops.ep_destroy(ep_ctx);
+    return ret;
+}
 
     ret = ep_alloc_res(*ep_ctx, (*ep_ctx)->rdma_ctx, fi, 1);
     if (ret) {

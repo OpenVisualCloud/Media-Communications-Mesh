@@ -73,6 +73,8 @@ enum class Result {
     error_operation_cancelled,
     error_buffer_overflow,
     error_buffer_underflow,
+    error_no_buffer,
+    error_timeout,
 
     // TODO: more error codes to be added...
 };

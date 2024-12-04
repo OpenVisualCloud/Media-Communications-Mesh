@@ -24,7 +24,7 @@ void LocalTx::default_memif_ops(memif_ops_t *ops)
 
 int LocalTx::on_memif_receive(void *ptr, uint32_t sz)
 {
-    log::warn("SHOULD NEVER HAPPEN on_memif_receive %d", sz);
+    log::debug("SHOULD NEVER HAPPEN on_memif_receive %d", sz);
     return 0;
 }
 

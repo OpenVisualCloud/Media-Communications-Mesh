@@ -9,11 +9,9 @@
 #include "libfabric_cq.h"  // For ep_cq_read, ep_cq_open
 #include "libfabric_dev.h" // For libfabric_ctx
 #include "mcm_dp.h"        // For mcm_conn_param
-#include <vector>          // For buffer storage
 #include <mutex>           // For thread safety
 #include <cstring>         // For std::memcpy/memset
 #include <cstddef>         // For size_t
-#include <thread>
 #include <atomic>
 
 #include <queue>
@@ -24,10 +22,21 @@
 #ifndef RDMA_DEFAULT_TIMEOUT
 #define RDMA_DEFAULT_TIMEOUT 1 // Set to 1 millisecond || appropriate value
 #endif
+#ifndef MAX_BUFFER_SIZE
+#define MAX_BUFFER_SIZE 1 << 30
+#endif
+#ifndef CQ_BATCH_SIZE
+#define CQ_BATCH_SIZE 64
+#endif
+#ifndef PAGE_SIZE
+#define PAGE_SIZE 4096
+#endif
 
 namespace mesh {
 
 namespace connection {
+
+
 
 /**
  * Rdma
@@ -41,10 +50,21 @@ class Rdma : public Connection {
     Rdma();
     virtual ~Rdma();
 
+  #ifdef UNIT_TESTS_ENABLED
+      size_t get_buffer_queue_size() const { return buffer_queue.size(); }
+      bool is_buffer_queue_empty() const { return buffer_queue.empty(); }
+      Kind get_kind() const { return _kind; }
+  #endif
+
+    // Queue synchronization
+    void init_buf_available();
+    void notify_buf_available();
+    void wait_buf_available();
+
   protected:
     // Configure the RDMA session
     virtual Result configure(context::Context& ctx, const mcm_conn_param& request,
-                             const std::string& dev_port, libfabric_ctx*& dev_handle, Kind kind,
+                             const std::string& dev_port, libfabric_ctx *& dev_handle, Kind kind,
                              direction dir);
 
     // Overrides from Connection
@@ -69,28 +89,26 @@ class Rdma : public Connection {
     ep_cfg_t ep_cfg;           // Endpoint configuration
     size_t trx_sz;             // Data transfer size
     bool init;                 // Initialization flag
+    void* buffer_block;        // Buffer block for RDMA operations
+    int queue_size;            // Queue size for buffer management
+
+    // Queue for managing buffers
+    std::queue<void *> buffer_queue;
+    std::mutex queue_mutex;
+    std::condition_variable_any queue_cv;
 
     // // RDMA thread logic
     // virtual void process_buffers_thread(context::Context& ctx) = 0;
     // virtual void rdma_cq_thread(context::Context& ctx) = 0;
-    virtual Result start_threads(context::Context& ctx)
-    {
-        return Result::success;
-    }
+    virtual Result start_threads(context::Context& ctx) { return Result::success; }
 
     Result init_queue_with_elements(size_t capacity, size_t trx_sz);
-    Result add_to_queue(void* element);
-    Result consume_from_queue(context::Context& ctx, void** element);
+    Result add_to_queue(void *element);
+    Result consume_from_queue(context::Context& ctx, void **element);
     void cleanup_queue();
 
-
-    // Queue for managing buffers
-    std::queue<void*> buffer_queue;
-    std::mutex queue_mutex;
-    std::condition_variable_any queue_cv;
-
     std::jthread handle_process_buffers_thread; // thread handle
-    std::jthread handle_rdma_cq_thread; // thread handle
+    std::jthread handle_rdma_cq_thread;         // thread handle
     context::Context process_buffers_thread_ctx;
     context::Context rdma_cq_thread_ctx;
 
@@ -99,10 +117,12 @@ class Rdma : public Connection {
     bool event_ready = false;
 
     void notify_cq_event();
-
-
-  private:
     void shutdown_rdma(context::Context& ctx);
+
+    //Helper functions
+    std::string kind_to_string(Kind kind);
+
+    std::atomic<bool> buf_available; // Atomic flag for queue availability
 };
 
 } // namespace connection

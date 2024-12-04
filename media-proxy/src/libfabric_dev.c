@@ -85,6 +85,45 @@ static int rdma_init_fabric(libfabric_ctx *rdma_ctx, struct fi_info *hints)
     return 0;
 }
 
+// int rdma_init(libfabric_ctx **ctx)
+// {
+//     struct fi_info *hints;
+//     int op, ret = 0;
+//     *ctx = calloc(1, sizeof(libfabric_ctx));
+//     if (*ctx == NULL) {
+//         RDMA_PRINTERR("calloc", -ENOMEM);
+//         return -ENOMEM;
+//     }
+
+//     hints = fi_allocinfo();
+//     if (!hints) {
+//         RDMA_PRINTERR("fi_allocinfo", ret);
+//         libfabric_dev_ops.rdma_deinit(ctx);
+//         return -ENOMEM;
+//     }
+
+//     hints->fabric_attr->prov_name = strdup("verbs");
+
+//     hints->caps = FI_MSG;
+//     hints->domain_attr->resource_mgmt = FI_RM_ENABLED; /* TODO: check performance */
+//     hints->mode = FI_CONTEXT;
+//     hints->domain_attr->threading = FI_THREAD_SAFE; /* TODO: check performance */
+//     hints->addr_format = FI_FORMAT_UNSPEC;
+//     hints->ep_attr->type = FI_EP_RDM;
+//     hints->domain_attr->mr_mode =
+//         FI_MR_LOCAL | FI_MR_ENDPOINT | (FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR);
+//     hints->tx_attr->tclass = FI_TC_BULK_DATA;
+
+//     ret = rdma_init_fabric(*ctx, hints);
+//     rdma_freehints(hints);
+//     if (ret) {
+//         libfabric_dev_ops.rdma_deinit(ctx);
+//         return ret;
+//     }
+
+//     return 0;
+// }
+
 int rdma_init(libfabric_ctx **ctx)
 {
     struct fi_info *hints;
@@ -103,17 +142,23 @@ int rdma_init(libfabric_ctx **ctx)
     }
 
     hints->fabric_attr->prov_name = strdup("verbs");
-
-    hints->caps = FI_MSG;
-    hints->domain_attr->resource_mgmt = FI_RM_ENABLED; /* TODO: check performance */
+    //hints->fabric_attr->prov_name = strdup("ofi_rxm");
+    //hints->caps = FI_MSG;
+    hints->caps = FI_MSG | FI_RMA | FI_WRITE | FI_READ | FI_REMOTE_READ | FI_REMOTE_WRITE;
+    hints->domain_attr->resource_mgmt = FI_RM_DISABLED; 
+    //hints->domain_attr->resource_mgmt = FI_RM_ENABLED; /* TODO: check performance */
     hints->mode = FI_CONTEXT;
-    hints->domain_attr->threading = FI_THREAD_SAFE; /* TODO: check performance */
-    hints->addr_format = FI_FORMAT_UNSPEC;
-    hints->ep_attr->type = FI_EP_RDM;
-    hints->domain_attr->mr_mode =
-        FI_MR_LOCAL | FI_MR_ENDPOINT | (FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR);
+    //hints->domain_attr->threading = FI_THREAD_SAFE; /* TODO: check performance */
+    hints->domain_attr->threading = FI_THREAD_UNSPEC;
+    //hints->addr_format = FI_FORMAT_UNSPEC;
+    hints->addr_format = FI_SOCKADDR_IN;
+    //hints->ep_attr->type = FI_EP_RDM;
+    hints->ep_attr->type = FI_EP_RDM | FI_EP_MSG | FI_EP_RDM | FI_EP_DGRAM;
+    //hints->domain_attr->mr_mode = FI_MR_LOCAL | FI_MR_ENDPOINT | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR; 
+     hints->domain_attr->mr_mode =
+         FI_MR_LOCAL | FI_MR_ENDPOINT | (FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR);
     hints->tx_attr->tclass = FI_TC_BULK_DATA;
-
+    
     ret = rdma_init_fabric(*ctx, hints);
     rdma_freehints(hints);
     if (ret) {

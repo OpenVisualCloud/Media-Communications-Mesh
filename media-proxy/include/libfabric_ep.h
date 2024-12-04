@@ -53,6 +53,7 @@ struct libfabric_ep_ops_t {
     int (*ep_cq_read)(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
     int (*ep_init)(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
     int (*ep_destroy)(ep_ctx_t **ep_ctx);
+    int (*ep_cq_read_batch)(ep_ctx_t* ep_ctx, void** buf_batch, size_t batch_size, int timeout);
 };
 
 extern struct libfabric_ep_ops_t libfabric_ep_ops;
@@ -65,6 +66,7 @@ int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout);
 int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size);
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg);
 int ep_destroy(ep_ctx_t **ep_ctx);
+int ep_cq_read_batch(ep_ctx_t* ep_ctx, void** buf_batch, size_t batch_size, int timeout);
 #endif /* UNIT_TESTS_ENABLED */
 
 #ifdef __cplusplus

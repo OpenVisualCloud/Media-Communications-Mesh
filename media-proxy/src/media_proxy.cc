@@ -89,8 +89,7 @@ class EmulatedReceiver : public connection::Connection
     connection::Result on_receive(context::Context& ctx, void *ptr, uint32_t sz,
                                   uint32_t& sent) override
     {
-        log::info("Data received")("size", sz)("data",
-                                               static_cast<char *>(ptr));
+        ////log::info("Data received")("size", sz)("data",static_cast<char *>(ptr));
         return connection::Result::success;
     }
 
@@ -137,7 +136,7 @@ class EmulatedTransmitter : public connection::Connection
 
 int main(int argc, char *argv[])
 {
-    log::info("Starting media_proxy application");
+    ////log::info("Starting media_proxy application");
     std::string grpc_port = DEFAULT_GRPC_PORT;
     std::string tcp_port = DEFAULT_TCP_PORT;
     std::string dev_port = DEFAULT_DEV_PORT;
@@ -151,7 +150,7 @@ int main(int argc, char *argv[])
                                 {"tcp", required_argument, NULL, 't'},
                                 {0}};
 
-    log::info("Parsing command-line arguments");
+    ////log::info("Parsing command-line arguments");
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
         opt = getopt_long(argc, argv, "hd:i:g:t:", longopts, 0);
@@ -191,8 +190,7 @@ int main(int argc, char *argv[])
     // Declare mDevHandle
     libfabric_ctx *mDevHandle = nullptr;
 
-    log::info("Configuring connection parameters")("grpc_port", grpc_port)(
-        "tcp_port", tcp_port);
+    ////log::info("Configuring connection parameters")("grpc_port", grpc_port)("tcp_port", tcp_port);
 
     mcm_conn_param request = {};
     {
@@ -212,7 +210,7 @@ int main(int argc, char *argv[])
         // request.payload_codec = PAYLOAD_CODEC_NONE;
         // Initialize payload_args if needed
         request.payload_args.rdma_args.transfer_size =
-            12; // Example transfer size
+            4*1024*1024; // Example transfer size
 
         // request.width = 1920;
         // request.height = 1080;
@@ -226,7 +224,7 @@ int main(int argc, char *argv[])
     // Intercept shutdown signals to cancel the main context
     auto signal_handler = [](int sig) {
         if (sig == SIGINT || sig == SIGTERM) {
-            log::info("Shutdown signal received")("signal", sig);
+            ////log::info("Shutdown signal received")("signal", sig);
             ctx.cancel();
         }
     };
@@ -236,7 +234,7 @@ int main(int argc, char *argv[])
     connection::Result res;
 
     if (tcp_port == "8002") {
-        log::info("Starting RX Path");
+        ////log::info("Starting RX Path");
         EmulatedReceiver *emulated_rx = new EmulatedReceiver(ctx);
         emulated_rx->configure(ctx);
         emulated_rx->establish(ctx);
@@ -244,7 +242,7 @@ int main(int argc, char *argv[])
         // Setup Rx connection
 
         connection::RdmaRx *conn_rx = new connection::RdmaRx();
-        log::info("Configuring RDMA RX connection");
+        ////log::info("Configuring RDMA RX connection");
         res = conn_rx->configure(ctx, request, dev_port, mDevHandle);
         if (res != connection::Result::success) {
             log::error("Failed to configure RDMA RX connection")(
@@ -254,11 +252,11 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        log::info("Establishing RDMA RX connection...");
+        ////log::info("Establishing RDMA RX connection...");
         try {
             res = conn_rx->establish(ctx);
             if (res == connection::Result::error_already_initialized) {
-                log::warn(
+                log::debug(
                     "RDMA RX connection is already initialized. Continuing...");
                 // Continue execution as the connection is already in an
                 // established state
@@ -277,15 +275,14 @@ int main(int argc, char *argv[])
             return 1;
         }
 
-        log::info("Linking RDMA RX to Emulated Receiver...");
+        ////log::info("Linking RDMA RX to Emulated Receiver...");
         conn_rx->set_link(ctx, emulated_rx);
 
-        int sleep_duration = 5000;
-        log::info("Sleeping to allow RX processing")("duration_ms",
-                  sleep_duration);
+        int sleep_duration = 600000;
+        ////log::info("Sleeping to allow RX processing")("duration_ms",sleep_duration);
         mesh::thread::Sleep(ctx, std::chrono::milliseconds(sleep_duration));
 
-        log::info("Shutting down RDMA RX connection...");
+        ////log::info("Shutting down RDMA RX connection...");
         // Shutdown Rx connection
         res = conn_rx->shutdown(ctx);
         if (res != connection::Result::success) {
@@ -296,16 +293,16 @@ int main(int argc, char *argv[])
         delete conn_rx;
         delete emulated_rx;
 
-        log::info("RX Path completed.");
+        ////log::info("RX Path completed.");
 
     } else {
 
-        log::info("Starting TX Path");
+        ////log::info("Starting TX Path");
         connection::RdmaTx *conn_tx = new connection::RdmaTx();
 
         EmulatedTransmitter *emulated_tx = new EmulatedTransmitter(ctx);
 
-        log::info("Configuring RDMA TX connection");
+        ////log::info("Configuring RDMA TX connection");
         res = conn_tx->configure(ctx, request, dev_port, mDevHandle);
         if (res != connection::Result::success) {
             log::error("Failed to configure RDMA TX connection")(
@@ -314,9 +311,9 @@ int main(int argc, char *argv[])
             delete emulated_tx;
             return 1;
         }
-        log::info("Configuration of RdmaTx successful.");
+        ////log::info("Configuration of RdmaTx successful.");
 
-        log::info("Establishing RdmaTx connection...");
+        ////log::info("Establishing RdmaTx connection...");
         res = conn_tx->establish(ctx);
         if (res != connection::Result::success) {
             log::error("Failed to establish RDMA TX connection")(
@@ -325,9 +322,9 @@ int main(int argc, char *argv[])
             delete emulated_tx;
             return 1;
         }
-        log::info("RdmaTx connection established successfully.");
+        ////log::info("RdmaTx connection established successfully.");
 
-        log::info("Configuring EmulatedTransmitter...");
+        ////log::info("Configuring EmulatedTransmitter...");
         res = emulated_tx->configure(ctx);
         if (res != connection::Result::success) {
             log::error("Configure EmulatedTransmitter failed")(
@@ -336,53 +333,51 @@ int main(int argc, char *argv[])
             delete emulated_tx;
             return 1;
         }
-        log::info("Configuration of EmulatedTransmitter successful.");
+        ////log::info("Configuration of EmulatedTransmitter successful.");
 
-        log::info("Establishing EmulatedTransmitter...");
+        ////log::info("Establishing EmulatedTransmitter...");
         res = emulated_tx->establish(ctx);
         if (res != connection::Result::success) {
             log::error("Establish EmulatedTransmitter failed")(
-                       "result", connection::result2str(res));                    
+                       "result", connection::result2str(res));
             delete conn_tx;
             delete emulated_tx;
             return 1;
         }
-        log::info("EmulatedTransmitter established successfully.");
+        ////log::info("EmulatedTransmitter established successfully.");
 
-        log::info("Linking EmulatedTransmitter with RdmaTx...");
+        ////log::info("Linking EmulatedTransmitter with RdmaTx...");
         emulated_tx->set_link(ctx, conn_tx);
-        log::info("Linking successful.");
+        ////log::info("Linking successful.");
 
-        const char *plaintext = "Hello World";
-        size_t text_size = strlen(plaintext) + 1; // Include null terminator
+        size_t data_size = 4*1024 * 1024;
+        char *test_data = new char[data_size];
+        std::fill(test_data, test_data + data_size, 0); // Zero-initialize the buffer
+        std::strcpy(test_data, "Hello RDMA World!");
 
-        for (int i = 0; i < 20; i++) {
-            log::info("Transmitting plaintext")("iteration", i + 1)("size",
-                                                                    text_size);
-            res = emulated_tx->transmit_plaintext(ctx, plaintext, text_size);
-            if (res != connection::Result::success) {
-                log::error("Failed to transmit plaintext")("iteration", i + 1)
-                          ("result", connection::result2str(res));
-                break;
+        // Transmitter thread
+        std::thread transmitter_thread([&]() {
+            for (int i = 0; i < 5000; ++i) {
+                ////log::info("Transmitting data")("iteration", i + 1);
+                emulated_tx->transmit_plaintext(ctx, test_data, data_size);
+                std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
-            log::info("Transmission iteration %d successful.", i + 1);
-        }
+        });
 
-        log::info("Shutting down RDMA TX connection...");
+        ////log::info("Shutting down RDMA TX connection...");
         // Shutdown Tx connection
         res = conn_tx->shutdown(ctx);
         if (res != connection::Result::success) {
-            log::error("Shutdown TX failed")
-                      ("result", connection::result2str(res));
+            log::error("Shutdown TX failed")("result", connection::result2str(res));
         }
 
         delete conn_tx;
         delete emulated_tx;
 
-        log::info("TX Path completed.");
+        ////log::info("TX Path completed.");
     }
 
-    log::info("Application exited gracefully");
+    ////log::info("Application exited gracefully");
 
     return 0;
 }

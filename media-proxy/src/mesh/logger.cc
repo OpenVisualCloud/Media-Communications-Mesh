@@ -128,15 +128,15 @@ Logger::Logger(Level level, const char *format, va_list args)
 }
 
 Logger::~Logger() {
-    if (!ostream.str().empty() && level >= currentLogLevel) {
+    if (level >= currentLogLevel && !ostream.str().empty()) {
         if (formatter)
             formatter->formatAfter(ostream);
         std::cout << ostream.str() << std::endl;
     }
 }
 
-Logger info(const char* format, ...)
-{
+Logger info(const char* format, ...) {
+    if (Level::info < currentLogLevel) return Logger(Level::info, nullptr, nullptr);
     va_list args;
     va_start(args, format);
     Logger logger(Level::info, format, args);
@@ -144,8 +144,8 @@ Logger info(const char* format, ...)
     return logger;
 }
 
-Logger warn(const char* format, ...)
-{
+Logger warn(const char* format, ...) {
+    if (Level::warn < currentLogLevel) return Logger(Level::warn, nullptr, nullptr);
     va_list args;
     va_start(args, format);
     Logger logger(Level::warn, format, args);
@@ -153,8 +153,8 @@ Logger warn(const char* format, ...)
     return logger;
 }
 
-Logger error(const char* format, ...)
-{
+Logger error(const char* format, ...) {
+    if (Level::error < currentLogLevel) return Logger(Level::error, nullptr, nullptr);
     va_list args;
     va_start(args, format);
     Logger logger(Level::error, format, args);
@@ -162,8 +162,8 @@ Logger error(const char* format, ...)
     return logger;
 }
 
-Logger debug(const char* format, ...)
-{
+Logger debug(const char* format, ...) {
+    if (Level::debug < currentLogLevel) return Logger(Level::debug, nullptr, nullptr);
     va_list args;
     va_start(args, format);
     Logger logger(Level::debug, format, args);
@@ -171,8 +171,7 @@ Logger debug(const char* format, ...)
     return logger;
 }
 
-Logger fatal(const char* format, ...)
-{
+Logger fatal(const char* format, ...) {
     va_list args;
     va_start(args, format);
     Logger logger(Level::fatal, format, args);

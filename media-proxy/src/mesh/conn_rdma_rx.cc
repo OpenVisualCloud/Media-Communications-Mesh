@@ -6,7 +6,9 @@ namespace mesh {
 
 namespace connection {
 
-RdmaRx::RdmaRx() : Rdma() {}
+RdmaRx::RdmaRx() : Rdma() {
+    init_buf_available();
+}
 
 RdmaRx::~RdmaRx()
 {
@@ -19,152 +21,116 @@ Result RdmaRx::configure(context::Context& ctx, const mcm_conn_param& request,
     return Rdma::configure(ctx, request, dev_port, dev_handle, Kind::receiver, direction::RX);
 }
 
-Result RdmaRx::start_threads(context::Context& ctx) {
-    log::info("Initializing threads for RDMA RX");
+Result RdmaRx::start_threads(context::Context& ctx)
+{
+    ////log::info("Initializing threads for RDMA RX");
 
     process_buffers_thread_ctx = context::WithCancel(ctx);
     rdma_cq_thread_ctx = context::WithCancel(ctx);
 
     try {
-        handle_process_buffers_thread = std::jthread(
-            [this]() { 
-                log::info("Starting process_buffers_thread");
-                this->process_buffers_thread(this->process_buffers_thread_ctx); 
-                log::info("Exiting process_buffers_thread");
-            }
-        );
-
-        handle_rdma_cq_thread = std::jthread(
-            [this]() { 
-                log::info("Starting rdma_cq_thread");
-                this->rdma_cq_thread(this->rdma_cq_thread_ctx); 
-                log::info("Exiting rdma_cq_thread");
-            }
-        );
-
+        handle_process_buffers_thread = std::jthread([this]() {
+            ////log::info("Starting process_buffers_thread");
+            this->process_buffers_thread(this->process_buffers_thread_ctx);
+            ////log::info("Exiting process_buffers_thread");
+        });
     } catch (const std::system_error& e) {
-        log::fatal("Failed to start threads")("error", e.what());
+        log::fatal("Failed to start thread")("error", e.what());
         return Result::error_thread_creation_failed;
     }
+
+    try {
+        handle_rdma_cq_thread = std::jthread([this]() {
+            ////log::info("Starting rdma_cq_thread");
+            this->rdma_cq_thread(this->rdma_cq_thread_ctx);
+            ////log::info("Exiting rdma_cq_thread");
+        });
+    } catch (const std::system_error& e) {
+        log::fatal("Failed to start thread")("error", e.what());
+        return Result::error_thread_creation_failed;
+    }
+
     return Result::success;
 }
 
 // Thread to process available buffers in the queue
 void RdmaRx::process_buffers_thread(context::Context& ctx)
 {
-    log::info("process_buffers_thread started");
+    ////log::info("process_buffers_thread started")(" ", kind_to_string(_kind));
 
     while (!ctx.cancelled()) {
-        log::debug("Attempting to consume buffers from the queue...");
         void* buf = nullptr;
 
         // Process all available buffers in the queue
         while (!ctx.cancelled()) {
             Result res = consume_from_queue(ctx, &buf);
             if (res == Result::success && buf != nullptr) {
-                log::debug("Registering buffer for RDMA reception")("buffer_address", buf);
-
-                // Inline process_buffers logic
                 int err = libfabric_ep_ops.ep_recv_buf(ep_ctx, buf, trx_sz, buf);
                 if (err) {
                     log::error("Failed to pass empty buffer to RDMA to receive into")
-                        ("buffer_address", buf)("error", fi_strerror(-err));
-
-                    // Attempt to return the buffer to the queue
+                        ("buffer_address", buf)("error", fi_strerror(-err))(" ", kind_to_string(_kind));
                     add_to_queue(buf);
-                    log::debug("Buffer returned to queue after RDMA registration failure")
-                        ("buffer_address", buf);
-                } else {
-                    log::debug("Buffer successfully registered for RDMA reception")
-                        ("buffer_address", buf)("buffer_size", trx_sz);
                 }
             } else {
-                log::warn("Failed to consume buffer from queue")
-                    ("result", static_cast<int>(res))
-                    ("buffer_null", buf == nullptr);
-                if (buf == nullptr) {
-                    log::error("consume_from_queue returned a null buffer despite success status");
-                }
+                // log::debug("Failed to consume buffer from queue")(" ", kind_to_string(_kind))("result", static_cast<int>(res))("buffer_null", buf == nullptr);
                 break; // Exit the loop to avoid spinning on errors
             }
         }
-
-        // Wait for the next event if the queue is empty
-        {
-            log::debug("Queue empty or buffers processed, waiting for next CQ event...");
-            std::unique_lock<std::mutex> lock(cq_mutex);
-
-            bool notified = cq_cv.wait(lock, ctx.stop_token(), [&]() { return event_ready; });
-
-            if (!notified) {
-                log::warn("CQ wait interrupted without an event. Context canceled?")("ctx_cancelled", ctx.cancelled());
-            }
-
-            if (ctx.cancelled()) {
-                log::info("process_buffers_thread detected cancellation, exiting...");
-                break;
-            }
-
-            // Reset event flag
-            log::debug("CQ event detected, resetting event flag and resuming processing...");
-            event_ready = false;
-        }
+        // Wait for the buffer to become available
+        wait_buf_available();
     }
 
-    log::info("Exiting process_buffers_thread");
+    ////log::info("Exiting process_buffers_thread")(" ", kind_to_string(_kind));
 }
 
-
-// Thread to handle CQ events and pass buffers back to the queue
 void RdmaRx::rdma_cq_thread(context::Context& ctx)
 {
-    log::info("rdma_cq_thread started");
+    ////log::info("rdma_cq_thread started")(" ", kind_to_string(_kind));
+
+    struct fi_cq_entry cq_entries[CQ_BATCH_SIZE]; // Array to hold batch of CQ entries
 
     while (!ctx.cancelled()) {
-        log::debug("Waiting for a CQ event...");
-        void* buf = nullptr;
+        // Read a batch of completion events
+        int ret = fi_cq_read(ep_ctx->cq_ctx.cq, cq_entries, CQ_BATCH_SIZE);
+        if (ret > 0) {
+            for (int i = 0; i < ret; ++i) {
+                void* buf = cq_entries[i].op_context;
+                if (buf == nullptr) {
+                    log::error("Null buffer context, skipping...")("batch_index", i)(" ", kind_to_string(_kind));
+                    continue;
+                }
 
-        // Completion queue read loop
-        while (!ctx.cancelled()) {
-            int err = libfabric_ep_ops.ep_cq_read(ep_ctx, (void**)&buf, RDMA_DEFAULT_TIMEOUT);
-            if (err == -EAGAIN) {
-                continue; // Try again
-            } else if (err) {
-                log::error("Completion queue read failed")("error", fi_strerror(-err));
-                continue; // Handle failure gracefully
+                // Process the buffer (e.g., transmit or handle)
+                Result res = transmit(ctx, buf, trx_sz);
+                if (res != Result::success) {
+                    log::error("Failed to transmit buffer")("buffer_address", buf)("size", trx_sz)(" ", kind_to_string(_kind));
+                    continue;
+                }
+
+                ////log::info("Buffer successfully transmitted")("buffer_address", buf)(" ", kind_to_string(_kind));
+
+                // Add the buffer back to the queue
+                res = add_to_queue(buf);
+                if (res == Result::success) {
+                    // Notify that a buffer is available
+                    notify_buf_available();
+                } else {
+                    log::error("Failed to add buffer back to the queue")("buffer_address", buf)(" ", kind_to_string(_kind));
+                }
             }
-            if (buf == nullptr) {
-                log::error("Completion queue read returned a null buffer");
-                continue;
-            }
+        } else if (ret == -EAGAIN) {
+            // No events to process, yield CPU briefly to avoid busy looping
+            std::this_thread::sleep_for(std::chrono::microseconds(500));
+        } else {
+            // Handle CQ read error
+            log::error("CQ read failed")("error", fi_strerror(-ret));
             break;
         }
-
-        if (buf == nullptr) {
-            log::error("No valid buffer retrieved from CQ");
-            continue;
-        }
-
-        // Transmit buffer
-        Result res = transmit(ctx, buf, trx_sz);
-        if (res != Result::success) {
-            log::error("Failed to transmit buffer")("buffer_address", buf)("size", trx_sz);
-            continue;
-        }
-
-        log::info("Buffer successfully transmitted")("buffer_address", buf);
-
-        // Add buffer back to the queue
-        res = add_to_queue(buf);
-        if (res != Result::success) {
-            log::error("Failed to add buffer back to the queue")("buffer_address", buf);
-        }
-
- //       notify_cq_event();
     }
 
-    log::info("Exiting rdma_cq_thread");
+    ////log::info("Exiting rdma_cq_thread")(" ", kind_to_string(_kind));
 }
+
 
 } // namespace connection
 

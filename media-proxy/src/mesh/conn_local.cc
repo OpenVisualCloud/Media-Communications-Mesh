@@ -76,7 +76,7 @@ Result Local::on_establish(context::Context& ctx)
 
     memif_conn_args.socket = memif_socket;
 
-    log::debug("Create memif interface.");
+    ////log::debug("Create memif interface.");
     ret = memif_create(&memif_conn, &memif_conn_args,
                        Local::callback_on_connect,
                        Local::callback_on_disconnect,
@@ -122,7 +122,7 @@ int Local::callback_on_connect(memif_conn_handle_t conn, void *private_ctx)
 
     print_memif_details(_this->memif_conn);
 
-    log::debug("Memif ready");
+    ////log::debug("Memif ready");
 
     return MEMIF_ERR_SUCCESS;
 }
@@ -158,7 +158,7 @@ int Local::callback_on_interrupt(memif_conn_handle_t conn, void *private_ctx,
     uint16_t buf_num = 0;
 
     if (!_this->ready) {
-        log::warn("Memif conn already stopped.");
+        log::debug("Memif conn already stopped.");
         return -1;
     }
 
@@ -180,7 +180,7 @@ int Local::callback_on_interrupt(memif_conn_handle_t conn, void *private_ctx,
 
 Result Local::on_shutdown(context::Context& ctx)
 {
-    log::debug("Memif shutdown");
+    ////log::debug("Memif shutdown");
 
     auto err = memif_cancel_poll_event(memif_socket);
     if (err != MEMIF_ERR_SUCCESS) {
@@ -201,9 +201,7 @@ Result Local::on_shutdown(context::Context& ctx)
     uint64_t in = metrics.inbound_bytes;
     uint64_t out = metrics.outbound_bytes;
 
-    log::info("Local %s conn shutdown", kind2str(_kind, true))
-             ("frames", metrics.transactions_successful)
-             ("in", in)("out", out)("equal", in == out);
+    ////log::info("Local %s conn shutdown", kind2str(_kind, true))("frames", metrics.transactions_successful)("in", in)("out", out)("equal", in == out);
 
     uint64_t errors = metrics.errors;
     uint64_t failures = metrics.transactions_failed;
