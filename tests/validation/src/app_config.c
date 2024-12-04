@@ -64,6 +64,7 @@ Ts_config parse_cli_input(int argc, char** argv){
     int help_flag = 0;
     int opt;
     Ts_config config ={
+        .mode = RECEIVER,
         .recv_addr = DEFAULT_RECV_IP,
         .recv_port = DEFAULT_RECV_PORT,
         .send_addr = DEFAULT_SEND_IP,
@@ -84,6 +85,7 @@ Ts_config parse_cli_input(int argc, char** argv){
     };
     struct option longopts[] = {
         { "help", no_argument, &help_flag, 'H' },
+        { "mode", required_argument, &help_flag, 'm' },
 
         { "file_name", required_argument, NULL, 'b' },
         { "width", required_argument, NULL, 'w' },
@@ -110,6 +112,9 @@ Ts_config parse_cli_input(int argc, char** argv){
             break;
 
         switch (opt) {
+        case 'm':
+            config.mode = atoi(optarg);
+            break;
         case 'H':
             usage(stdout, argv[0]);
             exit(EXIT_FAILURE);
