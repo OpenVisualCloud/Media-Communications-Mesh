@@ -8,8 +8,8 @@ This part of the repository is to be used solely for holding validation applicat
 
 In order to compile the apps, first compile the whole Media Communications Mesh using `build.sh` script from the root of the repo, then use the following commands:
 
-- `cc -o sender_val sender_val.c common.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
-- `cc -o recver_val recver_val.c common.c -lbsd $(pwd)/../../_build/lib/libmcm_dp.so`
+- `cc -o sender_val sender_val.c common.c -lbsd $(pwd)/../../../_build/lib/libmcm_dp.so`
+- `cc -o recver_val recver_val.c common.c -lbsd $(pwd)/../../../_build/lib/libmcm_dp.so`
 
 ## Creating virtual functions
 
