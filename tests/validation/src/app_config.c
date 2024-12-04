@@ -60,10 +60,10 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "\n");
 }
 
-Ts_config parse_cli_input(int argc, char** argv){
+app_config_t parse_cli_input(int argc, char** argv){
     int help_flag = 0;
     int opt;
-    Ts_config config ={
+    app_config_t config ={
         .mode = RECEIVER,
         .recv_addr = DEFAULT_RECV_IP,
         .recv_port = DEFAULT_RECV_PORT,

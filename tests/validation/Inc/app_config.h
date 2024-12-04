@@ -35,13 +35,9 @@
 #define PORT_LENGHT 5
 
 
-typedef enum Em_app_type{
-    SENDER=0,
-    RECEIVER
-};
 
-typedef struct Ts_config {
-    int mode;
+
+typedef struct app_config_ts {
     char recv_addr[MESH_IP_ADDRESS_SIZE];
     char recv_port[5];
     char send_addr[MESH_IP_ADDRESS_SIZE];
@@ -60,7 +56,7 @@ typedef struct Ts_config {
     uint32_t height;
     double vid_fps;
 
-}Ts_config;
-Ts_config parse_cli_input(int argc, char** argv);
+}app_config_ts;
+app_config_ts parse_cli_input(int argc, char** argv);
 
 #endif
