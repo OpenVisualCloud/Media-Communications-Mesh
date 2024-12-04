@@ -287,25 +287,33 @@ TEST_F(RdmaTest, InvalidDirectionForKind)
 
 TEST_F(RdmaTest, InitQueueWithElementsSuccess) {
     // Parameters for initialization
-    size_t capacity = 5;
-    size_t trx_sz = 1024;
+    const size_t capacity = 5;
+    const size_t trx_sz = 1024;
+    const size_t aligned_trx_sz = ((trx_sz + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
 
     // Step 1: Initialize the RDMA queue
     auto result = rdma->init_queue_with_elements(capacity, trx_sz);
-    ASSERT_EQ(result, Result::success); // Verify successful initialization
+    ASSERT_EQ(result, Result::success);                 // Verify successful initialization
     ASSERT_EQ(rdma->get_buffer_queue_size(), capacity); // Check initial queue size
 
     // Step 2: Validate buffer allocation and queue operations
     for (size_t i = 0; i < capacity; ++i) {
-        void* buf = nullptr;
+        void *buf = nullptr;
 
         // Consume a buffer from the queue
         auto res = rdma->consume_from_queue(ctx, &buf);
         ASSERT_EQ(res, Result::success); // Ensure successful consumption
         ASSERT_NE(buf, nullptr);         // Check that the buffer is valid
 
+        // Check if the buffer is within the allocated memory block
+        ASSERT_GE(buf, rdma->get_buffer_block());
+        ASSERT_LT(buf, static_cast<char *>(rdma->get_buffer_block()) + capacity * aligned_trx_sz);
+
+        // Validate that the buffer is page-aligned
+        ASSERT_EQ(reinterpret_cast<uintptr_t>(buf) % PAGE_SIZE, 0);
+
         // Check if the buffer is zero-initialized
-        char* data = static_cast<char*>(buf);
+        char *data = static_cast<char *>(buf);
         for (size_t j = 0; j < trx_sz; ++j) {
             ASSERT_EQ(data[j], 0); // Verify zero-initialization
         }
@@ -317,10 +325,13 @@ TEST_F(RdmaTest, InitQueueWithElementsSuccess) {
 
     // Step 3: Verify the queue size is restored
     ASSERT_EQ(rdma->get_buffer_queue_size(), capacity); // Check restored queue size
+
+    // Step 4: Cleanup resources
+    rdma->cleanup_queue();
 }
 
-
-TEST_F(RdmaTest, InitQueueWithElementsFailureMemoryAllocationWithSize0) {
+TEST_F(RdmaTest, InitQueueWithElementsFailureMemoryAllocationWithSize0)
+{
     size_t capacity = 10;
     size_t trx_sz = 0; // Invalid size to simulate failure
 
@@ -329,16 +340,18 @@ TEST_F(RdmaTest, InitQueueWithElementsFailureMemoryAllocationWithSize0) {
     ASSERT_TRUE(rdma->is_buffer_queue_empty());
 }
 
-TEST_F(RdmaTest, InitQueueWithElementsFailureMemoryAllocationWithSize1GB) {
+TEST_F(RdmaTest, InitQueueWithElementsFailureMemoryAllocationWithSize1GB)
+{
     size_t capacity = 10;
-    size_t trx_sz = 1<<31; // Invalid size to simulate failure
+    size_t trx_sz = 1 << 31; // Invalid size to simulate failure
 
     auto result = rdma->init_queue_with_elements(capacity, trx_sz);
     ASSERT_EQ(result, Result::error_bad_argument);
     ASSERT_TRUE(rdma->is_buffer_queue_empty());
 }
 
-TEST_F(RdmaTest, AddToQueueSuccess) {
+TEST_F(RdmaTest, AddToQueueSuccess)
+{
     int dummy_data = 42;
 
     auto result = rdma->add_to_queue(&dummy_data);
@@ -352,13 +365,15 @@ TEST_F(RdmaTest, AddToQueueSuccess) {
     ASSERT_EQ(element, &dummy_data);
 }
 
-TEST_F(RdmaTest, AddToQueueFailureNullptr) {
+TEST_F(RdmaTest, AddToQueueFailureNullptr)
+{
     auto result = rdma->add_to_queue(nullptr);
     ASSERT_EQ(result, Result::error_bad_argument);
     ASSERT_TRUE(rdma->is_buffer_queue_empty());
 }
 
-TEST_F(RdmaTest, ConsumeFromQueueSuccess) {
+TEST_F(RdmaTest, ConsumeFromQueueSuccess)
+{
     int dummy_data1 = 42;
     int dummy_data2 = 84;
 
@@ -380,14 +395,16 @@ TEST_F(RdmaTest, ConsumeFromQueueSuccess) {
     ASSERT_TRUE(rdma->is_buffer_queue_empty());
 }
 
-TEST_F(RdmaTest, ConsumeFromQueueFailureEmptyQueue) {
+TEST_F(RdmaTest, ConsumeFromQueueFailureEmptyQueue)
+{
     void *element = nullptr;
     auto result = rdma->consume_from_queue(ctx, &element);
     ASSERT_EQ(result, Result::error_no_buffer);
     ASSERT_EQ(element, nullptr);
 }
 
-TEST_F(RdmaTest, ConsumeFromQueueFailureContextCancelled) {
+TEST_F(RdmaTest, ConsumeFromQueueFailureContextCancelled)
+{
     int dummy_data = 42;
     rdma->add_to_queue(&dummy_data);
 
@@ -403,7 +420,8 @@ TEST_F(RdmaTest, ConsumeFromQueueFailureContextCancelled) {
     ASSERT_EQ(rdma->get_buffer_queue_size(), 1);
 }
 
-TEST_F(RdmaTest, CleanupQueue) {
+TEST_F(RdmaTest, CleanupQueue)
+{
     size_t capacity = 5;
     size_t trx_sz = 1024;
 
@@ -420,12 +438,16 @@ TEST_F(RdmaTest, CleanupQueue) {
     ASSERT_TRUE(rdma->is_buffer_queue_empty());
 }
 
-TEST_F(RdmaTest, QueuePerformanceTest) {
-    const size_t iterations = 100000;
+TEST_F(RdmaTest, QueuePerformanceTest)
+{
+    const size_t iterations = 1000000;
     const size_t trx_sz = 1024;
 
     // Initialize queue
-    rdma->init_queue_with_elements(iterations, trx_sz);
+    auto result = rdma->init_queue_with_elements(iterations, trx_sz);
+    ASSERT_EQ(result, Result::success);
+
+    size_t aligned_trx_sz = ((trx_sz + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
 
     // Measure time taken for queue operations
     auto start = std::chrono::high_resolution_clock::now();
@@ -433,20 +455,31 @@ TEST_F(RdmaTest, QueuePerformanceTest) {
     // Consume from queue
     for (size_t i = 0; i < iterations; ++i) {
         void *buf = nullptr;
-        rdma->consume_from_queue(ctx, &buf);
-        std::free(buf);
+        auto res = rdma->consume_from_queue(ctx, &buf);
+        ASSERT_EQ(res, Result::success);
+        ASSERT_NE(buf, nullptr);
+
+        // Check if the buffer is within the allocated range
+        ASSERT_GE(buf, rdma->get_buffer_block()); // Buffer >= base address
+        ASSERT_LT(buf, static_cast<char *>(rdma->get_buffer_block()) +
+                           iterations * aligned_trx_sz); // Buffer < end address
     }
 
     auto end = std::chrono::high_resolution_clock::now();
     std::chrono::duration<double> elapsed = end - start;
-    std::cout << "Processed " << iterations << " queue operations in " << elapsed.count() << " seconds.\n";
+    std::cout << "Processed " << iterations << " queue operations in " << elapsed.count()
+              << " seconds.\n";
 
     // Ensure queue is empty
     ASSERT_TRUE(rdma->is_buffer_queue_empty());
+
+    // Cleanup
+    rdma->cleanup_queue();
 }
 
-TEST_F(RdmaTest, RepeatedShutdown) {
-        mcm_conn_param request = {};
+TEST_F(RdmaTest, RepeatedShutdown)
+{
+    mcm_conn_param request = {};
     request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
     request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
     request.payload_args.rdma_args.transfer_size = 1024;
@@ -488,25 +521,37 @@ TEST_F(RdmaTest, RepeatedShutdown) {
 }
 
 TEST_F(RdmaTest, StressTest) {
-    const size_t num_threads = 16;
+    const size_t num_threads = 128;
     const size_t operations_per_thread = 10000;
 
     std::vector<std::thread> threads;
 
     // Initialize queue with a large number of elements
-    rdma->init_queue_with_elements(num_threads * operations_per_thread, sizeof(int));
+    const size_t capacity = num_threads * operations_per_thread;
+    auto result = rdma->init_queue_with_elements(capacity, sizeof(int));
+    ASSERT_EQ(result, Result::success); // Ensure initialization was successful
+
+    // Atomic counters for tracking
+    std::atomic<size_t> consumed_buffers{0};
+    std::atomic<size_t> freed_buffers{0};
 
     // Launch threads to perform concurrent queue operations
     for (size_t i = 0; i < num_threads; ++i) {
-        threads.emplace_back([&]() {
+        threads.emplace_back([&, i]() {
             for (size_t j = 0; j < operations_per_thread; ++j) {
                 void *buf = nullptr;
+
                 if (j % 2 == 0) {
-                    buf = std::calloc(1, sizeof(int));
-                    rdma->add_to_queue(buf);
-                } else {
+                    // Consume from the queue and re-add the buffer
                     if (rdma->consume_from_queue(ctx, &buf) == Result::success) {
-                        std::free(buf);
+                        consumed_buffers.fetch_add(1, std::memory_order_relaxed);
+                        rdma->add_to_queue(buf);
+                    }
+                } else {
+                    // Consume from the queue and simulate processing/freeing
+                    if (rdma->consume_from_queue(ctx, &buf) == Result::success) {
+                        std::memset(buf, 0, sizeof(int));
+                        freed_buffers.fetch_add(1, std::memory_order_relaxed);
                     }
                 }
             }
@@ -517,59 +562,62 @@ TEST_F(RdmaTest, StressTest) {
     for (auto &thread : threads) {
         thread.join();
     }
-    ////log::debug("Buffer state at the end of test")("queue_size", rdma->get_buffer_queue_size());
-    // Ensure the queue is empty
+
+    // Cleanup remaining buffers
     rdma->cleanup_queue();
-    ASSERT_TRUE(rdma->is_buffer_queue_empty());
+
+    // Verify results
+    ASSERT_EQ(consumed_buffers.load() + freed_buffers.load(), capacity); // Ensure all buffers were processed
+    ASSERT_TRUE(rdma->is_buffer_queue_empty()); // Ensure queue is empty
 }
 
-TEST_F(RdmaTest, ConcurrentAccessWithDelays)
-{
-    const size_t num_threads = 4;
+
+TEST_F(RdmaTest, ConcurrentAccessWithDelays) {
+    const size_t num_threads = 128;
     const size_t operations_per_thread = 1000;
 
     std::vector<std::thread> threads;
 
     // Initialize queue with elements
-    rdma->init_queue_with_elements(num_threads * operations_per_thread, sizeof(int));
-
-    // Clear the queue elements safely before concurrent access
-    void *buf = nullptr;
-    while (rdma->consume_from_queue(ctx, &buf) == Result::success) {
-        std::free(buf);
-    }
-
-    // Ensure the queue is empty
-    ASSERT_TRUE(rdma->is_buffer_queue_empty());
+    const size_t capacity = num_threads * operations_per_thread;
+    auto result = rdma->init_queue_with_elements(capacity, sizeof(int));
+    ASSERT_EQ(result, Result::success);
 
     // Start concurrent operations
     for (size_t i = 0; i < num_threads; ++i) {
-        threads.emplace_back([&]() {
+        threads.emplace_back([&, i]() {
             for (size_t j = 0; j < operations_per_thread; ++j) {
-                void *thread_buf = nullptr; // Thread-local buffer
+                void *buf = nullptr; // Thread-local buffer
+
                 if (j % 2 == 0) {
-                    // Allocate memory and add to queue
-                    thread_buf = std::calloc(1, sizeof(int));
-                    rdma->add_to_queue(thread_buf);
-                    std::this_thread::sleep_for(std::chrono::microseconds(10)); // Simulate delay
-                } else {
-                    // Consume memory and free it
-                    if (rdma->consume_from_queue(ctx, &thread_buf) == Result::success) {
-                            std::free(thread_buf);
+                    // Consume a buffer and return it to the queue
+                    if (rdma->consume_from_queue(ctx, &buf) == Result::success) {
+                        std::memset(buf, 0, sizeof(int)); // Simulate processing
+                        rdma->add_to_queue(buf);
                     }
-                    std::this_thread::sleep_for(std::chrono::microseconds(5)); // Simulate delay
+                } else {
+                    // Consume a buffer and simulate processing without returning it
+                    if (rdma->consume_from_queue(ctx, &buf) == Result::success) {
+                        std::memset(buf, 0, sizeof(int)); // Simulate processing
+                    }
                 }
+
+                // Simulate delays
+                std::this_thread::sleep_for(std::chrono::microseconds(j % 2 == 0 ? 10 : 5));
             }
         });
     }
 
     // Wait for all threads to finish
-    for (auto& thread : threads) {
+    for (auto &thread : threads) {
         thread.join();
     }
 
-    // Verify the queue is empty after all operations
+    // Verify the queue is not empty, as half of the buffers were not returned
+    ASSERT_FALSE(rdma->is_buffer_queue_empty());
+
+    // Cleanup remaining buffers
+    rdma->cleanup_queue();
     ASSERT_TRUE(rdma->is_buffer_queue_empty());
 }
-
 

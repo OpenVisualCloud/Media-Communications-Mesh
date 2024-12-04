@@ -69,6 +69,7 @@ Result Rdma::consume_from_queue(context::Context& ctx, void **element)
     std::unique_lock<std::mutex> lock(queue_mutex);
 
     if (ctx.cancelled()) {
+        *element = nullptr; // Ensure element remains nullptr
         return Result::error_operation_cancelled;
     }
 
@@ -82,7 +83,18 @@ Result Rdma::consume_from_queue(context::Context& ctx, void **element)
     return Result::success;
 }
 
-// Initialize the buffer queue with pre-allocated buffers
+/**
+ * @brief Initializes the RDMA buffer queue with a specified number of pre-allocated elements.
+ * 
+ * Allocates a single contiguous memory block, aligns buffer sizes to the page size, and divides 
+ * the block into individual buffers. Pushes these buffers into the queue for future use.
+ * Ensures proper cleanup on failure or reinitialization attempts.
+ * 
+ * @param capacity The number of buffers to allocate within continuous virtual memory.
+ * @param trx_sz The size of each buffer (aligned to the page size).
+ * @return Result::success on successful initialization, or an error result if arguments are invalid 
+ *         or memory allocation fails.
+ */
 Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
 {
     if (trx_sz == 0 || trx_sz > MAX_BUFFER_SIZE) {
@@ -98,9 +110,8 @@ Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
         return Result::error_already_initialized;
     }
 
-    // Calculate total memory size needed
-    size_t aligned_trx_sz =
-        ((trx_sz + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE; // Align to page size
+    // Calculate total memory size needed and align to page size
+    size_t aligned_trx_sz = ((trx_sz + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
     size_t total_size = capacity * aligned_trx_sz;
 
     // Allocate a single contiguous memory block
@@ -121,11 +132,8 @@ Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
     }
 
     // Store the base memory block for cleanup
-    buffer_block =
-        memory_block; // Assume buffer_block is a member variable to hold the base pointer
+    buffer_block = memory_block;
 
-    log::info("Buffer queue initialized with elements")("capacity", capacity)("element_size",
-              trx_sz);
     return Result::success;
 }
 
@@ -133,7 +141,8 @@ Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
 void Rdma::cleanup_queue()
 {
     if (buffer_block) {
-        std::free(buffer_block); // Free the entire memory block
+        // Free the entire memory block
+        std::free(buffer_block);
         buffer_block = nullptr;
     }
     while (!buffer_queue.empty()) {
@@ -141,6 +150,22 @@ void Rdma::cleanup_queue()
     }
 }
 
+/**
+ * @brief Configures the RDMA connection with the provided parameters.
+ * 
+ * Sets up the RDMA transfer size, connection kind, endpoint configuration,
+ * and queue size based on the input request. Ensures that the kind-direction
+ * pairing is valid (e.g., receiver with RX direction). Updates the connection
+ * state to "configured" upon success.
+ * 
+ * @param ctx The operation context.
+ * @param request The connection parameters including addresses and RDMA arguments.
+ * @param dev_port The device port identifier.
+ * @param dev_handle Reference to the RDMA device handle.
+ * @param kind The type of connection (receiver or transmitter).
+ * @param dir The data transfer direction (RX or TX).
+ * @return Result::success on successful configuration, or an error result if arguments are invalid.
+ */
 Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
                        const std::string& dev_port, libfabric_ctx *& dev_handle, Kind kind,
                        direction dir)
@@ -167,6 +192,17 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
     return Result::success;
 }
 
+/**
+ * @brief Establishes an RDMA connection by initializing the device, endpoint, buffer queue,
+ * and starting necessary threads for processing RDMA operations.
+ *
+ * Ensures proper cleanup and state updates on failure. Returns success if all steps
+ * (device initialization, endpoint setup, buffer queue creation, and endpoint configuration)
+ * complete successfully.
+ *
+ * @param ctx The operation context.
+ * @return Result::success on success, or an appropriate error result on failure.
+ */
 Result Rdma::on_establish(context::Context& ctx)
 {
     if (init) {
@@ -232,12 +268,29 @@ Result Rdma::on_shutdown(context::Context& ctx)
     return Result::success;
 }
 
+/**
+ * @brief Handles the deletion of the RDMA connection.
+ *
+ * This function ensures that the RDMA connection is properly shut down
+ * and resources are cleaned up before the object is deleted.
+ *
+ * @param ctx The context used for the delete operation.
+ */
 void Rdma::on_delete(context::Context& ctx)
 {
     // Note: this is a blocking call
     on_shutdown(ctx);
 }
 
+/**
+ * @brief Configures the RDMA endpoint by registering the memory block with the RDMA endpoint.
+ *
+ * This function ensures that the endpoint context is initialized and the memory block for the buffer queue
+ * is allocated. It then registers it with the RDMA endpoint.
+ *
+ * @param ctx The context for the operation.
+ * @return Result::success if the endpoint is successfully configured, otherwise an appropriate error code.
+ */
 Result Rdma::configure_endpoint(context::Context& ctx)
 {
     if (!ep_ctx) {
@@ -262,10 +315,19 @@ Result Rdma::configure_endpoint(context::Context& ctx)
         return Result::error_memory_registration_failed;
     }
 
-    log::info("Memory block registered successfully")("total_size", total_size);
     return Result::success;
 }
 
+/**
+ * @brief Cleans up RDMA resources and resets the state.
+ *
+ * This function destroys the RDMA endpoint context if it exists, cleans up the buffer queue,
+ * and marks the RDMA as uninitialized. It ensures that all allocated resources are properly
+ * released and the state is reset to allow for reinitialization if needed.
+ *
+ * @param ctx The context used for the cleanup operation.
+ * @return Result indicating the success or failure of the cleanup operation.
+ */
 Result Rdma::cleanup_resources(context::Context& ctx)
 {
     if (ep_ctx) {
@@ -273,7 +335,6 @@ Result Rdma::cleanup_resources(context::Context& ctx)
         if (err) {
             log::error("Failed to destroy RDMA endpoint")("error", fi_strerror(-err));
         }
-        ep_ctx = nullptr;
     }
 
     // Clean up the buffer queue
@@ -285,25 +346,31 @@ Result Rdma::cleanup_resources(context::Context& ctx)
     return Result::success;
 }
 
+/**
+ * @brief Shuts down the RDMA connection and cleans up resources.
+ *
+ * This function cancels the RDMA completion queue thread and the buffer processing thread,
+ * ensuring that they are properly joined. It also notifies buffer availability to unblock
+ * any waiting operations. If the RDMA connection was initialized, it cleans up the RDMA
+ * resources and sets the state to closed.
+ *
+ * @param ctx The context used for the shutdown operation.
+ */
 void Rdma::shutdown_rdma(context::Context& ctx)
 {
     // Cancel `rdma_cq_thread` context
     rdma_cq_thread_ctx.cancel();
+    // Cancel `process_buffers_thread` context
+    process_buffers_thread_ctx.cancel();
     // Ensure buffer-related threads are unblocked
     notify_buf_available();
 
     // Check if `rdma_cq_thread` has stopped
     if (handle_rdma_cq_thread.joinable()) {
         handle_rdma_cq_thread.join();
-    } else {
-        log::debug("shutdown_rdma: rdma_cq_thread is not joinable");
     }
 
-    // Cancel `process_buffers_thread` context
-    process_buffers_thread_ctx.cancel();
-    notify_buf_available();
-
-    // Join the `process_buffers_thread`
+    // Check if `process_buffers_thread` has stopped
     if (handle_process_buffers_thread.joinable()) {
         handle_process_buffers_thread.join();
     }
@@ -311,8 +378,6 @@ void Rdma::shutdown_rdma(context::Context& ctx)
     // Clean up RDMA resources if initialized
     if (init) {
         cleanup_resources(ctx);
-    } else {
-        log::debug("shutdown_rdma: RDMA not initialized, skipping resource cleanup");
     }
 
     set_state(ctx, State::closed);
