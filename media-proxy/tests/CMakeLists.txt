@@ -38,7 +38,7 @@ file(GLOB MEDIA_PROXY_TEST_SOURCES
 )
 
 # Find source files for RDMA-specific tests
-file(GLOB RDMA__RX_TX_TEST_SOURCES
+file(GLOB RDMA_RX_TX_TEST_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_rx_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_tx_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_test_mocks.cc"
@@ -68,14 +68,12 @@ target_include_directories(media_proxy_unit_tests PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# Add an executable for RDMA-specific tests
-add_executable(conn_rdma_rx_tx_unit_tests ${RDMA__RX_TX_TEST_SOURCES})
+# Add an executable for RDMA-Rx-Tx-specific tests
+add_executable(conn_rdma_rx_tx_unit_tests ${RDMA_RX_TX_TEST_SOURCES})
 target_link_libraries(conn_rdma_rx_tx_unit_tests PRIVATE gmock gmock_main gtest gtest_main ${MP_LIB})
 target_include_directories(conn_rdma_rx_tx_unit_tests PUBLIC
     ${CMAKE_SOURCE_DIR}/media-proxy/include
-    # Include generated *.pb.h files
     ${CMAKE_BINARY_DIR}/media-proxy/generated
-    ${FFF_DOWNLOAD_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
