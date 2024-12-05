@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.10)
 project(TestApps VERSION 1.0)
 # Include directories
 include_directories(Inc
-                    ../../sdk/include
-                    ../../sdk/3rdparty/libmemif/src)
+                    ../../../sdk/include
+                    ../../../sdk/3rdparty/libmemif/src)
 
 set(SRC src/input.c src/mcm.c src/mcm_mock.c)
 
