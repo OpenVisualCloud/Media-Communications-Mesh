@@ -1,11 +1,9 @@
 #ifndef _MCM_H_
 #define _MCM_H_
-
-#include "mcm_dp.h"
-#include "mesh_dp.h"
+#include "mcm_mock.h"
 
 typedef struct mcm_ts{
-     MeshConnection *connection;
+    MeshConnection *connection;
     MeshClient *client;
 }mcm_ts;
 
