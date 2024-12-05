@@ -25,7 +25,10 @@ class ST2110Tx : public ST2110<FRAME, HANDLE, OPS> {
   protected:
     int configure_common(context::Context& ctx, const std::string& dev_port,
                          const MeshConfig_ST2110& cfg_st2110) override {
-        ST2110<FRAME, HANDLE, OPS>::configure_common(ctx, dev_port, cfg_st2110);
+        int ret = ST2110<FRAME, HANDLE, OPS>::configure_common(ctx, dev_port, cfg_st2110);
+        if (ret) {
+            return ret;
+        }
 
         inet_pton(AF_INET, cfg_st2110.remote_ip_addr, this->ops.port.dip_addr[MTL_PORT_P]);
         this->ops.port.udp_port[MTL_PORT_P] = cfg_st2110.remote_port;

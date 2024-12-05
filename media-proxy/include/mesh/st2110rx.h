@@ -26,8 +26,11 @@ class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
     std::jthread frame_thread_handle;
 
     int configure_common(context::Context& ctx, const std::string& dev_port,
-                         const MeshConfig_ST2110& cfg_st2110) override{
-        ST2110<FRAME, HANDLE, OPS>::configure_common(ctx, dev_port, cfg_st2110);
+                         const MeshConfig_ST2110& cfg_st2110) override {
+        int ret = ST2110<FRAME, HANDLE, OPS>::configure_common(ctx, dev_port, cfg_st2110);
+        if (ret) {
+            return ret;
+        }
 
         inet_pton(AF_INET, cfg_st2110.remote_ip_addr, this->ops.port.ip_addr[MTL_PORT_P]);
         inet_pton(AF_INET, cfg_st2110.local_ip_addr, this->ops.port.mcast_sip_addr[MTL_PORT_P]);
