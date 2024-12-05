@@ -18,6 +18,10 @@ void StandardFormatter::formatMessage(std::ostringstream& ostream, Level level,
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
+    // Save the original format state of the stream
+    std::ios old_state(nullptr);
+    old_state.copyfmt(ostream);
+
     // ostream << "\x1b[34m";
     ostream << std::put_time(std::gmtime(&in_time_t), "\x1b[38;5;245m" "%b %d %H:%M:%S");
     ostream << '.' << std::setfill('0') << std::setw(3) << ms.count() << ' ';
@@ -43,6 +47,9 @@ void StandardFormatter::formatMessage(std::ostringstream& ostream, Level level,
     char buffer[1024];
     vsnprintf(buffer, sizeof(buffer), format, args);
     ostream << buffer;
+
+    // Restore the original format state of the stream
+    ostream.copyfmt(old_state);
 }
 
 void StandardFormatter::formatKeyValueBefore(std::ostringstream& ostream,
@@ -63,6 +70,10 @@ void JsonFormatter::formatMessage(std::ostringstream& ostream, Level level,
     auto in_time_t = std::chrono::system_clock::to_time_t(now);
     auto ms = std::chrono::duration_cast<std::chrono::milliseconds>(now.time_since_epoch()) % 1000;
 
+    // Save the original format state of the stream
+    std::ios old_state(nullptr);
+    old_state.copyfmt(ostream);
+    
     ostream << "\"time\":\"";
     ostream << std::put_time(std::gmtime(&in_time_t), "%Y-%m-%dT%H:%M:%S");
     ostream << '.' << std::setfill('0') << std::setw(3) << ms.count() << "Z\",";
@@ -88,6 +99,9 @@ void JsonFormatter::formatMessage(std::ostringstream& ostream, Level level,
     char buffer[1024];
     vsnprintf(buffer, sizeof(buffer), format, args);
     ostream << "\"msg\":\"" << buffer << "\"";
+
+    // Restore the original format state of the stream
+    ostream.copyfmt(old_state);
 }
 
 void JsonFormatter::formatKeyValueBefore(std::ostringstream& ostream,

@@ -29,7 +29,7 @@ public:
     std::list<ConnectionContext *> conns;
     std::mutex mx;
 
-    void *grpc_client;
+    void *grpc_client = nullptr;
 };
 
 } // namespace mesh

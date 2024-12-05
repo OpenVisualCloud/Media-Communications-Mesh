@@ -25,6 +25,7 @@ set(MP_TESTS_DIR ${MP_DIR}/tests)
 set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 set(SDK_TESTS_DIR ${SDK_DIR}/tests)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
+set(TESTS_VAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/validation)
 
 # Setup output folder
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -39,6 +40,7 @@ if (BUILD_UNIT_TESTS)
     enable_testing()
     add_subdirectory(${MP_TESTS_DIR})
     add_subdirectory(${SDK_TESTS_DIR})
+    add_subdirectory(${TESTS_VAL_DIR})
 endif()
 
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})

@@ -5,6 +5,10 @@
 
 set -eo pipefail
 
+if [[ $# -ne 0 ]]; then
+    FFMPEG_VER="${1:-${FFMPEG_VER}}"
+    shift
+fi
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPOSITORY_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
 BUILD_DIR="${BUILD_DIR:-${REPOSITORY_DIR}/_build}"
