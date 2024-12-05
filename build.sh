@@ -24,12 +24,12 @@ cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
     -DBUILD_UNIT_TESTS="${BUILD_UNIT_TESTS}" \
     -B "${MCM_BUILD_DIR}" -S "${SCRIPT_DIR}"
 cmake --build "${MCM_BUILD_DIR}" -j
-
-as_root make -C "${MCM_BUILD_DIR}" install
+make -j "${NPROC}" -C "${MCM_BUILD_DIR}"
 
 if [[ $# -ne 0 ]]; then
     DESTDIR="${1:-$DESTDIR}" make -C "${MCM_BUILD_DIR}" install
 fi
+as_root make -C "${MCM_BUILD_DIR}" install
 
 as_root ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.so.1 2>/dev/null || true
 as_root ldconfig

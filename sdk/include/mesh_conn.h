@@ -113,7 +113,7 @@ public:
         } payload;
     } cfg = {};
 
-    void *grpc_conn;
+    void *grpc_conn = nullptr;
 };
 
 } // namespace mesh

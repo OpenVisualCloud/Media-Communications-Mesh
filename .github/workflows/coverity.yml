@@ -20,6 +20,10 @@ env:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   coverity:
     runs-on: 'ubuntu-22.04'
@@ -89,7 +93,7 @@ jobs:
             ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh && \
             ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh
 
-    - uses: actions/upload-artifact@v4
+    - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: coverity-reports
         path: '${{ github.workspace }}/cov-int'
