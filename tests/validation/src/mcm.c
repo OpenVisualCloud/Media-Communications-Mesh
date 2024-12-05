@@ -31,7 +31,7 @@ int mcm_create_rx_connection(mcm_ts* mcm, const char* cfg){
 }
 
 
-int mcm_send_video_frames(int num_of_frames, mcm_ts* mcm){
+int mcm_send_video_frames(mcm_ts* mcm, int num_of_frames){
     int err = 0;
     /* Send data loop */
     for (int i = 0; i < num_of_frames; i++) {
