@@ -22,12 +22,20 @@ spec:
           image: mcm/media-proxy:latest
           imagePullPolicy: Never
           command: [ "media_proxy" ]
-          args: [ "-d", "0000:31:01.5", "-i", "192.168.96.10" ]
+          args: [ "-d", "kernel:eth0", "-i", $(NODE_IP) ]
           env:
             - name: NODE_NAME
               valueFrom:
                 fieldRef:
                   fieldPath: spec.nodeName
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
           resources:
             requests:
               cpu: 2
@@ -66,7 +74,7 @@ spec:
       volumes:
         - name: memif-dir  # Using hostPath volume
           hostPath:
-            path: /tmp/mcm/memif
+            path: /run/mcm
         - name: dev-vfio
           hostPath:
             path: /dev/vfio
