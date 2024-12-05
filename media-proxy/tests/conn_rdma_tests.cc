@@ -26,8 +26,9 @@ class TestRdma : public Rdma {
     using Rdma::on_delete;
     using Rdma::on_establish;
     using Rdma::on_shutdown;
-    using Rdma::shutdown_rdma;
     using Rdma::trx_sz;
+    void set_kind(Kind kind) { _kind = kind; }
+    Result start_threads(context::Context& ctx) { return Result::success; }
 };
 
 // Test fixture
@@ -55,8 +56,7 @@ class RdmaTest : public ::testing::Test {
         mock_dev_ops = nullptr;
     }
 
-    void ConfigureRdma(size_t transfer_size)
-    {
+    void ConfigureRdma(TestRdma *rdma, context::Context& ctx, size_t transfer_size, Kind kind) {
         mcm_conn_param request = {};
         request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
         request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
@@ -65,38 +65,33 @@ class RdmaTest : public ::testing::Test {
         std::string dev_port = "0000:31:00.0";
         libfabric_ctx *dev_handle = nullptr;
 
-        EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
-            .WillOnce(
-                ::testing::DoAll(::testing::SetArgPointee<0>(dev_handle),
-                                 ::testing::Return(0))); // Mock successful RDMA initialization
-
-        auto res =
-            rdma->configure(ctx, request, dev_port, dev_handle, Kind::transmitter, direction::TX);
+        rdma->set_kind(kind);
+        auto res = rdma->configure(ctx, request, dev_port, dev_handle);
         ASSERT_EQ(res, Result::success);
         ASSERT_EQ(rdma->state(), State::configured);
+        ASSERT_EQ(rdma->kind(), kind);
     }
 };
 
 TEST_F(RdmaTest, ConfigureSuccess)
 {
-    mcm_conn_param request = {};
-    request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
-    request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
-    request.payload_args.rdma_args.transfer_size = 1024;
+    // Use ConfigureRdma helper to set up the test environment
+    ConfigureRdma(rdma, ctx, 1024, Kind::receiver);
 
-    std::string dev_port = "0000:31:00.0";
-    libfabric_ctx *dev_handle = nullptr;
-
-    // Call configure with a null dev_handle to trigger rdma_init in on_establish
-    auto res = rdma->configure(ctx, request, dev_port, dev_handle, Kind::receiver, direction::RX);
-    ASSERT_EQ(res, Result::success);
+    // Verify state and kind after configuration
     ASSERT_EQ(rdma->state(), State::configured);
+    ASSERT_EQ(rdma->kind(), Kind::receiver);
 }
 
-TEST_F(RdmaTest, EstablishSuccess)
-{
+TEST_F(RdmaTest, EstablishSuccess) {
 
-    ConfigureRdma(1024);
+    ConfigureRdma(rdma, ctx, 1024, Kind::receiver);
+
+    libfabric_ctx *dev_handle = nullptr;
+
+    EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
+        .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle),
+                                   ::testing::Return(0)));
 
     EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
         *ep_ctx = new ep_ctx_t();
@@ -111,59 +106,55 @@ TEST_F(RdmaTest, EstablishSuccess)
     });
 
     auto result = rdma->on_establish(ctx);
-    EXPECT_EQ(result, Result::success);
-    EXPECT_EQ(rdma->state(), State::active);
+    ASSERT_EQ(result, Result::success);
+    ASSERT_EQ(rdma->state(), State::active);
 }
 
-TEST_F(RdmaTest, EstablishFailureEpInit)
-{
-    ConfigureRdma(1024);
+TEST_F(RdmaTest, EstablishFailureEpInit) {
+    // Use ConfigureRdma helper to set up the test environment
+    ConfigureRdma(rdma, ctx, 1024, Kind::receiver);
 
+    libfabric_ctx *dev_handle = nullptr;
+
+    EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
+        .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle), ::testing::Return(0)));
+
+    // Simulate failure during ep_init
     EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce(Return(-1));
 
-    auto result = rdma->establish(ctx);
-    EXPECT_EQ(result, Result::error_initialization_failed);
-    EXPECT_EQ(rdma->state(), State::closed);
+    auto result = rdma->on_establish(ctx);
+    ASSERT_EQ(result, Result::error_initialization_failed);
+    ASSERT_EQ(rdma->state(), State::closed);
 }
 
 TEST_F(RdmaTest, CleanupResources)
 {
-    mcm_conn_param request = {};
-    request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
-    request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
-    request.payload_args.rdma_args.transfer_size = 1024;
 
-    std::string dev_port = "0000:31:00.0";
+    ConfigureRdma(rdma, ctx, 1024, Kind::receiver);
+
     libfabric_ctx *dev_handle = nullptr;
 
-    // Mock rdma_init
-    EXPECT_CALL(*mock_dev_ops, rdma_init(_)).WillOnce([](libfabric_ctx **ctx) -> int {
-        *ctx = new libfabric_ctx();
-        return 0; // Success
-    });
+    EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
+        .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle),
+                                   ::testing::Return(0)));
 
-    // Mock ep_init
     EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
         *ep_ctx = new ep_ctx_t();
-        return 0; // Success
+        return 0;
     });
 
-    // Mock ep_reg_mr
     EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
 
-    // Mock ep_destroy
     EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).WillOnce([](ep_ctx_t **ep_ctx) -> int {
         delete *ep_ctx;
-        *ep_ctx = nullptr;
-        return 0; // Success
+        return 0;
     });
 
-    // Configure and establish
-    rdma->configure(ctx, request, dev_port, dev_handle, Kind::transmitter, direction::TX);
-    rdma->establish(ctx);
+    auto result = rdma->on_establish(ctx);
+    ASSERT_EQ(result, Result::success);
 
     // Trigger cleanup
-    rdma->shutdown_rdma(ctx);
+    rdma->on_shutdown(ctx);
 
     // Verify state is closed
     EXPECT_EQ(rdma->state(), State::closed);
@@ -171,46 +162,34 @@ TEST_F(RdmaTest, CleanupResources)
 
 TEST_F(RdmaTest, ValidateStateTransitions)
 {
-    mcm_conn_param request = {};
-    request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
-    request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
-    request.payload_args.rdma_args.transfer_size = 1024;
-
-    std::string dev_port = "0000:31:00.0";
-    libfabric_ctx *dev_handle = nullptr;
-
-    // Initial state should be `not_configured`
-    ASSERT_EQ(rdma->state(), State::not_configured);
-
-    // Mock rdma_init
-    EXPECT_CALL(*mock_dev_ops, rdma_init(_)).WillOnce([](libfabric_ctx **ctx) -> int {
-        *ctx = new libfabric_ctx();
-        return 0; // Success
-    });
-
-    // Mock ep_init
     EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
         *ep_ctx = new ep_ctx_t();
         return 0; // Success
     });
-    // Mock ep_reg_mr
-    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
 
-    // Mock ep_destroy
     EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).WillOnce([](ep_ctx_t **ep_ctx) -> int {
         delete *ep_ctx;
         *ep_ctx = nullptr;
         return 0; // Success
     });
 
+    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
+
+    libfabric_ctx *dev_handle = nullptr;
+
+    EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
+                .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle),
+                          ::testing::Return(0)));
+
+    // Initial state should be `not_configured`
+    ASSERT_EQ(rdma->state(), State::not_configured);
+
     // Transition: `not_configured` -> `configured`
-    auto res =
-        rdma->configure(ctx, request, dev_port, dev_handle, Kind::transmitter, direction::TX);
-    ASSERT_EQ(res, Result::success);
+    ConfigureRdma(rdma, ctx, 1024, Kind::transmitter);
     ASSERT_EQ(rdma->state(), State::configured);
 
     // Transition: `configured` -> `active`
-    res = rdma->establish(ctx);
+    Result res = rdma->establish(ctx);
     ASSERT_EQ(res, Result::success);
     ASSERT_EQ(rdma->state(), State::active);
 
@@ -225,64 +204,8 @@ TEST_F(RdmaTest, ValidateStateTransitions)
     ASSERT_EQ(rdma->state(), State::active);
 
     // Transition: `active` -> `closed`
-    rdma->shutdown_rdma(ctx);
+    rdma->on_shutdown(ctx);
     ASSERT_EQ(rdma->state(), State::closed);
-}
-
-TEST_F(RdmaTest, ValidateKindAndDirectionRX)
-{
-    mcm_conn_param request = {};
-    request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
-    request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
-    request.payload_args.rdma_args.transfer_size = 1024;
-
-    std::string dev_port = "0000:31:00.0";
-    libfabric_ctx *dev_handle = nullptr;
-
-    // Case 1: Receiver configuration
-    auto res = rdma->configure(ctx, request, dev_port, dev_handle, Kind::receiver, direction::RX);
-    ASSERT_EQ(res, Result::success);
-    ASSERT_EQ(rdma->state(), State::configured);
-    EXPECT_EQ(rdma->get_kind(), Kind::receiver);
-    EXPECT_EQ(rdma->ep_cfg.dir, direction::RX);
-}
-
-TEST_F(RdmaTest, ValidateKindAndDirectionTX)
-{
-    mcm_conn_param request = {};
-    request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
-    request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
-    request.payload_args.rdma_args.transfer_size = 1024;
-
-    std::string dev_port = "0000:31:00.0";
-    libfabric_ctx *dev_handle = nullptr;
-
-    // Case 2: Transmitter configuration
-    auto res =
-        rdma->configure(ctx, request, dev_port, dev_handle, Kind::transmitter, direction::TX);
-    ASSERT_EQ(res, Result::success);
-    ASSERT_EQ(rdma->state(), State::configured);
-    EXPECT_EQ(rdma->get_kind(), Kind::transmitter);
-    EXPECT_EQ(rdma->ep_cfg.dir, direction::TX);
-}
-
-TEST_F(RdmaTest, InvalidDirectionForKind)
-{
-    mcm_conn_param request = {};
-    request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
-    request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
-    request.payload_args.rdma_args.transfer_size = 1024;
-
-    std::string dev_port = "0000:31:00.0";
-    libfabric_ctx *dev_handle = nullptr;
-
-    // Invalid case: Receiver with Send direction
-    auto res = rdma->configure(ctx, request, dev_port, dev_handle, Kind::receiver, direction::TX);
-    EXPECT_NE(res, Result::success);
-
-    // Invalid case: Transmitter with Receive direction
-    res = rdma->configure(ctx, request, dev_port, dev_handle, Kind::transmitter, direction::RX);
-    EXPECT_NE(res, Result::success);
 }
 
 TEST_F(RdmaTest, InitQueueWithElementsSuccess) {
@@ -413,7 +336,7 @@ TEST_F(RdmaTest, ConsumeFromQueueFailureContextCancelled)
 
     void *element = nullptr;
     auto result = rdma->consume_from_queue(ctx, &element);
-    ASSERT_EQ(result, Result::error_operation_cancelled);
+    ASSERT_EQ(result, Result::error_context_cancelled);
     ASSERT_EQ(element, nullptr);
 
     // The queue should remain unchanged
@@ -477,16 +400,7 @@ TEST_F(RdmaTest, QueuePerformanceTest)
     rdma->cleanup_queue();
 }
 
-TEST_F(RdmaTest, RepeatedShutdown)
-{
-    mcm_conn_param request = {};
-    request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
-    request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
-    request.payload_args.rdma_args.transfer_size = 1024;
-
-    std::string dev_port = "0000:31:00.0";
-    libfabric_ctx *dev_handle = nullptr;
-
+TEST_F(RdmaTest, RepeatedShutdown) {
     // Mock rdma_init
     EXPECT_CALL(*mock_dev_ops, rdma_init(_)).WillOnce([](libfabric_ctx **ctx) -> int {
         *ctx = new libfabric_ctx();
@@ -503,19 +417,21 @@ TEST_F(RdmaTest, RepeatedShutdown)
     EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
 
     // Mock ep_destroy
-    EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).WillOnce([](ep_ctx_t **ep_ctx) -> int {
+    EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).Times(1).WillRepeatedly([](ep_ctx_t **ep_ctx) -> int {
         delete *ep_ctx;
         *ep_ctx = nullptr;
         return 0; // Success
     });
 
-    // Configure and establish
-    rdma->configure(ctx, request, dev_port, dev_handle, Kind::transmitter, direction::TX);
+    // Use ConfigureRdma helper to configure the RDMA instance
+    ConfigureRdma(rdma, ctx, 1024, Kind::transmitter);
+
+    // Establish connection
     rdma->establish(ctx);
 
-    for (int i = 0; i++; i < 10) {
+    for (int i = 0; i < 10; ++i) {
         // Repeated shutdown should not crash
-        rdma->shutdown_rdma(ctx);
+        rdma->on_shutdown(ctx);
         ASSERT_EQ(rdma->state(), State::closed);
     }
 }
