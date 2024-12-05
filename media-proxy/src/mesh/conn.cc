@@ -316,7 +316,6 @@ const char * result2str(Result res)
     case Result::error_initialization_failed:      return "initialization failed";
     case Result::error_memory_registration_failed: return "memory registration failed";
     case Result::error_thread_creation_failed:     return "thread creation failed";
-    case Result::error_operation_cancelled:        return "operation cancelled";
     case Result::error_no_buffer:        return "no buffer";
     case Result::error_timeout:          return "timeout";
     default:                             return str_unknown;

@@ -1,30 +1,14 @@
 #include <queue>
 #include "conn_rdma.h"
 
-namespace mesh {
-
-namespace connection {
+namespace mesh::connection {
 
 Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr)
 {
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
 }
 
-Rdma::~Rdma() { shutdown_rdma(context::Background()); }
-
-std::string Rdma::kind_to_string(Kind kind)
-{
-    switch (kind) {
-    case Kind::undefined:
-        return "undefined";
-    case Kind::transmitter:
-        return "transmitter";
-    case Kind::receiver:
-        return "receiver";
-    default:
-        return "unknown";
-    }
-}
+Rdma::~Rdma() { on_shutdown(context::Background()); }
 
 void Rdma::notify_cq_event()
 {
@@ -51,7 +35,7 @@ void Rdma::wait_buf_available()
 Result Rdma::add_to_queue(void *element)
 {
     if (!element) {
-        return Result::error_bad_argument;
+        return set_result(Result::error_bad_argument);
     }
 
     {
@@ -70,7 +54,7 @@ Result Rdma::consume_from_queue(context::Context& ctx, void **element)
 
     if (ctx.cancelled()) {
         *element = nullptr; // Ensure element remains nullptr
-        return Result::error_operation_cancelled;
+        return Result::error_context_cancelled;
     }
 
     if (buffer_queue.empty()) {
@@ -117,7 +101,7 @@ Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
     // Allocate a single contiguous memory block
     void *memory_block = std::aligned_alloc(PAGE_SIZE, total_size);
     if (!memory_block) {
-        log::error("Failed to allocate a single memory block")("total_size", total_size);
+        log::error("Rdma failed to allocate a single memory block")("total_size", total_size);
         return Result::error_out_of_memory;
     }
 
@@ -167,22 +151,17 @@ void Rdma::cleanup_queue()
  * @return Result::success on successful configuration, or an error result if arguments are invalid.
  */
 Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
-                       const std::string& dev_port, libfabric_ctx *& dev_handle, Kind kind,
-                       direction dir)
+                       const std::string& dev_port, libfabric_ctx *& dev_handle)
 {
 
-    if ((kind == Kind::receiver && dir != direction::RX) ||
-        (kind == Kind::transmitter && dir != direction::TX)) {
-        return Result::error_bad_argument;
-    }
-
     trx_sz = request.payload_args.rdma_args.transfer_size;
-    _kind = kind;
+    _kind = kind();
 
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
     std::memcpy(&ep_cfg.remote_addr, &request.remote_addr, sizeof(request.remote_addr));
     std::memcpy(&ep_cfg.local_addr, &request.local_addr, sizeof(request.local_addr));
-    ep_cfg.dir = dir;
+    
+    ep_cfg.dir = _kind == Kind::receiver ? direction::RX : direction::TX;
 
     mDevHandle = dev_handle;
 
@@ -210,6 +189,8 @@ Result Rdma::on_establish(context::Context& ctx)
         set_state(ctx, State::active);
         return Result::error_already_initialized;
     }
+
+    init_buf_available();
 
     int ret;
     Result res;
@@ -260,10 +241,43 @@ Result Rdma::on_establish(context::Context& ctx)
     return Result::success;
 }
 
+/**
+ * @brief Cleans up RDMA resources and resets the state.
+ *
+ * This function destroys the RDMA endpoint context if it exists, cleans up the buffer queue,
+ * and marks the RDMA as uninitialized. It ensures that all allocated resources are properly
+ * released and the state is reset to allow for reinitialization if needed.
+ *
+ * @param ctx The context used for the cleanup operation.
+ * @return Result indicating the success or failure of the cleanup operation.
+ */
 Result Rdma::on_shutdown(context::Context& ctx)
 {
     // Note: this is a blocking call
-    shutdown_rdma(ctx);
+    
+    // Cancel `rdma_cq_thread` context
+    rdma_cq_thread_ctx.cancel();
+    // Cancel `process_buffers_thread` context
+    process_buffers_thread_ctx.cancel();
+    // Ensure buffer-related threads are unblocked
+    notify_buf_available();
+
+    // Check if `rdma_cq_thread` has stopped
+    if (handle_rdma_cq_thread.joinable()) {
+        handle_rdma_cq_thread.join();
+    }
+
+    // Check if `process_buffers_thread` has stopped
+    if (handle_process_buffers_thread.joinable()) {
+        handle_process_buffers_thread.join();
+    }
+
+    // Clean up RDMA resources if initialized
+    if (init) {
+        cleanup_resources(ctx);
+    }
+
+    set_state(ctx, State::closed);
 
     return Result::success;
 }
@@ -318,22 +332,14 @@ Result Rdma::configure_endpoint(context::Context& ctx)
     return Result::success;
 }
 
-/**
- * @brief Cleans up RDMA resources and resets the state.
- *
- * This function destroys the RDMA endpoint context if it exists, cleans up the buffer queue,
- * and marks the RDMA as uninitialized. It ensures that all allocated resources are properly
- * released and the state is reset to allow for reinitialization if needed.
- *
- * @param ctx The context used for the cleanup operation.
- * @return Result indicating the success or failure of the cleanup operation.
- */
+
 Result Rdma::cleanup_resources(context::Context& ctx)
 {
     if (ep_ctx) {
         int err = libfabric_ep_ops.ep_destroy(&ep_ctx);
         if (err) {
             log::error("Failed to destroy RDMA endpoint")("error", fi_strerror(-err));
+            return Result::error_general_failure;
         }
     }
 
@@ -346,43 +352,4 @@ Result Rdma::cleanup_resources(context::Context& ctx)
     return Result::success;
 }
 
-/**
- * @brief Shuts down the RDMA connection and cleans up resources.
- *
- * This function cancels the RDMA completion queue thread and the buffer processing thread,
- * ensuring that they are properly joined. It also notifies buffer availability to unblock
- * any waiting operations. If the RDMA connection was initialized, it cleans up the RDMA
- * resources and sets the state to closed.
- *
- * @param ctx The context used for the shutdown operation.
- */
-void Rdma::shutdown_rdma(context::Context& ctx)
-{
-    // Cancel `rdma_cq_thread` context
-    rdma_cq_thread_ctx.cancel();
-    // Cancel `process_buffers_thread` context
-    process_buffers_thread_ctx.cancel();
-    // Ensure buffer-related threads are unblocked
-    notify_buf_available();
-
-    // Check if `rdma_cq_thread` has stopped
-    if (handle_rdma_cq_thread.joinable()) {
-        handle_rdma_cq_thread.join();
-    }
-
-    // Check if `process_buffers_thread` has stopped
-    if (handle_process_buffers_thread.joinable()) {
-        handle_process_buffers_thread.join();
-    }
-
-    // Clean up RDMA resources if initialized
-    if (init) {
-        cleanup_resources(ctx);
-    }
-
-    set_state(ctx, State::closed);
-}
-
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection

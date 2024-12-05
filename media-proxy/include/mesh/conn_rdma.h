@@ -28,9 +28,7 @@
 #define PAGE_SIZE 4096
 #endif
 
-namespace mesh {
-
-namespace connection {
+namespace mesh::connection {
 
 /**
  * Rdma
@@ -48,7 +46,6 @@ class Rdma : public Connection {
   #ifdef UNIT_TESTS_ENABLED
       size_t get_buffer_queue_size() const { return buffer_queue.size(); }
       bool is_buffer_queue_empty() const { return buffer_queue.empty(); }
-      Kind get_kind() const { return _kind; }
       void* get_buffer_block() const { return buffer_block; }
   #endif
 
@@ -60,8 +57,7 @@ class Rdma : public Connection {
   protected:
     // Configure the RDMA session
     virtual Result configure(context::Context& ctx, const mcm_conn_param& request,
-                             const std::string& dev_port, libfabric_ctx *& dev_handle, Kind kind,
-                             direction dir);
+                             const std::string& dev_port, libfabric_ctx *& dev_handle);
 
     // Overrides from Connection
     virtual Result on_establish(context::Context& ctx) override;
@@ -87,6 +83,7 @@ class Rdma : public Connection {
     bool init;                 // Indicates if RDMA is initialized
     void* buffer_block;        // Pointer to the allocated buffer block
     int queue_size;            // Number of buffers in the queue
+    direction dir;             // Data transfer direction
 
     // Queue for managing buffers
     std::queue<void*> buffer_queue; // Queue holding available buffers
@@ -94,9 +91,7 @@ class Rdma : public Connection {
     std::condition_variable_any queue_cv; // Condition variable for buffer availability
 
     // // RDMA thread logic
-    // virtual void process_buffers_thread(context::Context& ctx) = 0;
-    // virtual void rdma_cq_thread(context::Context& ctx) = 0;
-    virtual Result start_threads(context::Context& ctx) { return Result::success; }
+    virtual Result start_threads(context::Context& ctx) = 0;
 
     Result init_queue_with_elements(size_t capacity, size_t trx_sz);
     Result add_to_queue(void *element);
@@ -113,16 +108,10 @@ class Rdma : public Connection {
     bool event_ready = false;         // Indicates if an event is ready in the CQ
 
     void notify_cq_event();
-    void shutdown_rdma(context::Context& ctx);
-
-    //Helper functions
-    std::string kind_to_string(Kind kind);
-
+  
     std::atomic<bool> buf_available; // Indicates buffer availability in the queue
 };
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection
 
 #endif // CONN_RDMA_H

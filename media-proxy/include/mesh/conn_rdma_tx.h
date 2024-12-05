@@ -6,9 +6,7 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace mesh {
-
-namespace connection {
+namespace mesh::connection {
 
 /**
  * RdmaTx
@@ -30,12 +28,8 @@ class RdmaTx : public Rdma {
   protected:
     virtual Result start_threads(context::Context& ctx);
     void rdma_cq_thread(context::Context& ctx);
-
-    size_t total_sent = 0;
 };
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection
 
 #endif // RDMA_TX_H

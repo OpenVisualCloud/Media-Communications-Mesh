@@ -2,11 +2,12 @@
 #include <stdexcept>
 #include <queue>
 
-namespace mesh {
+namespace mesh::connection {
 
-namespace connection {
-
-RdmaRx::RdmaRx() : Rdma() { init_buf_available(); }
+RdmaRx::RdmaRx() : Rdma() {
+    _kind = Kind::receiver; // Set the Kind in the constructor
+    dir = direction::RX;    // Set the direction in the constructor
+}
 
 RdmaRx::~RdmaRx()
 {
@@ -16,7 +17,7 @@ RdmaRx::~RdmaRx()
 Result RdmaRx::configure(context::Context& ctx, const mcm_conn_param& request,
                          const std::string& dev_port, libfabric_ctx *& dev_handle)
 {
-    return Rdma::configure(ctx, request, dev_port, dev_handle, Kind::receiver, direction::RX);
+    return Rdma::configure(ctx, request, dev_port, dev_handle);
 }
 
 Result RdmaRx::start_threads(context::Context& ctx)
@@ -67,7 +68,7 @@ void RdmaRx::process_buffers_thread(context::Context& ctx)
                 if (err) {
                     log::error("Failed to pass empty buffer to RDMA to receive into")
                               ("buffer_address", buf)("error", fi_strerror(-err))
-                              (" ",kind_to_string(_kind));
+                              (" ",kind2str(_kind));
                     add_to_queue(buf);
                 }
             } else {
@@ -111,7 +112,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
                 void *buf = cq_entries[i].op_context;
                 if (buf == nullptr) {
                     log::error("Null buffer context, skipping...")
-                              ("batch_index",i)(" ", kind_to_string(_kind));
+                              ("batch_index",i)(" ", kind2str(_kind));
                     continue;
                 }
 
@@ -119,7 +120,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
                 Result res = transmit(ctx, buf, trx_sz);
                 if (res != Result::success) {
                     log::error("Failed to transmit buffer")("buffer_address", buf)("size", trx_sz)
-                              (" ", kind_to_string(_kind));
+                              (" ", kind2str(_kind));
                     continue;
                 }
 
@@ -130,7 +131,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
                     notify_buf_available();
                 } else {
                     log::error("Failed to add buffer back to the queue")("buffer_address", buf)
-                              (" ", kind_to_string(_kind));
+                              (" ", kind2str(_kind));
                 }
             }
         } else if (ret == -EAGAIN) {
@@ -144,6 +145,4 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
     }
 }
 
-} // namespace connection
-
-} // namespace mesh
+} // namespace mesh::connection
