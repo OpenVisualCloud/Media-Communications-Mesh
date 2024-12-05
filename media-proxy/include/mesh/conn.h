@@ -72,8 +72,6 @@ enum class Result {
     error_memory_registration_failed,
     error_thread_creation_failed,
     error_operation_cancelled,
-    error_buffer_overflow,
-    error_buffer_underflow,
     error_no_buffer,
     error_timeout,
     error_context_cancelled,

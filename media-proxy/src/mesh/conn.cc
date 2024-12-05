@@ -311,6 +311,14 @@ const char * result2str(Result res)
     case Result::error_bad_argument:     return "bad argument";
     case Result::error_out_of_memory:    return "out of memory";
     case Result::error_general_failure:  return "general failure";
+    case Result::error_context_cancelled:          return "context cancelled";
+    case Result::error_already_initialized:        return "already initialized";
+    case Result::error_initialization_failed:      return "initialization failed";
+    case Result::error_memory_registration_failed: return "memory registration failed";
+    case Result::error_thread_creation_failed:     return "thread creation failed";
+    case Result::error_operation_cancelled:        return "operation cancelled";
+    case Result::error_no_buffer:        return "no buffer";
+    case Result::error_timeout:          return "timeout";
     default:                             return str_unknown;
     }
 }

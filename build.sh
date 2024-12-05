@@ -35,7 +35,7 @@ as_root ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.so.1 2>/de
 as_root ldconfig
 
 # Run unit tests
-export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib"
+export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
 ctest --output-on-failure --test-dir "${MCM_BUILD_DIR}" -V
 
 ln -sf "${MCM_BUILD_DIR}" "${SCRIPT_DIR}/build"
