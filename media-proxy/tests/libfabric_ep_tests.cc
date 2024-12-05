@@ -149,8 +149,10 @@ struct fi_ops_cq LibfabricEpTest::ops_cq;
 TEST_F(LibfabricEpTest, TestEpSendBufSuccess)
 {
     send_fake.return_val = 0;
+    size_t valid_buf_size = 1024;
+    void *valid_buf = std::malloc(valid_buf_size);
 
-    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, nullptr, 0);
+    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, valid_buf, valid_buf_size);
 
     ASSERT_EQ(ret, 0);
     ASSERT_EQ(send_fake.call_count, 1);
@@ -161,12 +163,16 @@ TEST_F(LibfabricEpTest, TestEpSendBufFail)
 {
     send_fake.return_val = -1;
 
-    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, nullptr, 0);
+    char dummy_buf[10] = {0};
+    size_t buf_size = sizeof(dummy_buf);
+
+    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, dummy_buf, buf_size);
 
     ASSERT_EQ(ret, -1);
     ASSERT_EQ(send_fake.call_count, 1);
     ASSERT_EQ(cq_read_fake.call_count, 0);
 }
+
 
 TEST_F(LibfabricEpTest, TestEpSendBufRetrySuccess)
 {
@@ -174,12 +180,16 @@ TEST_F(LibfabricEpTest, TestEpSendBufRetrySuccess)
     SET_RETURN_SEQ(send, send_fake_return_vals,
                    sizeof(send_fake_return_vals) / sizeof(send_fake_return_vals[0]));
 
-    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, nullptr, 0);
+    char dummy_buf[10] = {0};
+    size_t buf_size = sizeof(dummy_buf);
+
+    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, dummy_buf, buf_size);
 
     ASSERT_EQ(ret, 0);
     ASSERT_EQ(send_fake.call_count, 3);
     ASSERT_EQ(cq_read_fake.call_count, 2);
 }
+
 
 TEST_F(LibfabricEpTest, TestEpSendBufRetryFail)
 {
@@ -187,12 +197,16 @@ TEST_F(LibfabricEpTest, TestEpSendBufRetryFail)
     SET_RETURN_SEQ(send, send_fake_return_vals,
                    sizeof(send_fake_return_vals) / sizeof(send_fake_return_vals[0]));
 
-    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, nullptr, 0);
+    char dummy_buf[10] = {0};
+    size_t buf_size = sizeof(dummy_buf);
+
+    int ret = libfabric_ep_ops.ep_send_buf(&ep_ctx, dummy_buf, buf_size);
 
     ASSERT_EQ(ret, -1);
     ASSERT_EQ(send_fake.call_count, 3);
     ASSERT_EQ(cq_read_fake.call_count, 2);
 }
+
 
 TEST_F(LibfabricEpTest, TestEpRecvBufFail)
 {

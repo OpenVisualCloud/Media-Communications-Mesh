@@ -67,8 +67,17 @@ enum class Result {
     error_bad_argument,
     error_out_of_memory,
     error_general_failure,
+    error_already_initialized,
+    error_initialization_failed,
+    error_memory_registration_failed,
+    error_thread_creation_failed,
+    error_operation_cancelled,
+    error_buffer_overflow,
+    error_buffer_underflow,
+    error_no_buffer,
+    error_timeout,
     error_context_cancelled,
-   
+    
     // TODO: more error codes to be added...
 };
 
