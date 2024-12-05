@@ -8,4 +8,5 @@ include_directories(Inc
                     ../../sdk/3rdparty/libmemif/src)
 
 # Add the executable
-add_executable(TestApp app.c src/app_config.c)
+add_executable(TxApp tx_app.c src/input.c)
+add_executable(RxApp rx_app.c src/input.c)
