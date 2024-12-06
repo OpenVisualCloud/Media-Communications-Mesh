@@ -3,9 +3,7 @@ cmake_minimum_required(VERSION 3.10)
 # Set the project name and version
 project(TestApps VERSION 1.0)
 # Include directories
-include_directories(Inc
-                    ../../../sdk/include
-                    ../../../sdk/3rdparty/libmemif/src)
+include_directories(Inc)
 
 set(SRC src/input.c src/mcm.c src/mcm_mock.c)
 

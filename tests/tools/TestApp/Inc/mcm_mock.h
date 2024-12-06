@@ -4,12 +4,12 @@
 #include <stdio.h>
 
 
-#define MESH_ERR_CONNECTION_CLOSED 0
+#define MESH_ERR_CONNECTION_CLOSED 100
 
 typedef int MeshClient;
 typedef int MeshConnection; 
 typedef struct MeshBuffer{
-    void * const payload_ptr;
+    void *  payload_ptr;
     const size_t payload_len;
 }MeshBuffer;
 
@@ -24,8 +24,8 @@ int mesh_create_rx_connection(MeshClient *client, MeshConnection **conn, const c
 int mesh_get_buffer(MeshConnection *conn, MeshBuffer **buf);
 int mesh_put_buffer(MeshBuffer **buf);
 
-void put_user_video_frames(void * const ptr, const size_t len);
-int get_user_video_frames(void * const ptr, const size_t len);
+void put_user_video_frames(void* ptr, const size_t len);
+int get_user_video_frames(void* ptr, const size_t len);
 
 
 
