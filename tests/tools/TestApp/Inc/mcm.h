@@ -2,6 +2,7 @@
 #define _MCM_H_
 #include "mcm_mock.h"
 
+#define DUMMY_LEN 1
 typedef struct mcm_ts{
     MeshConnection *connection;
     MeshClient *client;
