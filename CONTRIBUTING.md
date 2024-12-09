@@ -1,4 +1,4 @@
-# How to contribute to MCM project
+# How to contribute to Media Communications Mesh project
 
 You're welcome to contribute source code, document or idea to this project.
 
