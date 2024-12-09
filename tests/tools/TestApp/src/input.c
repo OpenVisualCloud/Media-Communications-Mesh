@@ -9,8 +9,8 @@
 const char* parse_json_to_string(const char* file_name) {
     FILE *input_fp = fopen(file_name, "rb");
     if (input_fp == NULL) {
-        perror("Failed to open file, exiting");
-        return NULL;
+        perror("Failed to open a file");
+        exit(EXIT_FAILURE);
     }
 
     // Seek to the end of the file to determine its size
