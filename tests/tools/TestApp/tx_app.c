@@ -13,12 +13,13 @@ const char* client_cfg;
 const char* conn_cfg;
 
 int main(int argc, char** argv){
-  if (argc != 2) {
-      fprintf(stderr, "Usage: %s <abs path>/file>\n", argv[0]);
+  if (argc != 3) {
+      fprintf(stderr, "Usage: %s <abs path>/file> <receiver app PID>\n", argv[0]);
       exit(EXIT_FAILURE);
   }
 
   char* file_name = argv[1];
+  receiver_pid = atoi(argv[2]);
   printf("launching TX app \n");
   printf("reading client configuration... \n");  
   client_cfg = parse_json_to_string("client.json");

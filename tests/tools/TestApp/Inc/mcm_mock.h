@@ -2,9 +2,10 @@
 #define _MCM_MOCK_H_
 
 #include <stdio.h>
-
+#include <signal.h>
 
 #define MESH_ERR_CONNECTION_CLOSED 100
+#define DUMMY_LEN 1
 
 typedef int MeshClient;
 typedef int MeshConnection; 
@@ -12,6 +13,8 @@ typedef struct MeshBuffer{
     void *  payload_ptr;
     const size_t payload_len;
 }MeshBuffer;
+
+extern pid_t receiver_pid;
 
 const char* mesh_err2str(int err);
 int mesh_create_client(MeshClient **client,const char *config_json);
