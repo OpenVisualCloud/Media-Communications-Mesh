@@ -118,6 +118,7 @@ int rdma_init(libfabric_ctx **ctx)
     rdma_freehints(hints);
     if (ret) {
         libfabric_dev_ops.rdma_deinit(ctx);
+        ERROR("Failed to initialize RDMA device");
         return ret;
     }
 
