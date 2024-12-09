@@ -10,6 +10,7 @@
 #include <atomic>
 #include <cstddef>
 #include "concurrency.h"
+#include "metrics.h"
 
 namespace mesh::connection {
 
@@ -67,6 +68,7 @@ enum class Result {
     error_out_of_memory,
     error_general_failure,
     error_context_cancelled,
+   
     // TODO: more error codes to be added...
 };
 
@@ -76,7 +78,7 @@ enum class Result {
  * Base abstract class of connection. All connection implementations must
  * inherit this class.
  */
-class Connection {
+class Connection : public telemetry::MetricsProvider {
 
 public:
     Connection();
@@ -86,7 +88,8 @@ public:
     State state();
     Status status();
 
-    Result set_link(context::Context& ctx, Connection *new_link);
+    virtual Result set_link(context::Context& ctx, Connection *new_link,
+                            Connection *requester = nullptr);
     Connection * link();
 
     Result establish(context::Context& ctx);
@@ -117,22 +120,30 @@ protected:
                               uint32_t& sent);
     virtual void on_delete(context::Context& ctx) {}
 
-    Kind _kind; // must be properly set in the derived classes ctor
-    Connection *_link;
+    Kind _kind = Kind::undefined; // must be properly set in the derived class ctor
+    Connection *_link = nullptr;
+    std::atomic<bool> setting_link = false; // held in set_link()
+    std::atomic<bool> transmitting = false; // held in on_receive()
 
     struct {
         std::atomic<uint64_t> inbound_bytes;
         std::atomic<uint64_t> outbound_bytes;
-        std::atomic<uint32_t> transactions_successful;
+        std::atomic<uint32_t> transactions_succeeded;
         std::atomic<uint32_t> transactions_failed;
         std::atomic<uint32_t> errors;
+
+        int64_t  prev_timestamp_ms;
+        uint64_t prev_inbound_bytes;
+        uint64_t prev_outbound_bytes;
+        uint32_t prev_errors;
+        uint32_t prev_transactions_succeeded;
     } metrics;
 
 private:
-    std::atomic<State> _state;
-    std::atomic<Status> _status;
-    std::atomic<bool> setting_link; // held in set_link()
-    std::atomic<bool> transmitting; // held in on_receive()
+    virtual void collect(telemetry::Metric& metric, const int64_t& timestamp_ms);
+
+    std::atomic<State> _state = State::not_configured;
+    std::atomic<Status> _status = Status::initial;
 };
 
 const char * kind2str(Kind kind, bool brief = false);

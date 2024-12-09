@@ -21,7 +21,7 @@ namespace mesh::connection {
  */
 class Registry {
 public:
-    int add(std::string& id, Connection *conn) {
+    int add(const std::string& id, Connection *conn) {
         std::unique_lock lk(mx);
         if (conns.contains(id))
             return -1;
@@ -62,6 +62,9 @@ private:
 
     // TODO: Check if the mutex is still needed. The local connection manager
     // has it own mutex, which makes this one redundant.
+    // UPD: The bridges manager is in a single thread flow of gRPC stream
+    // handler of StartCommandQueueRequest, so the mutex here is redundant.
+    // Consider removing this mutex.
     std::shared_mutex mx;
 };
 

@@ -7,7 +7,6 @@
 #include <getopt.h>
 #include <thread>
 
-#include "api_server_grpc.h"
 #include "api_server_tcp.h"
 
 #include <csignal>
@@ -15,6 +14,11 @@
 #include "client_api.h"
 #include "logger.h"
 #include "manager_local.h"
+#include "proxy_api.h"
+#include "metrics_collector.h"
+
+#include <execinfo.h>
+#include <dlfcn.h>
 
 #ifndef IMTL_CONFIG_PATH
 #define IMTL_CONFIG_PATH "./imtl.json"
@@ -49,6 +53,39 @@ void usage(FILE* fp, const char* path)
         DEFAULT_TCP_PORT);
 }
 
+void PrintStackTrace() {
+    const int max_frames = 128;
+    void* buffer[max_frames];
+    int num_frames = backtrace(buffer, max_frames);
+    char** symbols = backtrace_symbols(buffer, num_frames);
+
+    std::cerr << "Stack trace:" << std::endl;
+    for (int i = 0; i < num_frames; ++i) {
+        Dl_info info;
+        if (dladdr(buffer[i], &info) && info.dli_sname) {
+            char* demangled = nullptr;
+            int status = -1;
+            if (info.dli_sname[0] == '_') {
+                demangled = abi::__cxa_demangle(info.dli_sname, nullptr, 0, &status);
+            }
+            std::cerr << "  " << (status == 0 ? demangled : info.dli_sname) << " + " 
+                      << ((char*)buffer[i] - (char*)info.dli_saddr) << " at " 
+                      << info.dli_fname << std::endl;
+            free(demangled);
+        } else {
+            std::cerr << symbols[i] << std::endl;
+        }
+    }
+
+    free(symbols);
+}
+
+void SignalHandler(int signal) {
+    std::cerr << "Error: signal " << signal << std::endl;
+    PrintStackTrace();
+    exit(1);
+}
+
 using namespace mesh;
 
 // Main context with cancellation
@@ -56,6 +93,8 @@ auto ctx = context::WithCancel(context::Background());
 
 int main(int argc, char* argv[])
 {
+    signal(SIGSEGV, SignalHandler);
+
     std::string grpc_port = DEFAULT_GRPC_PORT;
     std::string tcp_port = DEFAULT_TCP_PORT;
     std::string dev_port = DEFAULT_DEV_PORT;
@@ -119,8 +158,6 @@ int main(int argc, char* argv[])
     proxy_ctx->setDevicePort(dev_port);
     proxy_ctx->setDataPlaneAddress(dp_ip);
 
-    // mesh::Experiment1();
-
     // Intercept shutdown signals to cancel the main context
     auto signal_handler = [](int sig) {
         if (sig == SIGINT || sig == SIGTERM) {
@@ -131,30 +168,45 @@ int main(int argc, char* argv[])
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
 
-    /* start gRPC server */
-    std::jthread rpcThread(RunRPCServer, proxy_ctx);
+    // mesh::Experiment3(ctx);
+
+    // Start ProxyAPI client
+    RunProxyAPIClient(ctx);
+
+    // Start metrics collector
+    std::thread metricsCollectorThread([&]() {
+        telemetry::MetricsCollector collector;
+        collector.run(ctx);
+    });
 
     /* start TCP server */
     std::thread tcpThread(RunTCPServer, proxy_ctx);
 
-    // Start ClientAPI server
-    std::thread clientApiThread([]() { RunClientAPIServer(ctx); });
+    // Start SDK API server
+    auto sdk_ctx = context::WithCancel(context::Background());
+    std::thread sdkApiThread([&]() { RunSDKAPIServer(sdk_ctx); });
 
     // Wait until the main context is cancelled
     ctx.done();
 
-    clientApiThread.join();
-
     // Stop Local connection manager
     log::info("Shutting down Local conn manager");
     auto tctx = context::WithTimeout(context::Background(),
-                                     std::chrono::milliseconds(5000));
+                                      std::chrono::milliseconds(3000));
     connection::local_manager.shutdown(ctx);
+
+    metricsCollectorThread.join();
+
+    // Shutdown ProxyAPI client
+    proxyApiClient->Shutdown();
+
+    // Shutdown SDK API server
+    sdk_ctx.cancel();
+    sdkApiThread.join();
 
     log::info("Media Proxy exited");
     exit(0);
 
-    rpcThread.join();
     tcpThread.join();
 
     delete (proxy_ctx);
