@@ -10,6 +10,18 @@ project(MediaProxy VERSION 0.0.1 LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
 
+# Set the build type to Debug by default
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE Debug CACHE STRING "Choose the type of build." FORCE)
+endif()
+
+# Enable debug symbols
+set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG} -g")
+set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g")
+
+# Ensure that the binary is not stripped
+set(CMAKE_EXE_LINKER_FLAGS_DEBUG "${CMAKE_EXE_LINKER_FLAGS_DEBUG} -Wl,--no-strip")
+
 # Enabled by default
 option(ENABLE_ZERO_COPY "Enable zero-copy mode to avoid memory copying between Media Proxy and MTL" ON)
 IF(ENABLE_ZERO_COPY)
@@ -36,7 +48,6 @@ endif()
 # Define the .proto files
 set(PROTO_FILES
     ${PROTO_DIR}/mediaproxy.proto
-    ${PROTO_DIR}/controller.proto
     ${PROTO_DIR}/sdk.proto
 )
 
@@ -111,6 +122,7 @@ target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${MEMIF_LIB} ${LIBFABR
 
 add_executable(media_proxy ${proxy_srcs} src/media_proxy.cc)
 target_link_libraries(media_proxy PRIVATE media_proxy_lib)
+target_link_libraries(media_proxy PRIVATE dl)
 
 install(TARGETS media_proxy DESTINATION ${CMAKE_INSTALL_PATH} COMPONENT media_proxy)
 install(FILES imtl.json DESTINATION ${CMAKE_CONFIG_PATH} COMPONENT config)

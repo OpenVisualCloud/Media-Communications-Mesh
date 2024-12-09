@@ -6,7 +6,7 @@ syntax = "proto3";
 
 package sdk;
 
-service ClientAPI {
+service SDKAPI {
   rpc CreateConnection (CreateConnectionRequest) returns (CreateConnectionResponse);
   rpc DeleteConnection (DeleteConnectionRequest) returns (DeleteConnectionResponse);
 }
