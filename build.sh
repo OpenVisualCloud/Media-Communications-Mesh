@@ -38,6 +38,6 @@ as_root ldconfig
 export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
 "${MCM_BUILD_DIR}/bin/sdk_unit_tests"
 "${MCM_BUILD_DIR}/bin/media_proxy_unit_tests"
-ln -s "${MCM_BUILD_DIR}" "${SCRIPT_DIR}/build"
+ln -sf "${MCM_BUILD_DIR}" "${SCRIPT_DIR}/build"
 
 log_info "Build Succeeded"

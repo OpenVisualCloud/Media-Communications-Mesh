@@ -68,23 +68,22 @@ Result Local::on_establish(context::Context& ctx)
     auto ret = memif_create_socket(&memif_socket, &memif_socket_args, NULL);
     if (ret != MEMIF_ERR_SUCCESS) {
         log::error("memif_create_socket: %s", memif_strerror(ret));
-        return Result::error_general_failure;
+        return set_result(Result::error_general_failure);
     }
 
     memif_conn_args.socket = memif_socket;
 
-    log::debug("Create memif interface.");
+    // log::debug("Create memif interface.");
     ret = memif_create(&memif_conn, &memif_conn_args,
                        Local::callback_on_connect,
                        Local::callback_on_disconnect,
                        Local::callback_on_interrupt, this);
     if (ret != MEMIF_ERR_SUCCESS) {
         log::error("memif_create: %s", memif_strerror(ret));
-        return Result::error_general_failure;
+        return set_result(Result::error_general_failure);
     }
 
     // Start the memif event loop.
-    // TODO: Replace ctx with a context passed at creation.
     try {
         th = std::jthread([this]() {
             for (;;) {
@@ -96,11 +95,11 @@ Result Local::on_establish(context::Context& ctx)
     }
     catch (const std::system_error& e) {
         log::error("thread create failed (%d)", ret);
-        return Result::error_out_of_memory;
+        return set_result(Result::error_out_of_memory);
     }
 
     set_state(ctx, State::active);
-    return Result::success;
+    return set_result(Result::success);
 }
 
 int Local::callback_on_connect(memif_conn_handle_t conn, void *private_ctx)
@@ -112,6 +111,7 @@ int Local::callback_on_connect(memif_conn_handle_t conn, void *private_ctx)
     int err = memif_refill_queue(_this->memif_conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
         log::error("memif_refill_queue: %s", memif_strerror(err));
+        _this->metrics.errors++;
         return err;
     }
 
@@ -119,7 +119,7 @@ int Local::callback_on_connect(memif_conn_handle_t conn, void *private_ctx)
 
     print_memif_details(_this->memif_conn);
 
-    log::debug("Memif ready");
+    // log::debug("Memif ready");
 
     return MEMIF_ERR_SUCCESS;
 }
@@ -136,9 +136,11 @@ int Local::callback_on_disconnect(memif_conn_handle_t conn, void *private_ctx)
     _this->ready = false;
 
     auto err = memif_cancel_poll_event(_this->memif_socket);
-    if (err != MEMIF_ERR_SUCCESS)
+    if (err != MEMIF_ERR_SUCCESS) {
         log::error("on_disconnect memif_cancel_poll_event: %s",
                    memif_strerror(err));
+        _this->metrics.errors++;
+    }
 
     return MEMIF_ERR_SUCCESS;
 }
@@ -163,26 +165,30 @@ int Local::callback_on_interrupt(memif_conn_handle_t conn, void *private_ctx,
     err = memif_rx_burst(_this->memif_conn, qid, &shm_bufs, 1, &buf_num);
     if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF) {
         log::error("memif_rx_burst: %s", memif_strerror(err));
+        _this->metrics.errors++;
         return err;
     }
 
     _this->on_memif_receive(shm_bufs.data, shm_bufs.len);
 
     err = memif_refill_queue(_this->memif_conn, qid, buf_num, 0);
-    if (err != MEMIF_ERR_SUCCESS)
+    if (err != MEMIF_ERR_SUCCESS) {
         log::error("memif_refill_queue: %s", memif_strerror(err));
+        _this->metrics.errors++;
+    }
 
     return 0;
 }
 
 Result Local::on_shutdown(context::Context& ctx)
 {
-    log::debug("Memif shutdown");
+    // log::debug("Memif shutdown");
 
     auto err = memif_cancel_poll_event(memif_socket);
     if (err != MEMIF_ERR_SUCCESS) {
         log::error("on_shutdown memif_cancel_poll_event: %s",
                    memif_strerror(err));
+        metrics.errors++;
     }
 
     th.join();
@@ -199,19 +205,19 @@ Result Local::on_shutdown(context::Context& ctx)
     uint64_t out = metrics.outbound_bytes;
 
     log::info("Local %s conn shutdown", kind2str(_kind, true))
-             ("frames", metrics.transactions_successful)
+             ("frames", metrics.transactions_succeeded)
              ("in", in)("out", out)("equal", in == out);
 
     uint64_t errors = metrics.errors;
     uint64_t failures = metrics.transactions_failed;
 
     if (errors || failures)
-        log::error("Local %s conn shutdown", kind2str(_kind, true))
-                  ("frames_failed", failures)
-                  ("errors", errors);
+        log::warn("Local %s conn shutdown", kind2str(_kind, true))
+                 ("frames_failed", failures)
+                 ("errors", errors);
 
     set_state(ctx, State::closed);
-    return Result::success;
+    return set_result(Result::success);
 }
 
 } // namespace mesh::connection
