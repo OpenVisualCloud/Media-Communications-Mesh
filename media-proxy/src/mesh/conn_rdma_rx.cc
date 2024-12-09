@@ -143,6 +143,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
             break;
         }
     }
+    ep_ctx->stop_flag = true; // Set the stop flag
 }
 
 } // namespace mesh::connection

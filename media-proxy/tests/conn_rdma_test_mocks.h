@@ -5,7 +5,8 @@
 #include <iomanip>
 #include "libfabric_ep.h"
 #include "libfabric_dev.h"
-
+#include "mesh/conn_rdma_rx.h"
+#include "mesh/conn_rdma_tx.h"
 
 // Define the mock classes
 class MockLibfabricEpOps {
@@ -21,6 +22,16 @@ class MockLibfabricEpOps {
 class MockLibfabricDevOps {
   public:
     MOCK_METHOD(int, rdma_init, (libfabric_ctx **));
+};
+
+class MockRdmaRx : public mesh::connection::RdmaRx {
+  public:
+    MOCK_METHOD(mesh::connection::Result, start_threads, (mesh::context::Context& ctx), (override));
+};
+
+class MockRdmaTx : public mesh::connection::RdmaTx {
+  public:
+    MOCK_METHOD(mesh::connection::Result, start_threads, (mesh::context::Context& ctx), (override));
 };
 
 //Helper functions
