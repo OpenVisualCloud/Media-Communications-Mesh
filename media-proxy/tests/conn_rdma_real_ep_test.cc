@@ -139,8 +139,8 @@ class RdmaRealEndpointsTest : public ::testing::Test {
     // Set up RDMA Rx
     mcm_conn_param rx_request = {};
     rx_request.type = is_rx;
-    rx_request.local_addr = {.ip = "192.168.1.20", .port = "8002"};
-    rx_request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
+    rx_request.local_addr = {.ip = "192.168.10.21", .port = "8002"};
+    rx_request.remote_addr = {.ip = "192.168.10.20", .port = "8003"};
     rx_request.payload_args.rdma_args.transfer_size = payload_size;
     rx_request.payload_args.rdma_args.queue_size = queue_size;
 
@@ -151,8 +151,8 @@ class RdmaRealEndpointsTest : public ::testing::Test {
     // Set up RDMA Tx
     mcm_conn_param tx_request = {};
     tx_request.type = is_tx;
-    tx_request.local_addr = {.ip = "192.168.1.20", .port = "8002"};
-    tx_request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
+    tx_request.local_addr = {.ip = "192.168.10.20", .port = "8003"};
+    tx_request.remote_addr = {.ip = "192.168.10.21", .port = "8002"};
     tx_request.payload_args.rdma_args.transfer_size = payload_size;
     tx_request.payload_args.rdma_args.queue_size = queue_size;
 

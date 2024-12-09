@@ -28,7 +28,7 @@ class TestRdma : public Rdma {
     using Rdma::on_shutdown;
     using Rdma::trx_sz;
     void set_kind(Kind kind) { _kind = kind; }
-    Result start_threads(context::Context& ctx) { return Result::success; }
+    Result start_threads(mesh::context::Context& ctx) {return Result::success;}
 };
 
 // Test fixture
@@ -61,6 +61,7 @@ class RdmaTest : public ::testing::Test {
         request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
         request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
         request.payload_args.rdma_args.transfer_size = transfer_size;
+        request.payload_args.rdma_args.queue_size = 32;
 
         std::string dev_port = "0000:31:00.0";
         libfabric_ctx *dev_handle = nullptr;
@@ -90,13 +91,15 @@ TEST_F(RdmaTest, EstablishSuccess) {
     libfabric_ctx *dev_handle = nullptr;
 
     EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
-        .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle),
-                                   ::testing::Return(0)));
+        .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle), ::testing::Return(0)));
 
-    EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
-        *ep_ctx = new ep_ctx_t();
-        return 0;
-    });
+    EXPECT_CALL(*mock_ep_ops, ep_init(::testing::_, ::testing::_))
+        .WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
+            *ep_ctx = new ep_ctx_t();
+            (*ep_ctx)->stop_flag = false;
+            (*ep_ctx)->ep = reinterpret_cast<fid_ep *>(0xdeadbeef); // Mock endpoint
+            return 0;                                               // Success
+        });
 
     EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
 

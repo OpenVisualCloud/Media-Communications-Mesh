@@ -34,6 +34,8 @@ typedef struct ep_ctx_t {
     cq_ctx_t cq_ctx;
 
     libfabric_ctx *rdma_ctx;
+
+    volatile bool stop_flag;
 } ep_ctx_t;
 
 typedef struct {

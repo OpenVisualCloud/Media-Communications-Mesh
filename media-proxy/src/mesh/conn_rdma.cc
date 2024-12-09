@@ -212,6 +212,11 @@ Result Rdma::on_establish(context::Context& ctx)
         set_state(ctx, State::closed);
         return Result::error_initialization_failed;
     }
+    if(queue_size == 0) {
+        log::error("Queue size is not set")("queue_size", queue_size);
+        set_state(ctx, State::closed);
+        return Result::error_bad_argument;
+    }
 
     res = init_queue_with_elements(queue_size, trx_sz);
     if (res != Result::success) {
@@ -236,7 +241,6 @@ Result Rdma::on_establish(context::Context& ctx)
 
     init = true;
     res = start_threads(ctx);
-
     set_state(ctx, State::active);
     return Result::success;
 }

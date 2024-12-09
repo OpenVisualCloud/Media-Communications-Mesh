@@ -53,10 +53,6 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
         // Wait for the buffer to become available after successful send
         wait_buf_available();
 
-        if (ctx.stop_token().stop_requested()) {
-            break;
-        }
-
         struct fi_cq_entry cq_entries[CQ_BATCH_SIZE];
 
         uint32_t elapsed_time = 0;
@@ -90,8 +86,8 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
                 break; // Exit retry loop on error
             }
 
-            if (ctx.stop_token().stop_requested()) {
-                return;
+            if (ctx.cancelled()) {
+                break;
             }
         }
 
@@ -101,6 +97,7 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
             log::debug("CQ read timed out after retries")(" ", kind2str(_kind));
         }
     }
+        ep_ctx->stop_flag = true; // Set the stop flag
 }
 
 /**
@@ -124,7 +121,7 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
     uint32_t elapsed_time = 0;
 
     // Attempt to consume a buffer from the queue with a timeout
-    while (elapsed_time < TIMEOUT_US) {
+    while (elapsed_time < TIMEOUT_US && !ctx.cancelled()) {
         Result res = consume_from_queue(ctx, &reg_buf);
         if (res == Result::success) {
             if (reg_buf != nullptr) {

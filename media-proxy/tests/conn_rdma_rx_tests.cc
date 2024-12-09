@@ -19,12 +19,13 @@ using namespace mesh;
 using namespace mesh::log;
 
 // Helper to configure RdmaRx
-void ConfigureRdmaRx(connection::RdmaRx* conn_rx, context::Context& ctx, size_t transfer_size)
+void ConfigureRdmaRx(MockRdmaRx* conn_rx, context::Context& ctx, size_t transfer_size)
 {
     mcm_conn_param request = {};
     request.local_addr = {.ip = "192.168.1.10", .port = "8001"};
     request.remote_addr = {.ip = "192.168.1.20", .port = "8002"};
     request.payload_args.rdma_args.transfer_size = transfer_size;
+    request.payload_args.rdma_args.queue_size = 32;
 
     std::string dev_port = "0000:31:00.0";
     libfabric_ctx* dev_handle = nullptr;
@@ -103,27 +104,28 @@ class EmulatedReceiver : public connection::Connection {
 // Test Fixture
 class RdmaRxTest : public ::testing::Test {
   protected:
-    void SetUp() override
-    {
+    void SetUp() override {
         mock_ep_ops = new MockLibfabricEpOps();   // Initialize mock object for EpOps
         mock_dev_ops = new MockLibfabricDevOps(); // Initialize mock object for DevOps
+        mock_conn_rx = new MockRdmaRx();        // Initialize mock object for RdmaRxTx
         SetUpMockEpOps();                         // Set up mocked functions for EpOps
         SetUpMockDevOps();                        // Set up mocked functions for DevOps
         ctx = context::WithCancel(context::Background());
-        conn_rx = new connection::RdmaRx();
+        conn_rx = mock_conn_rx;                   // Assign mock to conn_rx
     }
 
-    void TearDown() override
-    {
+    void TearDown() override {
         delete conn_rx;
         delete mock_ep_ops;
         delete mock_dev_ops;
         mock_ep_ops = nullptr;
         mock_dev_ops = nullptr;
+        mock_conn_rx = nullptr;
     }
 
     context::Context ctx;
     connection::RdmaRx *conn_rx;
+    MockRdmaRx *mock_conn_rx;
 };
 
 TEST_F(RdmaRxTest, EstablishSuccess)
@@ -137,9 +139,13 @@ TEST_F(RdmaRxTest, EstablishSuccess)
     EXPECT_CALL(*mock_ep_ops, ep_init(::testing::_, ::testing::_))
         .WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
             *ep_ctx = new ep_ctx_t();
+            (*ep_ctx)->stop_flag = false;
             (*ep_ctx)->ep = reinterpret_cast<fid_ep *>(0xdeadbeef); // Mock endpoint
             return 0;                                               // Success
         });
+
+    EXPECT_CALL(*mock_ep_ops, ep_recv_buf(::testing::_, ::testing::_, ::testing::_, ::testing::_))
+        .WillRepeatedly(::testing::Return(0)); // Simulate successful call
 
     EXPECT_CALL(*mock_ep_ops, ep_reg_mr(::testing::_, ::testing::_, ::testing::_))
         .WillRepeatedly(::testing::Return(0)); // Mock successful buffer registration
@@ -150,11 +156,14 @@ TEST_F(RdmaRxTest, EstablishSuccess)
         return 0;
     });
 
+    EXPECT_CALL(*mock_conn_rx, start_threads(::testing::_))
+        .WillOnce(::testing::Return(connection::Result::success));
+
     // Configure and establish the connection
-    ConfigureRdmaRx(conn_rx, ctx, 1024);
+    ConfigureRdmaRx(static_cast<MockRdmaRx*>(conn_rx), ctx, 1024);
 
     // Act: Call on_establish
-    auto result = conn_rx->establish(ctx);
+    connection::Result result = conn_rx->establish(ctx);
 
     // Assert
     EXPECT_EQ(result, connection::Result::success);
@@ -170,7 +179,7 @@ TEST_F(RdmaRxTest, EstablishFailureEpInit)
         .WillOnce(::testing::Return(-1)); // Mock failure in ep_init
 
     // Configure Rdma
-    ConfigureRdmaRx(conn_rx, ctx, 1024);
+    ConfigureRdmaRx(static_cast<MockRdmaRx*>(conn_rx), ctx, 1024);
 
     // Act: Call on_establish
     auto result = conn_rx->establish(ctx);
@@ -202,7 +211,7 @@ TEST_F(RdmaRxTest, EstablishFailureBufferAllocation)
     });
 
     // Configure Rdma
-    ConfigureRdmaRx(conn_rx, ctx, 1024);
+    ConfigureRdmaRx(static_cast<MockRdmaRx*>(conn_rx), ctx, 1024);
 
     // Act: Call on_establish
     auto result = conn_rx->establish(ctx);
@@ -237,7 +246,7 @@ TEST_F(RdmaRxTest, EstablishAlreadyInitialized)
     });
 
     // Configure and establish the connection
-    ConfigureRdmaRx(conn_rx, ctx, 1024);
+    ConfigureRdmaRx(static_cast<MockRdmaRx*>(conn_rx), ctx, 1024);
 
     // Establish the first time
     auto first_result = conn_rx->establish(ctx);
@@ -290,12 +299,10 @@ TEST_F(RdmaRxTest, ValidateStateTransitions)
     ASSERT_EQ(conn_rx->state(), connection::State::not_configured);
 
     // Transition: not_configured -> configured
-    auto res = conn_rx->configure(ctx, request, dev_port, dev_handle);
-    ASSERT_EQ(res, connection::Result::success);
-    ASSERT_EQ(conn_rx->state(), connection::State::configured);
+    ConfigureRdmaRx(static_cast<MockRdmaRx*>(conn_rx), ctx, 1024);
 
     // Transition: configured -> active
-    res = conn_rx->establish(ctx);
+    connection::Result res = conn_rx->establish(ctx);
     ASSERT_EQ(res, connection::Result::success);
     ASSERT_EQ(conn_rx->state(), connection::State::active);
 
