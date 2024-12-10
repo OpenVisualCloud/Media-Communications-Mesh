@@ -15,6 +15,8 @@ $ mkdir /tmp/MCM_MOCK
    $ mkdir build && cd build
    $ cmake ..
    $ make
+   $ touch client.json 
+   $ touch connection.json
 ```
 
 2. run RXApp:
