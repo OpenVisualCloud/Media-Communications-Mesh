@@ -60,14 +60,42 @@ void put_user_video_frames(void* ptr, const size_t len){
     }
 
     // Construct the source file path
-    snprintf(src_path, sizeof(src_path) + 2, "%s/%s", cwd, file);
+    snprintf(src_path, sizeof(src_path) + 1, "%s", file);
     // Construct the destination file path
     snprintf(dest_path, sizeof(dest_path) + 2, "%s/%s", COMMON_SPACE, basename(file));
     // Move the file
-    if (rename(file, dest_path) != 0) {
-        perror("rename");
+    FILE *src_file = fopen(src_path, "rb");
+    if (src_file == NULL) {
+        perror("fopen (source)");
         exit(EXIT_FAILURE);
     }
+
+    FILE *dest_file = fopen(dest_path, "wb");
+    if (dest_file == NULL) {
+        perror("fopen (destination)");
+        fclose(src_file);
+        exit(EXIT_FAILURE);
+    }
+
+    char buffer[1024];
+    size_t bytes_read, bytes_written;
+
+    while ((bytes_read = fread(buffer, 1, BUFFER_SIZE, src_file)) > 0) {
+        bytes_written = fwrite(buffer, 1, bytes_read, dest_file);
+        if (bytes_written != bytes_read) {
+            perror("fwrite");
+            fclose(src_file);
+            fclose(dest_file);
+            exit(EXIT_FAILURE);
+        }
+    }
+
+    if (ferror(src_file)) {
+        perror("fread");
+    }
+
+    fclose(src_file);
+    fclose(dest_file);
 
     // Print the message
 
@@ -78,6 +106,7 @@ void put_user_video_frames(void* ptr, const size_t len){
     }
     printf("Stream sent\n");
 }
+
 int get_user_video_frames(void* ptr, const size_t len){
      char cwd[2048];
     char src_path[2048];

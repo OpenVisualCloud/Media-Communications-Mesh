@@ -1,4 +1,4 @@
-#TestApp
+# TestApp
 
 Application for utilizing MCM api,
 
@@ -6,6 +6,10 @@ Application for utilizing MCM api,
 TX/RXapp is prepared for new api (/docs/sdk-json-proposal) that is not implemented yet, so, so far it works with simple mocks, that move a file from TxApp to RxApp.
 
 # usage
+0. create dir:
+```
+$ mkdir /tmp/MCM_MOCK
+```
 1. build binaries:
 ```
    $ mkdir build && cd build
