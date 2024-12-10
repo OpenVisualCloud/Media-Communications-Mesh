@@ -66,10 +66,14 @@ void RdmaRx::process_buffers_thread(context::Context& ctx)
             if (res == Result::success && buf != nullptr) {
                 int err = libfabric_ep_ops.ep_recv_buf(ep_ctx, buf, trx_sz, buf);
                 if (err) {
-                    log::error("Failed to pass empty buffer to RDMA to receive into")
-                              ("buffer_address", buf)("error", fi_strerror(-err))
-                              (" ",kind2str(_kind));
-                    add_to_queue(buf);
+                    log::error("Failed to pass empty buffer to RDMA to receive into")("buffer_address", buf)
+                              ("error", fi_strerror(-err))(" ", kind2str(_kind));
+                    res = add_to_queue(buf);
+                    if (res != Result::success) {
+                        log::error("Failed to add buffer to queue")("error", result2str(res))
+                                  (" ", kind2str(_kind));
+                        break;
+                    }
                 }
             } else {
                 break; // Exit the loop to avoid spinning on errors

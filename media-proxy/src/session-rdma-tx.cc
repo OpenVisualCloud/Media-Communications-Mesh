@@ -49,6 +49,7 @@ TxRdmaSession::TxRdmaSession(libfabric_ctx *dev_handle, const mcm_conn_param &re
     ep_cfg.rdma_ctx = dev_handle;
     memcpy(&ep_cfg.remote_addr, &request.remote_addr, sizeof(request.remote_addr));
     memcpy(&ep_cfg.local_addr, &request.local_addr, sizeof(request.local_addr));
+    ep_cfg.dir = direction::TX;
 }
 
 int TxRdmaSession::init()

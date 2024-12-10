@@ -168,7 +168,11 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
                   (" ", kind2str(_kind));
 
         // Add the buffer back to the queue in case of failure
-        add_to_queue(reg_buf);
+        Result res = add_to_queue(reg_buf);
+        if (res != Result::success) {
+            log::error("Failed to add buffer to queue")("error", result2str(res))
+                      (" ",kind2str(_kind));
+        }
 
         sent = 0;
         return Result::error_general_failure;
