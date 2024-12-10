@@ -2,15 +2,9 @@ name: scan-codeql-workflow
 
 on:
   push:
-    branches: [ "main", "dev" ]
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
+    branches: [ "main" ]
   pull_request:
-    branches: [ "main", "dev" ]
-    paths-ignore:
-      - 'docs/**'
-      - '*.md'
+    branches: [ "main" ]
   schedule:
     - cron: '0 18 * * 1-5'
 
