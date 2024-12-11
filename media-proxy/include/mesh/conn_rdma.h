@@ -41,9 +41,8 @@ class Rdma : public Connection {
 public:
     Rdma();
     virtual ~Rdma();
-    static void
     // Deinitialize RDMA if no active connections
-    deinit_rdma_if_needed(libfabric_ctx *m_dev_handle);
+    static void deinit_rdma_if_needed(libfabric_ctx *m_dev_handle);
 
 // Used only for Unit tests, provides access to protected members
 #ifdef UNIT_TESTS_ENABLED
