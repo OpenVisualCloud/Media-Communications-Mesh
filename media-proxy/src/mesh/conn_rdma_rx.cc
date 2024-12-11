@@ -30,7 +30,7 @@ Result RdmaRx::start_threads(context::Context& ctx)
         handle_process_buffers_thread = std::jthread(
             [this]() { this->process_buffers_thread(this->process_buffers_thread_ctx); });
     } catch (const std::system_error& e) {
-        log::fatal("Failed to start thread")("error", e.what());
+        log::error("Failed to start thread")("error", e.what());
         return Result::error_thread_creation_failed;
     }
 
@@ -38,7 +38,7 @@ Result RdmaRx::start_threads(context::Context& ctx)
         handle_rdma_cq_thread =
             std::jthread([this]() { this->rdma_cq_thread(this->rdma_cq_thread_ctx); });
     } catch (const std::system_error& e) {
-        log::fatal("Failed to start thread")("error", e.what());
+        log::error("Failed to start thread")("error", e.what());
         return Result::error_thread_creation_failed;
     }
 

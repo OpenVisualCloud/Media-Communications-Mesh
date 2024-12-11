@@ -6,17 +6,15 @@
 #include <mutex>
 #include <condition_variable>
 
-namespace mesh::connection
-{
+namespace mesh::connection {
 
 /**
  * RdmaRx
  *
  * Derived class for RDMA Receive operations.
  */
-class RdmaRx : public Rdma
-{
-  public:
+class RdmaRx : public Rdma {
+public:
     RdmaRx();
     ~RdmaRx();
 
@@ -24,7 +22,7 @@ class RdmaRx : public Rdma
     Result configure(context::Context& ctx, const mcm_conn_param& request,
                      libfabric_ctx *& dev_handle);
 
-  protected:
+protected:
     virtual Result start_threads(context::Context& ctx);
 
     // Receive data using RDMA

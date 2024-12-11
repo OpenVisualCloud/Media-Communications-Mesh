@@ -14,7 +14,7 @@ namespace mesh::connection {
  * Derived class for RDMA Transmit operations.
  */
 class RdmaTx : public Rdma {
-  public:
+public:
     RdmaTx();
     ~RdmaTx();
 
@@ -25,7 +25,7 @@ class RdmaTx : public Rdma {
     // Transmit data using RDMA when received from connection class
     Result on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_t& sent);
 
-  protected:
+protected:
     virtual Result start_threads(context::Context& ctx);
     void rdma_cq_thread(context::Context& ctx);
 };

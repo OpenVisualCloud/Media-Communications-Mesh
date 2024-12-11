@@ -38,24 +38,25 @@ namespace mesh::connection {
  * for specialized RDMA Tx and Rx classes.
  */
 class Rdma : public Connection {
-  public:
+public:
     Rdma();
     virtual ~Rdma();
-    static void deinit_rdma_if_needed(libfabric_ctx *mDevHandle); // Deinitialize RDMA if no active connections
+    static void
+    deinit_rdma_if_needed(libfabric_ctx *mDevHandle); // Deinitialize RDMA if no active connections
 
-  //Used only for Unit tests, provides access to protected members
-  #ifdef UNIT_TESTS_ENABLED
-      size_t get_buffer_queue_size() const { return buffer_queue.size(); }
-      bool is_buffer_queue_empty() const { return buffer_queue.empty(); }
-      void* get_buffer_block() const { return buffer_block; }
-  #endif
+// Used only for Unit tests, provides access to protected members
+#ifdef UNIT_TESTS_ENABLED
+    size_t get_buffer_queue_size() const { return buffer_queue.size(); }
+    bool is_buffer_queue_empty() const { return buffer_queue.empty(); }
+    void *get_buffer_block() const { return buffer_block; }
+#endif
 
     // Queue synchronization
     void init_buf_available();
     void notify_buf_available();
     void wait_buf_available();
 
-  protected:
+protected:
     // Configure the RDMA session
     virtual Result configure(context::Context& ctx, const mcm_conn_param& request,
                              libfabric_ctx *& dev_handle);
@@ -88,8 +89,8 @@ class Rdma : public Connection {
     static std::atomic<int> active_connections; // Number of active RDMA connections
 
     // Queue for managing buffers
-    std::queue<void*> buffer_queue; // Queue holding available buffers
-    std::mutex queue_mutex;         // Mutex for buffer queue synchronization
+    std::queue<void *> buffer_queue;      // Queue holding available buffers
+    std::mutex queue_mutex;               // Mutex for buffer queue synchronization
     std::condition_variable_any queue_cv; // Condition variable for buffer availability
 
     // // RDMA thread logic
@@ -100,17 +101,17 @@ class Rdma : public Connection {
     Result consume_from_queue(context::Context& ctx, void **element);
     void cleanup_queue();
 
-    std::jthread handle_process_buffers_thread; // Thread for processing buffers
-    std::jthread handle_rdma_cq_thread;         // Thread for completion queue operations
+    std::jthread handle_process_buffers_thread;  // Thread for processing buffers
+    std::jthread handle_rdma_cq_thread;          // Thread for completion queue operations
     context::Context process_buffers_thread_ctx; // Context for buffer processing thread
-    context::Context rdma_cq_thread_ctx;        // Context for completion queue thread
+    context::Context rdma_cq_thread_ctx;         // Context for completion queue thread
 
-    std::mutex cq_mutex;              // Mutex for completion queue synchronization
+    std::mutex cq_mutex;               // Mutex for completion queue synchronization
     std::condition_variable_any cq_cv; // Condition variable for completion queue events
-    bool event_ready = false;         // Indicates if an event is ready in the CQ
+    bool event_ready = false;          // Indicates if an event is ready in the CQ
 
     void notify_cq_event();
-  
+
     std::atomic<bool> buf_available; // Indicates buffer availability in the queue
 };
 

@@ -28,7 +28,7 @@ Result RdmaTx::start_threads(context::Context& ctx)
         handle_rdma_cq_thread =
             std::jthread([this]() { this->rdma_cq_thread(this->rdma_cq_thread_ctx); });
     } catch (const std::system_error& e) {
-        log::fatal("Failed to start threads")("error", e.what())(" ", kind2str(_kind));
+        log::error("Failed to start threads")("error", e.what())(" ", kind2str(_kind));
         return Result::error_thread_creation_failed;
     }
     return Result::success;
