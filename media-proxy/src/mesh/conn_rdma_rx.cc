@@ -68,11 +68,11 @@ void RdmaRx::process_buffers_thread(context::Context& ctx)
                 if (err) {
                     log::error("Failed to pass empty buffer to RDMA to receive into")
                               ("buffer_address", buf)("error", fi_strerror(-err))
-                              (" ", kind2str(_kind));
+                              ("Kind", kind2str(_kind));
                     res = add_to_queue(buf);
                     if (res != Result::success) {
                         log::error("Failed to add buffer to queue")("error", result2str(res))
-                                  (" ", kind2str(_kind));
+                                  ("Kind", kind2str(_kind));
                         break;
                     }
                 }
@@ -117,7 +117,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
                 void *buf = cq_entries[i].op_context;
                 if (buf == nullptr) {
                     log::error("Null buffer context, skipping...")
-                              ("batch_index",i)(" ", kind2str(_kind));
+                              ("batch_index",i)("Kind", kind2str(_kind));
                     continue;
                 }
 
@@ -125,7 +125,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
                 Result res = transmit(ctx, buf, trx_sz);
                 if (res != Result::success) {
                     log::error("Failed to transmit buffer")("buffer_address", buf)("size", trx_sz)
-                              (" ", kind2str(_kind));
+                              ("Kind", kind2str(_kind));
                     continue;
                 }
 
@@ -136,7 +136,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
                     notify_buf_available();
                 } else {
                     log::error("Failed to add buffer back to the queue")("buffer_address", buf)
-                              (" ", kind2str(_kind));
+                              ("Kind", kind2str(_kind));
                 }
             }
         } else if (ret == -EAGAIN) {

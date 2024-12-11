@@ -165,7 +165,6 @@ void Rdma::cleanup_queue()
  * 
  * @param ctx The operation context.
  * @param request The connection parameters including addresses and RDMA arguments.
- * @param dev_port The device port identifier.
  * @param dev_handle Reference to the RDMA device handle.
  * @param kind The type of connection (receiver or transmitter).
  * @param dir The data transfer direction (RX or TX).
