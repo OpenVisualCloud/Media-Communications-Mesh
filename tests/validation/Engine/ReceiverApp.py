@@ -3,6 +3,9 @@
 # Intel® Media Communications Mesh
 
 import os
+from client_json import ClientJson
+
+# TODO: Align with client_json.py
 
 
 def get_receiver_default(app_path = f"{os.environ['build']}/tests/tools/recver_val") -> dict:

@@ -3,6 +3,9 @@
 # Intel® Media Communications Mesh
 
 import os
+from connection_json import ConnectionJson
+
+# TODO: Align with connection_json.py
 
 
 def get_sender_default(app_path = f"{os.environ['build']}/tests/tools/sender_val") -> dict:
