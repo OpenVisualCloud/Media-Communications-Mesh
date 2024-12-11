@@ -40,6 +40,9 @@ void SetUpMockDevOps() {
     libfabric_dev_ops.rdma_init = [](libfabric_ctx **rdma_ctx) -> int {
         return mock_dev_ops->rdma_init(rdma_ctx);
     };
+    libfabric_dev_ops.rdma_deinit = [](libfabric_ctx **ctx) -> int { // Add this lambda
+        return mock_dev_ops->rdma_deinit(ctx);
+    };
 }
 
 // Define mock function pointers

@@ -426,6 +426,8 @@ TEST_F(RdmaTest, RepeatedShutdown) {
         return 0; // Success
     });
 
+    EXPECT_CALL(*mock_dev_ops, rdma_deinit(::testing::_)).Times(1).WillOnce(::testing::Return(0));
+
     // Use ConfigureRdma helper to configure the RDMA instance
     ConfigureRdma(rdma, ctx, 1024, Kind::transmitter);
 

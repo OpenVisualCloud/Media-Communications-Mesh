@@ -156,6 +156,8 @@ TEST_F(RdmaTxTest, EstablishSuccess)
         return 0;
     });
 
+    EXPECT_CALL(*mock_dev_ops, rdma_deinit(::testing::_)).Times(1).WillOnce(::testing::Return(0));
+
     // Configure and establish the connection
     ConfigureRdmaTx(static_cast<MockRdmaTx*>(conn_tx), ctx, 1024);
 

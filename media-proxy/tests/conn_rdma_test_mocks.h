@@ -22,6 +22,7 @@ class MockLibfabricEpOps {
 class MockLibfabricDevOps {
   public:
     MOCK_METHOD(int, rdma_init, (libfabric_ctx **));
+    MOCK_METHOD(int, rdma_deinit, (libfabric_ctx **));
 };
 
 class MockRdmaRx : public mesh::connection::RdmaRx {

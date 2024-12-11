@@ -41,6 +41,7 @@ class Rdma : public Connection {
   public:
     Rdma();
     virtual ~Rdma();
+    static void deinit_rdma_if_needed(libfabric_ctx *mDevHandle); // Deinitialize RDMA if no active connections
 
   //Used only for Unit tests, provides access to protected members
   #ifdef UNIT_TESTS_ENABLED
@@ -76,14 +77,15 @@ class Rdma : public Connection {
     void handle_error(context::Context& ctx, const char *step);
 
     // RDMA-specific members
-    libfabric_ctx* mDevHandle; // RDMA device handle
-    ep_ctx_t* ep_ctx;          // RDMA endpoint context
-    ep_cfg_t ep_cfg;           // RDMA endpoint configuration
-    size_t trx_sz;             // Data transfer size
-    bool init;                 // Indicates if RDMA is initialized
-    void* buffer_block;        // Pointer to the allocated buffer block
-    int queue_size;            // Number of buffers in the queue
-    direction dir;             // Data transfer direction
+    libfabric_ctx *mDevHandle;                  // RDMA device handle
+    ep_ctx_t *ep_ctx;                           // RDMA endpoint context
+    ep_cfg_t ep_cfg;                            // RDMA endpoint configuration
+    size_t trx_sz;                              // Data transfer size
+    bool init;                                  // Indicates if RDMA is initialized
+    void *buffer_block;                         // Pointer to the allocated buffer block
+    int queue_size;                             // Number of buffers in the queue
+    direction dir;                              // Data transfer direction
+    static std::atomic<int> active_connections; // Number of active RDMA connections
 
     // Queue for managing buffers
     std::queue<void*> buffer_queue; // Queue holding available buffers

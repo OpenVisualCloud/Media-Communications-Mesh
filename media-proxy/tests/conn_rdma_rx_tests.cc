@@ -156,6 +156,8 @@ TEST_F(RdmaRxTest, EstablishSuccess)
         return 0;
     });
 
+    EXPECT_CALL(*mock_dev_ops, rdma_deinit(::testing::_)).Times(1).WillOnce(::testing::Return(0));
+
     EXPECT_CALL(*mock_conn_rx, start_threads(::testing::_))
         .WillOnce(::testing::Return(connection::Result::success));
 

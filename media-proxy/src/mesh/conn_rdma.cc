@@ -3,15 +3,35 @@
 
 namespace mesh::connection {
 
-Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr)
-{
+std::atomic<int> Rdma::active_connections(0);
+
+Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr) {
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
+    ++active_connections;
 }
 
-Rdma::~Rdma() { on_shutdown(context::Background()); }
+Rdma::~Rdma() {
+    on_shutdown(context::Background());
+    --active_connections;
+    deinit_rdma_if_needed(mDevHandle);
+}
 
-void Rdma::notify_cq_event()
-{
+void Rdma::deinit_rdma_if_needed(libfabric_ctx *mDevHandle) {
+    static std::mutex deinit_mutex;
+    std::lock_guard<std::mutex> lock(deinit_mutex);
+
+    if (active_connections == 0 && mDevHandle) {
+        int ret = libfabric_dev_ops.rdma_deinit(&mDevHandle);
+        if (ret) {
+            log::error("Failed to deinitialize RDMA device")("error", fi_strerror(-ret));
+        } else {
+            log::info("RDMA device successfully deinitialized");
+        }
+        mDevHandle = nullptr;
+    }
+}
+
+void Rdma::notify_cq_event() {
     std::lock_guard<std::mutex> lock(cq_mutex);
     event_ready = true;
     cq_cv.notify_one();
