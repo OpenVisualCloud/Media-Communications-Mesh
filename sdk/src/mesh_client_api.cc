@@ -17,7 +17,7 @@
 using grpc::Channel;
 using grpc::ClientContext;
 using grpc::Status;
-using sdk::ClientAPI;
+using sdk::SDKAPI;
 using sdk::CreateConnectionRequest;
 using sdk::CreateConnectionResponse;
 using sdk::DeleteConnectionRequest;
@@ -25,10 +25,10 @@ using sdk::DeleteConnectionResponse;
 
 using namespace mesh;
 
-class ClientAPIClient {
+class SDKAPIClient {
 public:
-    ClientAPIClient(std::shared_ptr<Channel> channel)
-        : stub_(ClientAPI::NewStub(channel)) {}
+    SDKAPIClient(std::shared_ptr<Channel> channel)
+        : stub_(SDKAPI::NewStub(channel)) {}
 
     int CreateConnection(std::string& conn_id, mcm_conn_param *param,
                          memif_conn_param *memif_param) {
@@ -94,21 +94,21 @@ public:
     std::string client_id;
 
 private:
-    std::unique_ptr<ClientAPI::Stub> stub_;
+    std::unique_ptr<SDKAPI::Stub> stub_;
 };
 
 void * mesh_grpc_create_client()
 {
     auto client = new(std::nothrow)
-        ClientAPIClient(grpc::CreateChannel("localhost:50050", // gRPC default 50051
-                        grpc::InsecureChannelCredentials()));
+        SDKAPIClient(grpc::CreateChannel("localhost:50050", // gRPC default 50051
+                     grpc::InsecureChannelCredentials()));
     return client;
 }
 
 void mesh_grpc_destroy_client(void *client)
 {
     if (client) {
-        auto cli = static_cast<ClientAPIClient *>(client);
+        auto cli = static_cast<SDKAPIClient *>(client);
         delete cli;
     }
 }
@@ -118,7 +118,7 @@ public:
     // This declaration must go first to allow proper type casting.
     mcm_conn_context *handle;
 
-    ClientAPIClient *client;
+    SDKAPIClient *client;
     std::string conn_id;
 };
 
@@ -132,7 +132,7 @@ void * mesh_grpc_create_conn(void *client, mcm_conn_param *param)
     if (!client)
         return NULL;
 
-    auto cli = static_cast<ClientAPIClient *>(client);
+    auto cli = static_cast<SDKAPIClient *>(client);
 
     auto conn = new(std::nothrow) GrpcConn();
     if (!conn)
