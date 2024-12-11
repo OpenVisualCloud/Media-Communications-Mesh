@@ -1303,8 +1303,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, -1);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1320,8 +1320,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, -1);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1337,8 +1337,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, 0);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1354,8 +1354,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, 5000);
     if (err || !buf)
         goto exit_delete_conn;

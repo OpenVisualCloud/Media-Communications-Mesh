@@ -89,9 +89,9 @@ int read_test_data(FILE* fp, MeshBuffer* buf, uint32_t frame_size)
     int ret = 0;
 
     assert(fp != NULL && buf != NULL);
-    assert(buf->data_len >= frame_size);
+    assert(buf->payload_len >= frame_size);
 
-    if (fread(buf->data, frame_size, 1, fp) < 1) {
+    if (fread(buf->payload_ptr, frame_size, 1, fp) < 1) {
         ret = -1;
     }
     return ret;
@@ -100,7 +100,7 @@ int read_test_data(FILE* fp, MeshBuffer* buf, uint32_t frame_size)
 int gen_test_data(MeshBuffer *buf, uint32_t frame_count)
 {
     /* operate on the buffer */
-    void* ptr = buf->data;
+    void* ptr = buf->payload_ptr;
 
     /* frame counter */
     *(uint32_t*)ptr = frame_count;

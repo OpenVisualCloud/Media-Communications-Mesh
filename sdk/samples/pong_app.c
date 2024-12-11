@@ -161,7 +161,7 @@ void * pong_thread(void *arg)
             break;
         }
 
-        memcpy(s_buf->data, r_buf->data, sizeof(struct timespec) + sizeof(int));
+        memcpy(s_buf->payload_ptr, r_buf->payload_ptr, sizeof(struct timespec) + sizeof(int));
 
         err = mesh_put_buffer(&s_buf);
         if (err) {

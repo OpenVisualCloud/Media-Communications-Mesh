@@ -194,7 +194,7 @@ int main(int argc, char **argv) {
             break;
         }
 
-        printf("INFO: buf->len = %ld frame size = %u\n", buf->data_len, frm_size);
+        printf("INFO: buf->len = %ld frame size = %u\n", buf->payload_len, frm_size);
 
         clock_gettime(CLOCK_REALTIME, &ts_recv);
         if (first_frame) {
@@ -203,11 +203,11 @@ int main(int argc, char **argv) {
         }
 
         if (outputfile) {
-            fwrite(buf->data, buf->data_len, 1, outputfile);
+            fwrite(buf->payload_ptr, buf->payload_len, 1, outputfile);
         } else {
             // Following code are mainly for test purpose, it requires the sender side to
             // pre-set the first several bytes
-            ptr = buf->data;
+            ptr = buf->payload_ptr;
             if (*(uint32_t *)ptr != frame_count) {
                 printf("Wrong data content: expected %u, got %u\n", frame_count, *(uint32_t *)ptr);
                 /* catch up the sender frame count */
