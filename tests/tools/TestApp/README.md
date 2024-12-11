@@ -35,5 +35,5 @@ Validation application, mocking the proposal of new Media Communications Mesh SD
     ```
     e.g.
     ```
-    ./TxApp 1080p_sample_422p10le.yuv $(ps -aux | awk '/\.\/RxApp/{print $2}')
+    ./TxApp $(pwd)/../1080p_sample_422p10le.yuv $(ps -aux | awk '/\.\/RxApp/{print $2}')
     ```
