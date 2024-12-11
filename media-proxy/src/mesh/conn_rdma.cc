@@ -5,7 +5,7 @@ namespace mesh::connection {
 
 std::atomic<int> Rdma::active_connections(0);
 
-Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr) {
+Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), m_dev_handle(nullptr) {
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
     ++active_connections;
 }
@@ -13,22 +13,22 @@ Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), mDevHandle(nullptr) {
 Rdma::~Rdma() {
     on_shutdown(context::Background());
     --active_connections;
-    deinit_rdma_if_needed(mDevHandle);
+    deinit_rdma_if_needed(m_dev_handle);
 }
 
-void Rdma::deinit_rdma_if_needed(libfabric_ctx *mDevHandle)
+void Rdma::deinit_rdma_if_needed(libfabric_ctx *m_dev_handle)
 {
     static std::mutex deinit_mutex;
     std::lock_guard<std::mutex> lock(deinit_mutex);
 
-    if (active_connections == 0 && mDevHandle) {
-        int ret = libfabric_dev_ops.rdma_deinit(&mDevHandle);
+    if (active_connections == 0 && m_dev_handle) {
+        int ret = libfabric_dev_ops.rdma_deinit(&m_dev_handle);
         if (ret) {
             log::error("Failed to deinitialize RDMA device")("error", fi_strerror(-ret));
         } else {
             log::info("RDMA device successfully deinitialized");
         }
-        mDevHandle = nullptr;
+        m_dev_handle = nullptr;
     }
 }
 
@@ -103,7 +103,7 @@ Result Rdma::consume_from_queue(context::Context& ctx, void **element)
 Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
 {
     if (trx_sz == 0 || trx_sz > MAX_BUFFER_SIZE) {
-        log::error("Invalid transfer size provided for buffer allocation")("trx_sz", trx_sz);
+        log::error("Invalid transfer size provided for RDMA buffer allocation")("trx_sz", trx_sz);
         return Result::error_bad_argument;
     }
 
@@ -111,7 +111,7 @@ Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
 
     // Check if already initialized
     if (!buffer_queue.empty()) {
-        log::error("Buffer queue already initialized");
+        log::error("RDMA buffer queue already initialized");
         return Result::error_already_initialized;
     }
 
@@ -122,7 +122,7 @@ Result Rdma::init_queue_with_elements(size_t capacity, size_t trx_sz)
     // Allocate a single contiguous memory block
     void *memory_block = std::aligned_alloc(PAGE_SIZE, total_size);
     if (!memory_block) {
-        log::error("Rdma failed to allocate a single memory block")("total_size", total_size);
+        log::error("RDMA failed to allocate a single memory block")("total_size", total_size);
         return Result::error_out_of_memory;
     }
 
@@ -183,7 +183,7 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
     
     ep_cfg.dir = _kind == Kind::receiver ? direction::RX : direction::TX;
 
-    mDevHandle = dev_handle;
+    m_dev_handle = dev_handle;
 
     queue_size = request.payload_args.rdma_args.queue_size;
 
@@ -215,8 +215,8 @@ Result Rdma::on_establish(context::Context& ctx)
     int ret;
     Result res;
 
-    if (!mDevHandle) {
-        ret = libfabric_dev_ops.rdma_init(&mDevHandle);
+    if (!m_dev_handle) {
+        ret = libfabric_dev_ops.rdma_init(&m_dev_handle);
         if (ret) {
             log::error("Failed to initialize RDMA device")("ret", ret);
             set_state(ctx, State::closed);
@@ -224,7 +224,7 @@ Result Rdma::on_establish(context::Context& ctx)
         }
     }
 
-    ep_cfg.rdma_ctx = mDevHandle;
+    ep_cfg.rdma_ctx = m_dev_handle;
 
     ret = libfabric_ep_ops.ep_init(&ep_ctx, &ep_cfg);
     if (ret) {
@@ -233,14 +233,14 @@ Result Rdma::on_establish(context::Context& ctx)
         return Result::error_initialization_failed;
     }
     if(queue_size == 0) {
-        log::error("Queue size is not set")("queue_size", queue_size);
+        log::error("RDMA queue size is not set")("queue_size", queue_size);
         set_state(ctx, State::closed);
         return Result::error_bad_argument;
     }
 
     res = init_queue_with_elements(queue_size, trx_sz);
     if (res != Result::success) {
-        log::error("Failed to initialize buffer queue")("trx_sz", trx_sz);
+        log::error("Failed to initialize RDMA buffer queue")("trx_sz", trx_sz);
         if (ep_ctx) {
             libfabric_ep_ops.ep_destroy(&ep_ctx);
         }
@@ -301,7 +301,7 @@ Result Rdma::on_shutdown(context::Context& ctx)
             handle_rdma_cq_thread.join();
         }
     } catch (const std::exception& e) {
-        log::error("Exception caught while joining rdma_cq_thread")("error", e.what());
+        log::error("Exception caught while joining RDMA rdma_cq_thread")("error", e.what());
         return Result::error_general_failure;
     }
 
@@ -311,7 +311,8 @@ Result Rdma::on_shutdown(context::Context& ctx)
             handle_process_buffers_thread.join();
         }
     } catch (const std::exception& e) {
-        log::error("Exception caught while joining process_buffers_thread")("error", e.what());
+        log::error("Exception caught while joining RDMA process_buffers_thread")
+                  ("error", e.what());
         return Result::error_general_failure;
     }
 
@@ -351,14 +352,14 @@ void Rdma::on_delete(context::Context& ctx)
 Result Rdma::configure_endpoint(context::Context& ctx)
 {
     if (!ep_ctx) {
-        log::error("Endpoint context is not initialized");
+        log::error("RDMA endpoint context is not initialized");
         return Result::error_wrong_state;
     }
 
     std::lock_guard<std::mutex> lock(queue_mutex);
 
     if (!buffer_block) {
-        log::error("Memory block for buffer queue is not allocated");
+        log::error("Memory block for RDMA buffer queue is not allocated");
         return Result::error_out_of_memory;
     }
 
@@ -368,7 +369,8 @@ Result Rdma::configure_endpoint(context::Context& ctx)
     // Register the entire memory block with the RDMA endpoint
     int ret = libfabric_ep_ops.ep_reg_mr(ep_ctx, buffer_block, total_size);
     if (ret) {
-        log::error("Memory registration failed for the buffer block")("error", fi_strerror(-ret));
+        log::error("Memory registration failed for the RDMA buffer block")
+                  ("error", fi_strerror(-ret));
         return Result::error_memory_registration_failed;
     }
 

@@ -22,7 +22,7 @@ class TestRdma : public Rdma {
     using Rdma::ep_ctx;
     using Rdma::init;
     using Rdma::init_queue_with_elements;
-    using Rdma::mDevHandle;
+    using Rdma::m_dev_handle;
     using Rdma::on_delete;
     using Rdma::on_establish;
     using Rdma::on_shutdown;

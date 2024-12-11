@@ -42,7 +42,8 @@ public:
     Rdma();
     virtual ~Rdma();
     static void
-    deinit_rdma_if_needed(libfabric_ctx *mDevHandle); // Deinitialize RDMA if no active connections
+    // Deinitialize RDMA if no active connections
+    deinit_rdma_if_needed(libfabric_ctx *m_dev_handle);
 
 // Used only for Unit tests, provides access to protected members
 #ifdef UNIT_TESTS_ENABLED
@@ -78,7 +79,7 @@ protected:
     void handle_error(context::Context& ctx, const char *step);
 
     // RDMA-specific members
-    libfabric_ctx *mDevHandle;                  // RDMA device handle
+    libfabric_ctx *m_dev_handle;                // RDMA device handle
     ep_ctx_t *ep_ctx;                           // RDMA endpoint context
     ep_cfg_t ep_cfg;                            // RDMA endpoint configuration
     size_t trx_sz;                              // Data transfer size

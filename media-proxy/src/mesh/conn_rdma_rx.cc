@@ -20,8 +20,7 @@ Result RdmaRx::configure(context::Context& ctx, const mcm_conn_param& request,
     return Rdma::configure(ctx, request, dev_handle);
 }
 
-Result RdmaRx::start_threads(context::Context& ctx)
-{
+Result RdmaRx::start_threads(context::Context& ctx) {
 
     process_buffers_thread_ctx = context::WithCancel(ctx);
     rdma_cq_thread_ctx = context::WithCancel(ctx);
@@ -30,7 +29,8 @@ Result RdmaRx::start_threads(context::Context& ctx)
         handle_process_buffers_thread = std::jthread(
             [this]() { this->process_buffers_thread(this->process_buffers_thread_ctx); });
     } catch (const std::system_error& e) {
-        log::error("Failed to start thread")("error", e.what());
+        log::error("RDMA rx failed to start thread")("error", e.what())
+                  ("kind", kind2str(_kind));
         return Result::error_thread_creation_failed;
     }
 
@@ -38,7 +38,8 @@ Result RdmaRx::start_threads(context::Context& ctx)
         handle_rdma_cq_thread =
             std::jthread([this]() { this->rdma_cq_thread(this->rdma_cq_thread_ctx); });
     } catch (const std::system_error& e) {
-        log::error("Failed to start thread")("error", e.what());
+        log::error("RDMA rx failed to start thread")("error", e.what())
+                  ("kind", kind2str(_kind));
         return Result::error_thread_creation_failed;
     }
 
@@ -66,13 +67,13 @@ void RdmaRx::process_buffers_thread(context::Context& ctx)
             if (res == Result::success && buf != nullptr) {
                 int err = libfabric_ep_ops.ep_recv_buf(ep_ctx, buf, trx_sz, buf);
                 if (err) {
-                    log::error("Failed to pass empty buffer to RDMA to receive into")
+                    log::error("Failed to pass empty buffer to RDMA rx to receive into")
                               ("buffer_address", buf)("error", fi_strerror(-err))
-                              ("Kind", kind2str(_kind));
+                              ("kind", kind2str(_kind));
                     res = add_to_queue(buf);
                     if (res != Result::success) {
-                        log::error("Failed to add buffer to queue")("error", result2str(res))
-                                  ("Kind", kind2str(_kind));
+                        log::error("Failed to add buffer to RDMA rx queue")("error", result2str(res))
+                                  ("kind", kind2str(_kind));
                         break;
                     }
                 }
@@ -104,9 +105,8 @@ void RdmaRx::process_buffers_thread(context::Context& ctx)
  * 
  * @param ctx The context for managing thread cancellation and operations.
  */
-void RdmaRx::rdma_cq_thread(context::Context& ctx)
-{
-    constexpr int CQ_RETRY_DELAY_US = 100; // Retry delay for EAGAIN
+void RdmaRx::rdma_cq_thread(context::Context& ctx) {
+    constexpr int CQ_RETRY_DELAY_US = 100;        // Retry delay for EAGAIN
     struct fi_cq_entry cq_entries[CQ_BATCH_SIZE]; // Array to hold batch of CQ entries
 
     while (!ctx.cancelled()) {
@@ -116,16 +116,16 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
             for (int i = 0; i < ret; ++i) {
                 void *buf = cq_entries[i].op_context;
                 if (buf == nullptr) {
-                    log::error("Null buffer context, skipping...")
-                              ("batch_index",i)("Kind", kind2str(_kind));
+                    log::error("RDMA rx null buffer context, skipping...")
+                              ("batch_index",i)("kind", kind2str(_kind));
                     continue;
                 }
 
                 // Process the buffer (e.g., transmit or handle)
                 Result res = transmit(ctx, buf, trx_sz);
                 if (res != Result::success) {
-                    log::error("Failed to transmit buffer")("buffer_address", buf)("size", trx_sz)
-                              ("Kind", kind2str(_kind));
+                    log::error("RDMA rx failed to transmit buffer")("buffer_address", buf)
+                              ("size", trx_sz)("kind", kind2str(_kind));
                     continue;
                 }
 
@@ -135,8 +135,8 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
                     // Notify that a buffer is available
                     notify_buf_available();
                 } else {
-                    log::error("Failed to add buffer back to the queue")("buffer_address", buf)
-                              ("Kind", kind2str(_kind));
+                    log::error("Failed to add buffer back to the RDMA rx queue")
+                              ("buffer_address", buf)("kind", kind2str(_kind));
                 }
             }
         } else if (ret == -EAGAIN) {
@@ -144,7 +144,8 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx)
             std::this_thread::sleep_for(std::chrono::microseconds(CQ_RETRY_DELAY_US));
         } else {
             // Handle CQ read error
-            log::error("CQ read failed")("error", fi_strerror(-ret));
+            log::error("RDMA rx cq read failed")("error", fi_strerror(-ret))
+                      ("kind", kind2str(_kind));
             break;
         }
     }

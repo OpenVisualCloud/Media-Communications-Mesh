@@ -28,7 +28,8 @@ Result RdmaTx::start_threads(context::Context& ctx)
         handle_rdma_cq_thread =
             std::jthread([this]() { this->rdma_cq_thread(this->rdma_cq_thread_ctx); });
     } catch (const std::system_error& e) {
-        log::error("Failed to start threads")("error", e.what())("Kind", kind2str(_kind));
+        log::error("RDMA tx failed to start threads")("error", e.what())
+                  ("kind", kind2str(_kind));
         return Result::error_thread_creation_failed;
     }
     return Result::success;
@@ -63,15 +64,16 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
                 for (int i = 0; i < ret; i++) {
                     void *buf = cq_entries[i].op_context;
                     if (buf == nullptr) {
-                        log::error("Null buffer context, skipping...")("Kind", kind2str(_kind));
+                        log::error("RDMA tx null buffer context, skipping...")
+                                  ("kind", kind2str(_kind));
                         continue;
                     }
 
                     // Replenish buffer
                     Result res = add_to_queue(buf);
                     if (res != Result::success) {
-                        log::error("Failed to add buffer back to queue")("buffer_address", buf)
-                                  ("Kind", kind2str(_kind));
+                        log::error("RDMA tx failed to add buffer back to queue")
+                                  ("buffer_address", buf)("kind", kind2str(_kind));
                     }
                 }
                 break; // Exit retry loop as CQ events were successfully processed
@@ -81,8 +83,8 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
                 elapsed_time += RETRY_INTERVAL_US;
             } else {
                 // Handle errors
-                log::error("CQ read failed")("error", fi_strerror(-ret))
-                          ("Kind", kind2str(_kind));
+                log::error("RDMA tx cq read failed")
+                          ("error", fi_strerror(-ret))("kind", kind2str(_kind));
                 break; // Exit retry loop on error
             }
 
@@ -94,7 +96,7 @@ void RdmaTx::rdma_cq_thread(context::Context& ctx)
         // Log if timeout occurred without receiving any events after buffer should be already
         // available
         if (elapsed_time >= TIMEOUT_US) {
-            log::debug("CQ read timed out after retries")("Kind", kind2str(_kind));
+            log::debug("RDMA tx cq read timed out after retries")("kind", kind2str(_kind));
         }
     }
         ep_ctx->stop_flag = true; // Set the stop flag
@@ -127,12 +129,12 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
             if (reg_buf != nullptr) {
                 break; // Successfully got a buffer
             } else {
-                log::debug("Buffer is null, retrying...")("Kind", kind2str(_kind));
+                log::debug("RDMA tx buffer is null, retrying...")("kind", kind2str(_kind));
             }
         } else if (res != Result::error_no_buffer) {
             // Log non-retryable errors and exit
-            log::error("Failed to consume buffer from queue")("result", static_cast<int>(res))
-                      ("Kind", kind2str(_kind));
+            log::error("RDMA tx failed to consume buffer from queue")("result", static_cast<int>(res))
+                      ("kind", kind2str(_kind));
             sent = 0;
             return res;
         }
@@ -144,16 +146,16 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
 
     // Check if we failed to get a buffer within the timeout
     if (reg_buf == nullptr) {
-        log::error("Failed to consume buffer within timeout")("timeout_ms", TIMEOUT_US)
-                  ("Kind", kind2str(_kind));
+        log::error("RDMA tx failed to consume buffer within timeout")("timeout_ms", TIMEOUT_US)
+                  ("kind", kind2str(_kind));
         sent = 0;
         return Result::error_timeout;
     }
 
     uint32_t tmp_sent = std::min(static_cast<uint32_t>(trx_sz), sz);
     if (tmp_sent != trx_sz) {
-        log::debug("Sent size differs from transfer size")("requested_size", tmp_sent)
-                  ("trx_sz", trx_sz)("Kind", kind2str(_kind));
+        log::debug("RDMA tx sent size differs from transfer size")("requested_size", tmp_sent)
+                  ("trx_sz", trx_sz)("kind", kind2str(_kind));
     }
 
     std::memcpy(reg_buf, ptr, tmp_sent);
@@ -164,14 +166,14 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
     sent = tmp_sent;
 
     if (err) {
-        log::error("Failed to send buffer through RDMA")("error", fi_strerror(-err))
-                  ("Kind", kind2str(_kind));
+        log::error("Failed to send buffer through RDMA tx")("error", fi_strerror(-err))
+                  ("kind", kind2str(_kind));
 
         // Add the buffer back to the queue in case of failure
         Result res = add_to_queue(reg_buf);
         if (res != Result::success) {
-            log::error("Failed to add buffer to queue")("error", result2str(res))
-                      ("Kind", kind2str(_kind));
+            log::error("Failed to add buffer to RDMA tx queue")("error", result2str(res))
+                      ("kind", kind2str(_kind));
         }
 
         sent = 0;
