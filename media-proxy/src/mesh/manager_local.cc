@@ -11,17 +11,18 @@
 #include "uuid.h"
 #include "logger.h"
 #include <mtl/st_pipeline_api.h>
-#include <mtl/st30_pipeline_api.h>
+#include "proxy_api.h"
 
 namespace mesh::connection {
 
 LocalManager local_manager;
 
-std::string tx_id, rx_id;
+// Temporary Multipoint group business logic.
+// std::string tx_id, rx_id;
 
-int LocalManager::create_connection(context::Context& ctx, std::string& id,
-                                    mcm_conn_param *param,
-                                    memif_conn_param *memif_param)
+int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
+                                        mcm_conn_param *param,
+                                        memif_conn_param *memif_param)
 {
     if (!param)
         return -1;
@@ -29,7 +30,7 @@ int LocalManager::create_connection(context::Context& ctx, std::string& id,
     bool found = false;
     for (int i = 0; i < 5; i++) {
         id = generate_uuid_v4();
-        int err = registry.add(id, nullptr);
+        int err = registry_sdk.add(id, nullptr);
         if (!err) {
             found = true;
             break;
@@ -78,47 +79,74 @@ int LocalManager::create_connection(context::Context& ctx, std::string& id,
 
     conn->get_params(memif_param);
 
-    std::unique_lock lk(mx);
+    // Prepare parameters to register in Media Proxy
+    std::string kind = param->type == is_tx ? "rx" : "tx";
 
-    registry.replace(id, conn);
+    lock();
+    thread::Defer d([this]{ unlock(); });
 
-    // Temporary Multipoint group business logic.
-    // TODO: Remove when Multipoint Groups are implemented.
-    if (param->type == is_tx) {
-        auto tx_conn = registry.get(tx_id);
-        if (tx_conn) {
-            conn->set_link(ctx, tx_conn);
-            tx_conn->set_link(ctx, conn);
-        }
-        rx_id = id;
-    } else {
-        auto rx_conn = registry.get(rx_id);
-        if (rx_conn) {
-            conn->set_link(ctx, rx_conn);
-            rx_conn->set_link(ctx, conn);
-        }
-        tx_id = id;
+    // Register local connection in Media Proxy
+    std::string agent_assigned_id;
+    int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind);
+    if (err) {
+        delete conn;
+        return -1;
     }
+
+    // Assign id accessed by metrics collector.
+    conn->assign_id(agent_assigned_id);
+
+    registry_sdk.replace(id, conn);
+    registry.add(agent_assigned_id, conn);
+    // log::debug("Added local conn")("conn_id", conn->id)("id", id);
+
+    // // Temporary Multipoint group business logic.
+    // // TODO: Remove when Multipoint Groups are implemented.
+    // if (param->type == is_tx) {
+    //     auto tx_conn = registry_sdk.get(tx_id);
+    //     if (tx_conn) {
+    //         conn->set_link(ctx, tx_conn);
+    //         tx_conn->set_link(ctx, conn);
+    //     }
+    //     rx_id = id;
+    // } else {
+    //     auto rx_conn = registry_sdk.get(rx_id);
+    //     if (rx_conn) {
+    //         conn->set_link(ctx, rx_conn);
+    //         rx_conn->set_link(ctx, conn);
+    //     }
+    //     tx_id = id;
+    // }
 
     return 0;
 }
 
-int LocalManager::delete_connection(context::Context& ctx, const std::string& id)
+int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string& id)
 {
-    std::unique_lock lk(mx);
-
-    auto conn = registry.get(id);
+    auto conn = registry_sdk.get(id);
     if (!conn)
         return -1;
 
-    auto link = conn->link();
-    if (link) {
-        log::debug("Shutdown the link");
-        link->set_link(ctx, nullptr);
-        conn->set_link(ctx, nullptr);
-    }
+    log::debug("Delete local conn")("conn_id", conn->id)("id", id);
 
-    registry.remove(id);
+    {
+        lock();
+        thread::Defer d([this]{ unlock(); });
+
+        int err = proxyApiClient->UnregisterConnection(conn->id);
+        if (err) {
+            // TODO: Handle the error.
+        }
+
+        if (conn->link()) {
+            // log::debug("Shutdown the link");
+            conn->link()->set_link(ctx, nullptr, conn);
+            conn->set_link(ctx, nullptr);
+        }
+
+        registry.remove(conn->id);
+        registry_sdk.remove(id);
+    }
 
     auto res = conn->shutdown(ctx);
     delete conn;
@@ -126,15 +154,34 @@ int LocalManager::delete_connection(context::Context& ctx, const std::string& id
     return 0;
 }
 
+Connection * LocalManager::get_connection(context::Context& ctx,
+                                          const std::string& id)
+{
+    return registry.get(id);
+}
+
 void LocalManager::shutdown(context::Context& ctx)
 {
-    auto ids = registry.get_all_ids();
+    auto ids = registry_sdk.get_all_ids();
 
     for (const std::string& id : ids) {
-        auto err = this->delete_connection(ctx, id);
+        auto err = delete_connection_sdk(ctx, id);
         if (err)
-            log::error("Error deleting local conn (%d)", err);
+            log::error("Error deleting local conn (%d)", err)
+                      ("conn_id", id);
     }
+}
+
+void LocalManager::lock()
+{
+    // log::debug("Local Manager mx lock");
+    mx.lock();
+}
+
+void LocalManager::unlock()
+{
+    // log::debug("Local Manager mx unlock");
+    mx.unlock();
 }
 
 } // namespace mesh::connection

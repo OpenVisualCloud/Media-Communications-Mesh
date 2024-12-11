@@ -5,23 +5,13 @@
  */
 
 #include "conn.h"
+#include <cstring>
 
 namespace mesh::connection {
 
 Connection::Connection()
 {
-    _kind = Kind::undefined;
-    _state = State::not_configured;
-    _status = Status::initial;
-    setting_link = false;
-    transmitting = false;
-    _link = nullptr;
-
-    metrics.inbound_bytes           = 0;
-    metrics.outbound_bytes          = 0;
-    metrics.transactions_successful = 0;
-    metrics.transactions_failed     = 0;
-    metrics.errors                  = 0;
+    std::memset(&metrics, 0, sizeof(metrics));
 }
 
 Connection::~Connection()
@@ -133,19 +123,19 @@ Result Connection::transmit(context::Context& ctx, void *ptr, uint32_t sz)
 
     metrics.inbound_bytes += sz;
 
-    transmitting.store(true);
-    setting_link.wait(true);
+    transmitting.store(true, std::memory_order_release);
+    setting_link.wait(true, std::memory_order_acquire);
 
     uint32_t sent = 0;
     Result res = _link->do_receive(ctx, ptr, sz, sent);
 
-    transmitting.store(false);
+    transmitting.store(false, std::memory_order_release);
     transmitting.notify_one();
 
     metrics.outbound_bytes += sent;
 
     if (res == Result::success)
-        metrics.transactions_successful++;
+        metrics.transactions_succeeded++;
     else
         metrics.transactions_failed++;
 
@@ -167,7 +157,7 @@ Result Connection::do_receive(context::Context& ctx, void *ptr, uint32_t sz,
 
     metrics.outbound_bytes += sent;
     if (res == Result::success)
-        metrics.transactions_successful++;
+        metrics.transactions_succeeded++;
     else
         metrics.transactions_failed++;
 
@@ -187,8 +177,11 @@ Result Connection::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
     return Result::error_not_supported;
 }
 
-Result Connection::set_link(context::Context& ctx, Connection *new_link)
+Result Connection::set_link(context::Context& ctx, Connection *new_link,
+                            Connection *requester)
 {
+    (void)requester;
+
     // WARNING: Changing a link will affect the hot path of Data Plane.
     // Avoid any unnecessary operations that can increase latency.
 
@@ -198,12 +191,12 @@ Result Connection::set_link(context::Context& ctx, Connection *new_link)
     // TODO: generate an Event (conn_changing_link).
     // Use context to cancel sending the Event.
 
-    setting_link.store(true);
-    transmitting.wait(true);
+    setting_link.store(true, std::memory_order_release);
+    transmitting.wait(true, std::memory_order_acquire);
 
     _link = new_link;
 
-    setting_link.store(false);
+    setting_link.store(false, std::memory_order_release);
     setting_link.notify_one();
 
     // TODO: generate a post Event (conn_link_changed).
@@ -223,6 +216,50 @@ Result Connection::set_result(Result res)
         metrics.errors++;
 
     return res;
+}
+
+void Connection::collect(telemetry::Metric& metric, const int64_t& timestamp_ms)
+{
+    uint64_t in = metrics.inbound_bytes;
+    uint64_t out = metrics.outbound_bytes;
+    uint32_t strn = metrics.transactions_succeeded;
+
+    metric.addFieldString("state", state2str(state()));
+    metric.addFieldBool("link", link() != nullptr);
+    metric.addFieldUint64("in", in);
+    metric.addFieldUint64("out", out);
+    metric.addFieldUint64("strn", strn);
+    metric.addFieldUint64("ftrn", metrics.transactions_failed);
+    metric.addFieldUint64("err", metrics.errors);
+
+    auto dt = timestamp_ms - metrics.prev_timestamp_ms;
+
+    if (metrics.prev_inbound_bytes) {
+        uint64_t bw = (in - metrics.prev_inbound_bytes);
+        bw = (bw * 8 * 1000) / dt;
+        metric.addFieldDouble("inbw", (bw/1000)/1000.0);
+    }
+    metrics.prev_inbound_bytes = in;
+
+    if (metrics.prev_outbound_bytes) {
+        uint64_t bw = (out - metrics.prev_outbound_bytes);
+        bw = (bw * 8 * 1000) / dt;
+        metric.addFieldDouble("outbw", (bw/1000)/1000.0);
+    }
+    metrics.prev_outbound_bytes = out;
+
+    if (metrics.prev_transactions_succeeded) {
+        uint64_t tps = (strn - metrics.prev_transactions_succeeded);
+        tps = (tps * 10 * 1000) / dt;
+        metric.addFieldDouble("tps", tps/10.0);
+    }
+    metrics.prev_transactions_succeeded = strn;
+
+    metrics.prev_timestamp_ms = timestamp_ms;
+
+    auto errors_delta = metrics.errors - metrics.prev_errors;
+    metrics.prev_errors = metrics.errors;
+    metric.addFieldUint64("errd", errors_delta);
 }
 
 static const char str_unknown[] = "?unknown?";
@@ -274,7 +311,6 @@ const char * result2str(Result res)
     case Result::error_bad_argument:     return "bad argument";
     case Result::error_out_of_memory:    return "out of memory";
     case Result::error_general_failure:  return "general failure";
-    case Result::error_context_cancelled: return "context cancelled";
     default:                             return str_unknown;
     }
 }

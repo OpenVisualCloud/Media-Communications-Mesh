@@ -11,7 +11,7 @@
 
 namespace mesh {
 
-void RunClientAPIServer(context::Context& ctx);
+void RunSDKAPIServer(context::Context& ctx);
 
 } // namespace mesh
 
