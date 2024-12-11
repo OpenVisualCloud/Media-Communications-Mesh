@@ -15,9 +15,9 @@ RdmaRx::~RdmaRx()
 }
 
 Result RdmaRx::configure(context::Context& ctx, const mcm_conn_param& request,
-                         const std::string& dev_port, libfabric_ctx *& dev_handle)
+                         libfabric_ctx *& dev_handle)
 {
-    return Rdma::configure(ctx, request, dev_port, dev_handle);
+    return Rdma::configure(ctx, request, dev_handle);
 }
 
 Result RdmaRx::start_threads(context::Context& ctx)

@@ -20,7 +20,7 @@ class RdmaTx : public Rdma {
 
     // Configure the RDMA Transmit session
     Result configure(context::Context& ctx, const mcm_conn_param& request,
-                     const std::string& dev_port, libfabric_ctx *& dev_handle);
+                     libfabric_ctx *& dev_handle);
 
     // Transmit data using RDMA when received from connection class
     Result on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_t& sent);

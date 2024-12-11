@@ -171,7 +171,7 @@ void Rdma::cleanup_queue()
  * @return Result::success on successful configuration, or an error result if arguments are invalid.
  */
 Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
-                       const std::string& dev_port, libfabric_ctx *& dev_handle)
+                       libfabric_ctx *& dev_handle)
 {
 
     trx_sz = request.payload_args.rdma_args.transfer_size;

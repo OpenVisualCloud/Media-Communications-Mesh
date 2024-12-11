@@ -22,7 +22,7 @@ class RdmaRx : public Rdma
 
     // Configure the RDMA Receive session
     Result configure(context::Context& ctx, const mcm_conn_param& request,
-                     const std::string& dev_port, libfabric_ctx *& dev_handle);
+                     libfabric_ctx *& dev_handle);
 
   protected:
     virtual Result start_threads(context::Context& ctx);

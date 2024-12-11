@@ -144,7 +144,7 @@ class RdmaRealEndpointsTest : public ::testing::Test {
     rx_request.payload_args.rdma_args.transfer_size = payload_size;
     rx_request.payload_args.rdma_args.queue_size = queue_size;
 
-    ASSERT_EQ(conn_rx->configure(ctx, rx_request, "0000:31:00.1", rx_dev_handle),
+    ASSERT_EQ(conn_rx->configure(ctx, rx_request, rx_dev_handle),
               connection::Result::success);
     ASSERT_EQ(conn_rx->establish(ctx), connection::Result::success);
 
@@ -156,7 +156,7 @@ class RdmaRealEndpointsTest : public ::testing::Test {
     tx_request.payload_args.rdma_args.transfer_size = payload_size;
     tx_request.payload_args.rdma_args.queue_size = queue_size;
 
-    ASSERT_EQ(conn_tx->configure(ctx, tx_request, "0000:31:00.1", tx_dev_handle),
+    ASSERT_EQ(conn_tx->configure(ctx, tx_request, tx_dev_handle),
               connection::Result::success);
     ASSERT_EQ(conn_tx->establish(ctx), connection::Result::success);
 

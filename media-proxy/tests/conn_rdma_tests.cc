@@ -63,11 +63,10 @@ class RdmaTest : public ::testing::Test {
         request.payload_args.rdma_args.transfer_size = transfer_size;
         request.payload_args.rdma_args.queue_size = 32;
 
-        std::string dev_port = "0000:31:00.0";
         libfabric_ctx *dev_handle = nullptr;
 
         rdma->set_kind(kind);
-        auto res = rdma->configure(ctx, request, dev_port, dev_handle);
+        auto res = rdma->configure(ctx, request, dev_handle);
         ASSERT_EQ(res, Result::success);
         ASSERT_EQ(rdma->state(), State::configured);
         ASSERT_EQ(rdma->kind(), kind);

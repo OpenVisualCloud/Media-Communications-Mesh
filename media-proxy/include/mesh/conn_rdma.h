@@ -58,7 +58,7 @@ class Rdma : public Connection {
   protected:
     // Configure the RDMA session
     virtual Result configure(context::Context& ctx, const mcm_conn_param& request,
-                             const std::string& dev_port, libfabric_ctx *& dev_handle);
+                             libfabric_ctx *& dev_handle);
 
     // Overrides from Connection
     virtual Result on_establish(context::Context& ctx) override;

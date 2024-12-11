@@ -27,10 +27,9 @@ void ConfigureRdmaRx(MockRdmaRx* conn_rx, context::Context& ctx, size_t transfer
     request.payload_args.rdma_args.transfer_size = transfer_size;
     request.payload_args.rdma_args.queue_size = 32;
 
-    std::string dev_port = "0000:31:00.0";
     libfabric_ctx* dev_handle = nullptr;
 
-    auto res = conn_rx->configure(ctx, request, dev_port, dev_handle);
+    auto res = conn_rx->configure(ctx, request, dev_handle);
     ASSERT_EQ(res, connection::Result::success) << "Failed to configure RdmaTx";
     ASSERT_EQ(conn_rx->state(), connection::State::configured) << "RdmaTx not in configured state";
 }
