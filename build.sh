@@ -36,8 +36,8 @@ as_root ldconfig
 
 # Run unit tests
 export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
-"${MCM_BUILD_DIR}/bin/sdk_unit_tests"
-"${MCM_BUILD_DIR}/bin/media_proxy_unit_tests"
+ctest --output-on-failure --test-dir "${MCM_BUILD_DIR}" -V
+
 ln -sf "${MCM_BUILD_DIR}" "${SCRIPT_DIR}/build"
 
 log_info "Build Succeeded"

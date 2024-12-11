@@ -42,6 +42,7 @@
 #include <unistd.h>
 #include <sched.h>
 #include <sys/types.h>
+#include <netinet/in.h> // For struct sockaddr_in
 
 #include <rdma/fi_cm.h>
 #include <rdma/fi_domain.h>
@@ -138,14 +139,28 @@ int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
     return ret;
 }
 
-int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size)
-{
+int ep_send_buf(ep_ctx_t* ep_ctx, void* buf, size_t buf_size) {
+    if (!ep_ctx || !buf || buf_size == 0) {
+        ERROR("Invalid parameters provided to ep_send_buf: ep_ctx=%p, buf=%p, buf_size=%zu",
+              ep_ctx, buf, buf_size);
+        return -EINVAL;
+    }
+
     int ret;
 
     do {
-        ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, NULL);
-        if (ret == -EAGAIN)
-            (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
+         // Check if the stop flag is set
+        if (ep_ctx->stop_flag) {
+            ERROR("RDMA stop flag is set. Aborting send.");
+            return -ECANCELED;
+        }
+
+        // Pass the buffer address as the context to fi_send
+        ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, buf);
+        if (ret == -EAGAIN) {
+            struct fi_cq_entry cq_entry;
+            (void)fi_cq_read(ep_ctx->cq_ctx.cq, &cq_entry, 1); // Drain CQ
+        }
     } while (ret == -EAGAIN);
 
     return ret;
@@ -156,6 +171,12 @@ int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx)
     int ret;
 
     do {
+         // Check if the stop flag is set
+        if (ep_ctx->stop_flag) {
+            ERROR("RDMA stop flag is set. Aborting receive.");
+            return -ECANCELED;
+        }
+
         ret = fi_recv(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, FI_ADDR_UNSPEC, buf_ctx);
         if (ret == -FI_EAGAIN)
             (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
@@ -197,8 +218,14 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
         return -ENOMEM;
     }
     (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
+    (*ep_ctx)->stop_flag = false;
 
     hints = fi_dupinfo((*ep_ctx)->rdma_ctx->info);
+    if (!hints) {
+        RDMA_PRINTERR("fi_dupinfo failed\n", -ENOMEM);
+        libfabric_ep_ops.ep_destroy(ep_ctx);
+        return -ENOMEM;
+    }
 
     hints->src_addr = NULL;
     hints->src_addrlen = 0;
@@ -207,7 +234,7 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     hints->addr_format = FI_SOCKADDR_IN;
 
     if (cfg->dir == RX) {
-        ret = fi_getinfo(FI_VERSION(1, 21), NULL, cfg->local_addr.port, FI_SOURCE, hints, &fi);
+        ret = fi_getinfo(FI_VERSION(1, 21), cfg->local_addr.ip, cfg->local_addr.port, FI_SOURCE, hints, &fi);
     } else {
         ret = fi_getinfo(FI_VERSION(1, 21), cfg->remote_addr.ip, cfg->remote_addr.port, 0, hints,
                          &fi);
