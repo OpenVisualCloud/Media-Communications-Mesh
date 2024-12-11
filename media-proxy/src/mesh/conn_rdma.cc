@@ -16,7 +16,8 @@ Rdma::~Rdma() {
     deinit_rdma_if_needed(mDevHandle);
 }
 
-void Rdma::deinit_rdma_if_needed(libfabric_ctx *mDevHandle) {
+void Rdma::deinit_rdma_if_needed(libfabric_ctx *mDevHandle)
+{
     static std::mutex deinit_mutex;
     std::lock_guard<std::mutex> lock(deinit_mutex);
 
@@ -261,6 +262,15 @@ Result Rdma::on_establish(context::Context& ctx)
 
     init = true;
     res = start_threads(ctx);
+    if (res != Result::success) {
+        log::error("Failed to start RDMA threads")("state", "closed");
+        if (ep_ctx) {
+            libfabric_ep_ops.ep_destroy(&ep_ctx);
+        }
+        set_state(ctx, State::closed);
+        return res;
+    }
+
     set_state(ctx, State::active);
     return Result::success;
 }
@@ -286,14 +296,24 @@ Result Rdma::on_shutdown(context::Context& ctx)
     // Ensure buffer-related threads are unblocked
     notify_buf_available();
 
-    // Check if `rdma_cq_thread` has stopped
-    if (handle_rdma_cq_thread.joinable()) {
-        handle_rdma_cq_thread.join();
+    try {
+        // Check if `rdma_cq_thread` has stopped
+        if (handle_rdma_cq_thread.joinable()) {
+            handle_rdma_cq_thread.join();
+        }
+    } catch (const std::exception& e) {
+        log::error("Exception caught while joining rdma_cq_thread")("error", e.what());
+        return Result::error_general_failure;
     }
 
-    // Check if `process_buffers_thread` has stopped
-    if (handle_process_buffers_thread.joinable()) {
-        handle_process_buffers_thread.join();
+    try {
+        // Check if `process_buffers_thread` has stopped
+        if (handle_process_buffers_thread.joinable()) {
+            handle_process_buffers_thread.join();
+        }
+    } catch (const std::exception& e) {
+        log::error("Exception caught while joining process_buffers_thread")("error", e.what());
+        return Result::error_general_failure;
     }
 
     // Clean up RDMA resources if initialized
