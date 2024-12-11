@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include "st2110.h"
 
 namespace mesh::connection {
@@ -103,12 +109,12 @@ void *get_frame_data_ptr(st_frame *src) { return src->addr[0]; }
 void *get_frame_data_ptr(st30_frame *src) { return src->addr; }
 
 void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
-                        mtl_log_level log_level, const char local_ip_addr[MESH_IP_ADDRESS_SIZE]) {
+                        mtl_log_level log_level, const std::string& ip_addr) {
     if (getenv("KAHAWAI_CFG_PATH") == NULL) {
         setenv("KAHAWAI_CFG_PATH", "/usr/local/etc/imtl.json", 0);
     }
     strlcpy(st_param.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
-    inet_pton(AF_INET, local_ip_addr, st_param.sip_addr[MTL_PORT_P]);
+    inet_pton(AF_INET, ip_addr.c_str(), st_param.sip_addr[MTL_PORT_P]);
     st_param.pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param.port[MTL_PORT_P]);
     st_param.num_ports = 1;
     st_param.flags = MTL_FLAG_BIND_NUMA;
@@ -132,20 +138,17 @@ void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
 }
 
 mtl_handle get_mtl_device(const std::string& dev_port, mtl_log_level log_level,
-                          const char local_ip_addr[MESH_IP_ADDRESS_SIZE], int& session_id) {
+                          const std::string& ip_addr) {
     static mtl_handle dev_handle;
-    static int _session_id;
     static std::mutex mtx;
     std::lock_guard<std::mutex> lock(mtx);
-
-    session_id = _session_id++;
 
     if (dev_handle) {
         return dev_handle;
     }
 
     mtl_init_params st_param = {0};
-    get_mtl_dev_params(st_param, dev_port, log_level, local_ip_addr);
+    get_mtl_dev_params(st_param, dev_port, log_level, ip_addr);
     // create device
     dev_handle = mtl_init(&st_param);
     if (!dev_handle) {
@@ -160,6 +163,13 @@ mtl_handle get_mtl_device(const std::string& dev_port, mtl_log_level log_level,
     }
 
     return dev_handle;
+}
+
+int mtl_get_session_id() {
+    static int session_id;
+    static std::mutex mtx;
+    std::lock_guard<std::mutex> lock(mtx);
+    return session_id++;
 }
 
 } // namespace mesh::connection

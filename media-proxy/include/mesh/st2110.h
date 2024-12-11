@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #ifndef ST2110_H
 #define ST2110_H
 
@@ -26,9 +32,10 @@ void *get_frame_data_ptr(st_frame *src);
 void *get_frame_data_ptr(st30_frame *src);
 
 void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
-                        mtl_log_level log_level, const char local_ip_addr[MESH_IP_ADDRESS_SIZE]);
+                        mtl_log_level log_level, const std::string& ip_addr);
 mtl_handle get_mtl_device(const std::string& dev_port, mtl_log_level log_level,
-                          const char local_ip_addr[MESH_IP_ADDRESS_SIZE], int& session_id);
+                          const std::string& ip_addr);
+int mtl_get_session_id();
 
 /**
  * ST2110
@@ -48,6 +55,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public C
     mtl_handle mtl_device = nullptr;
     HANDLE mtl_session = nullptr;
     OPS ops = {0};
+    std::string ip_addr;
     size_t transfer_size = 0;
     std::atomic<bool> frame_available;
     context::Context _ctx = context::WithCancel(context::Background());
@@ -56,6 +64,12 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public C
     virtual int put_frame(HANDLE, FRAME *) = 0;
     virtual HANDLE create_session(mtl_handle, OPS *) = 0;
     virtual int close_session(HANDLE) = 0;
+
+    //Wrapper for get_mtl_device, override only for UnitTest purpose
+    virtual mtl_handle get_mtl_dev_wrapper(const std::string& dev_port, mtl_log_level log_level,
+                                           const std::string& ip_addr) {
+        return get_mtl_device(dev_port, log_level, ip_addr);
+    };
 
     static int frame_available_cb(void *ptr) {
         auto _this = static_cast<ST2110 *>(ptr);
@@ -80,18 +94,12 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public C
 
     virtual int configure_common(context::Context& ctx, const std::string& dev_port,
                                  const MeshConfig_ST2110& cfg_st2110) {
-        int session_id = 0;
-        mtl_device = get_mtl_device(dev_port, MTL_LOG_LEVEL_CRIT, cfg_st2110.local_ip_addr, session_id);
-        if (!mtl_device) {
-            log::error("Failed to get MTL device");
-            return -1;
-        }
-
+        ip_addr = std::string(cfg_st2110.local_ip_addr);
         strlcpy(ops.port.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
         ops.port.num_port = 1;
 
         char session_name[NAME_MAX] = "";
-        snprintf(session_name, NAME_MAX, "mcm_mtl_%d", session_id);
+        snprintf(session_name, NAME_MAX, "mcm_mtl_%d", mtl_get_session_id());
         if (ops.name)
             free((void *)ops.name);
         ops.name = strdup(session_name);
@@ -110,6 +118,13 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public C
     }
 
     Result on_establish(context::Context& ctx) override {
+        mtl_device = get_mtl_dev_wrapper(ops.port.port[MTL_PORT_P], MTL_LOG_LEVEL_CRIT, ip_addr);
+        if (!mtl_device) {
+            log::error("Failed to get MTL device");
+            set_state(ctx, State::closed);
+            return set_result(Result::error_general_failure);
+        }
+
         _ctx = context::WithCancel(ctx);
         frame_available = false;
 
