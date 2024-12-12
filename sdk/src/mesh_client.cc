@@ -6,6 +6,7 @@
 #include "mesh_client.h"
 #include <string.h>
 #include "mesh_conn.h"
+#include "mesh_logger.h"
 
 namespace mesh {
 
@@ -53,6 +54,54 @@ int ClientContext::create_conn(MeshConnection **conn)
     std::lock_guard<std::mutex> lk(mx);
 
     if ((long int)conns.size() >= config.max_conn_num)
+        return -MESH_ERR_MAX_CONN;
+
+    ConnectionContext *conn_ctx = new(std::nothrow) ConnectionContext(this);
+    if (!conn_ctx)
+        return -ENOMEM;
+
+    try {
+        conns.push_back(conn_ctx);
+    }
+    catch (...) {
+        delete conn_ctx;
+        return -ENOMEM;
+    }
+
+    *conn = (MeshConnection *)conn_ctx;
+
+    return 0;
+}
+
+int ClientContext::init_json(std::string& cfg)
+{
+    enable_grpc_with_json = true;
+    try{
+        cfg_json = json::parse(cfg);
+    } catch (const json::exception& e) {
+        log::error("Failed to parse JSON config: %s", e.what());
+        return -MESH_ERR_CONN_CONFIG_INVAL;
+    } catch (const std::exception& e) {
+        log::error("Failed to parse JSON config: %s", e.what());
+        return -MESH_ERR_CONN_CONFIG_INVAL;
+    }
+
+    grpc_client = mesh_internal_ops.grpc_create_client_json(cfg_json.addr, cfg_json.port);
+
+    return 0;
+}
+
+int ClientContext::create_conn_json(MeshConnection **conn)
+{
+    if(!enable_grpc_with_json)
+        return -MESH_ERR_CONN_CONFIG_INVAL;
+
+    if (!conn)
+        return -MESH_ERR_BAD_CONN_PTR;
+
+    std::lock_guard<std::mutex> lk(mx);
+
+    if ((long int)conns.size() >= cfg_json.maxMediaConnections)
         return -MESH_ERR_MAX_CONN;
 
     ConnectionContext *conn_ctx = new(std::nothrow) ConnectionContext(this);

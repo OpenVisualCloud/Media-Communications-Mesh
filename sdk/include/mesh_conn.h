@@ -20,6 +20,7 @@ struct mesh_internal_ops_t {
     int (*enqueue_buf)(mcm_conn_context *pctx, mcm_buffer *buf);
 
     void * (*grpc_create_client)();
+    void * (*grpc_create_client_json)(std::string& addr, std::string& port);
     void (*grpc_destroy_client)(void *client);
     void * (*grpc_create_conn)(void *client, mcm_conn_param *param);
     void (*grpc_destroy_conn)(void *conn);
