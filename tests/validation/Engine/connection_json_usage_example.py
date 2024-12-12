@@ -1,3 +1,7 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2024 Intel Corporation
+# Intel® Media Communications Mesh
+
 from connection import ConnectionMode, Rdma, TransportType, St2110
 from payload import Audio, Video
 
