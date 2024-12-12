@@ -15,6 +15,7 @@
 
 #include "conn.h"
 #include "mesh_dp.h"
+#include "mesh_json_proxy.h"
 #include "logger.h"
 
 namespace mesh::connection {
@@ -27,6 +28,13 @@ int mesh_video_format_to_st_format(int fmt, st_frame_fmt& st_fmt);
 int mesh_audio_format_to_st_format(int fmt, st30_fmt& st_fmt);
 int mesh_audio_sampling_to_st_sampling(int sampling, st30_sampling& st_sampling);
 int mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime& st_ptime);
+
+int mesh_video_format_to_st_format(Video_Format mesh_fmt, st_frame_fmt& st_fmt);
+int mesh_pacing_to_st20_pacing(ST2110_Pacing mesh_pacing, st21_pacing& st_pacing);
+int mesh_pacing_to_st30_pacing(ST2110_Pacing mesh_pacing, st30_tx_pacing_way& st_pacing);
+int mesh_audio_format_to_st_format(Audio_Format mesh_fmt, st30_fmt& st_fmt);
+int mesh_audio_sampling_to_st_sampling(Audio_SampleRate sampling, st30_sampling& st_sampling);
+int mesh_audio_ptime_to_st_ptime(Audio_PacketTime ptime, st30_ptime& st_ptime);
 
 void *get_frame_data_ptr(st_frame *src);
 void *get_frame_data_ptr(st30_frame *src);
@@ -44,14 +52,14 @@ int mtl_get_session_id();
  * inherit this class.
  */
 template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public Connection {
-  public:
+public:
     virtual ~ST2110() {
         shutdown(_ctx);
         if (ops.name)
             free((void *)ops.name);
     };
 
-  protected:
+protected:
     mtl_handle mtl_device = nullptr;
     HANDLE mtl_session = nullptr;
     OPS ops = {0};
@@ -65,7 +73,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public C
     virtual HANDLE create_session(mtl_handle, OPS *) = 0;
     virtual int close_session(HANDLE) = 0;
 
-    //Wrapper for get_mtl_device, override only for UnitTest purpose
+    // Wrapper for get_mtl_device, override only for UnitTest purpose
     virtual mtl_handle get_mtl_dev_wrapper(const std::string& dev_port, mtl_log_level log_level,
                                            const std::string& ip_addr) {
         return get_mtl_device(dev_port, log_level, ip_addr);
@@ -95,6 +103,31 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public C
     virtual int configure_common(context::Context& ctx, const std::string& dev_port,
                                  const MeshConfig_ST2110& cfg_st2110) {
         ip_addr = std::string(cfg_st2110.local_ip_addr);
+        strlcpy(ops.port.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
+        ops.port.num_port = 1;
+
+        char session_name[NAME_MAX] = "";
+        snprintf(session_name, NAME_MAX, "mcm_mtl_%d", mtl_get_session_id());
+        if (ops.name)
+            free((void *)ops.name);
+        ops.name = strdup(session_name);
+        ops.framebuff_cnt = 4;
+
+        ops.priv = this; // app handle register to lib
+        ops.notify_frame_available = frame_available_cb;
+
+        log::info("ST2110: configure")
+            ("port", ops.port.port[MTL_PORT_P])
+            ("num_port", (int)ops.port.num_port)
+            ("name", ops.name)
+            ("framebuff_cnt", ops.framebuff_cnt);
+
+        return 0;
+    }
+
+    int configure_common(context::Context& ctx, const std::string& dev_port,
+                         const std::string& local_ip_addr) {
+        ip_addr = local_ip_addr;
         strlcpy(ops.port.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
         ops.port.num_port = 1;
 

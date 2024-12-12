@@ -104,6 +104,139 @@ int mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime& st_ptime) {
     return 0; // Success
 }
 
+int mesh_video_format_to_st_format(Video_Format mesh_fmt, st_frame_fmt& st_fmt) {
+    switch (mesh_fmt) {
+    case VIDEO_FORMAT_NV12:
+        st_fmt = ST_FRAME_FMT_YUV420CUSTOM8;
+        break;
+    case VIDEO_FORMAT_YUV422P:
+        st_fmt = ST_FRAME_FMT_YUV422PLANAR8;
+        break;
+    case VIDEO_FORMAT_YUV422P10LE:
+        st_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
+        break;
+    case VIDEO_FORMAT_YUV444P10LE:
+        st_fmt = ST_FRAME_FMT_YUV444PLANAR10LE;
+        break;
+    case VIDEO_FORMAT_RGB8:
+        st_fmt = ST_FRAME_FMT_RGB8;
+        break;
+    default:
+        return -1; // Error: unknown format
+    }
+
+    return 0; // Success
+}
+
+int mesh_pacing_to_st20_pacing(ST2110_Pacing mesh_pacing, st21_pacing& st_pacing) {
+    switch (mesh_pacing) {
+    case PACING_ST2110_DEFAULT:
+    case PACING_ST2110_20_NARROW:
+        st_pacing = ST21_PACING_NARROW;
+        break;
+    case PACING_ST2110_20_WIDE:
+        st_pacing = ST21_PACING_WIDE;
+        break;
+    case PACING_ST2110_20_LINEAR:
+        st_pacing = ST21_PACING_LINEAR;
+        break;
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+int mesh_pacing_to_st30_pacing(ST2110_Pacing mesh_pacing, st30_tx_pacing_way& st_pacing) {
+    switch (mesh_pacing) {
+    case PACING_ST2110_DEFAULT:
+        st_pacing = ST30_TX_PACING_WAY_AUTO;
+        break;
+    case PACING_ST2110_30_RL:
+        st_pacing = ST30_TX_PACING_WAY_RL;
+        break;
+    case PACING_ST2110_30_TSC:
+        st_pacing = ST30_TX_PACING_WAY_TSC;
+        break;
+    default:
+        return -1;
+    }
+
+    return 0;
+}
+
+int mesh_audio_format_to_st_format(Audio_Format mesh_fmt, st30_fmt& st_fmt) {
+    switch (mesh_fmt) {
+    case AUDIO_FORMAT_PCM_S8:
+        st_fmt = ST30_FMT_PCM8;
+        break;
+    case AUDIO_FORMAT_PCM_S16BE:
+        st_fmt = ST30_FMT_PCM16;
+        break;
+    case AUDIO_FORMAT_PCM_S24BE:
+        st_fmt = ST30_FMT_PCM24;
+        break;
+    default:
+        return -1; // Error: unknown format
+    }
+
+    return 0; // Success
+}
+
+int mesh_audio_sampling_to_st_sampling(Audio_SampleRate sampling, st30_sampling& st_sampling) {
+    switch (sampling) {
+    case AUDIO_SAMPLE_RATE_48000:
+        st_sampling = ST30_SAMPLING_48K;
+        break;
+    case AUDIO_SAMPLE_RATE_96000:
+        st_sampling = ST30_SAMPLING_96K;
+        break;
+    case AUDIO_SAMPLE_RATE_44100:
+        st_sampling = ST31_SAMPLING_44K;
+        break;
+    default:
+        return -1; // Error: unknown sampling rate
+    }
+
+    return 0; // Success
+}
+
+int mesh_audio_ptime_to_st_ptime(Audio_PacketTime ptime, st30_ptime& st_ptime) {
+    switch (ptime) {
+    case AUDIO_PACKET_TIME_1MS:
+        st_ptime = ST30_PTIME_1MS;
+        break;
+    case AUDIO_PACKET_TIME_125US:
+        st_ptime = ST30_PTIME_125US;
+        break;
+    case AUDIO_PACKET_TIME_250US:
+        st_ptime = ST30_PTIME_250US;
+        break;
+    case AUDIO_PACKET_TIME_333US:
+        st_ptime = ST30_PTIME_333US;
+        break;
+    case AUDIO_PACKET_TIME_4MS:
+        st_ptime = ST30_PTIME_4MS;
+        break;
+    case AUDIO_PACKET_TIME_80US:
+        st_ptime = ST31_PTIME_80US;
+        break;
+    case AUDIO_PACKET_TIME_1_09MS:
+        st_ptime = ST31_PTIME_1_09MS;
+        break;
+    case AUDIO_PACKET_TIME_0_14MS:
+        st_ptime = ST31_PTIME_0_14MS;
+        break;
+    case AUDIO_PACKET_TIME_0_09MS:
+        st_ptime = ST31_PTIME_0_09MS;
+        break;
+    default:
+        return -1; // Error: unknown packet time
+    }
+
+    return 0; // Success
+}
+
 void *get_frame_data_ptr(st_frame *src) { return src->addr[0]; }
 
 void *get_frame_data_ptr(st30_frame *src) { return src->addr; }
