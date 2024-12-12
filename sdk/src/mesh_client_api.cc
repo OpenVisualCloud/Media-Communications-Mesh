@@ -105,6 +105,12 @@ void * mesh_grpc_create_client()
     return client;
 }
 
+void *mesh_grpc_create_client_json(std::string& addr, std::string& port) {
+    auto client = new (std::nothrow)
+        SDKAPIClient(grpc::CreateChannel(addr + ":" + port, grpc::InsecureChannelCredentials()));
+    return client;
+}
+
 void mesh_grpc_destroy_client(void *client)
 {
     if (client) {

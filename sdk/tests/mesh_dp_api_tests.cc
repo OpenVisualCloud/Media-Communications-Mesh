@@ -99,6 +99,11 @@ void * mock_grpc_create_client()
     return NULL;
 }
 
+void * mock_grpc_create_client_json(std::string& addr, std::string& port)
+{
+    return NULL;
+}
+
 void mock_grpc_destroy_client(void *client)
 {
 }
@@ -123,6 +128,7 @@ void APITests_Setup()
     mesh_internal_ops.enqueue_buf = mock_enqueue_buf;
 
     mesh_internal_ops.grpc_create_client = mock_grpc_create_client;
+    mesh_internal_ops.grpc_create_client_json = mock_grpc_create_client_json;
     mesh_internal_ops.grpc_destroy_client = mock_grpc_destroy_client;
     mesh_internal_ops.grpc_create_conn = mock_grpc_create_conn;
     mesh_internal_ops.grpc_destroy_conn = mock_grpc_destroy_conn;

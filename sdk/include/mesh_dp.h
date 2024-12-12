@@ -283,6 +283,18 @@ typedef struct{
 int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg);
 
 /**
+ * @brief Create a new mesh client.
+ *
+ * Creates a new mesh client from the given json configuration structure.
+ *
+ * @param [out] mc Address of a pointer to a mesh client structure.
+ * @param [in] cfg Pointer to a json configuration string.
+ *
+ * @return 0 on success; an error code otherwise.
+ */
+int mesh_create_client_json(MeshClient **mc, const char *cfg);
+
+/**
  * @brief Delete mesh client.
  * 
  * Deletes the mesh client and its resources.
@@ -304,6 +316,22 @@ int mesh_delete_client(MeshClient **mc);
  * @return 0 on success; an error code otherwise.
  */
 int mesh_create_connection(MeshClient *mc, MeshConnection **conn);
+
+/**
+ * @brief Create a new mesh transmitter connection.
+ * @param [in] mc Pointer to a parent mesh client.
+ * @param [in] cfg Pointer to a json configuration string.
+ * @param [out] conn Address of a pointer to the connection structure.
+ */
+int mesh_create_tx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg);
+
+/**
+ * @brief Create a new mesh receiver connection.
+ * @param [in] mc Pointer to a parent mesh client.
+ * @param [in] cfg Pointer to a json configuration string.
+ * @param [out] conn Address of a pointer to the connection structure.
+ */
+int mesh_create_rx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg);
 
 /**
  * @brief Apply configuration to setup Single node direct connection via memif.

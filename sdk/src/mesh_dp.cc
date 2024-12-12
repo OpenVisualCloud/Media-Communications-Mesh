@@ -31,6 +31,34 @@ int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg)
 }
 
 /**
+ * Create a new mesh client
+ */
+int mesh_create_client_json(MeshClient **mc, const char *cfg) {
+    if (!mc)
+        return -MESH_ERR_BAD_CLIENT_PTR;
+
+    if(!cfg)
+        return -MESH_ERR_BAD_CONFIG_PTR;
+
+    ClientContext *mc_ctx = new (std::nothrow) ClientContext();
+    if (!mc_ctx) {
+        *mc = NULL;
+        return -ENOMEM;
+    }
+
+    std::string cfg_string(cfg);
+    int ret = mc_ctx->init_json(cfg_string);
+    if(ret){
+        delete mc_ctx;
+        return ret;
+    }
+
+    *mc = (MeshClient *)mc_ctx;
+
+    return 0;
+}
+
+/**
  * Delete mesh client
  */
 int mesh_delete_client(MeshClient **mc)
@@ -64,6 +92,48 @@ int mesh_create_connection(MeshClient *mc, MeshConnection **conn)
     ClientContext *mc_ctx = (ClientContext *)mc;
 
     return mc_ctx->create_conn(conn);
+}
+
+int mesh_create_tx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg){
+    if (!mc)
+        return -MESH_ERR_BAD_CLIENT_PTR;
+
+    if(!cfg)
+        return -MESH_ERR_BAD_CONFIG_PTR;
+
+    ClientContext *mc_ctx = (ClientContext *)mc;
+
+    int ret = mc_ctx->create_conn_json(conn);
+    if(ret)
+        return ret;
+
+    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
+
+    //TODO: Pass connection configuration to establish connection
+    //std::string cfg_json(cfg);
+    //return conn_ctx->establish(MESH_CONN_KIND_SENDER/*, cfg_json*/);
+    return -MESH_ERR_BAD_CONFIG_PTR;
+}
+
+int mesh_create_rx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg){
+    if (!mc)
+        return -MESH_ERR_BAD_CLIENT_PTR;
+
+    if(!cfg)
+        return -MESH_ERR_BAD_CONFIG_PTR;
+
+    ClientContext *mc_ctx = (ClientContext *)mc;
+
+    int ret = mc_ctx->create_conn_json(conn);
+    if(ret)
+        return ret;
+
+    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
+
+    //TODO: Pass connection configuration to establish connection
+    //std::string cfg_json(cfg);
+    //return conn_ctx->establish(MESH_CONN_KIND_RECEIVER/*, cfg_json*/);
+    return -MESH_ERR_BAD_CONFIG_PTR;
 }
 
 /**

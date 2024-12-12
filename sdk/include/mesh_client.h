@@ -9,6 +9,7 @@
 #include <list>
 #include <mutex>
 #include "mesh_dp.h"
+#include "mesh_json.h"
 
 namespace mesh {
 
@@ -20,11 +21,18 @@ class ConnectionContext;
 class ClientContext {
 public:
     ClientContext(MeshClientConfig *cfg);
+    ClientContext() {};
     int init();
     int shutdown();
     int create_conn(MeshConnection **conn);
 
+    int init_json(std::string& cfg);
+    int create_conn_json(MeshConnection **conn);
+
     MeshClientConfig config = {};
+
+    bool enable_grpc_with_json = false;
+    ClientConfig cfg_json;
 
     std::list<ConnectionContext *> conns;
     std::mutex mx;
