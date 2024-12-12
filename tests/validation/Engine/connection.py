@@ -25,7 +25,7 @@ class Connection:
             return {
                 "connection": {
                     "st2110": {
-                        "transport": self.transport.value, #FIXME: a tuple with one value?
+                        "transport": self.transport.value[0],
                         "remoteIpAddr": self.remoteIpAddr,
                         "remotePort": self.remotePort,
                         "pacing": self.pacing,
