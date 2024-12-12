@@ -16,6 +16,7 @@ ProxyContext::ProxyContext(void)
     , mTcpCtrlAddr("0.0.0.0:8002")
     , imtl_init_preparing(false), mSessionCount(0)
 {
+    mRpcCtrlPort = 8001;
     mTcpCtrlPort = 8002;
 }
 
