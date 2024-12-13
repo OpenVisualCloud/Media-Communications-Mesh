@@ -4,35 +4,37 @@
 
 from connection import ConnectionMode, Rdma, TransportType, St2110
 
-connection = Rdma(
-    connectionMode=ConnectionMode.UC,
-    maxLatencyNs=30000
-)
+connection = Rdma(connectionMode=ConnectionMode.UC, maxLatencyNs=30000)
 
-print(f"""connection info:
+print(
+    f"""connection info:
 connectionMode={connection.connectionMode}
 maxLatencyNs={connection.maxLatencyNs}
-""")
-
-
-print(f"""Dict:
-{connection.toDict()}
-""")
-
-conn = St2110(
-    transport=TransportType.ST30,
-    pacing="wide"
+"""
 )
 
-print(f"""conn info:
+
+print(
+    f"""Dict:
+{connection.toDict()}
+"""
+)
+
+conn = St2110(transport=TransportType.ST30, pacing="wide")
+
+print(
+    f"""conn info:
 transport={conn.transport}
 remoteIpAddr={conn.remoteIpAddr}
 remotePort={conn.remotePort}
 pacing={conn.pacing}
 payloadType={conn.payloadType}
-""")
+"""
+)
 
 
-print(f"""Dict:
+print(
+    f"""Dict:
 {conn.toDict()}
-""")
+"""
+)

@@ -2,7 +2,7 @@
 # Copyright 2024 Intel Corporation
 # Intel® Media Communications Mesh
 
-pytest_plugins = ["tests.Engine.fixtures", "tests.Engine.logging"]
+pytest_plugins = ["Engine.fixtures", "Engine.logging"]
 
 
 def pytest_addoption(parser):

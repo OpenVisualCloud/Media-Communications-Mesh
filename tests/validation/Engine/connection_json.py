@@ -7,15 +7,17 @@ import json
 from connection import Connection
 from payload import Payload
 
+
 class ConnectionJson:
     """Class used to prepare connection.json config file"""
+
     def __init__(
         self,
         bufferQueueCapacity=16,
         maxPayloadSize=2097152,
         maxMetadataSize=8192,
         connection=Connection(),
-        payload=Payload()
+        payload=Payload(),
     ):
         self.bufferQueueCapacity = bufferQueueCapacity
         self.maxPayloadSize = maxPayloadSize
@@ -29,7 +31,7 @@ class ConnectionJson:
             "maxPayloadSize": self.maxPayloadSize,
             "maxMetadataSize": self.maxMetadataSize,
             **self.connection.toDict(),
-            **self.payload.toDict()
+            **self.payload.toDict(),
         }
 
     def toJson(self):
