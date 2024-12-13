@@ -16,7 +16,7 @@ maxLatencyNs={connection.maxLatencyNs}
 
 print(
     f"""Dict:
-{connection.toDict()}
+{connection.to_dict()}
 """
 )
 
@@ -35,6 +35,6 @@ payloadType={conn.payloadType}
 
 print(
     f"""Dict:
-{conn.toDict()}
+{conn.to_dict()}
 """
 )

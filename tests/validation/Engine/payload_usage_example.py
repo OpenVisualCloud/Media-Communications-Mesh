@@ -18,7 +18,7 @@ type={payload.payload_type}
 
 print(
     f"""Dict:
-{payload.toDict()}
+{payload.to_dict()}
 """
 )
 
@@ -34,6 +34,6 @@ type={pl.payload_type}
 
 print(
     f"""Dict:
-{pl.toDict()}
+{pl.to_dict()}
 """
 )

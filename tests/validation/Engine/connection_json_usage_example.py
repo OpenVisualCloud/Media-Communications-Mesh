@@ -19,7 +19,7 @@ maxLatencyNs={connection.maxLatencyNs}
 
 print(
     f"""Dict:
-{connection.toDict()}
+{connection.to_dict()}
 """
 )
 
@@ -37,7 +37,7 @@ type={payload.payload_type}
 
 print(
     f"""Dict:
-{payload.toDict()}
+{payload.to_dict()}
 """
 )
 
@@ -46,13 +46,13 @@ cj = ConnectionJson(bufferQueueCapacity=32, payload=payload, connection=connecti
 
 print(
     f"""Dict:
-{cj.toDict()}
+{cj.to_dict()}
 """
 )
 
 print(
     f"""JSON:
-{cj.toJson()}
+{cj.to_json()}
 """
 )
 
@@ -73,7 +73,7 @@ payloadType={conn.payloadType}
 
 print(
     f"""Dict:
-{conn.toDict()}
+{conn.to_dict()}
 """
 )
 
@@ -89,7 +89,7 @@ type={pl.payload_type}
 
 print(
     f"""Dict:
-{pl.toDict()}
+{pl.to_dict()}
 """
 )
 
@@ -98,12 +98,12 @@ cj = ConnectionJson(maxPayloadSize=1024, payload=pl, connection=conn)
 
 print(
     f"""Dict:
-{cj.toDict()}
+{cj.to_dict()}
 """
 )
 
 print(
     f"""JSON:
-{cj.toJson()}
+{cj.to_json()}
 """
 )

@@ -24,7 +24,7 @@ int main(int argc, char** argv){
   printf("reading client configuration... \n");  
   client_cfg = parse_json_to_string("client.json");
   printf("reading connection configuration... \n");
-  conn_cfg = parse_json_to_string("connection.json");
+  conn_cfg = ""; //parse_json_to_string("connection.json");
   mcm_ts mcm;
   mcm_init_client(&mcm, client_cfg);
   mcm_create_tx_connection(&mcm, conn_cfg);

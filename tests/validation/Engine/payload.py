@@ -6,9 +6,9 @@ from enum import Enum
 
 
 class PayloadType(Enum):
-    VIDEO = ("video",)
-    AUDIO = ("audio",)
-    ANCIL = ("ancillary",)
+    VIDEO = "video"
+    AUDIO = "audio"
+    ANCIL = "ancillary"
     BLOB = "blob"
 
 
@@ -20,7 +20,7 @@ class Payload:
     def __init__(self, payload_type=PayloadType.VIDEO):
         self.payload_type = payload_type
 
-    def toDict(self) -> dict:
+    def to_dict(self) -> dict:
         if self.payload_type == PayloadType.VIDEO:
             return {
                 "payload": {

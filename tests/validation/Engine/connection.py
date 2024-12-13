@@ -6,8 +6,9 @@ from enum import Enum
 
 
 class ConnectionType(Enum):
-    MPG = (0,)
-    ST2110 = (1,)
+    NONE = -1
+    MPG = 0
+    ST2110 = 1
     RDMA = 2
 
 
@@ -16,33 +17,8 @@ class Connection:
 
     connection_type = None
 
-    def __init__(self, connection_type=ConnectionType.MPG):
+    def __init__(self, connection_type=ConnectionType.NONE):
         self.connection_type = connection_type
-
-    def toDict(self) -> dict:
-        if self.connection_type == ConnectionType.MPG:
-            return {"connection": {"multipoint-group": {"urn": self.urn}}}
-        elif self.connection_type == ConnectionType.ST2110:
-            return {
-                "connection": {
-                    "st2110": {
-                        "transport": self.transport.value[0],
-                        "remoteIpAddr": self.remoteIpAddr,
-                        "remotePort": self.remotePort,
-                        "pacing": self.pacing,
-                        "payloadType": self.payloadType,
-                    }
-                }
-            }
-        elif self.connection_type == ConnectionType.RDMA:
-            return {
-                "connection": {
-                    "rdma": {
-                        "connectionMode": self.connectionMode.value,
-                        "maxLatencyNs": self.maxLatencyNs,
-                    }
-                }
-            }
 
 
 class MultipointGroup(Connection):
@@ -55,12 +31,15 @@ class MultipointGroup(Connection):
     def set_multipointgroup(self, edits: dict):
         self.urn = edits.get("urn", self.urn)
 
+    def to_dict(self) -> dict:
+        return {"connection": {"multipoint-group": {"urn": self.urn}}}
+
 
 class TransportType(Enum):
-    ST20 = ("st2110-20",)
-    ST22 = ("st2110-22",)
-    ST30 = ("st2110-30",)
-    ST40 = ("st2110-40",)
+    ST20 = "st2110-20"
+    ST22 = "st2110-22"
+    ST30 = "st2110-30"
+    ST40 = "st2110-40"
     ST41 = "st2110-41"
 
 
@@ -89,6 +68,19 @@ class St2110(Connection):
         self.pacing = edits.get("pacing", self.pacing)
         self.payloadType = edits.get("payloadType", self.payloadType)
 
+    def to_dict(self) -> dict:
+        return {
+            "connection": {
+                "st2110": {
+                    "transport": self.transport.value[0],
+                    "remoteIpAddr": self.remoteIpAddr,
+                    "remotePort": self.remotePort,
+                    "pacing": self.pacing,
+                    "payloadType": self.payloadType,
+                }
+            }
+        }
+
 
 class ConnectionMode(Enum):
     RC = "RC"
@@ -108,3 +100,13 @@ class Rdma(Connection):
     def set_rdma(self, edits: dict):
         self.connectionMode = edits.get("connectionMode", self.connectionMode)
         self.maxLatencyNs = edits.get("maxLatencyNs", self.maxLatencyNs)
+
+    def to_dict(self) -> dict:
+        return {
+            "connection": {
+                "rdma": {
+                    "connectionMode": self.connectionMode.value,
+                    "maxLatencyNs": self.maxLatencyNs,
+                }
+            }
+        }

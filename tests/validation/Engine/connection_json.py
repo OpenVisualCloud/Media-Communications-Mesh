@@ -4,8 +4,8 @@
 
 import json
 
-from connection import Connection
-from payload import Payload
+from .connection import Connection
+from .payload import Payload
 
 
 class ConnectionJson:
@@ -25,14 +25,18 @@ class ConnectionJson:
         self.connection = connection
         self.payload = payload
 
-    def toDict(self) -> dict:
+    def to_dict(self) -> dict:
         return {
             "bufferQueueCapacity": self.bufferQueueCapacity,
             "maxPayloadSize": self.maxPayloadSize,
             "maxMetadataSize": self.maxMetadataSize,
-            **self.connection.toDict(),
-            **self.payload.toDict(),
+            **self.connection.to_dict(),
+            **self.payload.to_dict(),
         }
 
-    def toJson(self):
-        return json.dumps(self.toDict())
+    def to_json(self):
+        return json.dumps(self.to_dict(), indent=4)
+
+    def prepare_and_save_json(self, output_path="connection.json"):
+        with open(output_path, "w") as connection_json_file:
+            connection_json_file.write(self.to_json())
