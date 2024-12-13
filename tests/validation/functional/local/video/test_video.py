@@ -25,13 +25,15 @@ def test_video():
         logging.debug(line)
     connection.prepare_and_save_json(output_path="../tools/TestApp/build/connection.json")
 
-    # Create a 1MB random file
+    # Create a 1MB random file (for testing purposes)
     Engine.execute.run("dd if=/dev/urandom of=/tmp/random_file.bin bs=1M count=1")
-    rx = Engine.execute.call("./RxApp", cwd="../tools/TestApp/build", timeout=0)
-    tx = Engine.execute.run(
-        f"./TxApp /tmp/random_file.bin {rx.process.pid}", testcmd=True, cwd="../tools/TestApp/build"
-    )
-    if tx.returncode != 0:
-        Engine.execute.log_fail(f"TxApp failed with return code {tx.returncode}")
-    rx.process.send_signal(2)  # SIGINT
-    rx.process.wait()
+    try:
+        rx = Engine.execute.call("./RxApp", cwd="../tools/TestApp/build", timeout=0)
+        tx = Engine.execute.run(
+            f"./TxApp /tmp/random_file.bin {rx.process.pid}", testcmd=True, cwd="../tools/TestApp/build"
+        )
+        if tx.returncode != 0:
+            Engine.execute.log_fail(f"TxApp failed with return code {tx.returncode}")
+    finally:
+        rx.process.send_signal(2)  # SIGINT
+        rx.process.wait()
