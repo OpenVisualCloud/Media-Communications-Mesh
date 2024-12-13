@@ -96,6 +96,13 @@ class EmulatedST2110_Tx : public connection::ST2110Tx<st_frame, int *, st20p_tx_
         free(h);
         return 0;
     }
+
+    mtl_handle get_mtl_dev_wrapper(const std::string& dev_port, mtl_log_level log_level,
+                                   const std::string& ip_addr) override {
+        // For unit test purpose, return this object as mtl_handle, this will not be accessed except
+        // checking for nullptr
+        return (mtl_handle)(this);
+    }
 };
 
 class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, st20p_rx_ops> {
@@ -138,6 +145,13 @@ class EmulatedST2110_Rx : public connection::ST2110Rx<st_frame, int *, st20p_rx_
     int close_session(int *h) override {
         free(h);
         return 0;
+    }
+
+    mtl_handle get_mtl_dev_wrapper(const std::string& dev_port, mtl_log_level log_level,
+                                   const std::string& ip_addr) override {
+        // For unit test purpose, return this object as mtl_handle, this will not be accessed except
+        // checking for nullptr
+        return (mtl_handle)(this);
     }
 };
 

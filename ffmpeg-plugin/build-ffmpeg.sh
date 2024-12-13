@@ -15,6 +15,8 @@ BUILD_DIR="${BUILD_DIR:-${REPOSITORY_DIR}/_build}"
 lib_setup_ffmpeg_dir_and_version "${FFMPEG_VER:-7.0}"
 export FFMPEG_DIR="${BUILD_DIR}/${FFMPEG_SUB_DIR}"
 
+cp -f "${SCRIPT_DIR}/mcm_"* "${FFMPEG_DIR}/libavdevice/"
+
 make -C "${FFMPEG_DIR}" -j "$(nproc)"
 as_root make -C "${FFMPEG_DIR}" install
 

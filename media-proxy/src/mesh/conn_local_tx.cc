@@ -42,12 +42,12 @@ Result LocalTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
     if (err != MEMIF_ERR_SUCCESS) {
         log::error("rx_st20p_consume_frame: Failed to alloc memif buffer: %s",
                    memif_strerror(err));
-        return Result::error_general_failure;
+        return set_result(Result::error_general_failure);
     }
 
     if (!shm_bufs.data) {
         log::error("Local Tx: shm_bufs.data == NULL");
-        return Result::error_general_failure;
+        return set_result(Result::error_general_failure);
     }
 
     memcpy(shm_bufs.data, ptr, sz);
@@ -57,9 +57,10 @@ Result LocalTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
     err = memif_tx_burst(memif_conn, qid, &shm_bufs, rx_buf_num, &rx);
     if (err != MEMIF_ERR_SUCCESS) {
         log::error("rx_st20p_consume_frame memif_tx_burst: %s", memif_strerror(err));
+        metrics.errors++;
     }
 
-    return Result::success;
+    return set_result(Result::success);
 }
 
 } // namespace mesh::connection
