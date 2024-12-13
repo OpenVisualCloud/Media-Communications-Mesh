@@ -32,6 +32,7 @@ set(target media_proxy)
 set(MTL_LIB mtl)
 set(MEMIF_LIB memif)
 set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
+set(NLOHMANN_JSON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../sdk/3rdparty/nlohmann)
 
 # Find Protobuf and gRPC
 find_package(Protobuf CONFIG REQUIRED)
@@ -113,6 +114,7 @@ include_directories(
     ${Protobuf_INCLUDE_DIRS}
     ${gRPC_INCLUDE_DIRS}
     ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
+    ${NLOHMANN_JSON_DIR}
 )
 
 add_library(media_proxy_lib STATIC ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS}
