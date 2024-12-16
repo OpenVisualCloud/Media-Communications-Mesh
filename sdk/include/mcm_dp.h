@@ -207,6 +207,7 @@ typedef struct {
 /* rdma format */
 typedef struct {
     size_t transfer_size;
+    int queue_size;
 } mcm_rdma_args;
 
 typedef struct {
