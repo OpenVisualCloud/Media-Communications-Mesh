@@ -71,14 +71,18 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
 3. **Install Dependencies**, choose between **OPTION A** or **OPTION B**.
 
-    - **OPTION A:** Use all-in-one environment preparation script. The script was tested under `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, `CentOS Stream9` and kernel version `5.15` environments.
-        To use this option run the following command:
+    - **OPTION A:** Use environment preparation scripts. The scripts were tested under environments with `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, and `CentOS Stream9`, installed alongside `5.15` kernel.
+        To use this option run the following commands:
 
         ```bash
         sudo ./scripts/setup_build_env.sh
         ```
+        and then
+        ```bash
+        sudo ./scripts/setup_ice_irdma.sh
+        ```
 
-        Reboot the machine after the script is executed.
+        Reboot the machine after the scripts are executed.
 
     - **OPTION B:** The following method is universal and should work for most Linux OS distributions.
 
