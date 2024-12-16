@@ -115,6 +115,7 @@ include_directories(
     ${gRPC_INCLUDE_DIRS}
     ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
     ${NLOHMANN_JSON_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sdk/3rdparty/libmemif/src
 )
 
 add_library(media_proxy_lib STATIC ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS}
