@@ -125,14 +125,12 @@ void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
     st_param.log_level = log_level;
     st_param.priv = NULL;
     st_param.ptp_get_time_fn = NULL;
-    // Native af_xdp have only 62 queues available
-    if (st_param.pmd[MTL_PORT_P] == MTL_PMD_NATIVE_AF_XDP) {
-        st_param.rx_queues_cnt[MTL_PORT_P] = 62;
-        st_param.tx_queues_cnt[MTL_PORT_P] = 62;
-    } else {
-        st_param.rx_queues_cnt[MTL_PORT_P] = 128;
-        st_param.tx_queues_cnt[MTL_PORT_P] = 128;
-    }
+
+    // mtl backend supports up to 16 schedulers
+    // without SHARED QUEUES flag every scheduler "gets" one queue
+    // setting rx_queues_cnt/tx_queues_cnt to max supported size
+    st_param.rx_queues_cnt[MTL_PORT_P] = 16;
+    st_param.tx_queues_cnt[MTL_PORT_P] = 16;
     st_param.lcores = NULL;
     st_param.memzone_max = 9000;
 }
