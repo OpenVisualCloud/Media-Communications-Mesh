@@ -2,11 +2,51 @@
 
 This part of the repository is to be used solely for holding validation applications for Media Communications Mesh API and other files related to validating mentioned API.
 
+## Framework
+
+Framework is based on Pytest.
+
+It was improved with:
+
+- additional logging capabilities, each test case has its own log file. This allows to execute it using GTA and recognize each test case as a subtask,
+- all previous logs are kept in logs folder,
+- log files are colored green (PASS) and red (FAIL),
+- additional log levels were added to keep logs of:
+  - TESTCMD - command used to execute the actual test case,
+  - CMD - additional commands required by test case for setup or result validation,
+  - STDOUT - stdout of commands,
+  - DMESG - dmesg generated during test case execution,
+  - RESULT - human readable result output,
+- ability to mark the test cases as xfails and assign them to bug tickets,
+- ability to mark the test cases as covering the requirements,
+- generation of logs/latest/report.csv with results, test commands and other result info.
+
+Project uses flake8, black and markdownlint as linters. All of these are available as VSCode extenstions.
+
+- pyproject.toml - black configuration
+- setup.cfg - flake8 configuration
+- settings.json - example settings for VSCode, to be copied to .vscode/settings.json
+
+## Development setup
+
+```bash
+cd tests/validation
+python -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+For VSCode:
+
+- set Python interpreter to: tests/validation/.venv/bin/python
+- copy content of tests/validation/settings.json to .vscode/settings.json
+
 ## Creating virtual functions
 
 In order to create proper virtual functions (VFs):
 
 1. Find addresses of 800-series (E810) card network interfaces with `lshw -C network`:
+
     ```text
     (...)
     *-network:0
@@ -41,8 +81,10 @@ In order to create proper virtual functions (VFs):
          resources: iomemory:2eff0-2efef iomemory:2eff0-2efef irq:16   memory:2efff8000000-2efff9ffffff memory:2efffe000000-2efffe00ffff   memory:f1500000-f15fffff memory:2efffc000000-2efffcffffff   memory:2efffe020000-2efffe21ffff
     (...)
     ```
+
 2. Note the address of a PCI bus for the interface to be used as a VF-bound. Use only interfaces with `link=yes`, like `eth1` above.
-2. Use a `nicctl.sh` script from Media Transport Library to create the VFs `${mtl}/script/nicctl.sh create_vf <pci_bus_address>`, e.g. `${mtl}/script/nicctl.sh create_vf 0000:c0:00.1`.
+3. Use a `nicctl.sh` script from Media Transport Library to create the VFs `${mtl}/script/nicctl.sh create_vf <pci_bus_address>`, e.g. `${mtl}/script/nicctl.sh create_vf 0000:c0:00.1`.
+
     ```text
     0000:c0:00.1 'Ethernet Controller E810-C for QSFP 1592' if=eth1 drv=ice unused=vfio-pci
     Bind 0000:c0:11.0(eth4) to vfio-pci success
@@ -60,9 +102,10 @@ This section was partially based on [Media Transport Library instruction](https:
 
 > **Note:** [Minimal Media Transport Library setup](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md#4-setup-hugepage) specifies setting up 4 GB hugepages altogether. Below paragraph is just a recommendation, which should be used for testing purposes.
 
-To ensure stable testing of Media Proxy, as super user, `echo 4 > /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages` (creating 4 * 1 GB hugepages) and `echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages` (creating 2048 * 2 MB hugepages).
+To ensure stable testing of Media Proxy, as super user, `echo 4 > /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages` (creating 4 *1 GB hugepages) and `echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages` (creating 2048* 2 MB hugepages).
 
 Error thrown when the hugepages are not properly setup:
+
 ```text
 EAL: No free 2048 kB hugepages reported on node 0
 EAL: No free 2048 kB hugepages reported on node 1
