@@ -159,7 +159,7 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx) {
                 log::error("RDMA rx failed to read CQ error entry")
                           ("error", fi_strerror(-err_ret))("kind", kind2str(_kind));
             }
-        } else if (ret == -107) {
+        } else if (ret == -FI_ENOTCONN) {
             // Handle disconnection (Transport endpoint is not connected)
             log::warn("Transport endpoint is not connected. Waiting for new connection.")(
                 "error", fi_strerror(ret))("kind", kind2str(_kind));
