@@ -75,11 +75,11 @@ The Media Communications Mesh enables efficient, low-latency media transport for
         To use this option run the following commands:
 
         ```bash
-        sudo ./scripts/setup_build_env.sh
+        sudo ./scripts/setup_ice_irdma.sh
         ```
         and then
         ```bash
-        sudo ./scripts/setup_ice_irdma.sh
+        sudo ./scripts/setup_build_env.sh
         ```
 
         Reboot the machine after the scripts are executed.
