@@ -147,10 +147,9 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx) {
             struct fi_cq_err_entry err_entry;
             int err_ret = fi_cq_readerr(ep_ctx->cq_ctx.cq, &err_entry, 0);
             if (err_ret >= 0) {
-                if (err_entry.err == FI_ECONNRESET || err_entry.err == -107) {
-                    log::warn("RDMA connection reset or endpoint not connected. Waiting for new "
-                              "connection.")("error", fi_strerror(err_entry.err))
-                              ("kind",kind2str(_kind));
+                if (err_entry.err == -FI_ECONNRESET || err_entry.err == -FI_ENOTCONN) {
+                    log::warn("RDMA connection reset or endpoint not connected. Waiting for new connection.")
+                             ("error", fi_strerror(err_entry.err))("kind",kind2str(_kind));
                     thread::Sleep(ctx, std::chrono::milliseconds(1000)); // Pause before retrying
                 } else {
                     log::error("RDMA rx encountered an error in CQ")(

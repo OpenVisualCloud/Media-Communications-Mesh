@@ -12,6 +12,9 @@
 
 #include "libfabric_dev.h"
 
+const char *LIB_FABRIC_ATTR_PROV_NAME_TCP = "tcp";
+const char *LIB_FABRIC_ATTR_PROV_NAME_VERBS = "verbs";
+
 /* We need to free any data that we allocated before freeing the
  * hints.
  */
@@ -107,7 +110,7 @@ int rdma_init(libfabric_ctx **ctx)
     hints->ep_attr->type = FI_EP_RDM;
     hints->caps = FI_MSG;
     hints->addr_format = FI_SOCKADDR_IN;
-    hints->fabric_attr->prov_name = strdup("tcp");
+    hints->fabric_attr->prov_name = strdup(LIB_FABRIC_ATTR_PROV_NAME_TCP);
     hints->tx_attr->tclass = FI_TC_BULK_DATA;
     hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
     hints->mode = FI_OPT_ENDPOINT;
