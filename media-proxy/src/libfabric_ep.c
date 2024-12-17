@@ -57,6 +57,55 @@
 #include "libfabric_cq.h"
 #include "libfabric_mr.h"
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h>
+#include <ifaddrs.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <net/if.h>
+#include <netdb.h>
+
+int get_interface_name_by_ip(const char *ip_str, char *if_name, size_t if_name_len) {
+    struct ifaddrs *ifaddr, *ifa;
+    int family;
+    char host[NI_MAXHOST];
+
+    if (getifaddrs(&ifaddr) == -1) {
+        perror("getifaddrs");
+        return -1;
+    }
+
+    // Iterate over the linked list of interfaces
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == NULL)
+            continue;
+
+        family = ifa->ifa_addr->sa_family;
+        if (family == AF_INET || family == AF_INET6) {
+            // Convert the interface address to a string
+            if (getnameinfo(ifa->ifa_addr,
+                            (family == AF_INET) ? sizeof(struct sockaddr_in) :
+                                                  sizeof(struct sockaddr_in6),
+                            host, sizeof(host),
+                            NULL, 0, NI_NUMERICHOST) == 0) {
+                // Compare with our target IP string
+                if (strcmp(host, ip_str) == 0) {
+                    // Found a match, copy interface name
+                    strncpy(if_name, ifa->ifa_name, if_name_len);
+                    if_name[if_name_len - 1] = '\0';
+                    freeifaddrs(ifaddr);
+                    return 0; // Success
+                }
+            }
+        }
+    }
+
+    freeifaddrs(ifaddr);
+    return -1; // Not found
+}
+
 static int enable_ep(ep_ctx_t *ep_ctx)
 {
     int ret;
@@ -231,11 +280,36 @@ int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
     hints->src_addrlen = 0;
     hints->dest_addr = NULL;
     hints->dest_addrlen = 0;
-    hints->addr_format = FI_SOCKADDR_IN;
+
+    char if_name[IF_NAMESIZE];
 
     if (cfg->dir == RX) {
-        ret = fi_getinfo(FI_VERSION(1, 21), cfg->local_addr.ip, cfg->local_addr.port, FI_SOURCE, hints, &fi);
+        if (get_interface_name_by_ip(cfg->local_addr.ip, if_name, sizeof(if_name)) == 0) {
+            printf("Interface for IP %s is: %s\n", cfg->local_addr.ip, if_name);
+        } else {
+            printf("Interface for IP %s not found\n", cfg->local_addr.ip);
+        }
+
+        hints->domain_attr->name = strdup(if_name);
+        ret = fi_getinfo(FI_VERSION(1, 21), cfg->local_addr.ip, cfg->local_addr.port, FI_SOURCE,
+                         hints, &fi);
     } else {
+        if (get_interface_name_by_ip(cfg->local_addr.ip, if_name, sizeof(if_name)) == 0) {
+            printf("Interface for IP %s is: %s\n", cfg->local_addr.ip, if_name);
+        } else {
+            printf("Interface for IP %s not found\n", cfg->local_addr.ip);
+        }
+
+        struct sockaddr_in local_sockaddr;
+        memset(&local_sockaddr, 0, sizeof(local_sockaddr));
+        local_sockaddr.sin_family = AF_INET;
+        local_sockaddr.sin_port = htons(0); // Any available port
+        inet_pton(AF_INET, cfg->local_addr.ip, &local_sockaddr.sin_addr);
+
+        hints->src_addr = (void *)&local_sockaddr;
+        hints->src_addrlen = sizeof(local_sockaddr);
+
+        hints->domain_attr->name = strdup(if_name);
         ret = fi_getinfo(FI_VERSION(1, 21), cfg->remote_addr.ip, cfg->remote_addr.port, 0, hints,
                          &fi);
     }
