@@ -142,6 +142,28 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx) {
         } else if (ret == -EAGAIN) {
             // No events to process, yield CPU briefly to avoid busy looping
             std::this_thread::sleep_for(std::chrono::microseconds(CQ_RETRY_DELAY_US));
+        } else if (ret == -FI_EAVAIL) {
+            // Read the error details
+            struct fi_cq_err_entry err_entry;
+            int err_ret = fi_cq_readerr(ep_ctx->cq_ctx.cq, &err_entry, 0);
+            if (err_ret >= 0) {
+                if (err_entry.err == -FI_ECONNRESET || err_entry.err == -FI_ENOTCONN) {
+                    log::warn("RDMA connection reset or endpoint not connected. Waiting for new connection.")
+                             ("error", fi_strerror(err_entry.err))("kind",kind2str(_kind));
+                    thread::Sleep(ctx, std::chrono::milliseconds(1000)); // Pause before retrying
+                } else {
+                    log::error("RDMA rx encountered an error in CQ")(
+                        "error", fi_strerror(err_entry.err))("kind", kind2str(_kind));
+                }
+            } else {
+                log::error("RDMA rx failed to read CQ error entry")
+                          ("error", fi_strerror(-err_ret))("kind", kind2str(_kind));
+            }
+        } else if (ret == -FI_ENOTCONN) {
+            // Handle disconnection (Transport endpoint is not connected)
+            log::warn("Transport endpoint is not connected. Waiting for new connection.")(
+                "error", fi_strerror(ret))("kind", kind2str(_kind));
+            thread::Sleep(ctx, std::chrono::milliseconds(1000)); // Pause before retrying
         } else {
             // Handle CQ read error
             log::error("RDMA rx cq read failed")("error", fi_strerror(-ret))
@@ -149,7 +171,9 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx) {
             break;
         }
     }
+
     ep_ctx->stop_flag = true; // Set the stop flag
+    log::info("RDMA RX CQ thread stopped.")("kind", kind2str(_kind));
 }
 
 } // namespace mesh::connection
