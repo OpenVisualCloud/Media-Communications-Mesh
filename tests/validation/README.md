@@ -8,7 +8,7 @@ Framework is based on Pytest.
 
 It was improved with:
 
-- additional logging capabilities, each test case has its own log file. This allows to execute it using GTA and recognize each test case as a subtask,
+- additional logging capabilities, each test case has its own log file.
 - all previous logs are kept in logs folder,
 - log files are colored green (PASS) and red (FAIL),
 - additional log levels were added to keep logs of:
@@ -21,7 +21,7 @@ It was improved with:
 - ability to mark the test cases as covering the requirements,
 - generation of logs/latest/report.csv with results, test commands and other result info.
 
-Project uses flake8, black and markdownlint as linters. All of these are available as VSCode extenstions.
+Project uses flake8, black, isort and markdownlint as linters. All of these are available as VSCode extenstions.
 
 - pyproject.toml - black configuration
 - setup.cfg - flake8 configuration

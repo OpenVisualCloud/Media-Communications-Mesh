@@ -11,6 +11,6 @@
     ],
     "flake8.args": [
         "--config",
-        "tests/validation/config.cfg"
+        "tests/validation/setup.cfg"
     ]
 }

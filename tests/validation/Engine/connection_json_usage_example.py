@@ -2,10 +2,9 @@
 # Copyright 2024 Intel Corporation
 # Intel® Media Communications Mesh
 
-from connection import ConnectionMode, Rdma, TransportType, St2110
-from payload import Audio, Video
-
+from connection import ConnectionMode, Rdma, St2110, TransportType
 from connection_json import ConnectionJson
+from payload import Audio, Video
 
 connection = Rdma(connectionMode=ConnectionMode.UC, maxLatencyNs=30000)
 

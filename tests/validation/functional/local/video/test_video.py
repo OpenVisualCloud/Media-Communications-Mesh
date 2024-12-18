@@ -6,12 +6,13 @@ import os
 import Engine.client_json
 import Engine.connection
 import Engine.connection_json
+import Engine.engine_mcm as utils
 import Engine.execute
 import Engine.payload
-import Engine.engine_utils as utils
 from Engine.media_files import yuv_files
 
-def test_video(build, media):
+
+def test_video(build_TestApp, build: str, media: str):
     client = Engine.client_json.ClientJson()
     conn_mpg = Engine.connection.MultipointGroup()
     payload = Engine.payload.Video(width=3840, height=2160)
@@ -21,7 +22,7 @@ def test_video(build, media):
     utils.create_connection_json(build, connection)
 
     # Use a specified file from media_files.py
-    media_file = yuv_files['i2160p25']['filename']
+    media_file = yuv_files["i2160p25"]["filename"]
     media_file_path = os.path.join(media, media_file)
 
     utils.run_rx_tx_with_file(file_path=media_file_path, build=build)

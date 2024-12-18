@@ -2,9 +2,10 @@
 # Copyright 2024 Intel Corporation
 # Intel® Media Communications Mesh
 
-import pytest
 import os
 from typing import Dict
+
+import pytest
 
 from .stash import clear_result_media, remove_result_media
 

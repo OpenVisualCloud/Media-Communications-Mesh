@@ -2,7 +2,7 @@
 # Copyright 2024 Intel Corporation
 # Intel® Media Communications Mesh
 
-from connection import ConnectionMode, Rdma, TransportType, St2110
+from connection import ConnectionMode, Rdma, St2110, TransportType
 
 connection = Rdma(connectionMode=ConnectionMode.UC, maxLatencyNs=30000)
 
