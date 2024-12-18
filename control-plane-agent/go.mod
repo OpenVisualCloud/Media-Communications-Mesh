@@ -1,6 +1,6 @@
 module control-plane-agent
 
-go 1.23.2
+go 1.23
 
 require (
 	github.com/expr-lang/expr v1.16.9
