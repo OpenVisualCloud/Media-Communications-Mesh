@@ -4,11 +4,11 @@
 
 syntax = "proto3";
 
-option go_package = "control-plane-agent/api/proxy/proto/mediaproxy";
-
 package mediaproxy;
 
-service ControlAPI {
+option go_package = "control-plane-agent/api/proxy/proto/mediaproxy";
+
+service ProxyAPI {
   rpc RegisterMediaProxy (RegisterMediaProxyRequest) returns (RegisterMediaProxyReply) {}
 
   rpc UnregisterMediaProxy (UnregisterMediaProxyRequest) returns (UnregisterMediaProxyReply) {}
@@ -17,14 +17,35 @@ service ControlAPI {
 
   rpc UnregisterConnection (UnregisterConnectionRequest) returns (UnregisterConnectionReply) {}
 
-  rpc StartCommandQueue (StartCommandQueueRequest) returns (stream CommandMessage) {}
+  rpc StartCommandQueue (StartCommandQueueRequest) returns (stream CommandRequest) {}
 
-  // rpc ReportCommandResult (ReportCommandResultRequest) returns (ReportCommandResultReply) {}
+  rpc SendCommandReply (CommandReply) returns (CommandReplyReceipt) {}
+
+  rpc SendMetrics (SendMetricsRequest) returns (SendMetricsReply) {}
 }
 
-// message ReportCommandResultRequest {
-//   string proxy_id = 1; // id assigned by Agent at registration
-// }
+message MetricField {
+  string name = 1;
+  oneof value {
+    string str_value = 2;
+    uint64 uint_value = 3;
+    double double_value = 4;
+    bool bool_value = 5;
+  }
+}
+
+message Metric {
+  int64 timestamp_ms = 1;
+  string provider_id = 2;
+  repeated MetricField fields = 3;
+}
+
+message SendMetricsRequest {
+  repeated Metric metrics = 1;
+}
+
+message SendMetricsReply {
+}
 
 message RegisterMediaProxyRequest {
   uint32 sdk_port = 1; // SDK API port - something to identify Media Proxy
@@ -39,12 +60,11 @@ message UnregisterMediaProxyRequest {
 }
 
 message UnregisterMediaProxyReply {
-  // Empty reply  
 }
 
 message RegisterConnectionRequest {
   string proxy_id = 1;
-  uint32 kind = 2;
+  string kind = 2;
   uint32 conn_type = 3;
   uint32 payload_type = 4;
   uint64 buffer_size = 5;
@@ -60,14 +80,65 @@ message UnregisterConnectionRequest {
 }
 
 message UnregisterConnectionReply {
-  // Empty reply
 }
 
 message StartCommandQueueRequest {
-  string proxy_id = 1; // Media Proxy id
+  string proxy_id = 1;
 }
 
-message CommandMessage {
-  string opcode = 1;
-  string id = 2;
+message CommandRequest {
+  string req_id = 1;
+  oneof command {
+    ApplyConfigRequest apply_config = 6;
+    ResetMetricsRequest reset_metrics = 100;
+    DebugRequest debug = 101;
+  }
+}
+
+message MultipointGroup {
+  string group_id = 1;
+  repeated string conn_ids = 2;
+  repeated string bridge_ids = 3;
+}
+
+message Bridge {
+  string bridge_id = 1;
+  string type = 2;
+  // TODO: Add more configuration fields
+}
+
+message ApplyConfigRequest {
+  repeated MultipointGroup groups = 1;
+  repeated Bridge bridges = 2;
+}
+
+message ResetMetricsRequest {
+}
+
+message DebugRequest {
+  string in_text = 1;
+}
+
+message CommandReply {
+  string req_id = 1;
+  string proxy_id = 2;
+  oneof reply {
+    ApplyConfigReply apply_config = 7;
+    ResetMetricsReply reset_metrics = 100;
+    DebugReply debug = 101;
+  }
+}
+
+message ApplyConfigReply {
+  repeated string error = 1;
+}
+
+message ResetMetricsReply {
+}
+
+message DebugReply {
+  string out_text = 1;
+}
+
+message CommandReplyReceipt {
 }

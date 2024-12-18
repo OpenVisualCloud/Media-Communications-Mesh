@@ -22,13 +22,13 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
 using grpc::StatusCode;
-using sdk::ClientAPI;
+using sdk::SDKAPI;
 using sdk::CreateConnectionRequest;
 using sdk::CreateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
 
-class ClientAPIServiceImpl final : public ClientAPI::Service {
+class SDKAPIServiceImpl final : public SDKAPI::Service {
 public:
     Status CreateConnection(ServerContext* sctx, const CreateConnectionRequest* req,
                             CreateConnectionResponse* resp) override {
@@ -48,7 +48,7 @@ public:
         std::string conn_id;
 
         auto& mgr = connection::local_manager;
-        int err = mgr.create_connection(ctx, conn_id, &param, &memif_param);
+        int err = mgr.create_connection_sdk(ctx, conn_id, &param, &memif_param);
         if (err) {
             log::error("create_local_conn() failed (%d)", err);
             return Status(StatusCode::INTERNAL,
@@ -63,8 +63,8 @@ public:
                                     sizeof(memif_conn_param));
         resp->set_memif_conn_param(memif_param_str);
 
-        log::info("Connection created")("id", resp->conn_id())
-                                       ("client_id", resp->client_id());
+        log::info("[SDK] Connection created")("id", resp->conn_id())
+                                             ("client_id", resp->client_id());
         return Status::OK;
     }
 
@@ -72,33 +72,33 @@ public:
                             DeleteConnectionResponse* resp) override {
 
         auto ctx = context::WithCancel(context::Background());
-        const auto& conn_id = req->conn_id();
+        auto conn_id = req->conn_id();
 
         auto& mgr = connection::local_manager;
-        int err = mgr.delete_connection(ctx, conn_id);
+        int err = mgr.delete_connection_sdk(ctx, conn_id);
         if (err)
             log::error("delete_local_conn err (%d)", err);
         else
-            log::info("Connection deleted")("id", req->conn_id())
-                                           ("client_id", req->client_id());
+            log::info("[SDK] Connection deleted")("id", req->conn_id())
+                                                 ("client_id", req->client_id());
 
         return Status::OK;
     }
 };
 
-void RunClientAPIServer(context::Context& ctx) {
+void RunSDKAPIServer(context::Context& ctx) {
     std::string server_address("0.0.0.0:50050"); // gRPC default 50051
-    ClientAPIServiceImpl service;
+    SDKAPIServiceImpl service;
 
     ServerBuilder builder;
     builder.AddListeningPort(server_address, grpc::InsecureServerCredentials());
     builder.RegisterService(&service);
     std::unique_ptr<Server> server(builder.BuildAndStart());
-    log::info("Client API Server listening on %s", server_address.c_str());
+    log::info("SDK API Server listening on %s", server_address.c_str());
 
     std::jthread th([&]() {
         ctx.done();
-        log::info("Shutting down Client API Server");
+        log::info("Shutting down SDK API Server");
         server->Shutdown();
     });
 

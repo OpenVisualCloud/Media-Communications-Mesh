@@ -12,6 +12,9 @@
 
 #include "libfabric_dev.h"
 
+const char *LIB_FABRIC_ATTR_PROV_NAME_TCP = "tcp";
+const char *LIB_FABRIC_ATTR_PROV_NAME_VERBS = "verbs";
+
 /* We need to free any data that we allocated before freeing the
  * hints.
  */
@@ -102,22 +105,23 @@ int rdma_init(libfabric_ctx **ctx)
         return -ENOMEM;
     }
 
-    hints->fabric_attr->prov_name = strdup("verbs");
-
-    hints->caps = FI_MSG;
-    hints->domain_attr->resource_mgmt = FI_RM_ENABLED; /* TODO: check performance */
-    hints->mode = FI_CONTEXT;
-    hints->domain_attr->threading = FI_THREAD_SAFE; /* TODO: check performance */
-    hints->addr_format = FI_FORMAT_UNSPEC;
-    hints->ep_attr->type = FI_EP_RDM;
     hints->domain_attr->mr_mode =
         FI_MR_LOCAL | FI_MR_ENDPOINT | (FI_MR_ALLOCATED | FI_MR_PROV_KEY | FI_MR_VIRT_ADDR);
+    hints->ep_attr->type = FI_EP_RDM;
+    hints->caps = FI_MSG;
+    hints->addr_format = FI_SOCKADDR_IN;
+    hints->fabric_attr->prov_name = strdup(LIB_FABRIC_ATTR_PROV_NAME_TCP);
     hints->tx_attr->tclass = FI_TC_BULK_DATA;
+    hints->domain_attr->resource_mgmt = FI_RM_ENABLED;
+    hints->mode = FI_OPT_ENDPOINT;
+    hints->tx_attr->size = 32; // Transmit queue size
+    hints->rx_attr->size = 32; // Receive queue size
 
     ret = rdma_init_fabric(*ctx, hints);
     rdma_freehints(hints);
     if (ret) {
         libfabric_dev_ops.rdma_deinit(ctx);
+        ERROR("Failed to initialize RDMA device");
         return ret;
     }
 
