@@ -24,7 +24,7 @@ public:
     ProxyAPIClient(std::shared_ptr<Channel> channel)
         : stub_(ProxyAPI::NewStub(channel)) {}
 
-    int RegisterConnection(std::string& conn_id, std::string& kind);
+    int RegisterConnection(std::string& conn_id, const std::string& kind, const std::string& group_urn);
     int UnregisterConnection(const std::string& conn_id);
     int SendMetrics(const std::vector<telemetry::Metric>& metrics);
     int StartCommandQueue(context::Context& ctx);
@@ -34,7 +34,7 @@ public:
     void Shutdown();
 
 protected:
-    int RegisterMediaProxy(uint32_t sdk_port);
+    int RegisterMediaProxy();
     int UnregisterMediaProxy();
 
     friend int RunProxyAPIClient(context::Context& ctx);
@@ -43,6 +43,7 @@ private:
     std::unique_ptr<ProxyAPI::Stub> stub_;
     std::string proxy_id;
     std::jthread th;
+
 };
 
 extern std::unique_ptr<ProxyAPIClient> proxyApiClient;

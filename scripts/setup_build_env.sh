@@ -56,6 +56,7 @@ function install_ubuntu_package_dependencies()
         curl \
         dracut \
         gcc-multilib \
+        golang \
         libbsd-dev \
         libcap-ng-dev \
         libelf-dev \
@@ -109,6 +110,7 @@ function install_yum_package_dependencies()
         git \
         glibc-devel.i686 \
         glibc-devel.x86_64 \
+        golang \
         gtest-devel \
         intel-ipp-crypto-mb \
         intel-ipsec-mb \

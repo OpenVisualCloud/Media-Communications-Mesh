@@ -27,7 +27,7 @@ int mcm_get_client(MeshClient **mc)
         return err;
 
     if (!client) {
-        MeshClientConfig config = { 0 };
+        MeshClientConfig config = { .enable_grpc = true };
 
         err = mesh_create_client(&client, &config);
         if (err)

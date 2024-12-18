@@ -6,6 +6,7 @@
 
 #include "conn.h"
 #include <cstring>
+#include "logger.h"
 
 namespace mesh::connection {
 
@@ -79,6 +80,36 @@ Result Connection::establish(context::Context& ctx)
     }
 }
 
+Result Connection::establish_async(context::Context& ctx)
+{
+    switch (state()) {
+    case State::configured:
+    case State::closed:
+        set_state(ctx, State::establishing);
+
+        establish_ctx = context::WithCancel(ctx);
+
+        try {
+            establish_th = std::jthread([this]() {
+                // log::debug("ON ESTABLISH THREAD START");
+                auto res = on_establish(establish_ctx);
+                if (res != Result::success)
+                    log::error("Threaded on_establish() err: %s",
+                               result2str(res));
+                // log::debug("ON ESTABLISH THREAD EXIT");
+            });
+        }
+        catch (const std::system_error& e) {
+            log::error("Thread creation for on_establish() failed");
+            return set_result(Result::error_out_of_memory);
+        }
+        return set_result(Result::success);
+
+    default:
+        return set_result(Result::error_wrong_state);
+    }
+}
+
 Result Connection::suspend(context::Context& ctx)
 {
     if (state() != State::active)
@@ -110,6 +141,44 @@ Result Connection::shutdown(context::Context& ctx)
     }
 }
 
+Result Connection::shutdown_async(context::Context& ctx)
+{
+    switch (state()) {
+    case State::closed:
+        return set_result(Result::success);
+    case State::deleting:
+        return set_result(Result::error_wrong_state);
+    default:
+        set_state(ctx, State::closing);
+
+        try {
+            shutdown_th = std::jthread([this, &ctx]() {
+                // log::debug("======= ON SHUTDOWN THREAD START");
+
+                establish_ctx.cancel();
+                if (establish_th.joinable()) {
+                    // log::debug("ON SHUTDOWN THREAD - waiting for establish thread to exit");
+                    establish_th.join();
+                    // log::debug("ON SHUTDOWN THREAD - establish thread exited");
+                }
+
+                auto res = on_shutdown(ctx);
+                if (res != Result::success)
+                    log::error("Threaded on_shutdown() err: %s",
+                               result2str(res));
+                // log::debug("======= ON SHUTDOWN THREAD EXIT");
+                shutdown_th.detach();
+                delete this; // TODO: consider on making this safer
+            });
+        }
+        catch (const std::system_error& e) {
+            log::error("Thread creation for on_shutdown() failed");
+            return set_result(Result::error_out_of_memory);
+        }
+        return set_result(Result::success);
+    }
+}
+
 Result Connection::transmit(context::Context& ctx, void *ptr, uint32_t sz)
 {
     // WARNING: This is the hot path of Data Plane.
@@ -123,14 +192,20 @@ Result Connection::transmit(context::Context& ctx, void *ptr, uint32_t sz)
 
     metrics.inbound_bytes += sz;
 
-    transmitting.store(true, std::memory_order_release);
-    setting_link.wait(true, std::memory_order_acquire);
-
     uint32_t sent = 0;
-    Result res = _link->do_receive(ctx, ptr, sz, sent);
+    Result res;
 
-    transmitting.store(false, std::memory_order_release);
-    transmitting.notify_one();
+    // transmitting.store(true, std::memory_order_release);
+    // setting_link.wait(true, std::memory_order_acquire);
+    {
+        const std::lock_guard<std::mutex> lk(link_mx);
+
+        res = _link->do_receive(ctx, ptr, sz, sent);
+    }
+    // transmitting.store(false, std::memory_order_release);
+    // transmitting.notify_all();
+
+    // thread::Sleep(ctx, std::chrono::milliseconds(1));
 
     metrics.outbound_bytes += sent;
 
@@ -191,13 +266,15 @@ Result Connection::set_link(context::Context& ctx, Connection *new_link,
     // TODO: generate an Event (conn_changing_link).
     // Use context to cancel sending the Event.
 
-    setting_link.store(true, std::memory_order_release);
-    transmitting.wait(true, std::memory_order_acquire);
+    // setting_link.store(true, std::memory_order_release);
+    // transmitting.wait(true, std::memory_order_acquire);
+    {
+        const std::lock_guard<std::mutex> lk(link_mx);
 
-    _link = new_link;
-
-    setting_link.store(false, std::memory_order_release);
-    setting_link.notify_one();
+        _link = new_link;
+    }
+    // setting_link.store(false, std::memory_order_release);
+    // setting_link.notify_one();
 
     // TODO: generate a post Event (conn_link_changed).
     // Use context to cancel sending the Event.
@@ -304,21 +381,21 @@ const char * status2str(Status status)
 const char * result2str(Result res)
 {
     switch (res) {
-    case Result::success:                return "success";
-    case Result::error_not_supported:    return "not supported";
-    case Result::error_wrong_state:      return "wrong state";
-    case Result::error_no_link_assigned: return "no link assigned";
-    case Result::error_bad_argument:     return "bad argument";
-    case Result::error_out_of_memory:    return "out of memory";
-    case Result::error_general_failure:  return "general failure";
+    case Result::success:                          return "success";
+    case Result::error_not_supported:              return "not supported";
+    case Result::error_wrong_state:                return "wrong state";
+    case Result::error_no_link_assigned:           return "no link assigned";
+    case Result::error_bad_argument:               return "bad argument";
+    case Result::error_out_of_memory:              return "out of memory";
+    case Result::error_general_failure:            return "general failure";
     case Result::error_context_cancelled:          return "context cancelled";
     case Result::error_already_initialized:        return "already initialized";
     case Result::error_initialization_failed:      return "initialization failed";
     case Result::error_memory_registration_failed: return "memory registration failed";
     case Result::error_thread_creation_failed:     return "thread creation failed";
-    case Result::error_no_buffer:        return "no buffer";
-    case Result::error_timeout:          return "timeout";
-    default:                             return str_unknown;
+    case Result::error_no_buffer:                  return "no buffer";
+    case Result::error_timeout:                    return "timeout";
+    default:                                       return str_unknown;
     }
 }
 

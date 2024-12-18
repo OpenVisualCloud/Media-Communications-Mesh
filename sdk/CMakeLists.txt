@@ -127,7 +127,6 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
 list(APPEND SDK_HEADERS
-    # include/mcm_dp.h
     include/mesh_dp.h
 )
 
