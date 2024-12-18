@@ -36,6 +36,8 @@ function install_package_dependencies()
         log_error "Exiting: No supported package manager found. Contact support"
         exit 1
     fi
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
     log_info "Finished: Successful OS packages installation."
     log_warning OS reboot is required for all of the changes to take place.
     return 0
