@@ -1,13 +1,13 @@
 # Rx flow
 
-Diagrams in this document show interaction between FFmpeg and the MCM plugin when FFmpeg is receiving a video stream over MCM.
+Diagrams in this document show interaction between FFmpeg and the Media Communications Mesh plugin when FFmpeg is receiving a video stream over Media Communications Mesh.
 
 ## Simplified FFmpeg Rx flow
 
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as MCM Plugin
+   participant mux as Media Communications Mesh Plugin
 
    ffmpeg ->> mux: Read header
    loop N video frames
@@ -23,10 +23,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as MCM Plugin
-   participant sdk as MCM SDK
+   participant mux as Media Communications Mesh Plugin
+   participant sdk as Media Communications Mesh SDK
    participant memif as Memif
-   participant proxy as MCM Media Proxy
+   participant proxy as Media Communications Mesh Media Proxy
    participant mtl as MTL
    participant network as Network
 
@@ -54,10 +54,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as MCM Plugin
-   participant sdk as MCM SDK
+   participant mux as Media Communications Mesh Plugin
+   participant sdk as Media Communications Mesh SDK
    participant memif as Memif
-   participant proxy as MCM Media Proxy
+   participant proxy as Media Communications Mesh Media Proxy
    participant mtl as MTL
    participant network as Network
 
@@ -87,10 +87,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as MCM Plugin
-   participant sdk as MCM SDK
+   participant mux as Media Communications Mesh Plugin
+   participant sdk as Media Communications Mesh SDK
    participant memif as Memif
-   participant proxy as MCM Media Proxy
+   participant proxy as Media Communications Mesh Media Proxy
    participant mtl as MTL
    participant network as Network
 

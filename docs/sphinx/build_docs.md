@@ -32,7 +32,7 @@ Execute make build command to build html option
 make -C {project_dir}/docs/sphinx html
 ```
 
-## 3.1 Open built documentation (html)
+## 3. Open built documentation (html)
 
 ```
 cd {project_dir}/docs/_build/html
@@ -40,7 +40,7 @@ cd {project_dir}/docs/_build/html
 
 Open index.html via web browser
 
-## 3.2 Alternative run nginx server
+### 3.1. Alternative run nginx server
 
 ```
 docker run -it --rm -d -p 8080:80 --name web -v ./docs/_build/html:/usr/share/nginx/html nginx

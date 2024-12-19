@@ -42,7 +42,7 @@
   * Created at.
   * Established at.
 * Interface for sending metrics.
-* Metrics Reset interface – _Access from MCM Agent, option to clear all or certain metrics_.
+* Metrics Reset interface – _Access from Media Communications Mesh Agent, option to clear all or certain metrics_.
 
 ### Intermediary Layer: ST2110, RDMA, Local
 * Base functionality of the specific backend.
@@ -161,10 +161,10 @@ flowchart
 
 ### Interface for sending metrics
 * The base **Connection** class defines a virtual method that returns an array of metrics, each with a name, a type, and a values.
-* The Telemetry engine periodically calls this method and forwards the returned metrics to MCM Agent.
+* The Telemetry engine periodically calls this method and forwards the returned metrics to Media Communications Mesh Agent.
 
 ### Metrics Reset interface
-* MCM Agent sends a list of metric names to be reset.
+* Media Communications Mesh Agent sends a list of metric names to be reset.
 * Counters and triggers can be reset using this interface.
 * The base **Connection** class defines a virtual method that takes a list of metric names and resets them by name.
 * Derived classes that have counters and triggers specific to a particular backend can override the method to reset additional metrics.
