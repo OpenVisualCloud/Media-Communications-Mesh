@@ -33,7 +33,7 @@ func (pm *PortMask) IsBitSet(index uint16) bool {
 }
 
 func (pm *PortMask) AllocateFirstAvailablePort(allowedMask *PortMask) (uint16, error) {
-	for i := pm.initialBit; i < 65536; i++ {
+	for i := pm.initialBit; i <= 65535; i++ {
 		if allowedMask.bits[i/64]&(1<<(i%64)) != 0 {
 			if pm.bits[i/64]&(1<<(i%64)) == 0 {
 				pm.bits[i/64] |= 1 << (i % 64)
@@ -64,7 +64,7 @@ func NewPortMask(portRanges string) (PortMask, error) {
 			if err != nil {
 				return PortMask{}, ErrInvalidPortRange
 			}
-			if start > end || start < 0 || end >= 65536 {
+			if start > end || start < 0 || end > 65535 {
 				return PortMask{}, ErrInvalidPortRange
 			}
 			for i := start; i <= end; i++ {
@@ -79,7 +79,7 @@ func NewPortMask(portRanges string) (PortMask, error) {
 			if err != nil {
 				return PortMask{}, ErrInvalidPortRange
 			}
-			if port < 0 || port >= 65536 {
+			if port < 0 || port > 65535 {
 				return PortMask{}, ErrInvalidPortRange
 			}
 			pm.bits[port/64] |= 1 << (port % 64)
