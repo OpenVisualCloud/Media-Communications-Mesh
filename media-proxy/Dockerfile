@@ -40,9 +40,11 @@ RUN apt-get update --fix-missing && \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
         m4 clang llvm zlib1g-dev libelf-dev libcap-ng-dev \
         gcc-multilib systemtap-sdt-dev librdmacm-dev \
-        libfdt-dev autoconf automake autotools-dev libtool && \
+        libfdt-dev autoconf automake autotools-dev libtool golang && \
     apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
+    rm -rf /var/lib/apt/lists/* && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # Clone MTL, DPDK and xdp-tools repo
 WORKDIR ${DPDK_DIR}

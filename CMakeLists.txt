@@ -25,6 +25,7 @@ set(MP_TESTS_DIR ${MP_DIR}/tests)
 set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 set(SDK_TESTS_DIR ${SDK_DIR}/tests)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
+set(AGENT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/control-plane-agent)
 set(TESTS_VAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/validation)
 
 # Setup output folder
@@ -34,7 +35,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(${SDK_DIR})
 add_subdirectory(${MP_DIR})
-
+add_subdirectory(${AGENT_DIR})
 
 # Fetch google test dependencies
 include(FetchContent)

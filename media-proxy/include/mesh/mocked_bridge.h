@@ -15,11 +15,17 @@ public:
     }
 
     Result on_establish(context::Context& ctx) override {
+        // DEBUG
+        thread::Sleep(ctx, std::chrono::milliseconds(8000));
+        // DEBUG
         set_state(ctx, State::active);
         return Result::success;
     }
 
     Result on_shutdown(context::Context& ctx) override {
+        // DEBUG
+        thread::Sleep(ctx, std::chrono::milliseconds(8000));
+        // DEBUG
         set_state(ctx, State::closed);
         return Result::success;
     }

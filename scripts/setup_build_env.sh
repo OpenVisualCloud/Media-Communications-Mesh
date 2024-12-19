@@ -36,6 +36,8 @@ function install_package_dependencies()
         log_error "Exiting: No supported package manager found. Contact support"
         exit 1
     fi
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
     log_info "Finished: Successful OS packages installation."
     log_warning OS reboot is required for all of the changes to take place.
     return 0
@@ -56,6 +58,7 @@ function install_ubuntu_package_dependencies()
         curl \
         dracut \
         gcc-multilib \
+        golang \
         libbsd-dev \
         libcap-ng-dev \
         libelf-dev \
@@ -109,6 +112,7 @@ function install_yum_package_dependencies()
         git \
         glibc-devel.i686 \
         glibc-devel.x86_64 \
+        golang \
         gtest-devel \
         intel-ipp-crypto-mb \
         intel-ipsec-mb \
