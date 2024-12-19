@@ -34,7 +34,7 @@ SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        nasm cmake libbsd-dev git build-essential sudo \
+        curl nasm cmake libbsd-dev git build-essential sudo \
         meson python3-dev python3-pyelftools pkg-config \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
