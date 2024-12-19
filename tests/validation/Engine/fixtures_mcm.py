@@ -10,13 +10,14 @@ import pytest
 @pytest.fixture(scope="session")
 def build_TestApp(build):
     path = os.path.join(build, "tests", "tools", "TestApp", "build")
-    subprocess.run(f"rm -rf {path}", shell=True, timeout=10)
-    subprocess.run(f"mkdir -p {path}", shell=True, timeout=10)
+    subprocess.run(f'rm -rf "{path}"', shell=True, timeout=10)
+    subprocess.run(f'mkdir -p "{path}"', shell=True, timeout=10)
     subprocess.run("cmake ..", cwd=path, shell=True, timeout=10)
     subprocess.run("make", cwd=path, shell=True, timeout=10)
 
 
 def kill_all_existing_media_proxies():
+    # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
     "Kills all existing media_proxy processes using their PIDs found with px -aux"
     existing_mps = subprocess.run("ps -aux | awk '/media_proxy/{print($2)}'", shell=True, capture_output=True)
     mp_pids = existing_mps.stdout.decode("utf-8").split()  # returns an array of PIDs
@@ -25,6 +26,7 @@ def kill_all_existing_media_proxies():
 
 @pytest.fixture(scope="package", autouse=False)
 def media_proxy_single(sender_mp_port: int, receiver_mp_port: int, kill_existing: bool = True):
+    # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
     """Opens new media_proxies for sender and receiver.
     May optionally kill the already-running media_proxies first.
 
