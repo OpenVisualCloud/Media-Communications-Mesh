@@ -25,7 +25,6 @@ set(MP_TESTS_DIR ${MP_DIR}/tests)
 set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 set(SDK_TESTS_DIR ${SDK_DIR}/tests)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
-set(TESTS_VAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/tools/TestApp)
 
 # Setup output folder
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
