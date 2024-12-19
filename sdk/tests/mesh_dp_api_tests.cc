@@ -99,6 +99,11 @@ void * mock_grpc_create_client()
     return NULL;
 }
 
+void * mock_grpc_create_client_json(std::string& addr, std::string& port)
+{
+    return NULL;
+}
+
 void mock_grpc_destroy_client(void *client)
 {
 }
@@ -123,6 +128,7 @@ void APITests_Setup()
     mesh_internal_ops.enqueue_buf = mock_enqueue_buf;
 
     mesh_internal_ops.grpc_create_client = mock_grpc_create_client;
+    mesh_internal_ops.grpc_create_client_json = mock_grpc_create_client_json;
     mesh_internal_ops.grpc_destroy_client = mock_grpc_destroy_client;
     mesh_internal_ops.grpc_create_conn = mock_grpc_create_conn;
     mesh_internal_ops.grpc_destroy_conn = mock_grpc_destroy_conn;
@@ -1297,8 +1303,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, -1);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1314,8 +1320,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, -1);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1331,8 +1337,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, 0);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1348,8 +1354,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, 5000);
     if (err || !buf)
         goto exit_delete_conn;

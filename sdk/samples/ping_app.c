@@ -155,8 +155,8 @@ void * receiver_thread(void *arg)
         }
         timeout_ms = 6000;
 
-        memcpy(&send_time, buf->data, sizeof(send_time));
-        memcpy(&recved_pkt_num, buf->data + sizeof(send_time), sizeof(recved_pkt_num));
+        memcpy(&send_time, buf->payload_ptr, sizeof(send_time));
+        memcpy(&recved_pkt_num, buf->payload_ptr + sizeof(send_time), sizeof(recved_pkt_num));
         clock_gettime(CLOCK_REALTIME, &now);
         double latency_us = 1000000.0 * (now.tv_sec - send_time.tv_sec);
         latency_us += (now.tv_nsec - send_time.tv_nsec) / 1000.0;
@@ -219,8 +219,8 @@ void * sender_thread(void *arg)
 
         while (atomic_load(&counter) == i);  // Spin until the counter increments
         clock_gettime(CLOCK_REALTIME, &send_time);
-        memcpy(buf->data, &send_time, sizeof(send_time));
-        memcpy(buf->data + sizeof(send_time), &i, sizeof(i));
+        memcpy(buf->payload_ptr, &send_time, sizeof(send_time));
+        memcpy(buf->payload_ptr + sizeof(send_time), &i, sizeof(i));
 
         err = mesh_put_buffer(&buf);
         if (err) {

@@ -19,6 +19,7 @@
 
 #include <execinfo.h>
 #include <dlfcn.h>
+#include <cxxabi.h>
 
 #ifndef IMTL_CONFIG_PATH
 #define IMTL_CONFIG_PATH "./imtl.json"

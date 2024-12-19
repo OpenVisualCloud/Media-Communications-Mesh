@@ -234,11 +234,25 @@ typedef struct{
     /**
      * Pointer to shared memory area storing data
      */
-    void * const data;
+    union {
+        void *const data; /*deprecated*/
+        void *const payload_ptr;
+    };
     /**
      * Actual length of data in the buffer
      */
-    const size_t data_len;
+    union {
+        const size_t data_len; /*deprecated*/
+        const size_t payload_len;
+    };
+    /**
+     * Pointer to shared memory area storing metadata
+     */
+    void *const metadata_ptr;
+    /**
+     * Actual lenght of metadata in the buffer
+     */
+    const size_t metadata_len;
 
 } MeshBuffer;
 
@@ -269,6 +283,7 @@ typedef struct{
 #define MESH_ERR_CONN_CONFIG_INCOMPAT 1008 ///< Incompatible connection config
 #define MESH_ERR_CONN_CLOSED          1009 ///< Connection is closed
 #define MESH_ERR_TIMEOUT              1010 ///< Timeout occurred
+#define MESH_ERR_INTERNAL_NOT_IMPLEMENTED 1011 ///< Not implemented yet
 
 /**
  * @brief Create a new mesh client.
@@ -281,6 +296,18 @@ typedef struct{
  * @return 0 on success; an error code otherwise.
  */
 int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg);
+
+/**
+ * @brief Create a new mesh client.
+ *
+ * Creates a new mesh client from the given json configuration structure.
+ *
+ * @param [out] mc Address of a pointer to a mesh client structure.
+ * @param [in] cfg Pointer to a json configuration string.
+ *
+ * @return 0 on success; an error code otherwise.
+ */
+int mesh_create_client_json(MeshClient **mc, const char *cfg);
 
 /**
  * @brief Delete mesh client.
@@ -304,6 +331,22 @@ int mesh_delete_client(MeshClient **mc);
  * @return 0 on success; an error code otherwise.
  */
 int mesh_create_connection(MeshClient *mc, MeshConnection **conn);
+
+/**
+ * @brief Create a new mesh transmitter connection.
+ * @param [in] mc Pointer to a parent mesh client.
+ * @param [in] cfg Pointer to a json configuration string.
+ * @param [out] conn Address of a pointer to the connection structure.
+ */
+int mesh_create_tx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg);
+
+/**
+ * @brief Create a new mesh receiver connection.
+ * @param [in] mc Pointer to a parent mesh client.
+ * @param [in] cfg Pointer to a json configuration string.
+ * @param [out] conn Address of a pointer to the connection structure.
+ */
+int mesh_create_rx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg);
 
 /**
  * @brief Apply configuration to setup Single node direct connection via memif.
@@ -430,6 +473,26 @@ int mesh_put_buffer(MeshBuffer **buf);
  * @return 0 on success; an error code otherwise.
  */
 int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms);
+
+/**
+ * @brief Set payload length of a mesh buffer.
+ *
+ * @param [in,out] buf Address of a pointer to a mesh buffer structure.
+ *
+ * @return 0 on success; an error code otherwise.
+ */
+int mesh_buffer_set_payload_len(MeshBuffer **buf,
+                                size_t len);
+
+/**
+ * @brief Set metadata length of a mesh buffer.
+ *
+ * @param [in,out] buf Address of a pointer to a mesh buffer structure.
+ *
+ * @return 0 on success; an error code otherwise.
+ */
+int mesh_buffer_set_metadata_len(MeshBuffer **buf,
+                                 size_t len);
 
 /**
  * @brief Get text description of an error code.

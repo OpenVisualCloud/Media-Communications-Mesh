@@ -39,6 +39,7 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(MCMDP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(MCMDP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(MEMIF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libmemif)
+set(NLOHMANN_JSON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/nlohmann)
 set(MCMDP_SAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/samples)
 set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
@@ -116,6 +117,7 @@ target_include_directories(mcm_dp PUBLIC
     ${Protobuf_INCLUDE_DIRS}
     ${gRPC_INCLUDE_DIRS}
     ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
+    ${NLOHMANN_JSON_DIR}
 )
 target_link_libraries(mcm_dp PUBLIC memif gRPC::grpc++ protobuf::libprotobuf)
 
