@@ -1,4 +1,6 @@
-# MCM Control Plane REST API Definition (**Control Plane API**)
+# [DRAFT] MCM Control Plane REST API Definition (**Control Plane API**)
+
+***THIS IS A DRAFT. WORK IN PROGRESS.***
 
 * Mesh Agent runs a server to handle **Control Plane API** requests.
 * **Control Plane API** is exposed to any external network configuration tools.

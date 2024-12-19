@@ -37,9 +37,9 @@ func (ep Params) GetUint32(name string) (uint32, error) {
 	if err != nil {
 		return 0, fmt.Errorf("uint32 %v", err)
 	}
-	str, ok := v.(uint32)
+	n, ok := v.(uint32)
 	if !ok {
 		return 0, fmt.Errorf("uint32 cast failed: %v", name)
 	}
-	return str, nil
+	return n, nil
 }
