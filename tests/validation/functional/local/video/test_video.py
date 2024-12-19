@@ -2,7 +2,6 @@
 # Copyright 2024 Intel Corporation
 # Intel® Media Communications Mesh
 import os
-import pytest
 
 import Engine.client_json
 import Engine.connection
@@ -11,12 +10,9 @@ import Engine.engine_mcm as utils
 import Engine.execute
 import Engine.payload
 from Engine.media_files import yuv_files
-from Engine.fixtures_mcm import media_proxy_single, build_TestApp
 
 
-@pytest.mark.fixture(media_proxy_single)
-@pytest.mark.fixture(build_TestApp)
-def test_video(build: str, media: str):
+def test_video(build_TestApp, build: str, media: str):
     client = Engine.client_json.ClientJson()
     conn_mpg = Engine.connection.MultipointGroup()
     payload = Engine.payload.Video(width=3840, height=2160)
