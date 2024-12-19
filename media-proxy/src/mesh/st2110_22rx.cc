@@ -71,4 +71,51 @@ Result ST2110_22Rx::configure(context::Context& ctx, const std::string& dev_port
     return set_result(Result::success);
 }
 
+Result ST2110_22Rx::configure(context::Context& ctx, const std::string& dev_port,
+                              const ST2110Config& cfg_st2110, const VideoConfig& cfg_video,
+                              std::string& local_ip_addr, uint local_port) {
+    if (cfg_st2110.transport != MESH_CONN_TRANSPORT_ST2110_22) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    if (configure_common(ctx, dev_port, cfg_st2110, local_ip_addr, local_port)) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST22;
+    ops.width = cfg_video.width;
+    ops.height = cfg_video.height;
+    ops.fps = st_frame_rate_to_st_fps(cfg_video.fps);
+
+    if (mesh_video_format_to_st_format(cfg_video.pixelFormat, ops.output_fmt)) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    ops.device = ST_PLUGIN_DEVICE_AUTO;
+    ops.pack_type = ST22_PACK_CODESTREAM;
+    ops.codec = ST22_CODEC_JPEGXS;
+    ops.codec_thread_cnt = 0;
+    ops.max_codestream_size = 0;
+
+    log::info("ST2110_22Rx: configure")
+        ("payload_type", (int)ops.port.payload_type)
+        ("width", ops.width)
+        ("height", ops.height)
+        ("fps", ops.fps)
+        ("output_fmt", ops.output_fmt)
+        ("device", ops.device);
+
+    transfer_size = st_frame_size(ops.output_fmt, ops.width, ops.height, false);
+    if (transfer_size == 0) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    set_state(ctx, State::configured);
+    return set_result(Result::success);
+}
+
 } // namespace mesh::connection
