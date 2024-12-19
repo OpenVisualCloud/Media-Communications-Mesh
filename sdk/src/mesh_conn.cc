@@ -20,6 +20,7 @@ struct mesh_internal_ops_t mesh_internal_ops = {
     .enqueue_buf = mcm_enqueue_buffer,
 
     .grpc_create_client = mesh_grpc_create_client,
+    .grpc_create_client_json = mesh_grpc_create_client_json,
     .grpc_destroy_client = mesh_grpc_destroy_client,
     .grpc_create_conn = mesh_grpc_create_conn,
     .grpc_destroy_conn = mesh_grpc_destroy_conn,

@@ -69,4 +69,49 @@ Result ST2110_20Rx::configure(context::Context& ctx, const std::string& dev_port
     return set_result(Result::success);
 }
 
+Result ST2110_20Rx::configure(context::Context& ctx, const std::string& dev_port,
+                              const ST2110Config& cfg_st2110, const VideoConfig& cfg_video,
+                              std::string& local_ip_addr, uint local_port) {
+    if (cfg_st2110.transport != TRANSPORT_ST2110_20) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    if (configure_common(ctx, dev_port, cfg_st2110, local_ip_addr, local_port)) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST20;
+    ops.width = cfg_video.width;
+    ops.height = cfg_video.height;
+    ops.fps = st_frame_rate_to_st_fps(cfg_video.fps);
+    ops.transport_fmt = ST20_FMT_YUV_422_PLANAR10LE;
+
+    if (mesh_video_format_to_st_format(cfg_video.pixelFormat, ops.output_fmt)) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    ops.device = ST_PLUGIN_DEVICE_AUTO;
+
+    log::info("ST2110_20Rx: configure")
+        ("payload_type", (int)ops.port.payload_type)
+        ("width", ops.width)
+        ("height", ops.height)
+        ("fps", ops.fps)
+        ("transport_fmt", ops.transport_fmt)
+        ("output_fmt", ops.output_fmt)
+        ("device", ops.device);
+
+    transfer_size = st_frame_size(ops.output_fmt, ops.width, ops.height, false);
+    if (transfer_size == 0) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
+
+    set_state(ctx, State::configured);
+    return set_result(Result::success);
+}
+
 } // namespace mesh::connection

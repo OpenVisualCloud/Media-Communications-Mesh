@@ -19,10 +19,10 @@ namespace mesh::connection {
  */
 template <typename FRAME, typename HANDLE, typename OPS>
 class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
-  public:
+public:
     ST2110Rx() { this->_kind = Kind::receiver; }
 
-  protected:
+protected:
     std::jthread frame_thread_handle;
 
     int configure_common(context::Context& ctx, const std::string& dev_port,
@@ -35,6 +35,31 @@ class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
         inet_pton(AF_INET, cfg_st2110.remote_ip_addr, this->ops.port.ip_addr[MTL_PORT_P]);
         inet_pton(AF_INET, cfg_st2110.local_ip_addr, this->ops.port.mcast_sip_addr[MTL_PORT_P]);
         this->ops.port.udp_port[MTL_PORT_P] = cfg_st2110.local_port;
+
+        log::info("ST2110Rx: configure")
+            ("ip_addr", std::to_string(this->ops.port.ip_addr[MTL_PORT_P][0]) + " " +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][1]) + " " +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][2]) + " " +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][3]))
+            ("mcast_sip_addr", std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][0]) + " " +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][1]) + " " +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][2]) + " " +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][3]))
+            ("udp_port", this->ops.port.udp_port[MTL_PORT_P]);
+        return 0;
+    }
+
+    int configure_common(context::Context& ctx, const std::string& dev_port,
+                         const ST2110Config& cfg_st2110, std::string& local_ip_addr,
+                         uint local_port) {
+        int ret = ST2110<FRAME, HANDLE, OPS>::configure_common(ctx, dev_port, local_ip_addr);
+        if (ret) {
+            return ret;
+        }
+
+        inet_pton(AF_INET, cfg_st2110.remoteIpAddr.c_str(), this->ops.port.ip_addr[MTL_PORT_P]);
+        inet_pton(AF_INET, local_ip_addr.c_str(), this->ops.port.mcast_sip_addr[MTL_PORT_P]);
+        this->ops.port.udp_port[MTL_PORT_P] = local_port;
 
         log::info("ST2110Rx: configure")
             ("ip_addr", std::to_string(this->ops.port.ip_addr[MTL_PORT_P][0]) + " " +
@@ -80,7 +105,7 @@ class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
         return this->set_result(Result::success);
     };
 
-  private:
+private:
     void frame_thread() {
         while (!this->_ctx.cancelled()) {
             // Get full buffer from MTL
@@ -98,11 +123,14 @@ class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
 };
 
 class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops> {
-  public:
+public:
     Result configure(context::Context& ctx, const std::string& dev_port,
                      const MeshConfig_ST2110& cfg_st2110, const MeshConfig_Video& cfg_video);
+    Result configure(context::Context& ctx, const std::string& dev_port,
+                     const ST2110Config& cfg_st2110, const VideoConfig& cfg_video,
+                     std::string& local_ip_addr, uint local_port);
 
-  protected:
+protected:
     st_frame *get_frame(st20p_rx_handle h) override;
     int put_frame(st20p_rx_handle h, st_frame *f) override;
     st20p_rx_handle create_session(mtl_handle h, st20p_rx_ops *o) override;
@@ -110,11 +138,14 @@ class ST2110_20Rx : public ST2110Rx<st_frame, st20p_rx_handle, st20p_rx_ops> {
 };
 
 class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops> {
-  public:
+public:
     Result configure(context::Context& ctx, const std::string& dev_port,
                      const MeshConfig_ST2110& cfg_st2110, const MeshConfig_Video& cfg_video);
+    Result configure(context::Context& ctx, const std::string& dev_port,
+                     const ST2110Config& cfg_st2110, const VideoConfig& cfg_video,
+                     std::string& local_ip_addr, uint local_port);
 
-  protected:
+protected:
     st_frame *get_frame(st22p_rx_handle h) override;
     int put_frame(st22p_rx_handle h, st_frame *f) override;
     st22p_rx_handle create_session(mtl_handle h, st22p_rx_ops *o) override;
@@ -122,11 +153,14 @@ class ST2110_22Rx : public ST2110Rx<st_frame, st22p_rx_handle, st22p_rx_ops> {
 };
 
 class ST2110_30Rx : public ST2110Rx<st30_frame, st30p_rx_handle, st30p_rx_ops> {
-  public:
+public:
     Result configure(context::Context& ctx, const std::string& dev_port,
                      const MeshConfig_ST2110& cfg_st2110, const MeshConfig_Audio& cfg_audio);
+    Result configure(context::Context& ctx, const std::string& dev_port,
+                     const ST2110Config& cfg_st2110, const AudioConfig& cfg_audio,
+                     std::string& local_ip_addr, uint local_port);
 
-  protected:
+protected:
     st30_frame *get_frame(st30p_rx_handle h) override;
     int put_frame(st30p_rx_handle h, st30_frame *f) override;
     st30p_rx_handle create_session(mtl_handle h, st30p_rx_ops *o) override;

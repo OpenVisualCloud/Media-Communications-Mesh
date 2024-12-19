@@ -35,6 +35,9 @@ file(GLOB MEDIA_PROXY_TEST_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/libfabric_mocks.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/libfabric_mr_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/proxy_context_tests.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/mesh_json_proxy_test.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/st2110_tests.cc"
+
 )
 
 # Find source files for RDMA-specific tests
@@ -60,12 +63,15 @@ set(MP_LIB media_proxy_lib)
 # Add an executable for general tests
 add_executable(media_proxy_unit_tests ${MEDIA_PROXY_TEST_SOURCES})
 target_compile_definitions(media_proxy_unit_tests PRIVATE UNIT_TESTS_ENABLED)
-target_link_libraries(media_proxy_unit_tests PRIVATE gtest gtest_main ${MP_LIB})
+target_link_libraries(media_proxy_unit_tests PRIVATE gtest gtest_main ${MP_LIB} mcm_dp)
 target_include_directories(media_proxy_unit_tests PUBLIC
+    ${CMAKE_SOURCE_DIR}/media-proxy/include/mesh
     ${CMAKE_SOURCE_DIR}/media-proxy/include
     ${CMAKE_BINARY_DIR}/media-proxy/generated
     ${FFF_DOWNLOAD_DIR}
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
+    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/nlohmann
 )
 
 # Add an executable for RDMA-Rx-Tx-specific tests
@@ -75,6 +81,7 @@ target_include_directories(conn_rdma_rx_tx_unit_tests PUBLIC
     ${CMAKE_SOURCE_DIR}/media-proxy/include
     ${CMAKE_BINARY_DIR}/media-proxy/generated
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
 )
 
 # Add an executable for RDMA-base-specific tests
@@ -85,6 +92,7 @@ target_include_directories(conn_rdma_base_unit_tests PUBLIC
     ${CMAKE_SOURCE_DIR}/media-proxy/include
     ${CMAKE_BINARY_DIR}/media-proxy/generated
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
 )
 
 # Add an executable for physical-RDMA-specific tests
@@ -94,6 +102,7 @@ target_include_directories(conn_rdma_real_ep_test PUBLIC
     ${CMAKE_SOURCE_DIR}/media-proxy/include
     ${CMAKE_BINARY_DIR}/media-proxy/generated
     ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
 )
 
 # Add tests to CTest
