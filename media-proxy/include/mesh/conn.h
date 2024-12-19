@@ -68,13 +68,13 @@ enum class Result {
     error_out_of_memory,
     error_general_failure,
     error_context_cancelled,
+   
     error_already_initialized,
     error_initialization_failed,
     error_memory_registration_failed,
     error_thread_creation_failed,
     error_no_buffer,
     error_timeout,
-    
     // TODO: more error codes to be added...
 };
 
@@ -99,9 +99,13 @@ public:
     Connection * link();
 
     Result establish(context::Context& ctx);
+    Result establish_async(context::Context& ctx);
+
     Result suspend(context::Context& ctx);
     Result resume(context::Context& ctx);
+
     Result shutdown(context::Context& ctx);
+    Result shutdown_async(context::Context& ctx);
 
     Result do_receive(context::Context& ctx, void *ptr, uint32_t sz,
                       uint32_t& sent);
@@ -128,8 +132,10 @@ protected:
 
     Kind _kind = Kind::undefined; // must be properly set in the derived class ctor
     Connection *_link = nullptr;
-    std::atomic<bool> setting_link = false; // held in set_link()
-    std::atomic<bool> transmitting = false; // held in on_receive()
+    // std::atomic<bool> setting_link = false; // held in set_link()
+    // std::atomic<bool> transmitting = false; // held in on_receive()
+
+    std::mutex link_mx;
 
     struct {
         std::atomic<uint64_t> inbound_bytes;
@@ -150,6 +156,10 @@ private:
 
     std::atomic<State> _state = State::not_configured;
     std::atomic<Status> _status = Status::initial;
+
+    context::Context establish_ctx = context::WithCancel(context::Background());
+    std::jthread establish_th;
+    std::jthread shutdown_th;
 };
 
 const char * kind2str(Kind kind, bool brief = false);

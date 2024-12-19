@@ -31,7 +31,7 @@ public:
 private:
     Registry registry_sdk; // This registry uses SDK ids
     Registry registry;     // This registry uses Agent assigned ids
-    std::shared_mutex mx;
+    std::mutex mx;
 };
 
 extern LocalManager local_manager;

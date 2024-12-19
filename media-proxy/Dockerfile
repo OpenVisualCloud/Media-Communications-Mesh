@@ -34,7 +34,7 @@ SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        nasm cmake libbsd-dev git build-essential sudo \
+        curl nasm cmake libbsd-dev git build-essential sudo \
         meson python3-dev python3-pyelftools pkg-config \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
@@ -43,6 +43,16 @@ RUN apt-get update --fix-missing && \
         libfdt-dev autoconf automake autotools-dev libtool && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
+
+# Install golang and dependencies
+WORKDIR /usr/local/
+RUN curl -Lf "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz" -o "/usr/local/go1.23.4.linux-amd64.tar.gz" && \
+    tar -C /usr/local -xzf /usr/local/go1.23.4.linux-amd64.tar.gz && \
+    rm -f "/usr/local/go1.23.4.linux-amd64.tar.gz" && \
+    ln -s /usr/local/go/bin/go /usr/bin/go && \
+    go version && \
+    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest && \
+    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 
 # Clone MTL, DPDK and xdp-tools repo
 WORKDIR ${DPDK_DIR}

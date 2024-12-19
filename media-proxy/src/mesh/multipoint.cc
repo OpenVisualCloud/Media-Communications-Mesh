@@ -37,13 +37,15 @@ Result Group::set_link(context::Context& ctx, Connection *new_link,
 
             log::info("[GROUP] Delete output")("group_id", id)("id", requester->id);
 
-            setting_link.store(true, std::memory_order_release);
-            transmitting.wait(true, std::memory_order_acquire);
+            // setting_link.store(true, std::memory_order_release);
+            // transmitting.wait(true, std::memory_order_acquire);
+            {
+                const std::lock_guard<std::mutex> lk(link_mx);
 
-            outputs.erase(it);
-                
-            setting_link.store(false, std::memory_order_release);
-            setting_link.notify_one();
+                outputs.erase(it);
+            }            
+            // setting_link.store(false, std::memory_order_release);
+            // setting_link.notify_one();
             break;
         }
         return Result::success;
@@ -69,13 +71,15 @@ Result Group::add_output(context::Context& ctx, Connection *output) {
 
     log::info("[GROUP] Add output")("group_id", id)("id", output->id);
 
-    setting_link.store(true, std::memory_order_release);
-    transmitting.wait(true, std::memory_order_acquire);
+    // setting_link.store(true, std::memory_order_release);
+    // transmitting.wait(true, std::memory_order_acquire);
+    {
+        const std::lock_guard<std::mutex> lk(link_mx);
 
-    outputs.emplace_back(output);
-        
-    setting_link.store(false, std::memory_order_release);
-    setting_link.notify_one();
+        outputs.emplace_back(output);
+    }    
+    // setting_link.store(false, std::memory_order_release);
+    // setting_link.notify_one();
 
     return Result::success;
 }
@@ -106,26 +110,30 @@ Result Group::on_receive(context::Context& ctx, void *ptr,
     if (outputs.empty())
         return Result::error_no_link_assigned;
 
-    transmitting.store(true, std::memory_order_release);
-    setting_link.wait(true, std::memory_order_acquire);
+    // thread::Sleep(ctx, std::chrono::milliseconds(2));
 
-    for (Connection *output : outputs) {
-        if (!output) {
-            errors++;
-            continue;
+    // transmitting.store(true, std::memory_order_release);
+    // setting_link.wait(true, std::memory_order_acquire);
+    {
+        const std::lock_guard<std::mutex> lk(link_mx);
+
+        for (Connection *output : outputs) {
+            if (!output) {
+                errors++;
+                continue;
+            }
+
+            uint32_t out_sent = 0;
+            res = output->do_receive(ctx, ptr, sz, out_sent);
+
+            total_sent += out_sent;
+
+            if (res != Result::success)
+                errors++;
         }
-
-        uint32_t out_sent = 0;
-        res = output->do_receive(ctx, ptr, sz, out_sent);
-
-        total_sent += out_sent;
-
-        if (res != Result::success)
-            errors++;
     }
-
-    transmitting.store(false, std::memory_order_release);
-    transmitting.notify_one();
+    // transmitting.store(false, std::memory_order_release);
+    // transmitting.notify_all();
 
     sent = sz;
     metrics.outbound_bytes += total_sent;

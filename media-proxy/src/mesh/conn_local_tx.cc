@@ -40,8 +40,7 @@ Result LocalTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
     int err = memif_buffer_alloc_timeout(memif_conn, qid, &shm_bufs, buf_num,
                                          &rx_buf_num, buf_size, 10);
     if (err != MEMIF_ERR_SUCCESS) {
-        log::error("rx_st20p_consume_frame: Failed to alloc memif buffer: %s",
-                   memif_strerror(err));
+        log::error("Failed to alloc memif buffer: %s", memif_strerror(err));
         return set_result(Result::error_general_failure);
     }
 
@@ -56,7 +55,7 @@ Result LocalTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
     // Send to microservice application
     err = memif_tx_burst(memif_conn, qid, &shm_bufs, rx_buf_num, &rx);
     if (err != MEMIF_ERR_SUCCESS) {
-        log::error("rx_st20p_consume_frame memif_tx_burst: %s", memif_strerror(err));
+        log::error("Error in memif_tx_burst: %s", memif_strerror(err));
         metrics.errors++;
     }
 

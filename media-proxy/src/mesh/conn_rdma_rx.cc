@@ -17,6 +17,11 @@ RdmaRx::~RdmaRx()
 Result RdmaRx::configure(context::Context& ctx, const mcm_conn_param& request,
                          libfabric_ctx *& dev_handle)
 {
+    log::debug("RdmaRx configure")("local_ip", request.local_addr.ip)
+                                  ("local_port", request.local_addr.port)
+                                  ("remote_ip", request.remote_addr.ip)
+                                  ("remote_port", request.remote_addr.port);
+
     return Rdma::configure(ctx, request, dev_handle);
 }
 
