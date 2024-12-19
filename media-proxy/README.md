@@ -1,4 +1,4 @@
-# MCM Media Proxy
+# Media Communications Mesh Media Proxy
 
 ![Media Proxy](../docs/_static/media-proxy-media-communications-mesh-1.png)
 
@@ -33,7 +33,7 @@ Dec 31 11:03:00.394 [INFO] [AGENT] ApplyConfig groups=0 bridges=0
 Dec 31 11:03:00.394 [INFO] [RECONCILE] Config is up to date
 ```
 
-The Media Proxy requires the MCM Agent to be running and listening at localhost:50051 for incoming gRPC requests.
+The Media Proxy requires the Mesh Agent to be running and listening at localhost:50051 for incoming gRPC requests.
 
 If Media Proxy successfully launches up, it opens a port for listening to control requests from SDK via gRPC (default 8002).
 
@@ -51,9 +51,9 @@ Usage: media_proxy [OPTION]
 -p, --rdma_ports=ports_ranges   Local port ranges for incoming RDMA connections (default: 9100-9999)
 ```
 
-### Run media-proxy using `native_af_xdp`
+### Run Media Proxy using `native_af_xdp`
 
-To use media-proxy with the native `af_xdp/ebpf` device a device name should be provided with the `native_af_xdp:` prefix, for example `media-proxy --dev native_af_xdp:ens259f0np0`.
+To use Media Proxy with the native `af_xdp/ebpf` device a device name should be provided with the `native_af_xdp:` prefix, for example `media-proxy --dev native_af_xdp:ens259f0np0`.
 Notice that the device must have a pre-assigned IP address. The `--ip` parameter is not applied in this mode.
 
 > [!CAUTION]
@@ -80,7 +80,7 @@ docker run --privileged -v /dev/vfio:/dev/vfio mcm/media-proxy:latest
 The "--privileged" argument is necessary to access NIC hardware with DPDK driver.
 
 ## Kubernetes
-The Media Proxy is designed to operate as a DaemonSet within the MCM system, aiming to conserve system resources. For details, a sample YAML file has been integrated into this repository as a reference.
+The Media Proxy is designed to operate as a DaemonSet within the Media Communications Mesh system, aiming to conserve system resources. For details, a sample YAML file has been integrated into this repository as a reference.
 
 To deploy the Media Proxy as a DaemonSet in your Kubernetes cluster, you can use the following command:
 
@@ -99,9 +99,9 @@ Before deploying the Media Proxy on Kubernetes using Minikube, you'll need to en
 Once you've completed the above steps, you'll have Docker, a hypervisor, kubectl, and Minikube installed and ready to deploy the Media Proxy on your local Kubernetes cluster.
 
 ### Setup K8s Cluster
-Before deploy media proxy to the K8s cluster, you need to execute following steps to setup the K8s cluster to be ready for MCM.
+Before deploy Media Proxy to the K8s cluster, you need to execute following steps to setup the K8s cluster to be ready for Media Communications Mesh.
 
-1. Start the K8s Cluster, and add MCM worker node on it.
+1. Start the K8s Cluster, and add Media Communications Mesh worker node on it.
 
 ```bash
 $ minikube start
@@ -122,7 +122,7 @@ $ kubectl apply -f deployment/DaemonSet/media-proxy.yaml
 $ kubectl get daemonsets.apps -n mcm
 ```
 
-If all commands are executed successfully, you will see the MCM media proxy deployed as a K8s DaemonSet to the MCM worker node (labeled with "mcm.intel.com/role=worker").
+If all commands are executed successfully, you will see the Media Communications Mesh Media Proxy deployed as a K8s DaemonSet to the Media Communications Mesh worker node (labeled with "mcm.intel.com/role=worker").
 
 ## Known Issues
 - There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
