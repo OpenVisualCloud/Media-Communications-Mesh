@@ -200,8 +200,6 @@ function lib_build_and_install_golang()
     as_root wget_download_strip_unpack "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz" "/usr/local/go/"
     as_root ln -s /usr/local/go/bin/go /usr/bin/go
     go version
-    go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
-    go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@latest
 }
 
 # Build the xdp-tools project with ebpf
