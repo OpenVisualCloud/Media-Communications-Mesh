@@ -62,12 +62,12 @@
   }
 }
 ```
-| BCS(json string) | MTL-transport_format(enum st20_fmt) | MTL {in/out}put_format(enum st_frame_fmt) | FFMPEG (enum PixelFormat) | RFC 4715 compliant | Note |
-|------------------|-------------------------------------|-------------------------------------------|---------------------------|--------------------|------|
-| y210le | ST20_FMT_YUV_422_10BIT | ST_FRAME_FMT_Y210 |AV_PIX_FMT_Y210LE | ?? | -- |
-| yuv422p10le | ST20_FMT_YUV_422_PLANAR10LE | ST_FRAME_FMT_YUV422PLANAR10LE | PIX_FMT_YUV422P10LE | N | -- |
-| yuv422p10le_rfc4715 | ST20_FMT_YUV_422_10BIT | ST_FRAME_FMT_YUV422RFC4175PG2BE10 | N/A | Y | -- |
-| yuv422p10le_rfc4715_convert | ST20_FMT_YUV_422_10BIT | ST_FRAME_FMT_YUV422PLANAR10LE | PIX_FMT_YUV422P10LE | Y | ST2110 run additional Internal conversion before and after transport |
+| BCS(json string) | MTL transport_format(enum st20_fmt) | MTL {in/out}put_format(enum st_frame_fmt) | FFmpeg (enum PixelFormat) |FFmpeg (string name) | RFC 4715 compliant | Note |
+|------------------|-------------------------------------|-------------------------------------------|---------------------------|---------------------|--------------------|------|
+| y210le           | ST20_FMT_YUV_422_10BIT              | ST_FRAME_FMT_Y210                         |AV_PIX_FMT_Y210LE          | y210le              | ??                 | --   |
+| yuv422p10le      | ST20_FMT_YUV_422_PLANAR10LE         | ST_FRAME_FMT_YUV422PLANAR10LE             | PIX_FMT_YUV422P10LE       | yuv422p10le         | N                  | --   |
+| yuv422p10le_rfc4715 | ST20_FMT_YUV_422_10BIT           | ST_FRAME_FMT_YUV422RFC4175PG2BE10         | N/A                       | N/A                 | Y                  | --   |
+| yuv422p10le_rfc4715_convert | ST20_FMT_YUV_422_10BIT   | ST_FRAME_FMT_YUV422PLANAR10LE             | PIX_FMT_YUV422P10LE       | yuv422p10le         | Y                  | ST2110 run additional Internal conversion before and after transport |
 
 ST2110-22 and RDMA connection take into consideration only ST_FRAME_FMT_* video format 
 
