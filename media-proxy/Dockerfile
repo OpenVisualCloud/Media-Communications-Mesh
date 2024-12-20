@@ -47,11 +47,13 @@ RUN apt-get update --fix-missing && \
 
 # Install golang and dependencies
 WORKDIR /usr/local/
-RUN curl -Lf "https://go.dev/dl/go1.23.4.linux-amd64.tar.gz" -o "/usr/local/go1.23.4.linux-amd64.tar.gz" && \
-    tar -C /usr/local -xzf /usr/local/go1.23.4.linux-amd64.tar.gz && \
-    rm -f "/usr/local/go1.23.4.linux-amd64.tar.gz" && \
+RUN curl -Lf "https://go.dev/dl/go${GOLANG_GO_VER}.linux-amd64.tar.gz" -o "/usr/local/go${GOLANG_GO_VER}.linux-amd64.tar.gz" && \
+    tar -C /usr/local -xzf /usr/local/go${GOLANG_GO_VER}.linux-amd64.tar.gz && \
+    rm -f "/usr/local/go${GOLANG_GO_VER}.linux-amd64.tar.gz" && \
     ln -s /usr/local/go/bin/go /usr/bin/go && \
-    go version
+    go version && \
+    go install "${GOLANG_PROTOBUF_GEN}" && \
+    go install "${GOLANG_GRPC_GEN}"
 
 # Clone MTL, DPDK and xdp-tools repo
 WORKDIR ${DPDK_DIR}
