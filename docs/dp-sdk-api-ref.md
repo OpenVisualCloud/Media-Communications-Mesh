@@ -1,8 +1,8 @@
-# API User Guide for MCM Data Plane SDK
+# API User Guide for Media Communications Mesh Data Plane SDK
 
 ## mcm_create_connection
 ### Description
-Creates a session for MCM data plane connection.
+Creates a session for Media Communications Mesh data plane connection.
 
 ### Parameters
 - `param`: Parameters for the connect session.
@@ -12,7 +12,7 @@ The context handler of the created connect session (`mcm_conn_context*`).
 
 ## mcm_destroy_connection
 ### Description
-Destroys an MCM DP connection.
+Destroys an Media Communications Mesh DP connection.
 
 ### Parameters
 - `pctx`: The context handler of the connection to be destroyed.

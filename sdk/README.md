@@ -1,11 +1,11 @@
-# MCM Data Plane SDK
+# Media Communications Mesh Data Plane SDK
 
 [![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml)
 [![BSD 3-Clause][license-img]][license]
 
 ## Overview
 
-The MCM SDK is a lightweight and versatile library designed to facilitate seamless media data transportation between microservices, with or without the MCM Media Proxy. By leveraging the MCM SDK, developers can easily establish efficient media streaming and enable zero-copied handling of media data transfers.
+The Media Communications Mesh SDK is a lightweight and versatile library designed to facilitate seamless media data transportation between microservices, with or without the Media Communications Mesh Media Proxy. By leveraging the Media Communications Mesh SDK, developers can easily establish efficient media streaming and enable zero-copied handling of media data transfers.
 
 ## Installation
 
@@ -26,7 +26,7 @@ $ cmake --build out -j 4
 
 3. Install on System
 
-To install the MCM SDK on your system, execute the following command:
+To install the Media Communications Mesh SDK on your system, execute the following command:
 
 ```bash
 $ cmake --install out
@@ -66,7 +66,7 @@ usage: recver_app [OPTION]
 3. RAISR Microservice
 
 Standalone microservice to apply "super resolution" to RAW YUV format video frames.
-This application use MCM DP SDK to handle on the data input/output functions.
+This application use Media Communications Mesh DP SDK to handle on the data input/output functions.
 
 Source code: (will be released later)
 

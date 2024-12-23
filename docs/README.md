@@ -10,12 +10,12 @@
 
 ![Media-Communication-Mesh](./_static/media-communications-mesh-proto-1.webp)
 
-## Introduction
+## 1. Introduction
 
 The Media Communications Mesh enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
 
 
-## 1. Media Communications Mesh:
+### 1.1. Media Communications Mesh
 
 - Framework Introduction: Media Communications Mesh is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
 - Purpose: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
@@ -23,7 +23,7 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
 ✅ Key point: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
 
-## 2. Media Proxy Introduction:
+### 1.2. Media Proxy Introduction
 
 - Core Functionality: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
 - Low Latency & Efficiency: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
@@ -33,7 +33,7 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
 ✅ More information about the Media Proxy component can be found in the [media-proxy](../media-proxy/README.md) subdirectory.
 
-## 3. SDK and FFmpeg plugins:
+### 1.3. SDK and FFmpeg plugins
 
 - Key Features: Zero Memory Copy, uses a zero-copy memory techniques for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
 - Media Stream Compatibility: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
@@ -45,17 +45,17 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
 ✅ Detailed information about FFmpeg with Media Communications Mesh plugin can be found in [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
 
-## Getting Started
+## 2. Getting Started
 
-### Basic build and installation
+### 2.1. Basic build and installation
 
-#### Prerequisites
+#### 2.1.1. Prerequisites
 
 - Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
 - Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
 - (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
 
-#### Steps
+#### 2.1.2. Steps
 
 1. **Clone the repository**
 
@@ -121,7 +121,7 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
     By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
 
-### Basic usage
+### 2.2. Basic usage
 
 The program "media_proxy" and SDK library will be installed on system, after the "build.sh" script run successfully. To run "Media Proxy" execute below command:
 
@@ -134,18 +134,18 @@ INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-This will start the media proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
 
-### Dockerfiles build
+### 2.3. Dockerfiles build
 
-#### Prerequisites
+#### 2.3.1. Prerequisites
 
 - Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
 - Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
 - (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
 - Docker engine (recommended with Buildx toolkit) configured and installed.
 
-#### Build the Docker images
+#### 2.3.2. Build the Docker images
 
 1. **Clone the repository**
 
@@ -170,7 +170,7 @@ Run below command from the root directory of the repository to build all of the 
 ./build_docker.sh
 ```
 
-### Basic usage
+### 2.4. Basic usage (Docker)
 
 After running the `build_docker.sh` the following docker images will be available in current docker context if the script run successfully:
 - `mcm/sample-app:latest`
@@ -189,11 +189,11 @@ INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-This will start the media proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
 
-## Parameters breakdown and ports
+### 2.5. Parameters breakdown and ports
 
-Running the media proxy with:
+Running the Media Proxy with:
 
 ```bash
 media_proxy
@@ -223,13 +223,13 @@ Usage: media_proxy [OPTION]
 -t, --tcp=port_number   Port number for TCP socket controller (defaults: 8002).
 ```
 
-## Known Issues
+## 3. Known Issues
 
 - There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
 
 - The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
 
-## Support
+## 4. Support
 
 If you encounter any issues or need assistance, there are several ways to seek support:
 
@@ -243,7 +243,7 @@ Before submitting an issue, please check the existing documentation and discussi
 
 We are here to help, so don't hesitate to reach out if you need assistance.
 
-## Note
+## 5. Note
 
 This project is under development.
 All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.

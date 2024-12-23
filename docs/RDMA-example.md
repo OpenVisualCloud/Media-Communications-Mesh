@@ -3,7 +3,7 @@
 
 This guide provides example commands that can be used to send a video file over RDMA on a single node. It has been created mainly for Debian users, but the commands for other OSs will be the same or similar.
 
-## Prerequisites
+## 1. Prerequisites
 
 1. You should have Media Communications Mesh built. Instruction can be found in [README](README.md#getting-started).
 
@@ -42,7 +42,7 @@ In case you don't have any video handy, you can create a dummy file as follows:
 dd of=dummy_video.bin if=/dev/random bs=8294400 count=60
 ```
 
-## Running sample apps
+## 2. Running sample apps
 
 In this example you will run `4` separate processes, you can use `4` separate terminals for running them. This example sends `60` frames of a `1920x1080` raw video file in `yuv422p10le` video format. Media proxies are listening on ports `8002` and `8003`, the receiver is listening on port `9000`
 
@@ -54,11 +54,11 @@ sudo media_proxy -t 8002
 ```
 sudo media_proxy -t 8003
 ```
-- process number 3, replace \<IPv4> with the address of the RDMA-capable interface:
+- process number 3, (replace \<IPv4> with the address of the RDMA-capable interface):
 ```
 sudo MCM_MEDIA_PROXY_PORT=8002 ./out/bin/recver_app -r <IPv4> -t rdma -i 9000 -w 1920 -h 1080 -x yuv422p10le -b ./received_video.bin -o auto
 ```
-- process number 4, replace \<IPv4> with the address of the RDMA-capable interface:
+- process number 4, (replace \<IPv4> with the address of the RDMA-capable interface):
 ```
 sudo MCM_MEDIA_PROXY_PORT=8003  ./out/bin/sender_app -p 9000 -s <IPv4> -t rdma -w 1920 -h 1080 -x yuv422p10le -b dummy_video.bin -n 60 -o auto
 ```
