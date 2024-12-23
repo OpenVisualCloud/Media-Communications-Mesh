@@ -5,7 +5,7 @@
 ### 1. New Features:
 1.1 Support for RDMA data transfer between media proxies
 * Added RDMA implementation and rdma_args in payload_args; Created script to prepare environment for RDMA (#187)
-* Build and install libfabric, libxdp and libbpf (#188) and updated codeql.yml, coverity.yml to include changes from ubuntu build: libfabric, libxdp and libbpf; Added LIBFABRIC_DIR to Media Proxy Dockerfile
+* Build and install libfabric, libxdp and libbpf (#188) and updated codeql.yml, coverity.yml to include changes from Ubuntu build: libfabric, libxdp and libbpf; Added LIBFABRIC_DIR to Media Proxy Dockerfile
 * Updated README with libfabric dependencies
 * Added test-rdma.sh with RDMA functional tests
 
