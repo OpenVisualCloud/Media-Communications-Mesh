@@ -6,6 +6,7 @@ import (
 	"github.com/sirupsen/logrus"
 
 	pb "control-plane-agent/api/proxy/proto/mediaproxy"
+	"control-plane-agent/api/proxy/proto/sdk"
 	"control-plane-agent/internal/model"
 	"control-plane-agent/internal/registry"
 	"control-plane-agent/internal/utils"
@@ -39,10 +40,14 @@ func ApplyProxyConfig(ctx context.Context, mp *model.MediaProxy, groups []model.
 			continue
 		}
 
+		connConfig := &sdk.ConnectionConfig{}
+		bridge.Config.AssignToPb(connConfig)
+
 		pbBridge := &pb.Bridge{
-			BridgeId: bridge.Id,
-			Type:     bridge.Config.Type,
-			Kind:     bridge.Config.Kind,
+			BridgeId:   bridge.Id,
+			Type:       bridge.Config.Type,
+			Kind:       bridge.Config.Kind,
+			ConnConfig: connConfig,
 		}
 
 		switch bridge.Config.Type {

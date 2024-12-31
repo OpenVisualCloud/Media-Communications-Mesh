@@ -11,6 +11,7 @@
 #include <cstddef>
 #include "concurrency.h"
 #include "metrics.h"
+#include "sdk.grpc.pb.h"
 
 namespace mesh::connection {
 
@@ -68,7 +69,9 @@ enum class Result {
     error_out_of_memory,
     error_general_failure,
     error_context_cancelled,
-   
+    error_conn_config_invalid,
+    error_payload_config_invalid,
+
     error_already_initialized,
     error_initialization_failed,
     error_memory_registration_failed,
@@ -76,6 +79,103 @@ enum class Result {
     error_no_buffer,
     error_timeout,
     // TODO: more error codes to be added...
+};
+
+/**
+ * ConnectionType
+ * 
+ * Enum defining types of SDK created connections.
+ */
+enum ConnectionType : int {
+// TODO: Remove CONN_TYPE_MEMIF when API update is completed.
+//  CONN_TYPE_MEMIF  = 0, ///< Single node direct connection via memif
+    CONN_TYPE_GROUP  = 1, ///< Local connection to Multipoint Group
+    CONN_TYPE_ST2110 = 2, ///< SMPTE ST2110-xx connection via Media Proxy
+    CONN_TYPE_RDMA   = 3, ///< RDMA connection via Media Proxy
+};
+
+/**
+ * PayloadType
+ * 
+ * Enum defining types of payload in SDK created connections.
+ */
+enum PayloadType : int {
+    PAYLOAD_TYPE_BLOB  = 0, ///< payload: blob arbitrary data
+    PAYLOAD_TYPE_VIDEO = 1, ///< payload: video frames
+    PAYLOAD_TYPE_AUDIO = 2, ///< payload: audio packets
+};
+
+/**
+ * Config
+ * 
+ * Configuration structure holding basic connection parameters.
+ * Initially, the connection configuration is parsed from user provided JSON
+ * in SDK, then transmitted to Media Proxy via gRPC, and then transmitted to
+ * MCM Agent.
+ */
+class Config {
+public:
+    Result assign_from_pb(const sdk::ConnectionConfig& config);
+    void assign_to_pb(sdk::ConnectionConfig& config) const;
+
+    sdk::ConnectionKind kind;
+
+    uint16_t buf_queue_capacity;
+    uint32_t max_payload_size;
+    uint32_t max_metadata_size;
+
+    uint32_t calculated_payload_size;
+
+    ConnectionType conn_type;
+
+    struct {
+        struct {
+            std::string urn; 
+        } multipoint_group;
+
+        struct {
+            std::string remote_ip_addr;
+            uint16_t remote_port;
+
+            sdk::ST2110Transport transport;
+
+            std::string pacing;
+            uint32_t payload_type;
+        } st2110;
+
+        struct {
+            std::string connection_mode;
+            uint32_t max_latency_ns;
+        } rdma;
+    } conn;
+
+    PayloadType payload_type;
+
+    struct {
+        struct {
+            int width;
+            int height;
+            double fps;
+            sdk::VideoPixelFormat pixel_format;
+        } video;
+
+        struct {
+            int channels;
+            sdk::AudioSampleRate sample_rate;
+            sdk::AudioFormat format;
+            sdk::AudioPacketTime packet_time;
+        } audio;
+
+    } payload;
+
+    const char * kind2str() const;
+    const char * conn_type2str() const;
+    const char * st2110_transport2str() const;
+    const char * payload_type2str() const;
+    const char * video_pixel_format2str() const;
+    const char * audio_sample_rate2str() const;
+    const char * audio_format2str() const;
+    const char * audio_packet_time2str() const;
 };
 
 /**
@@ -98,6 +198,8 @@ public:
                             Connection *requester = nullptr);
     Connection * link();
 
+    void set_config(const Config& cfg);
+
     Result establish(context::Context& ctx);
     Result establish_async(context::Context& ctx);
 
@@ -116,6 +218,8 @@ public:
         // TODO: add timestamp created_at
         // TODO: add timestamp established_at
     } info;
+
+    Config config;
 
 protected:
     void set_state(context::Context& ctx, State new_state);

@@ -11,6 +11,7 @@
 #include "mediaproxy.grpc.pb.h"
 #include "metrics.h"
 #include "concurrency.h"
+#include "conn.h"
 
 using mediaproxy::CommandReply;
 
@@ -24,7 +25,9 @@ public:
     ProxyAPIClient(std::shared_ptr<Channel> channel)
         : stub_(ProxyAPI::NewStub(channel)) {}
 
-    int RegisterConnection(std::string& conn_id, const std::string& kind, const std::string& group_urn);
+    int RegisterConnection(std::string& conn_id, const std::string& kind,
+                           const connection::Config& config,
+                           std::string& err);
     int UnregisterConnection(const std::string& conn_id);
     int SendMetrics(const std::vector<telemetry::Metric>& metrics);
     int StartCommandQueue(context::Context& ctx);

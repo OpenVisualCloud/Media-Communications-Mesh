@@ -89,25 +89,15 @@ func (lc *logicController) HandleEvent(ctx context.Context, e event.Event) event
 		return ctx
 	}
 
-	initialContext := ctx
-	var firstEventOutContext context.Context
+	// This context will be returned from the call to PostEventSync().
+	returnCtx := ctx
 
 	for _, v := range lc.manifest.Events {
 		evt, ok := lc.definition.events[v.Name]
 		if ok && evt == e.Type {
-			outCtx := performActionsRecursive(initialContext, v.Actions)
-
-			// Remember the context returned from the very first action flow in the YAML manifest to handle the event.
-			// This context will be returned from the call to PostEventSync().
-			if firstEventOutContext == nil {
-				firstEventOutContext = outCtx
-			}
+			returnCtx = performActionsRecursive(ctx, v.Actions)
 		}
 	}
 
-	if firstEventOutContext == nil {
-		firstEventOutContext = initialContext
-	}
-
-	return event.Reply{Ctx: firstEventOutContext, Err: nil}
+	return event.Reply{Ctx: returnCtx, Err: nil}
 }

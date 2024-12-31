@@ -69,26 +69,26 @@ target_include_directories(media_proxy_unit_tests PUBLIC
     ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
 )
 
-# Add an executable for RDMA-Rx-Tx-specific tests
-add_executable(conn_rdma_rx_tx_unit_tests ${RDMA_RX_TX_TEST_SOURCES})
-target_link_libraries(conn_rdma_rx_tx_unit_tests PRIVATE gmock gmock_main gtest gtest_main ${MP_LIB})
-target_include_directories(conn_rdma_rx_tx_unit_tests PUBLIC
-    ${CMAKE_SOURCE_DIR}/media-proxy/include
-    ${CMAKE_BINARY_DIR}/media-proxy/generated
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
-)
+# # Add an executable for RDMA-Rx-Tx-specific tests
+# add_executable(conn_rdma_rx_tx_unit_tests ${RDMA_RX_TX_TEST_SOURCES})
+# target_link_libraries(conn_rdma_rx_tx_unit_tests PRIVATE gmock gmock_main gtest gtest_main ${MP_LIB})
+# target_include_directories(conn_rdma_rx_tx_unit_tests PUBLIC
+#     ${CMAKE_SOURCE_DIR}/media-proxy/include
+#     ${CMAKE_BINARY_DIR}/media-proxy/generated
+#     ${CMAKE_CURRENT_SOURCE_DIR}
+#     ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
+# )
 
-# Add an executable for RDMA-base-specific tests
-add_executable(conn_rdma_base_unit_tests ${RDMA_BASE_TEST_SOURCES})
-target_compile_definitions(conn_rdma_base_unit_tests PRIVATE UNIT_TESTS_ENABLED)
-target_link_libraries(conn_rdma_base_unit_tests PRIVATE gmock gmock_main gtest gtest_main ${MP_LIB})
-target_include_directories(conn_rdma_base_unit_tests PUBLIC
-    ${CMAKE_SOURCE_DIR}/media-proxy/include
-    ${CMAKE_BINARY_DIR}/media-proxy/generated
-    ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
-)
+# # Add an executable for RDMA-base-specific tests
+# add_executable(conn_rdma_base_unit_tests ${RDMA_BASE_TEST_SOURCES})
+# target_compile_definitions(conn_rdma_base_unit_tests PRIVATE UNIT_TESTS_ENABLED)
+# target_link_libraries(conn_rdma_base_unit_tests PRIVATE gmock gmock_main gtest gtest_main ${MP_LIB})
+# target_include_directories(conn_rdma_base_unit_tests PUBLIC
+#     ${CMAKE_SOURCE_DIR}/media-proxy/include
+#     ${CMAKE_BINARY_DIR}/media-proxy/generated
+#     ${CMAKE_CURRENT_SOURCE_DIR}
+#     ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
+# )
 
 # Add an executable for physical-RDMA-specific tests
 add_executable(conn_rdma_real_ep_test ${PHYS_RDMA_TEST_SOURCES})

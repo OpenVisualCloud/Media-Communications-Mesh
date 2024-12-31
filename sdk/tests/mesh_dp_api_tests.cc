@@ -99,11 +99,21 @@ void * mock_grpc_create_client()
     return NULL;
 }
 
+void * mock_grpc_create_client_json(const std::string& endpoint)
+{
+    return NULL;
+}
+
 void mock_grpc_destroy_client(void *client)
 {
 }
 
 void * mock_grpc_create_conn(void *client, mcm_conn_param *param)
+{
+    return NULL;
+}
+
+void * mock_grpc_create_conn_json(void *client, const mesh::ConnectionJsonConfig& cfg)
 {
     return NULL;
 }
@@ -123,8 +133,10 @@ void APITests_Setup()
     mesh_internal_ops.enqueue_buf = mock_enqueue_buf;
 
     mesh_internal_ops.grpc_create_client = mock_grpc_create_client;
+    mesh_internal_ops.grpc_create_client_json = mock_grpc_create_client_json;
     mesh_internal_ops.grpc_destroy_client = mock_grpc_destroy_client;
     mesh_internal_ops.grpc_create_conn = mock_grpc_create_conn;
+    mesh_internal_ops.grpc_create_conn_json = mock_grpc_create_conn_json;
     mesh_internal_ops.grpc_destroy_conn = mock_grpc_destroy_conn;
 }
 
@@ -775,7 +787,7 @@ TEST(APITests_MeshConnection, TestNegative_ParseConnectionConfigInval) {
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INVAL) << mesh_err2str(err);
 
     ctx.cfg.kind = MESH_CONN_KIND_SENDER;
-    ctx.cfg.conn_type = 3,
+    ctx.cfg.conn_type = 4,
     err = ctx.parse_conn_config(&param);
     ASSERT_EQ(err, -MESH_ERR_CONN_CONFIG_INVAL) << mesh_err2str(err);
 
@@ -1297,8 +1309,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, -1);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1314,8 +1326,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, -1);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1331,8 +1343,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, 0);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1348,8 +1360,8 @@ TEST(APITests_MeshBuffer, Test_GetPutBuffer) {
     EXPECT_EQ(err, 0) << mesh_err2str(err);
     EXPECT_NE(buf, (MeshBuffer *)NULL);
     EXPECT_EQ(buf->conn, conn);
-    EXPECT_EQ(buf->data, (void *)NULL);
-    EXPECT_EQ(buf->data_len, 192); /* Magic number hardcoded in mock function */
+    EXPECT_EQ(buf->payload_ptr, (void *)NULL);
+    EXPECT_EQ(buf->payload_len, 192); /* Magic number hardcoded in mock function */
     EXPECT_EQ(__last_timeout, 5000);
     if (err || !buf)
         goto exit_delete_conn;
@@ -1527,19 +1539,21 @@ TEST(APITests_MeshBuffer, TestNegative_PutBuffer_NulledBuf) {
  */
 TEST(APITests_MeshBuffer, Test_ImportantConstants) {
     EXPECT_EQ(MESH_SOCKET_PATH_SIZE, 108);
-    EXPECT_EQ(MESH_IP_ADDRESS_SIZE,   253);
+    EXPECT_EQ(MESH_IP_ADDRESS_SIZE, 253);
 
     EXPECT_EQ(MESH_ERR_BAD_CLIENT_PTR,       1000);
     EXPECT_EQ(MESH_ERR_BAD_CONN_PTR,         1001);
     EXPECT_EQ(MESH_ERR_BAD_CONFIG_PTR,       1002);
     EXPECT_EQ(MESH_ERR_BAD_BUF_PTR,          1003);
-    EXPECT_EQ(MESH_ERR_MAX_CONN,             1004);
-    EXPECT_EQ(MESH_ERR_FOUND_ALLOCATED,      1005);
-    EXPECT_EQ(MESH_ERR_CONN_FAILED,          1006);
-    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INVAL,    1007);
-    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INCOMPAT, 1008);
-    EXPECT_EQ(MESH_ERR_CONN_CLOSED,          1009);
-    EXPECT_EQ(MESH_ERR_TIMEOUT,              1010);
+    EXPECT_EQ(MESH_ERR_CLIENT_CONFIG_INVAL,  1004);
+    EXPECT_EQ(MESH_ERR_MAX_CONN,             1005);
+    EXPECT_EQ(MESH_ERR_FOUND_ALLOCATED,      1006);
+    EXPECT_EQ(MESH_ERR_CONN_FAILED,          1007);
+    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INVAL,    1008);
+    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INCOMPAT, 1009);
+    EXPECT_EQ(MESH_ERR_CONN_CLOSED,          1010);
+    EXPECT_EQ(MESH_ERR_TIMEOUT,              1011);
+    EXPECT_EQ(MESH_ERR_NOT_IMPLEMENTED,      1012);
 
     EXPECT_EQ(MESH_TIMEOUT_DEFAULT,  -2);
     EXPECT_EQ(MESH_TIMEOUT_INFINITE, -1);

@@ -9,6 +9,8 @@ package model
 import (
 	"errors"
 	"fmt"
+
+	"control-plane-agent/api/proxy/proto/sdk"
 )
 
 type Bridge struct {
@@ -20,9 +22,9 @@ type Bridge struct {
 }
 
 type BridgeST2110Config struct {
-	RemoteIP  string `json:"remoteIp"`
-	Port      uint16 `json:"port"`
-	Transport string `json:"transport"`
+	RemoteIP  string              `json:"remoteIp"`
+	Port      uint16              `json:"port"`
+	Transport sdk.ST2110Transport `json:"-"`
 }
 
 type BridgeRDMAConfig struct {
@@ -31,12 +33,14 @@ type BridgeRDMAConfig struct {
 }
 
 type BridgeConfig struct {
+	SDKConnectionConfig
+
 	Type   string              `json:"type"`
 	Kind   string              `json:"kind"`
 	ST2110 *BridgeST2110Config `json:"st2110,omitempty"`
 	RDMA   *BridgeRDMAConfig   `json:"rdma,omitempty"`
 
-	Payload Payload `json:"payload"`
+	// Payload Payload `json:"payload"`
 }
 
 func (b *Bridge) ValidateConfig() error {
@@ -60,7 +64,9 @@ func (b *Bridge) ValidateConfig() error {
 			return errors.New("bad st2110 bridge port")
 		}
 		switch b.Config.ST2110.Transport {
-		case "20", "22", "30":
+		case sdk.ST2110Transport_CONN_TRANSPORT_ST2110_20:
+		case sdk.ST2110Transport_CONN_TRANSPORT_ST2110_22:
+		case sdk.ST2110Transport_CONN_TRANSPORT_ST2110_30:
 		default:
 			return fmt.Errorf("bad st2110 bridge transport: '%s'", b.Config.ST2110.Transport)
 		}
