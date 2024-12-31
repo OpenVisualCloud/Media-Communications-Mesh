@@ -38,6 +38,8 @@ as_root ldconfig
 export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
 "${MCM_BUILD_DIR}/bin/sdk_unit_tests"
 "${MCM_BUILD_DIR}/bin/media_proxy_unit_tests"
+# "${MCM_BUILD_DIR}/bin/conn_rdma_base_unit_tests"
+# "${MCM_BUILD_DIR}/bin/conn_rdma_rx_tx_unit_tests"
 ln -sf "${MCM_BUILD_DIR}" "${SCRIPT_DIR}/build"
 
 function print_success() { echo -e "\e[48;2;0;255;0;30m $* \e[0m"; }

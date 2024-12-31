@@ -23,17 +23,22 @@ func (a *Action_RegistryUpdateOrAddMultipointGroup_LinkConnection) ValidateModif
 }
 
 func (a *Action_RegistryUpdateOrAddMultipointGroup_LinkConnection) Perform(ctx context.Context, modifier string, param event.Params) (context.Context, bool, error) {
-	groupId, ok := ctx.Value(event.ParamName("group_id")).(string)
-	if !ok {
-		return ctx, false, errors.New("multipoint group link conn: no group id in ctx")
+	groupId, err := param.GetString("group_id")
+	if err != nil {
+		return ctx, false, fmt.Errorf("multipoint group link conn group id err: %v", err)
 	}
 	connId, ok := ctx.Value(event.ParamName("conn_id")).(string)
 	if !ok {
 		return ctx, false, errors.New("multipoint group link conn: no conn id in ctx")
 	}
 
+	sdkConnConfig, err := param.GetSDKConnConfig("conn_config")
+	if err != nil {
+		return ctx, false, err
+	}
+
 	// Link Multipoint Group to Local Connection
-	err := registry.ConnRegistry.Update_LinkGroup(ctx, connId, groupId)
+	err = registry.ConnRegistry.Update_LinkGroup(ctx, connId, groupId)
 	if err != nil {
 		return ctx, false, fmt.Errorf("multipoint group link conn update conn err: %w", err)
 	}
@@ -46,10 +51,13 @@ func (a *Action_RegistryUpdateOrAddMultipointGroup_LinkConnection) Perform(ctx c
 	err = registry.MultipointGroupRegistry.Update_LinkConn(ctx, groupId, connId)
 	if errors.Is(err, registry.ErrResourceNotFound) {
 
+		config := &model.MultipointGroupConfig{}
+		config.CopyFrom(sdkConnConfig)
+
 		_, err = registry.MultipointGroupRegistry.Add(ctx, model.MultipointGroup{
 			Id:      groupId,
 			Status:  &model.ConnectionStatus{},
-			Config:  &model.MultipointGroupConfig{},
+			Config:  config,
 			ConnIds: []string{connId},
 		})
 	}

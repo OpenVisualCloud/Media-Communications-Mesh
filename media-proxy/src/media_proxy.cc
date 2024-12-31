@@ -11,7 +11,7 @@
 
 #include <csignal>
 #include "concurrency.h"
-#include "client_api.h"
+#include "sdk_api.h"
 #include "logger.h"
 #include "manager_local.h"
 #include "proxy_api.h"
