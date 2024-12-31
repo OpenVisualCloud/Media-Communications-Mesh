@@ -148,7 +148,6 @@ func (a *API) CreateEndpoints(r *mux.Router) {
 	r.HandleFunc("/bridge/{id}", a.GetBridge).Methods("GET")
 	r.HandleFunc("/bridge", a.AddBridge).Methods("PUT")
 	r.HandleFunc("/bridge/{id}", a.DeleteBridge).Methods("DELETE")
-
 }
 
 func (a *API) Run(ctx context.Context) {

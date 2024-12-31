@@ -19,7 +19,7 @@ int main(void)
     const char *conn_config = R"(
       {
         "connection": {
-          "multipoint-group": {
+          "multipointGroup": {
             "urn": "ipv4:224.0.0.1:9003"
           }
         },
@@ -114,7 +114,7 @@ int main(void)
     const char *conn_config = R"(
       {
         "connection": {
-          "multipoint-group": {
+          "multipointGroup": {
             "urn": "ipv4:224.0.0.1:9003"
           }
         },

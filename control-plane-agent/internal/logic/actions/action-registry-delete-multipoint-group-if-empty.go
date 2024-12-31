@@ -37,7 +37,19 @@ func (a *Action_RegistryDeleteMultipointGroupIfEmpty) Perform(ctx context.Contex
 	}
 	if len(group.ConnIds) == 0 {
 		for _, id := range group.BridgeIds {
+			bridge, err := registry.BridgeRegistry.Get(ctx, id, false)
+			if err != nil {
+				logrus.Errorf("delete multipoint group if empty: bridge get err: %v, id: '%v'", err, id)
+				continue
+			}
+
 			_ = registry.BridgeRegistry.Delete(ctx, id)
+
+			// Remove bridge from Media Proxy
+			err = registry.MediaProxyRegistry.Update_UnlinkBridge(ctx, bridge.ProxyId, id)
+			if err != nil {
+				logrus.Errorf("delete multipoint group if empty: proxy update unlink bridge err: %v, id: '%v'", err, id)
+			}
 		}
 
 		err = registry.MultipointGroupRegistry.Delete(ctx, groupId)

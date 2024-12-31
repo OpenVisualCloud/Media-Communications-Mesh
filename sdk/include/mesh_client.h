@@ -14,17 +14,36 @@ namespace mesh {
 
 class ConnectionContext;
 
+class ClientJsonConfig {
+public:
+    int parse_json(const char *str);
+
+    std::string api_version;
+    std::string proxy_ip;
+    std::string proxy_port;
+    int default_timeout_us;
+    int max_conn_num;
+};
+
 /**
  * Mesh client context structure
  */
 class ClientContext {
 public:
+    ClientContext();
     ClientContext(MeshClientConfig *cfg);
+
     int init();
     int shutdown();
     int create_conn(MeshConnection **conn);
 
+    int init_json(const char *cfg);
+    int create_conn_json(MeshConnection **conn, int kind);
+
     MeshClientConfig config = {};
+
+    bool enable_grpc_with_json = false;
+    ClientJsonConfig cfg_json;
 
     std::list<ConnectionContext *> conns;
     std::mutex mx;

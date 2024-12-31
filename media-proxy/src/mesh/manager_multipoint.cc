@@ -162,7 +162,7 @@ Result GroupManager::reconcile_config(context::Context& ctx,
         return Result::success;
     }
     
-    log::info("[RECONCILE] Started =======");
+    log::info("[RECONCILE] Started =========");
 
     local_manager.lock();
     thread::Defer d([]{ local_manager.unlock(); });
@@ -279,7 +279,7 @@ Result GroupManager::reconcile_config(context::Context& ctx,
                                                      bridge_config);
             // DEBUG
             if (!bridge) {
-                log::error("[RECONCILE] Add bridge: ")
+                log::error("[RECONCILE] Add bridge err")
                           ("group_id", group->id)
                           ("bridge_id", bridge_id);
                           ("kind", kind2str(kind));

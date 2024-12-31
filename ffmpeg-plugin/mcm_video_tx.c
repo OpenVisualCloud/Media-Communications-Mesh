@@ -16,10 +16,11 @@ typedef struct McmVideoMuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    char *conn_type;
+    char *urn;
     char *ip_addr;
-    char *port;
-    char *protocol_type;
-    char *payload_type;
+    int port;
+    char *transport;
     char *socket_name;
     int interface_id;
 
@@ -35,18 +36,8 @@ typedef struct McmVideoMuxerContext {
 static int mcm_video_write_header(AVFormatContext* avctx)
 {
     McmVideoMuxerContext *s = avctx->priv_data;
-    int kind = MESH_CONN_KIND_SENDER;
-    MeshConfig_Video cfg;
-    int err;
-
-    /* video format */
-    cfg.width = s->width;
-    cfg.height = s->height;
-    cfg.fps = av_q2d(s->frame_rate);
-
-    err = mcm_parse_video_pix_fmt(avctx, &cfg.pixel_format, s->pixel_format);
-    if (err)
-        return err;
+    char json_config[250];
+    int err, n;
 
     err = mcm_get_client(&s->mc);
     if (err) {
@@ -55,7 +46,26 @@ static int mcm_video_write_header(AVFormatContext* avctx)
         return AVERROR(EINVAL);
     }
 
-    err = mesh_create_connection(s->mc, &s->conn);
+    if (!strcmp(s->conn_type, "multipoint-group")) {
+        n = snprintf(json_config, sizeof(json_config),
+                     mcm_json_config_multipoint_group_video_format, s->urn,
+                     s->width, s->height, av_q2d(s->frame_rate),
+                     av_get_pix_fmt_name(s->pixel_format));
+    } else if (!strcmp(s->conn_type, "st2110")) {
+        n = snprintf(json_config, sizeof(json_config),
+                     mcm_json_config_st2110_video_format,
+                     s->ip_addr, s->port, s->transport,
+                     s->width, s->height, av_q2d(s->frame_rate),
+                     av_get_pix_fmt_name(s->pixel_format));
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Unknown conn type: '%s'\n", s->conn_type);
+        return AVERROR(EINVAL);
+    }
+
+    av_log(avctx, AV_LOG_INFO, "JSON LEN = %d\n", n);
+    mcm_replace_back_quotes(json_config);
+
+    err = mesh_create_tx_connection(s->mc, &s->conn, json_config);
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Create connection failed: %s (%d)\n",
                mesh_err2str(err), err);
@@ -63,40 +73,11 @@ static int mcm_video_write_header(AVFormatContext* avctx)
         goto exit_put_client;
     }
 
-    err = mcm_parse_conn_param(avctx, s->conn, kind, s->ip_addr, s->port,
-                                  s->protocol_type, s->payload_type,
-                                  s->socket_name, s->interface_id);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Configuration parsing failed: %s (%d)\n",
-               mesh_err2str(err), err);
-        err = AVERROR(EINVAL);
-        goto exit_delete_conn;
-    }
-
-    err = mesh_apply_connection_config_video(s->conn, &cfg);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to apply connection config: %s (%d)\n",
-               mesh_err2str(err), err);
-        err = AVERROR(EIO);
-        goto exit_delete_conn;
-    }
-
-    err = mesh_establish_connection(s->conn, kind);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot establish connection: %s (%d)\n",
-               mesh_err2str(err), err);
-        err = AVERROR(EIO);
-        goto exit_delete_conn;
-    }
-
     av_log(avctx, AV_LOG_INFO,
            "w:%d h:%d pixfmt:%s fps:%d\n",
            s->width, s->height, av_get_pix_fmt_name(s->pixel_format),
            (int)av_q2d(s->frame_rate));
     return 0;
-
-exit_delete_conn:
-    mesh_delete_connection(&s->conn);
 
 exit_put_client:
     mcm_put_client(&s->mc);
@@ -149,10 +130,11 @@ static int mcm_video_write_trailer(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmVideoMuxerContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption mcm_video_tx_options[] = {
-    { "ip_addr", "set remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.2"}, .flags = ENC },
-    { "port", "set remote port", OFFSET(port), AV_OPT_TYPE_STRING, {.str = "9001"}, .flags = ENC },
-    { "protocol_type", "set protocol type", OFFSET(protocol_type), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = ENC },
-    { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st20"}, .flags = ENC },
+    { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = ENC },
+    { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = ENC },
+    { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.2"}, .flags = ENC },
+    { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, ENC },
+    { "transport", "set ST2110 transport type", OFFSET(transport), AV_OPT_TYPE_STRING, {.str = "st2110-20"}, .flags = ENC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = ENC },
     { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, ENC },
     { "video_size", "set video frame size given a string such as 640x480 or hd720", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1920x1080"}, 0, 0, ENC },

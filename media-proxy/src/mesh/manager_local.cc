@@ -22,7 +22,9 @@ LocalManager local_manager;
 
 int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
                                         mcm_conn_param *param,
-                                        memif_conn_param *memif_param)
+                                        memif_conn_param *memif_param,
+                                        const Config& conn_config,
+                                        std::string& err_str)
 {
     if (!param)
         return -1;
@@ -44,7 +46,8 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     memif_ops_t memif_ops = {};
     memif_ops.interface_id = 0;
 
-    const char *type_str = param->type == is_tx ? "tx" : "rx";
+    // const char *type_str = param->type == is_tx ? "tx" : "rx";
+    const char *type_str = conn_config.kind2str();
 
     snprintf(memif_ops.app_name, sizeof(memif_ops.app_name),
              "memif_%s_%s", type_str, id.c_str());
@@ -53,11 +56,21 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     snprintf(memif_ops.socket_path, sizeof(memif_ops.socket_path),
              "/run/mcm/media_proxy_%s_%s.sock", type_str, id.c_str());
 
-    size_t frame_size = st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE,
-                                      param->width, param->height, false);
+    // size_t frame_size = st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE,
+    //                                   param->width, param->height, false);
+    // size_t frame_size = st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE,
+    //                                   conn_config.payload.video.width,
+    //                                   conn_config.payload.video.height, false);
+
+    // DEBUG
+    // TODO: Replace with calculation based on st_xxx functions.
+    size_t frame_size = conn_config.calculated_payload_size;
+    // DEBUG
+
     Local *conn;
 
-    if (param->type == is_tx)
+    // if (param->type == is_tx)
+    if (conn_config.kind == sdk::CONN_KIND_TRANSMITTER)
         conn = new(std::nothrow) LocalRx;
     else
         conn = new(std::nothrow) LocalTx;
@@ -65,8 +78,26 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     if (!conn)
         return -ENOMEM;
 
+    conn->set_config(conn_config);
+
     auto res = conn->configure_memif(ctx, &memif_ops, frame_size);
     if (res != Result::success) {
+        delete conn;
+        return -1;
+    }
+
+    // Prepare parameters to register in Media Proxy
+    // std::string kind = param->type == is_tx ? "rx" : "tx";
+    std::string kind = conn_config.kind == sdk::CONN_KIND_TRANSMITTER ? "rx" : "tx";
+
+    lock();
+    thread::Defer d([this]{ unlock(); });
+
+    // Register local connection in Media Proxy
+    std::string agent_assigned_id;
+    int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind,
+                                                 conn_config, err_str);
+    if (err) {
         delete conn;
         return -1;
     }
@@ -83,28 +114,10 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
 
     conn->get_params(memif_param);
 
-    // Prepare parameters to register in Media Proxy
-    std::string kind = param->type == is_tx ? "rx" : "tx";
-
-    std::string group_urn = std::string(param->remote_addr.ip) + ":" +
-                            std::string(param->type == is_tx ?
-                                        param->remote_addr.port :
-                                        param->local_addr.port);
-
-    lock();
-    thread::Defer d([this]{ unlock(); });
-
-    // Register local connection in Media Proxy
-    std::string agent_assigned_id;
-    int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind, group_urn);
-    if (err) {
-        delete conn;
-        return -1;
-    }
-
     // Assign id accessed by metrics collector.
     conn->assign_id(agent_assigned_id);
 
+    // TODO: Rethink the flow to avoid using two registries with different ids.
     registry_sdk.replace(id, conn);
     registry.add(agent_assigned_id, conn);
     // log::debug("Added local conn")("conn_id", conn->id)("id", id);

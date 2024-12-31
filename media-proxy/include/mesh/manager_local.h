@@ -17,7 +17,8 @@ namespace mesh::connection {
 class LocalManager {
 public:
     int create_connection_sdk(context::Context& ctx, std::string& id,
-                              mcm_conn_param *param, memif_conn_param *memif_param);
+                              mcm_conn_param *param, memif_conn_param *memif_param,
+                              const Config& conn_config, std::string& err_str);
 
     int delete_connection_sdk(context::Context& ctx, const std::string& id);
 

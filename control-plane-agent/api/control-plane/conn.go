@@ -62,7 +62,7 @@ func (a *API) AddConnection(w http.ResponseWriter, r *http.Request) {
 	conn := model.Connection{
 		Status: &model.ConnectionStatus{},
 		Config: &model.ConnectionConfig{
-			Conn: model.ConnectionST2110{},
+			// Conn: model.ConnectionST2110{},
 			// Payload: model.PayloadVideo{},
 		},
 	}

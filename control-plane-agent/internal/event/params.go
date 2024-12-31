@@ -6,7 +6,10 @@
 
 package event
 
-import "fmt"
+import (
+	"control-plane-agent/internal/model"
+	"fmt"
+)
 
 type ParamName string // used to pass event parameters as values in context
 
@@ -42,4 +45,16 @@ func (ep Params) GetUint32(name string) (uint32, error) {
 		return 0, fmt.Errorf("uint32 cast failed: %v", name)
 	}
 	return n, nil
+}
+
+func (ep Params) GetSDKConnConfig(name string) (*model.SDKConnectionConfig, error) {
+	v, err := ep.getParam(name)
+	if err != nil {
+		return nil, fmt.Errorf("sdk conn cfg %v", err)
+	}
+	cfg, ok := v.(*model.SDKConnectionConfig)
+	if !ok {
+		return nil, fmt.Errorf("sdk conn cfg cast failed: %v", name)
+	}
+	return cfg, nil
 }

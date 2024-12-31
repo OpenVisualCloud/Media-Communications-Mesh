@@ -21,7 +21,7 @@
 ## Configure Connection – Multipoint Group
 ```json
 "connection": {
-  "multipoint-group": {
+  "multipointGroup": {
     "ipAddr": "224.0.0.1",
     "port": "9003"
   }
@@ -34,7 +34,7 @@
   "st2110": {
     "transport": "st2110-22",
     "remoteIpAddr": "192.168.95.2",
-    "remotePort": "9002",
+    "remotePort": 9002,
     "pacing": "narrow",
     "payloadType": 112
   }
@@ -46,7 +46,7 @@
 "connection": {
   "rdma": {
     "connectionMode": "RC",
-    "maxLatencyNs": 10000
+    "maxLatencyNanoseconds": 10000
   }
 }
 ```
@@ -117,7 +117,7 @@ flowchart LR
                   Audio"]
 
    conn --> rdma(rdma) --> rdma_param("connectionMode
-                                       maxLatencyNs")
+                                       maxLatencyNanoseconds")
 
    payload(payload) --> video(video) --> videoparam("width
                                                      height
