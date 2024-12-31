@@ -26,10 +26,12 @@ void Registry::unregister_provider(MetricsProvider *provider)
 }
 
 void Registry::lock() {
+    // log::debug("metrics providers registry lock");
     mx.lock();
 }
 
 void Registry::unlock() {
+    // log::debug("metrics providers registry unlock");
     mx.unlock();
 }
 

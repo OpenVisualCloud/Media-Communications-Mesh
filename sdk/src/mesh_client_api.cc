@@ -97,10 +97,24 @@ private:
     std::unique_ptr<SDKAPI::Stub> stub_;
 };
 
+// DEBUG
+extern "C" int get_media_proxy_addr(mcm_dp_addr* proxy_addr);
+// DEBUG
+
 void * mesh_grpc_create_client()
 {
+    // DEBUG
+    std::string sdk_port("50050");
+
+    mcm_dp_addr media_proxy_addr = {};
+    auto err = get_media_proxy_addr(&media_proxy_addr);
+    if (!err) {
+        sdk_port = "1" + std::string(media_proxy_addr.port);
+    }
+    // DEBUG
+
     auto client = new(std::nothrow)
-        SDKAPIClient(grpc::CreateChannel("localhost:50050", // gRPC default 50051
+        SDKAPIClient(grpc::CreateChannel("localhost:" + sdk_port, // gRPC default 50051
                      grpc::InsecureChannelCredentials()));
     return client;
 }

@@ -14,6 +14,7 @@
 #include "logger.h"
 #include "mcm_dp.h"
 #include "manager_local.h"
+#include "proxy_config.h"
 
 namespace mesh {
 
@@ -87,7 +88,8 @@ public:
 };
 
 void RunSDKAPIServer(context::Context& ctx) {
-    std::string server_address("0.0.0.0:50050"); // gRPC default 50051
+    std::string server_address("0.0.0.0:"); // gRPC default 50051
+    server_address += std::to_string(config::proxy.sdk_api_port);
     SDKAPIServiceImpl service;
 
     ServerBuilder builder;
