@@ -77,17 +77,26 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
         return -1;
     }
 
+    // log::debug("MCM PARAMS")
+    //           ("remote", std::string(param->remote_addr.ip) + ":" + std::string(param->remote_addr.port))
+    //           ("local", std::string(param->local_addr.ip) + ":" + std::string(param->local_addr.port));
+
     conn->get_params(memif_param);
 
     // Prepare parameters to register in Media Proxy
     std::string kind = param->type == is_tx ? "rx" : "tx";
+
+    std::string group_urn = std::string(param->remote_addr.ip) + ":" +
+                            std::string(param->type == is_tx ?
+                                        param->remote_addr.port :
+                                        param->local_addr.port);
 
     lock();
     thread::Defer d([this]{ unlock(); });
 
     // Register local connection in Media Proxy
     std::string agent_assigned_id;
-    int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind);
+    int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind, group_urn);
     if (err) {
         delete conn;
         return -1;

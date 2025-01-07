@@ -85,6 +85,7 @@ function install_ubuntu_package_dependencies()
         zlib1g-dev \
         "${APT_LINUX_HEADERS}" \
         "${APT_LINUX_MOD_EXTRA}" && \
+    lib_build_and_install_golang && \
     return 0 || return 1
 }
 
@@ -147,6 +148,7 @@ function install_yum_package_dependencies()
     lib_install_nasm_from_rpm && \
     lib_build_and_install_libfdt && \
     lib_build_and_install_jsonc && \
+    lib_build_and_install_golang && \
     return 0 || return 1
 }
 
@@ -190,6 +192,16 @@ function lib_build_and_install_jsonc()
     cmake -S "${JSONC_DIR}" -B "${JSONC_DIR}/json-c-build" -DCMAKE_BUILD_TYPE=Release
     make -j "${NPROC}" -C "${JSONC_DIR}/json-c-build"
     as_root make -j "${NPROC}" -C "${JSONC_DIR}/json-c-build" install
+}
+
+# Get and install golang from source
+function lib_build_and_install_golang()
+{
+    as_root wget_download_strip_unpack "https://go.dev/dl/go${GOLANG_GO_VER}.linux-amd64.tar.gz" "/usr/local/go/"
+    as_root ln -s /usr/local/go/bin/go /usr/bin/go
+    go version
+    go install "${GOLANG_PROTOBUF_GEN}"
+    go install "${GOLANG_GRPC_GEN}"
 }
 
 # Build the xdp-tools project with ebpf
