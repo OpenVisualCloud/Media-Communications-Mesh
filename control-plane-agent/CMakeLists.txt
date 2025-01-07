@@ -7,6 +7,11 @@ cmake_minimum_required(VERSION 3.10)
 # Project name
 project(ControlPlaneAgent)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -lz -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -lz -fPIC")
+
 # Set the Go compiler
 find_program(GO_EXECUTABLE NAMES go)
 

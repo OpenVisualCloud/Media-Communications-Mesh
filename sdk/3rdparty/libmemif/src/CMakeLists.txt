@@ -13,6 +13,11 @@
 
 cmake_minimum_required(VERSION 3.16 FATAL_ERROR)
 
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -lz -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -lz -fPIC")
+
 set(HEADERS_DIR ${CMAKE_CURRENT_SOURCE_DIR})
 
 list(APPEND MEMIF_HEADERS
@@ -32,7 +37,7 @@ list(APPEND MEMIF_SOURCES
 
 include_directories(${HEADERS_DIR})
 
-add_library(memif SHARED ${MEMIF_SOURCES})
+add_library(memif STATIC ${MEMIF_SOURCES})
 target_link_libraries(memif ${CMAKE_THREAD_LIBS_INIT})
 
 set_target_properties(memif PROPERTIES POSITION_INDEPENDENT_CODE ON)

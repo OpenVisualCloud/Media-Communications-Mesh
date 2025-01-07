@@ -7,8 +7,10 @@ cmake_minimum_required(VERSION 3.16)
 
 project(MediaProxy VERSION 0.0.1 LANGUAGES CXX C)
 
+set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -lz -fPIC")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -lz -fPIC")
 
 # Set the build type to Debug by default
 if(NOT CMAKE_BUILD_TYPE)
@@ -31,6 +33,7 @@ ENDIF(ENABLE_ZERO_COPY)
 set(target media_proxy)
 set(MTL_LIB mtl)
 set(MEMIF_LIB memif)
+set(MEMIF_LIB_INCUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../sdk/3rdparty/libmemif/src)
 set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
 
 # Find Protobuf and gRPC
@@ -111,6 +114,7 @@ include_directories(
     ./include
     ./include/mesh
     ${LIBFABRIC_INCLUDE_DIR}
+    ${MEMIF_LIB_INCUDE_DIR}
     ${Protobuf_INCLUDE_DIRS}
     ${gRPC_INCLUDE_DIRS}
     ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
@@ -118,11 +122,13 @@ include_directories(
 
 add_library(media_proxy_lib STATIC ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS}
             ${GRPC_HDRS})
-target_link_libraries(media_proxy_lib PUBLIC m ${MTL_LIB} ${MEMIF_LIB} ${LIBFABRIC}
+set_target_properties(media_proxy_lib PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(media_proxy_lib PUBLIC m z ${MTL_LIB} ${MEMIF_LIB} ${LIBFABRIC}
     gRPC::grpc++ protobuf::libprotobuf)
 
 add_executable(media_proxy ${proxy_srcs} src/media_proxy.cc)
-target_link_libraries(media_proxy PRIVATE media_proxy_lib)
+set_target_properties(media_proxy PROPERTIES POSITION_INDEPENDENT_CODE ON)
+target_link_libraries(media_proxy PRIVATE media_proxy_lib z)
 target_link_libraries(media_proxy PRIVATE dl)
 
 install(TARGETS media_proxy DESTINATION ${CMAKE_INSTALL_PATH} COMPONENT media_proxy)
