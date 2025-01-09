@@ -11,10 +11,11 @@ The primary function of the Media Proxy is to provide a single memory-mapped API
 
 ```bash
 ./build.sh
+./build.sh
 ```
 
 ## Run
-The program "media_proxy" can be installed on system, after the "build.sh" script run successfully.
+The program "media_proxy" can be installed on system, after the `build.sh` script run successfully.
 And the "Media Proxy" can be run with below command.
 
 ```bash
@@ -110,17 +111,23 @@ Before deploy Media Proxy to the K8s cluster, you need to execute following step
 ```bash
 minikube start
 minikube node add -n 1
+minikube start
+minikube node add -n 1
 ```
 
 2. Set the label for the worker node.
 
 ```bash
 kubectl label nodes minikube-m02 mcm.intel.com/role=worker
+kubectl label nodes minikube-m02 mcm.intel.com/role=worker
 ```
 
 ### Deploy Media Proxy
 
 ```bash
+cd Media-Communications-Mesh
+kubectl apply -f deployment/DaemonSet/media-proxy.yaml
+kubectl get daemonsets.apps -n mcm
 cd Media-Communications-Mesh
 kubectl apply -f deployment/DaemonSet/media-proxy.yaml
 kubectl get daemonsets.apps -n mcm

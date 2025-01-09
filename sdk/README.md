@@ -14,14 +14,14 @@ The Media Communications Mesh SDK is a lightweight and versatile library designe
 Install the required dependencies by running the command:
 
 ```bash
-$ sudo apt-get install -y cmake libbsd-dev
+sudo apt-get install -y cmake libbsd-dev
 ```
 
 2. Build SDK Library
 
 ```bash
-$ cmake -B out .
-$ cmake --build out -j 4
+cmake -B out .
+cmake --build out -j 4
 ```
 
 3. Install on System
@@ -29,7 +29,7 @@ $ cmake --build out -j 4
 To install the Media Communications Mesh SDK on your system, execute the following command:
 
 ```bash
-$ cmake --install out
+cmake --install out
 ```
 
 ## Sample Applications
@@ -42,7 +42,9 @@ Sample code for the application which send out data to others.
 
 Source code: samples/sender_app.c
 ```bash
-$ ./build/samples/sender_app
+./build/samples/sender_app
+```
+```text
 usage: sender_app [OPTION]
 -h, --help                      Print this help and exit.
 -s, --ip=ip_address             Send data to IP address (default: 127.0.0.1).
@@ -56,7 +58,9 @@ Sample code for the application which receive data from others.
 
 Source code: samples/sender_app.c
 ```bash
-$ ./build/samples/recver_app
+./build/samples/recver_app
+```
+```text
 usage: recver_app [OPTION]
 -h, --help                      Print this help and exit.
 -r, --ip=ip_address             Receive data from IP address (defaults: 127.0.0.1).

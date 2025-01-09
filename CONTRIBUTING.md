@@ -18,7 +18,7 @@ All source code in this project must follow the same coding style, which is defi
 Please format your code with "clang-format" tool before submit to PR.
 
 ```bash
-$ clang-format -i <source.c>
+clang-format -i <source.c>
 ```
 
 ## Issues
