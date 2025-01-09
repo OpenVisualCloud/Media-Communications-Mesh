@@ -123,8 +123,10 @@ MTL: (...), Error: Run "dpdk-devbind.py -s | grep Ethernet" to check if other po
 
 run the command mentioned (`dpdk-devbind.py -s | grep Ethernet`) and find the network interface of interest. Example:
 
+```bash
+dpdk-devbind.py -s | grep Ethernet
+```
 ```text
-$ dpdk-devbind.py -s | grep Ethernet
 0000:c0:01.0 'Ethernet Adaptive Virtual Function 1889' drv=vfio-pci unused=iavf
 0000:c0:01.1 'Ethernet Adaptive Virtual Function 1889' drv=vfio-pci unused=iavf
 0000:32:00.0 'Ethernet Controller 10G X550T 1563' if=eth2 drv=ixgbe unused=vfio-pci *Active*
