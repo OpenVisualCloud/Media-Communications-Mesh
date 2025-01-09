@@ -101,15 +101,15 @@ TBD
 
    When working with raw video files that lack metadata, you must explicitly provide FFmpeg with the necessary video frame details. This includes specifying the format `-f rawvideo`, pixel format `-pix_fmt`, and resolution `-s WxH`. For example:
 
-    ```bash
-    ffmpeg -f rawvideo -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
+   ```bash
+   ffmpeg -f rawvideo -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
    ```
 
 
 ### VLC player setup
 
 On the remote machine start the VLC player and open a network stream from the next URL:
-```
+```text
 udp://@:1234
 ```
 
@@ -183,7 +183,7 @@ TBD
 
 ### Shared libraries error:
 FFmpeg build was successful but trying to run `ffmpeg` results in shared libraries error:
-```
+```text
 root@my-machine:~# ffmpeg
 
 ffmpeg: error while loading shared libraries: libavfilter.so.9: cannot open shared object file: No such file or directory
@@ -191,14 +191,14 @@ ffmpeg: error while loading shared libraries: libavfilter.so.9: cannot open shar
 
 **Resolution:**
 Try running ffmpeg or exporting the `LD_LIBRARY_PATH` in your shell session by pointing to the `/usr/local/lib` folder. Examples:
-```
+```text
 root@my-machine:~# LD_LIBRARY_PATH=/usr/local/lib ffmpeg
 
 ffmpeg version n6.1.1-152-ge821e6c21d Copyright (c) 2000-2023 the FFmpeg developers
   built with gcc 11 (Ubuntu 11.4.0-1ubuntu1~22.04)
 ```
 Using export:
-```
+```text
 root@my-machine:~# export LD_LIBRARY_PATH=/usr/local/lib
 root@my-machine:~# ffmpeg
 

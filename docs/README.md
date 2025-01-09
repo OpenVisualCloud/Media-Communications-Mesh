@@ -17,43 +17,43 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
 ### 1.1. Media Communications Mesh
 
-- Framework Introduction: Media Communications Mesh is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
-- Purpose: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
-- Technological Basis: The Media Transport Library (MTL) helps form the media data plane, and a control-plane communications infrastructure adds support for media control protocols.
+- **Framework Introduction**: Media Communications Mesh is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
+- **Purpose**: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
+- **Technological Basis**: The Media Transport Library (MTL) helps form the media data plane, and a control-plane communications infrastructure adds support for media control protocols.
 
-✅ Key point: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
+✅ **Key point**: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
 
 ### 1.2. Media Proxy Introduction
 
-- Core Functionality: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
-- Low Latency & Efficiency: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
-- Service Mesh Role: It acts as a Data Plane component within a larger service mesh for media applications, utilizing `MTL` `ST 2110` API, `libfabric` for `RDMA` API, `MemIF` shared memory APIs, and many more, to abstract the complexities involved in efficient media transport.
+- **Core Functionality**: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
+- **Low Latency & Efficiency**: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
+- **Service Mesh Role**: It acts as a Data Plane component within a larger service mesh for media applications, utilizing `MTL` `ST 2110` API, `libfabric` for `RDMA` API, `MemIF` shared memory APIs, and many more, to abstract the complexities involved in efficient media transport.
 
-✅ Key point: Media Proxy handles the data transport layer of media streams, focusing on real-time efficiency and ensuring media routing between microservices in the mesh.
+✅ **Key point**: Media Proxy handles the data transport layer of media streams, focusing on real-time efficiency and ensuring media routing between microservices in the mesh.
 
 ✅ More information about the Media Proxy component can be found in the [media-proxy](../media-proxy/README.md) subdirectory.
 
-### 1.3. SDK and FFmpeg plugins
+### 1.3. SDK and FFmpeg Plugins
 
-- Key Features: Zero Memory Copy, uses a zero-copy memory techniques for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
-- Media Stream Compatibility: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
-- Multiple Protocols: Works with protocols such as SMPTE ST 2110 and RTSP, enhancing its versatility in different media service setups.
+- **Key Features**: Zero Memory Copy, uses a zero-copy memory technique for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
+- **Media Stream Compatibility**: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
+- **Multiple Protocols**: Works with protocols such as SMPTE ST 2110 and RTSP, enhancing its versatility in different media service setups.
 
-✅ Key point: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
+✅ **Key point**: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
 
-✅ Detailed information about Media Communications Mesh SDK can be found in [sdk](../sdk/README.md) directory.
+✅ Detailed information about Media Communications Mesh SDK can be found in the [sdk](../sdk/README.md) directory.
 
-✅ Detailed information about FFmpeg with Media Communications Mesh plugin can be found in [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
+✅ Detailed information about FFmpeg with Media Communications Mesh plugin can be found in the [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
 
 ## 2. Getting Started
 
-### 2.1. Basic build and installation
+### 2.1. Basic Build and Installation
 
 #### 2.1.1. Prerequisites
 
-- Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
-- Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
-- (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
+- Linux server (Intel Xeon processor recommended, e.g., Sapphire Rapids).
+- Network Interface Card (NIC) compatible with DPDK (e.g., Intel Ethernet Controller E810-C).
+- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#support).
 
 #### 2.1.2. Steps
 
@@ -97,7 +97,7 @@ The Media Communications Mesh enables efficient, low-latency media transport for
                 sudo apt-get update
                 sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
                 ```
-            - Centos stream
+            - CentOS stream
                 ```bash
                 sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
                 ```
@@ -121,31 +121,31 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
     By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
 
-### 2.2. Basic usage
+### 2.2. Basic Usage
 
-The program "media_proxy" and SDK library will be installed on system, after the "build.sh" script run successfully. To run "Media Proxy" execute below command:
+The program "media_proxy" and SDK library will be installed on the system after the "build.sh" script run successfully. To run "Media Proxy", execute the below command:
 
 ```bash
 media_proxy
 ```
 which should result in:
-```
+```text
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`.
 
-### 2.3. Dockerfiles build
+### 2.3. Dockerfiles Build
 
 #### 2.3.1. Prerequisites
 
-- Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
-- Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
-- (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
+- Linux server (Intel Xeon processor recommended, e.g. Sapphire Rapids).
+- Network Interface Card (NIC) compatible with DPDK (e.g. Intel Ethernet Controller E810-C).
+- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#support).
 - Docker engine (recommended with Buildx toolkit) configured and installed.
 
-#### 2.3.2. Build the Docker images
+#### 2.3.2. Build the Docker Images
 
 1. **Clone the repository**
 
@@ -162,36 +162,36 @@ This will start the Media Proxy in blocking mode and confirm that build was succ
 3. **Build the Dockerfiles**
 
 > [!WARNING]
-> Depending on your docker installation, this step may require being run as `root`.
+> Depending on your Docker installation, this step may require being run as `root`.
 
-Run below command from the root directory of the repository to build all of the Dockerfiles:
+Run the below command from the root directory of the repository to build all of the Dockerfiles:
 
 ```bash
 ./build_docker.sh
 ```
 
-### 2.4. Basic usage (Docker)
+### 2.4. Basic Usage (Docker)
 
-After running the `build_docker.sh` the following docker images will be available in current docker context if the script run successfully:
+After running the `build_docker.sh` the following Docker images will be available in the current Docker context if the script runs successfully:
 - `mcm/sample-app:latest`
 - `mcm/media-proxy:latest`
 - `mcm/ffmpeg:latest`
 - `mcm/ffmpeg:6.1-latest`
 
-Now the "Media Proxy" can be run inside the container. To check it, execute below command:
+Now the "Media Proxy" can be run inside the container. To check it, execute the below command:
 
 ```bash
 docker run --privileged -it -v /var/run/mcm:/run/mcm -v /dev/hugepages:/dev/hugepages mcm/media-proxy:latest
 ```
 which should result in:
-```
+```text
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
 This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
 
-### 2.5. Parameters breakdown and ports
+### 2.5. Parameters Breakdown and Ports
 
 Running the Media Proxy with:
 
@@ -199,7 +199,7 @@ Running the Media Proxy with:
 media_proxy
 ```
 should result in:
-```
+```text
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
@@ -208,13 +208,13 @@ This will start the "Media Proxy" program. When the "Media Proxy" program launch
 - gRPC port (default 8001) is for service mesh control plane connection.
 - TCP port (default 8002) is for the connection with Media Communications Mesh SDK.
 
-To get full list of all supported parameters, use the `-h` flag alongside `media_proxy` call:
+To get a full list of all supported parameters, use the `-h` flag alongside the `media_proxy` call:
 
 ```bash
 media_proxy -h
 ```
 which should print a similar usage information:
-```
+```text
 Usage: media_proxy [OPTION]
 -h, --help              Print this help and exit.
 -d, --dev=dev_port      PCI device port (defaults: 0000:31:00.0).
@@ -225,7 +225,7 @@ Usage: media_proxy [OPTION]
 
 ## 3. Known Issues
 
-- There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
+- There is one bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install the docker-ce package following [instructions from Docker community](https://docs.docker.com/engine/install/ubuntu/).
 
 - The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
 

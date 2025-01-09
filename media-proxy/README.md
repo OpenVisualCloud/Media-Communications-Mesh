@@ -10,15 +10,17 @@ The primary function of the Media Proxy is to provide a single memory-mapped API
 ## Compile
 
 ```bash
-$ ./build.sh
+./build.sh
 ```
 
 ## Run
-The program "media_proxy" can be installed on system, after the "build.sh" script run successfully.
+The program "media_proxy" can be installed on system, after the `build.sh` script run successfully.
 And the "Media Proxy" can be run with below command.
 
 ```bash
-$ media_proxy
+media_proxy
+```
+```text
 INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
@@ -30,7 +32,9 @@ If Media Proxy successfully launches up, it will open 2 port to listen on contro
 All supported parameters can get with the program "helper" function.
 
 ```bash
-$ media_proxy -h
+media_proxy -h
+```
+```text
 Usage: media_proxy [OPTION]
 -h, --help              Print this help and exit.
 -d, --dev=dev_port      PCI device port (defaults: 0000:31:00.0).
@@ -92,22 +96,22 @@ Before deploy Media Proxy to the K8s cluster, you need to execute following step
 1. Start the K8s Cluster, and add Media Communications Mesh worker node on it.
 
 ```bash
-$ minikube start
-$ minikube node add -n 1
+minikube start
+minikube node add -n 1
 ```
 
 2. Set the label for the worker node.
 
 ```bash
-$ kubectl label nodes minikube-m02 mcm.intel.com/role=worker
+kubectl label nodes minikube-m02 mcm.intel.com/role=worker
 ```
 
 ### Deploy Media Proxy
 
 ```bash
-$ cd Media-Communications-Mesh
-$ kubectl apply -f deployment/DaemonSet/media-proxy.yaml
-$ kubectl get daemonsets.apps -n mcm
+cd Media-Communications-Mesh
+kubectl apply -f deployment/DaemonSet/media-proxy.yaml
+kubectl get daemonsets.apps -n mcm
 ```
 
 If all commands are executed successfully, you will see the Media Communications Mesh Media Proxy deployed as a K8s DaemonSet to the Media Communications Mesh worker node (labeled with "mcm.intel.com/role=worker").
