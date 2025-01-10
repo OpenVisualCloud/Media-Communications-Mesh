@@ -39,13 +39,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
     // bridge = mocked_bridge;
     // DEBUG
 
-    MeshConfig_Video cfg_video;
-    cfg_video.fps = 25;
-    cfg_video.width = 640;
-    cfg_video.height = 360;
-    cfg_video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-
-    // log::debug("CREATE BRIDGE")("type", cfg.type)("kind", kind2str(cfg.kind));
+    log::debug("BRIDGE conn cfg")
+              ("w", cfg.conn_config.payload.video.width)
+              ("h", cfg.conn_config.payload.video.height)
+              ("fps", cfg.conn_config.payload.video.fps)
+              ("pixfmt", cfg.conn_config.payload.video.pixel_format)
+              ("calc_buf_size", cfg.conn_config.calculated_payload_size)
+              ("transport", cfg.st2110.transport);
 
     if (!cfg.type.compare("st2110")) {
         MeshConfig_ST2110 cfg_st2110;
@@ -56,48 +56,149 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
         strlcpy(cfg_st2110.remote_ip_addr, cfg.st2110.remote_ip.c_str(),
                 sizeof(cfg_st2110.remote_ip_addr));
 
-        cfg_st2110.transport = MESH_CONN_TRANSPORT_ST2110_20;
+        cfg_st2110.transport = cfg.st2110.transport;
 
-        // Create Egress ST2110 Bridge
-        if (cfg.kind == Kind::transmitter) {
-            auto egress_bridge = new(std::nothrow) ST2110_20Tx;
-            if (!egress_bridge)
-                return -ENOMEM;
+        MeshConfig_Video cfg_video = {
+            .width        = cfg.conn_config.payload.video.width,
+            .height       = cfg.conn_config.payload.video.height,
+            .fps          = cfg.conn_config.payload.video.fps,
+            .pixel_format = cfg.conn_config.payload.video.pixel_format,
+        };
 
-            cfg_st2110.remote_port = cfg.st2110.port;
+        MeshConfig_Audio cfg_audio = {
+            .channels     = cfg.conn_config.payload.audio.channels,
+            .sample_rate = cfg.conn_config.payload.audio.sample_rate,
+            .format      = cfg.conn_config.payload.audio.format,
+            .packet_time = cfg.conn_config.payload.audio.packet_time,
+        };
 
-            auto res = egress_bridge->configure(ctx,
-                                                config::proxy.st2110.dev_port_bdf,
-                                                cfg_st2110, cfg_video);
-            if (res != Result::success) {
-                log::error("Error configuring ST2110 Egress bridge: %s",
-                           result2str(res));
-                delete egress_bridge;
+        auto t = cfg_st2110.transport;
+
+        if (t == sdk::ST2110Transport::CONN_TRANSPORT_ST2110_20) {
+            // Create Egress SMPTE ST2110-20 Bridge
+            if (cfg.kind == Kind::transmitter) {
+                auto egress_bridge = new(std::nothrow) ST2110_20Tx;
+                if (!egress_bridge)
+                    return -ENOMEM;
+
+                cfg_st2110.remote_port = cfg.st2110.port;
+
+                auto res = egress_bridge->configure(ctx,
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_video);
+                if (res != Result::success) {
+                    log::error("Error configuring ST2110-20 Egress bridge: %s",
+                            result2str(res));
+                    delete egress_bridge;
+                    return -1;
+                }
+                bridge = egress_bridge;
+
+            // Create Ingress SMPTE ST2110-20 Bridge
+            } else if (cfg.kind == Kind::receiver) {
+                auto ingress_bridge = new(std::nothrow) ST2110_20Rx;
+                if (!ingress_bridge)
+                    return -ENOMEM;
+
+                cfg_st2110.local_port = cfg.st2110.port;
+
+                auto res = ingress_bridge->configure(ctx,
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_video);
+                if (res != Result::success) {
+                    log::error("Error configuring ST2110-20 Ingress bridge: %s",
+                            result2str(res));
+                    delete ingress_bridge;
+                    return -1;
+                }
+                bridge = ingress_bridge;
+            } else {
                 return -1;
             }
-            bridge = egress_bridge;
+        } else if (t == sdk::ST2110Transport::CONN_TRANSPORT_ST2110_22) {
+            // Create Egress SMPTE ST2110-22 Bridge
+            if (cfg.kind == Kind::transmitter) {
+                auto egress_bridge = new(std::nothrow) ST2110_22Tx;
+                if (!egress_bridge)
+                    return -ENOMEM;
 
-        // Create Ingress ST2110 Bridge
-        } else if (cfg.kind == Kind::receiver) {
-            auto ingress_bridge = new(std::nothrow) ST2110_20Rx;
-            if (!ingress_bridge)
-                return -ENOMEM;
+                cfg_st2110.remote_port = cfg.st2110.port;
 
-            cfg_st2110.local_port = cfg.st2110.port;
+                auto res = egress_bridge->configure(ctx,
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_video);
+                if (res != Result::success) {
+                    log::error("Error configuring ST2110-22 Egress bridge: %s",
+                            result2str(res));
+                    delete egress_bridge;
+                    return -1;
+                }
+                bridge = egress_bridge;
 
-            auto res = ingress_bridge->configure(ctx,
-                                                 config::proxy.st2110.dev_port_bdf,
-                                                 cfg_st2110, cfg_video);
-            if (res != Result::success) {
-                log::error("Error configuring ST2110 Ingress bridge: %s",
-                           result2str(res));
-                delete ingress_bridge;
+            // Create Ingress SMPTE ST2110-22 Bridge
+            } else if (cfg.kind == Kind::receiver) {
+                auto ingress_bridge = new(std::nothrow) ST2110_22Rx;
+                if (!ingress_bridge)
+                    return -ENOMEM;
+
+                cfg_st2110.local_port = cfg.st2110.port;
+
+                auto res = ingress_bridge->configure(ctx,
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_video);
+                if (res != Result::success) {
+                    log::error("Error configuring ST2110-22 Ingress bridge: %s",
+                            result2str(res));
+                    delete ingress_bridge;
+                    return -1;
+                }
+                bridge = ingress_bridge;
+            } else {
                 return -1;
             }
-            bridge = ingress_bridge;
-        } else {
-            return -1;
+        } else if (t == sdk::ST2110Transport::CONN_TRANSPORT_ST2110_30) {
+            // Create Egress SMPTE ST2110-30 Bridge
+            if (cfg.kind == Kind::transmitter) {
+                auto egress_bridge = new(std::nothrow) ST2110_30Tx;
+                if (!egress_bridge)
+                    return -ENOMEM;
+
+                cfg_st2110.remote_port = cfg.st2110.port;
+
+                auto res = egress_bridge->configure(ctx,
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_audio);
+                if (res != Result::success) {
+                    log::error("Error configuring ST2110-30 Egress bridge: %s",
+                            result2str(res));
+                    delete egress_bridge;
+                    return -1;
+                }
+                bridge = egress_bridge;
+
+            // Create Ingress SMPTE ST2110-30 Bridge
+            } else if (cfg.kind == Kind::receiver) {
+                auto ingress_bridge = new(std::nothrow) ST2110_30Rx;
+                if (!ingress_bridge)
+                    return -ENOMEM;
+
+                cfg_st2110.local_port = cfg.st2110.port;
+
+                auto res = ingress_bridge->configure(ctx,
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_audio);
+                if (res != Result::success) {
+                    log::error("Error configuring ST2110-30 Ingress bridge: %s",
+                            result2str(res));
+                    delete ingress_bridge;
+                    return -1;
+                }
+                bridge = ingress_bridge;
+            } else {
+                return -1;
+            }
         }
+  
     } else if (!cfg.type.compare("rdma")) {
         libfabric_ctx *dev_handle = NULL;
 
@@ -108,7 +209,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
         strlcpy(req.remote_addr.ip, cfg.rdma.remote_ip.c_str(),
                 sizeof(req.remote_addr.ip));
 
-        req.payload_args.rdma_args.transfer_size = 921600;
+        req.payload_args.rdma_args.transfer_size = cfg.conn_config.calculated_payload_size;
         req.payload_args.rdma_args.queue_size = 16;
 
         // Create Egress RDMA Bridge

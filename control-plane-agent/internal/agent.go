@@ -8,6 +8,7 @@ package internal
 
 import (
 	"context"
+	"flag"
 	"log"
 	"os"
 	"os/signal"
@@ -44,10 +45,14 @@ func RunAgent() {
 	// Setup logger for http standard output
 	log.SetOutput(logrus.StandardLogger().Writer())
 
+	proxyAPIPort := flag.Uint("p", 50051, "Proxy API port number")
+	controlAPIPort := flag.Uint("c", 8100, "Control API port number")
+	flag.Parse()
+
 	logrus.Info("Mesh Control Plane Agent started")
 
-	controlPlaneAPI := controlplane.NewAPI(controlplane.Config{ListenPort: 8100})
-	proxyAPI := proxy.NewAPI(proxy.Config{ListenPort: 50051})
+	controlPlaneAPI := controlplane.NewAPI(controlplane.Config{ListenPort: int(*controlAPIPort)})
+	proxyAPI := proxy.NewAPI(proxy.Config{ListenPort: int(*proxyAPIPort)})
 
 	registry.MediaProxyRegistry.Init(registry.MediaProxyRegistryConfig{CancelCommandRequestFunc: proxyAPI.CancelCommandRequest})
 	registry.ConnRegistry.Init()

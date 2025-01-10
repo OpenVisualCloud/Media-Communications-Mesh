@@ -16,19 +16,23 @@ type Connection struct {
 }
 
 type ConnectionConfig struct {
-	Kind        string      `json:"kind"`
-	GroupURN    string      `json:"groupUrn"`
-	ConnType    string      `json:"connType"`
-	Conn        interface{} `json:"conn"`
-	PayloadType string      `json:"-"` // Hide in JSON. The 'payload' field data is sufficient. TODO: Remove the field?
-	Payload     Payload     `json:"payload"`
-	BufferSize  uint64      `json:"bufferSize"`
+	SDKConnectionConfig
+
+	Kind string `json:"kind"`
+
+	// // TODO: The following fields to be deleted
+	// GroupURN1    string      `json:"-"`
+	// ConnType1    string      `json:"connType_xxx"`
+	// Conn1        interface{} `json:"conn_xxx"`
+	// PayloadType1 string      `json:"-"` // Hide in JSON. The 'payload' field data is sufficient. TODO: Remove the field?
+	// Payload1     Payload     `json:"payload_xxx"`
+	// BufferSize1  uint64      `json:"bufferSize_xxx"`
 }
 
-type ConnectionST2110 struct {
-	RemoteIPAddr string `json:"remoteIpAddr"`
-	RemotePort   string `json:"remotePort"`
-}
+// type ConnectionST2110 struct {
+// 	RemoteIPAddr string `json:"remoteIpAddr"`
+// 	RemotePort   string `json:"remotePort"`
+// }
 
 // TBD ConnectionMemif
 // TBD ConnectionRDMA

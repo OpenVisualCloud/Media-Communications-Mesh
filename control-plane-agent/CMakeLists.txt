@@ -38,30 +38,39 @@ set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmd/mesh-agent")
 set(MAIN_GO_FILE "${SOURCE_DIR}/mesh-agent.go")
 set(CMAKE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin)
 
-# Define the proto file and the output directory for generated code
+# Define the proto files and the output directories for generated code
 set(PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../protos/mediaproxy.proto")
-set(GENERATED_DIR "${CMAKE_CURRENT_SOURCE_DIR}/api/proxy/proto/mediaproxy")
+set(GENERATED_DIR_MEDIAPROXY "${CMAKE_CURRENT_SOURCE_DIR}/api/proxy/proto/mediaproxy")
+set(GENERATED_DIR_SDK "${CMAKE_CURRENT_SOURCE_DIR}/api/proxy/proto/sdk")
 
 # Define the output directory for the executable
 set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../_build/mcm/bin")
 
 # Create the output directories if they don't exist
 file(MAKE_DIRECTORY ${OUTPUT_DIR})
-file(MAKE_DIRECTORY ${GENERATED_DIR})
+file(MAKE_DIRECTORY ${GENERATED_DIR_MEDIAPROXY})
+file(MAKE_DIRECTORY ${GENERATED_DIR_SDK})
 
 # Define the output executable name
 set(EXECUTABLE_NAME "mesh-agent")
 
-# Add a custom target to generate gRPC code from the proto file
+# Add a custom target to generate gRPC code from the proto files
 add_custom_target(generate_grpc
     COMMAND ${PROTOC_EXECUTABLE}
             --proto_path=${CMAKE_CURRENT_SOURCE_DIR}/../protos
-            --go_out=paths=source_relative:${GENERATED_DIR}
-            --go-grpc_out=paths=source_relative:${GENERATED_DIR}
+            --go_out=paths=source_relative:${GENERATED_DIR_MEDIAPROXY}
+            --go-grpc_out=paths=source_relative:${GENERATED_DIR_MEDIAPROXY}
             --plugin=protoc-gen-go=${PROTOC_GEN_GO_EXECUTABLE}
             --plugin=protoc-gen-go-grpc=${PROTOC_GEN_GO_GRPC_EXECUTABLE}
-            ${PROTO_FILE}
-    COMMENT "Generating gRPC code from proto file..."
+            ${CMAKE_CURRENT_SOURCE_DIR}/../protos/mediaproxy.proto
+    COMMAND ${PROTOC_EXECUTABLE}
+            --proto_path=${CMAKE_CURRENT_SOURCE_DIR}/../protos
+            --go_out=paths=source_relative:${GENERATED_DIR_SDK}
+            --go-grpc_out=paths=source_relative:${GENERATED_DIR_SDK}
+            --plugin=protoc-gen-go=${PROTOC_GEN_GO_EXECUTABLE}
+            --plugin=protoc-gen-go-grpc=${PROTOC_GEN_GO_GRPC_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../protos/conn-config.proto
+    COMMENT "Generating gRPC code from proto files..."
 )
 
 # Add a custom target to build the Go project
