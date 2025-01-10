@@ -9,9 +9,6 @@ project(McmDPSdk_Samples VERSION 0.1.0
         )
 
 set(CMAKE_C_STANDARD 11)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -lz -fPIC")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -lz -fPIC")
 
 add_executable(sender_app sender_app.c)
 target_include_directories(sender_app PRIVATE ../include)

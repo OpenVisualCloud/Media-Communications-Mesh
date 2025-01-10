@@ -7,10 +7,8 @@ cmake_minimum_required(VERSION 3.16)
 # MCM - Media Communications Mesh
 project(MCM)
 
-set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -lstdc++fs")
+set(CMAKE_CXX_FLAGS "-std=c++20 -lstdc++fs")
 set(CMAKE_CXX_STANDARD_REQUIRED YES)
 set(CMAKE_CXX_EXTENSIONS NO)
 
@@ -27,12 +25,8 @@ set(MP_TESTS_DIR ${MP_DIR}/tests)
 set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 set(SDK_TESTS_DIR ${SDK_DIR}/tests)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
-set(SDK_LIBMEMIF_INCLUDE ${SDK_DIR}/3rdparty/libmemif/src)
 set(AGENT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/control-plane-agent)
 set(TESTS_VAL_DIR ${CMAKE_CURRENT_SOURCE_DIR}/tests/validation)
-
-# Add include directories
-include_directories(${SDK_LIBMEMIF_INCLUDE})
 
 # Setup output folder
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

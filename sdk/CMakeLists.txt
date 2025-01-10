@@ -10,9 +10,6 @@ set(DESCRIPTION "MCM DP SDK Library")
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -lz -fPIC" )
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++20 -lz -fPIC")
-
 # extract version from git
 execute_process(
   COMMAND git describe --long --tags
@@ -45,6 +42,7 @@ set(MEMIF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libmemif)
 set(NLOHMANN_JSON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/nlohmann)
 set(MCMDP_SAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/samples)
 set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 add_subdirectory(${MEMIF_DIR})
 
@@ -109,7 +107,7 @@ foreach(proto_file ${PROTO_FILES})
 endforeach()
 
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
-add_library(mcm_dp STATIC ${sdk_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
+add_library(mcm_dp SHARED ${sdk_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
 set_target_properties(mcm_dp PROPERTIES VERSION ${VERSION})
 set_target_properties(mcm_dp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
