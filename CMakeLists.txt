@@ -43,22 +43,21 @@ add_subdirectory(${SDK_DIR})
 add_subdirectory(${MP_DIR})
 add_subdirectory(${AGENT_DIR})
 
-# Fetch google test dependencies
-include(FetchContent)
-FetchContent_Declare(
-  googletest
-  URL https://github.com/google/googletest/archive/35d0c365609296fa4730d62057c487e3cfa030ff.zip
-)
-FetchContent_MakeAvailable(googletest)
-
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
 option(BUILD_UNIT_TESTS "Build and enable unit tests" ON)
 if (BUILD_UNIT_TESTS)
-    enable_testing()
-    add_subdirectory(${MP_TESTS_DIR})
-    add_subdirectory(${SDK_TESTS_DIR})
-    add_subdirectory(${TESTS_VAL_DIR})
-    target_link_libraries(media_proxy_lib PUBLIC gtest gmock gtest_main)
+  # Fetch google test dependencies
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/35d0c365609296fa4730d62057c487e3cfa030ff.zip
+  )
+  FetchContent_MakeAvailable(googletest)
+  enable_testing()
+  add_subdirectory(${MP_TESTS_DIR})
+  add_subdirectory(${SDK_TESTS_DIR})
+  add_subdirectory(${TESTS_VAL_DIR})
+  target_link_libraries(media_proxy_lib PUBLIC gtest gmock gtest_main)
 else()
     target_link_libraries(media_proxy_lib PUBLIC)
 endif()
