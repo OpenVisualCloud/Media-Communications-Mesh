@@ -72,7 +72,7 @@ class St2110(Connection):
         return {
             "connection": {
                 "st2110": {
-                    "transport": self.transport.value[0],
+                    "transport": self.transport.value,
                     "remoteIpAddr": self.remoteIpAddr,
                     "remotePort": self.remotePort,
                     "pacing": self.pacing,
