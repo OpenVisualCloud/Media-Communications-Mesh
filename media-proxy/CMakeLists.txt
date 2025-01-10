@@ -47,8 +47,9 @@ endif()
 
 # Define the .proto files
 set(PROTO_FILES
-    ${PROTO_DIR}/mediaproxy.proto
+    ${PROTO_DIR}/conn-config.proto
     ${PROTO_DIR}/sdk.proto
+    ${PROTO_DIR}/mediaproxy.proto
 )
 
 # Generate the protobuf and gRPC source files
@@ -113,6 +114,7 @@ include_directories(
     ${Protobuf_INCLUDE_DIRS}
     ${gRPC_INCLUDE_DIRS}
     ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sdk/3rdparty/libmemif/src
 )
 
 add_library(media_proxy_lib STATIC ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS}

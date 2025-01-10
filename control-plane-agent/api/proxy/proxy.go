@@ -70,6 +70,7 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 	})
 	if reply.Err != nil {
 		logrus.Errorf("Proxy register req err: %v", reply.Err)
+		return nil, reply.Err
 	}
 
 	id, ok := reply.Ctx.Value(event.ParamName("proxy_id")).(string)
@@ -105,30 +106,37 @@ func (a *API) RegisterConnection(ctx context.Context, in *pb.RegisterConnectionR
 	if in == nil {
 		return nil, errors.New("nil register conn request")
 	}
+	if in.Config == nil {
+		return nil, errors.New("nil register conn config")
+	}
+	logrus.Infof("Conn register %+v", in.Config)
+
+	config := &model.SDKConnectionConfig{}
+	err := config.AssignFromPb(in.Config)
+	if err != nil {
+		return nil, err
+	}
+
+	groupURN, err := config.GetMultipointGroupURN()
+	if err != nil {
+		return nil, err
+	}
 
 	reply := event.PostEventSync(ctx, event.OnRegisterConnection, map[string]interface{}{
-		"proxy_id":  in.ProxyId,
-		"kind":      in.Kind,
-		"conn_type": "st2110",
-		"group_urn": in.GroupUrn,
+		"proxy_id":    in.ProxyId,
+		"kind":        in.Kind,
+		"conn_config": config,
+		"conn_type":   config.ConnType(),
+		"group_id":    groupURN, // Here the group URN becomes Group ID
 	})
 	if reply.Err != nil {
 		logrus.Errorf("Conn register req err: %v", reply.Err)
 	}
 
-	// TODO: pass the conn params as a model in the context
-
-	// id, err := registry.ConnRegistry.Add(ctx, model.Connection{
-	// 	ProxyId: in.ProxyId,
-	// 	Config: &model.ConnectionConfig{
-	// 		Kind:        strconv.Itoa(int(in.Kind)),
-	// 		ConnType:    strconv.Itoa(int(in.ConnType)),
-	// 		PayloadType: strconv.Itoa(int(in.PayloadType)),
-	// 		BufferSize:  in.GetBufferSize(),
-	// 	}})
-	// if err != nil {
-	// 	return nil, err
-	// }
+	errIncompat, ok := reply.Ctx.Value(event.ParamName("err_incompatible")).(error)
+	if ok {
+		return nil, errIncompat
+	}
 
 	id, ok := reply.Ctx.Value(event.ParamName("conn_id")).(string)
 	if !ok {

@@ -18,10 +18,12 @@ public:
     std::string type;
     Kind kind;
 
+    Config conn_config;
+
     struct {
         std::string remote_ip;
         uint16_t port;
-        std::string transport;
+        sdk::ST2110Transport transport;
     } st2110;
 
     struct {

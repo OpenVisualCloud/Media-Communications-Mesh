@@ -14,19 +14,26 @@ logic:
     proxy-apply-config:
 
   on-register-connection:
-    registry-add-connection:
-      success:
-        if(conn_type == "st2110"):
-          true:
-            if(group_exists(group_id)):
-              false:
+    if(group_exists(group_id)):
+      false:
+        registry-add-connection:
+          success:
+            if(conn_type == "st2110"):
+              true:
                 registry-add-multipoint-group-st2110:
                   success:
                     registry-add-bridge-st2110:
                       success:
                         registry-update-multipoint-group-link-bridge:
-        registry-update-or-add-multipoint-group-link-connection:
-        all-multipoint-groups-apply-proxy-star-interconnect:
+            registry-update-or-add-multipoint-group-link-connection:
+            all-multipoint-groups-apply-proxy-star-interconnect:
+      true:
+        if(group_compatible(group_id, conn_config)):
+          true:
+            registry-add-connection:
+              success:
+                registry-update-or-add-multipoint-group-link-connection:
+                all-multipoint-groups-apply-proxy-star-interconnect:
 
   on-register-connection-ok:
     all-proxies-apply-config:
