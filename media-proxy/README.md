@@ -19,24 +19,36 @@ And the "Media Proxy" can be run with below command.
 
 ```bash
 $ media_proxy
-INFO: TCP Server listening on 0.0.0.0:8002
-INFO: gRPC Server listening on 0.0.0.0:8001
+Dec 31 11:03:00.377 [INFO] Media Proxy started
+Dec 31 11:03:00.377 [DEBU] Set MTL configure file path to /usr/local/etc/imtl.json
+Dec 31 11:03:00.377 [INFO] SDK API port: 8002
+Dec 31 11:03:00.377 [INFO] MCM Agent Proxy API addr: localhost:50051
+Dec 31 11:03:00.377 [INFO] ST2110 device port BDF: 0000:31:00.0
+Dec 31 11:03:00.377 [INFO] ST2110 dataplane local IP addr: 192.168.96.1
+Dec 31 11:03:00.377 [INFO] RDMA dataplane local IP addr: 192.168.96.2
+Dec 31 11:03:00.377 [INFO] RDMA dataplane local port ranges: 9100-9999
+Dec 31 11:03:00.392 [INFO] TCP Server listening on 0.0.0.0:18002
+Dec 31 11:03:00.393 [INFO] SDK API Server listening on 0.0.0.0:8002
+Dec 31 11:03:00.394 [INFO] [AGENT] ApplyConfig groups=0 bridges=0
+Dec 31 11:03:00.394 [INFO] [RECONCILE] Config is up to date
 ```
 
-If Media Proxy successfully launches up, it will open 2 port to listen on control messages.
-- gRPC port (default 8001) is for service mesh control plane connection.
-- TCP port (default 8002) is for the connection with MCM SDK.
+The Media Proxy requires the MCM Agent to be running and listening at localhost:50051 for incoming gRPC requests.
+
+If Media Proxy successfully launches up, it opens a port for listening to control requests from SDK via gRPC (default 8002).
 
 All supported parameters can get with the program "helper" function.
 
 ```bash
 $ media_proxy -h
 Usage: media_proxy [OPTION]
--h, --help              Print this help and exit.
--d, --dev=dev_port      PCI device port (defaults: 0000:31:00.0).
--i, --ip=ip_address     IP address for media data transportation (defaults: 192.168.96.1).
--g, --grpc=port_number  Port number gRPC controller (defaults: 8001).
--t, --tcp=port_number   Port number for TCP socket controller (defaults: 8002).
+-h, --help                      Print this help and exit
+-t, --sdk=port_number           Port number for SDK API server (default: 8002)
+-a, --agent=host:port           MCM Agent Proxy API address in the format host:port (default: localhost:50051)
+-d, --st2110_dev=dev_port       PCI device port for SMPTE 2110 media data transportation (default: 0000:31:00.0)
+-i, --st2110_ip=ip_address      IP address for SMPTE 2110 (default: 192.168.96.1)
+-r, --rdma_ip=ip_address        IP address for RDMA (default: 192.168.96.2)
+-p, --rdma_ports=ports_ranges   Local port ranges for incoming RDMA connections (default: 9100-9999)
 ```
 
 ### Run media-proxy using `native_af_xdp`

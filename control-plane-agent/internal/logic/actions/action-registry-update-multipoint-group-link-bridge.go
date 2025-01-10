@@ -22,9 +22,9 @@ func (a *Action_RegistryUpdateMultipointGroupLinkBridge) ValidateModifier(modifi
 }
 
 func (a *Action_RegistryUpdateMultipointGroupLinkBridge) Perform(ctx context.Context, modifier string, param event.Params) (context.Context, bool, error) {
-	groupId, ok := ctx.Value(event.ParamName("group_id")).(string)
-	if !ok {
-		return ctx, false, errors.New("multipoint group link bridge: no group id in ctx")
+	groupId, err := param.GetString("group_id")
+	if err != nil {
+		return ctx, false, fmt.Errorf("multipoint group link bridge group id err: %v", err)
 	}
 	bridgeId, ok := ctx.Value(event.ParamName("bridge_id")).(string)
 	if !ok {
@@ -32,7 +32,7 @@ func (a *Action_RegistryUpdateMultipointGroupLinkBridge) Perform(ctx context.Con
 	}
 
 	// Link Multipoint Group to Bridge
-	err := registry.BridgeRegistry.Update_LinkGroup(ctx, bridgeId, groupId)
+	err = registry.BridgeRegistry.Update_LinkGroup(ctx, bridgeId, groupId)
 	if err != nil {
 		return ctx, false, fmt.Errorf("multipoint group link bridge update bridge err: %w", err)
 	}

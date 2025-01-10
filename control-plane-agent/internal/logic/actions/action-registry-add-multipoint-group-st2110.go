@@ -25,15 +25,19 @@ func (a *Action_RegistryAddMultipointGroupST2110) ValidateModifier(modifier stri
 func (a *Action_RegistryAddMultipointGroupST2110) Perform(ctx context.Context, modifier string, param event.Params) (context.Context, bool, error) {
 	connType, err := param.GetString("conn_type")
 	if err != nil {
-		return ctx, false, fmt.Errorf("registry add multipoint group st2110 type err: %w", err)
+		return ctx, false, fmt.Errorf("registry add multipoint group st2110 conn type err: %v", err)
 	}
 	if connType != "st2110" {
 		return ctx, false, fmt.Errorf("registry add multipoint group st2110 wrong type: '%v'", connType)
 	}
 
-	groupId, ok := ctx.Value(event.ParamName("group_id")).(string)
-	if !ok {
-		return ctx, false, errors.New("registry add multipoint group st2110 group id: no value in ctx")
+	groupId, err := param.GetString("group_id")
+	if err != nil {
+		return ctx, false, fmt.Errorf("registry add multipoint group st2110 group id err: %v", err)
+	}
+	sdkConnConfig, err := param.GetSDKConnConfig("conn_config")
+	if err != nil {
+		return ctx, false, err
 	}
 
 	// Keep Multipoint Group registry locked while updating or adding the group and adding the connection
@@ -47,16 +51,19 @@ func (a *Action_RegistryAddMultipointGroupST2110) Perform(ctx context.Context, m
 	}
 	if errors.Is(err, registry.ErrResourceNotFound) {
 
+		config := &model.MultipointGroupConfig{}
+		config.CopyFrom(sdkConnConfig)
+
 		_, err := registry.MultipointGroupRegistry.Add(ctx, model.MultipointGroup{
 			Id:     groupId,
 			Status: &model.ConnectionStatus{},
-			Config: &model.MultipointGroupConfig{},
+			Config: config,
 		})
 		if err != nil {
 			return ctx, false, fmt.Errorf("registry add multipoint group st2110 err: %w", err)
 		}
 
-		ctx = context.WithValue(ctx, event.ParamName("group_id"), groupId)
+		// ctx = context.WithValue(ctx, event.ParamName("group_id_xxx"), groupId) // TODO: check if this operation can be avoided
 		return ctx, true, nil
 	}
 	return ctx, false, err

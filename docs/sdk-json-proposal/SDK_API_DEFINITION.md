@@ -58,19 +58,19 @@ Creates a transmitter connection with the provided JSON configuration.
   "maxPayloadSize": 2097152,
   "maxMetadataSize": 8192,
   "connection": {
-    "multipoint-group": {
+    "multipointGroup": {
       "urn": "ipv4:224.0.0.1:9003",
     },
     "st2110": {
       "transport": "st2110-20" | "st2110-22" | "st2110-30" | "...",
       "remoteIpAddr": "192.168.95.2",
-      "remotePort": "9002",
+      "remotePort": 9002,
       "pacing": "narrow",
       "payloadType": 112
     },
     "rdma": {
       "connectionMode": "RC" | "UC" | "UD" | "RD",
-      "maxLatencyNs": 10000
+      "maxLatencyNanoseconds": 10000
     }
   },
   "payload": {

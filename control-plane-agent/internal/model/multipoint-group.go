@@ -15,5 +15,7 @@ type MultipointGroup struct {
 }
 
 type MultipointGroupConfig struct {
-	IPAddr string `json:"ipAddr"`
+	SDKConnectionConfig
+
+	// IPAddr1 string `json:"ipAddr1"`
 }

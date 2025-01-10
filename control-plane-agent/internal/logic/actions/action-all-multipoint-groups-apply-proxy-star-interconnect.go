@@ -25,7 +25,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) ValidateModifier(
 
 func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx context.Context, modifier string, param event.Params) (context.Context, bool, error) {
 
-	groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, false)
+	groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, true)
 	if err != nil {
 		return ctx, false, nil
 	}
@@ -80,7 +80,6 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 	}
 	proxyRDMAPortsMap := make(map[string]*model.PortMask, proxiesNum)
 	for proxyId, proxy := range proxiesMap {
-
 		// Build the mask of RDMA listening ports in use
 		var portMask model.PortMask
 		for _, bridgeId := range proxy.BridgeIds {
@@ -97,6 +96,8 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 	}
 
 	type groupStarConfig struct {
+		model.SDKConnectionConfig
+
 		SourceProxyId string
 		DestProxyIds  []string
 	}
@@ -157,7 +158,10 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			continue
 		}
 
-		groupStarConfigs[group.Id] = groupStarConfig{SourceProxyId: sourceProxyId, DestProxyIds: destProxyIds}
+		config := groupStarConfig{SourceProxyId: sourceProxyId, DestProxyIds: destProxyIds}
+		config.CopyFrom(&group.Config.SDKConnectionConfig)
+
+		groupStarConfigs[group.Id] = config
 	}
 
 	// for groupId, group := range groupStarConfigs {
@@ -166,6 +170,8 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 	// }
 
 	type bridgeConfig struct {
+		model.SDKConnectionConfig
+
 		GroupId  string
 		ProxyId  string
 		Kind     string
@@ -197,6 +203,8 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 				RemoteIP: sourceProxy.Config.RDMA.DataplaneIPAddr,
 				// Port:     port, // 9100, // DEBUG
 			}
+			destBridge.CopyFrom(&group.SDKConnectionConfig)
+
 			sourceBridge := bridgeConfig{
 				GroupId:  groupId,
 				ProxyId:  group.SourceProxyId,
@@ -204,6 +212,8 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 				RemoteIP: destProxy.Config.RDMA.DataplaneIPAddr,
 				// Port:     port, // 9100, // DEBUG
 			}
+			sourceBridge.CopyFrom(&group.SDKConnectionConfig)
+
 			newBridges = append(newBridges, destBridge, sourceBridge)
 		}
 	}
@@ -297,7 +307,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			// logrus.Debugf("Star interconnect: rdma port found: %v", port)
 
 			newBridge.Port = port       // assign to ingress bridge
-			newBridges[i+1].Port = port // assigne to the corresponding egress bridge
+			newBridges[i+1].Port = port // assign to the corresponding egress bridge
 		}
 
 		bridgeConfig := &model.BridgeConfig{
@@ -307,15 +317,9 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 				RemoteIP: newBridge.RemoteIP,
 				Port:     newBridge.Port,
 			},
-			Payload: model.Payload{
-				Video: &model.PayloadVideo{
-					Width:       640,
-					Height:      480,
-					FPS:         30,
-					PixelFormat: "yuv422p10le",
-				},
-			},
 		}
+
+		bridgeConfig.CopyFrom(&newBridge.SDKConnectionConfig)
 
 		id, err := registry.BridgeRegistry.Add(ctx,
 			model.Bridge{
