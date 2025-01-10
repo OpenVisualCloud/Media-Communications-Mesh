@@ -217,7 +217,7 @@ void * mesh_grpc_create_client()
     mcm_dp_addr media_proxy_addr = {};
     auto err = get_media_proxy_addr(&media_proxy_addr);
     if (!err) {
-        sdk_port = "1" + std::string(media_proxy_addr.port);
+        sdk_port = std::string(media_proxy_addr.port);
     }
     // DEBUG
 

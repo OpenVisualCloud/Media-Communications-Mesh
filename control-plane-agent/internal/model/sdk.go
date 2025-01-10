@@ -3,6 +3,8 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strconv"
+	"strings"
 
 	"control-plane-agent/api/proxy/proto/sdk"
 )
@@ -15,6 +17,7 @@ type SDKConfigST2110 struct {
 	RemoteIPAddr string              `json:"remoteIpAddr"`
 	RemotePort   uint16              `json:"port"`
 	Transport    sdk.ST2110Transport `json:"-"`
+	TransportStr string              `json:"transport"`
 	Pacing       string              `json:"pacing"`
 	PayloadType  uint32              `json:"payloadType"`
 }
@@ -25,17 +28,21 @@ type SDKConfigRDMA struct {
 }
 
 type SDKConfigVideo struct {
-	Width       uint32               `json:"width"`
-	Height      uint32               `json:"height"`
-	FPS         float64              `json:"fps"`
-	PixelFormat sdk.VideoPixelFormat `json:"-"`
+	Width          uint32               `json:"width"`
+	Height         uint32               `json:"height"`
+	FPS            float64              `json:"fps"`
+	PixelFormat    sdk.VideoPixelFormat `json:"-"`
+	PixelFormatStr string               `json:"pixelFormat"`
 }
 
 type SDKConfigAudio struct {
-	Channels   uint32              `json:"channels"`
-	SampleRate sdk.AudioSampleRate `json:"-"`
-	Format     sdk.AudioFormat     `json:"-"`
-	PacketTime sdk.AudioPacketTime `json:"-"`
+	Channels      uint32              `json:"channels"`
+	SampleRate    sdk.AudioSampleRate `json:"-"`
+	SampleRateStr string              `json:"sampleRate"`
+	Format        sdk.AudioFormat     `json:"-"`
+	FormatStr     string              `json:"format"`
+	PacketTime    sdk.AudioPacketTime `json:"-"`
+	PacketTimeStr string              `json:"packetTime"`
 }
 
 type SDKConnectionConfig struct {
@@ -54,6 +61,54 @@ type SDKConnectionConfig struct {
 		Video *SDKConfigVideo `json:"video,omitempty"`
 		Audio *SDKConfigAudio `json:"audio,omitempty"`
 	} `json:"payload"`
+}
+
+func (s *SDKConfigST2110) UpdateStringValues() {
+	str, ok := sdk.ST2110Transport_name[int32(s.Transport)]
+	if !ok {
+		str = strconv.Itoa(int(s.Transport))
+	}
+	s.TransportStr = strings.Replace(strings.ToLower(strings.TrimPrefix(str, "CONN_TRANSPORT_")), "_", "-", 1)
+}
+
+func (s *SDKConfigVideo) UpdateStringValues() {
+	str, ok := sdk.VideoPixelFormat_name[int32(s.PixelFormat)]
+	if !ok {
+		str = strconv.Itoa(int(s.PixelFormat))
+	}
+	s.PixelFormatStr = strings.ToLower(strings.TrimPrefix(str, "VIDEO_PIXEL_FORMAT_"))
+}
+
+func (s *SDKConfigAudio) UpdateStringValues() {
+	str, ok := sdk.AudioSampleRate_name[int32(s.SampleRate)]
+	if !ok {
+		str = strconv.Itoa(int(s.SampleRate))
+	}
+	s.SampleRateStr = strings.ToLower(strings.TrimPrefix(str, "AUDIO_SAMPLE_RATE_"))
+
+	str, ok = sdk.AudioFormat_name[int32(s.Format)]
+	if !ok {
+		str = strconv.Itoa(int(s.Format))
+	}
+	s.FormatStr = strings.Replace(strings.ToLower(strings.TrimPrefix(str, "AUDIO_FORMAT_")), "_", "-", 1)
+
+	str, ok = sdk.AudioPacketTime_name[int32(s.PacketTime)]
+	if !ok {
+		str = strconv.Itoa(int(s.PacketTime))
+	}
+	s.PacketTimeStr = strings.Replace(strings.ToLower(strings.TrimPrefix(str, "AUDIO_PACKET_TIME_")), "_", ".", 1)
+}
+
+func (s *SDKConnectionConfig) UpdateStringValues() {
+	if s.Conn.ST2110 != nil {
+		s.Conn.ST2110.UpdateStringValues()
+	}
+	if s.Payload.Video != nil {
+		s.Payload.Video.UpdateStringValues()
+	}
+	if s.Payload.Audio != nil {
+		s.Payload.Audio.UpdateStringValues()
+	}
 }
 
 func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
@@ -107,6 +162,7 @@ func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
 		return errors.New("unknown sdk conn cfg payload type")
 	}
 
+	s.UpdateStringValues()
 	return nil
 }
 

@@ -29,7 +29,8 @@ public:
         .dataplane_local_ports = "9100-9999",
     };
 
-    uint16_t sdk_api_port = 18002;
+    uint16_t sdk_api_port = 8002;
+    std::string agent_addr = "localhost:50051";
 };
 
 extern Proxy proxy;

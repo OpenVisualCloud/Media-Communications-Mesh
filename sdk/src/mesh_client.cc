@@ -172,7 +172,7 @@ int ClientContext::init_json(const char *cfg)
     if (err)
         return err;
 
-    std::string endpoint = cfg_json.proxy_ip + ":" + "1" + cfg_json.proxy_port;
+    std::string endpoint = cfg_json.proxy_ip + ":" + cfg_json.proxy_port;
     grpc_client = mesh_internal_ops.grpc_create_client_json(endpoint);
 
     return 0;

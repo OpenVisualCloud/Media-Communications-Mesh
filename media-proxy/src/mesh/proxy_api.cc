@@ -326,7 +326,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                             bridge_config.st2110.port = req.port();
                             bridge_config.st2110.transport = req.transport();
 
-                            config.bridges[bridge_id] = bridge_config;
+                            config.bridges[bridge_id] = std::move(bridge_config);
                         }
                         break;
 
@@ -344,7 +344,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                             bridge_config.rdma.remote_ip = req.remote_ip();
                             bridge_config.rdma.port = req.port();
 
-                            config.bridges[bridge_id] = bridge_config;
+                            config.bridges[bridge_id] = std::move(bridge_config);
                         }
                         break;
                     
@@ -414,7 +414,8 @@ void ProxyAPIClient::Shutdown()
 int RunProxyAPIClient(context::Context& ctx)
 {
     proxyApiClient = std::make_unique<ProxyAPIClient>(
-        grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
+        grpc::CreateChannel(config::proxy.agent_addr,
+                            grpc::InsecureChannelCredentials()));
 
     return proxyApiClient->Run(ctx);
 }
