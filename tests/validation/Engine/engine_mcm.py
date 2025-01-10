@@ -50,6 +50,14 @@ def stop_rx_app(rx: Engine.execute.AsyncProcess):
     rx.process.wait()
 
 
+def remove_sent_file(file_path: str, app_path: str):
+    # filepath "/x/y/z.yuv", app_path "/a/b/"
+    # removes /a/b/z.yuv
+    removal_path = f'{app_path}/{file_path.split("/")[-1]}'
+    logging.debug(f"Removing: {removal_path}")
+    os.remove(removal_path)
+
+
 def run_rx_tx_with_file(file_path: str, build: str):
     app_path = os.path.join(build, "tests", "tools", "TestApp", "build")
 
@@ -59,3 +67,5 @@ def run_rx_tx_with_file(file_path: str, build: str):
         handle_tx_failure(tx)
     finally:
         stop_rx_app(rx)
+        # TODO: Add checks for transmission errors
+        remove_sent_file(file_path, app_path)
