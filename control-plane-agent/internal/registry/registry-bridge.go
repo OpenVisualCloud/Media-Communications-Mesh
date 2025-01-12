@@ -21,6 +21,7 @@ var BridgeRegistry bridgeRegistry
 
 func (r *bridgeRegistry) Init() {
 	r.handler = r
+	r.Registry.Init()
 }
 
 func (r *bridgeRegistry) HandleReadMany(req Request) {

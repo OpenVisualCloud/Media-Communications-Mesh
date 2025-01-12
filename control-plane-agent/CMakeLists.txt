@@ -73,12 +73,20 @@ add_custom_target(generate_grpc
     COMMENT "Generating gRPC code from proto files..."
 )
 
+# Add a custom target to run all unit tests
+add_custom_target(gotest
+    COMMAND ${GO_EXECUTABLE} test ./...
+    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
+    COMMENT "Running Go unit tests..."
+    DEPENDS generate_grpc
+)
+
 # Add a custom target to build the Go project
 add_custom_target(build ALL
     COMMAND ${GO_EXECUTABLE} build -o ${OUTPUT_DIR}/${EXECUTABLE_NAME} ${MAIN_GO_FILE}
     WORKING_DIRECTORY ${SOURCE_DIR}
     COMMENT "Building Go project..."
-    DEPENDS generate_grpc
+    DEPENDS generate_grpc gotest
 )
 
 install(PROGRAMS ${OUTPUT_DIR}/${EXECUTABLE_NAME} DESTINATION ${CMAKE_INSTALL_PATH})

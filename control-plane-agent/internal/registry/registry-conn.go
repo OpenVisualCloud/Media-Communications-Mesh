@@ -21,6 +21,7 @@ var ConnRegistry connRegistry
 
 func (r *connRegistry) Init() {
 	r.handler = r
+	r.Registry.Init()
 }
 
 func (r *connRegistry) HandleReadMany(req Request) {
