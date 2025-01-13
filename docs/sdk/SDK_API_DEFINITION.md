@@ -7,11 +7,11 @@ int mesh_create_client(MeshClient **mc,
 ```
 Creates a new mesh client from the given configuration structure.
 
-#### Parameters
+### Parameters
 * `[OUT]` `mc` – Address of a pointer to a mesh client structure.
 * `[IN]` `cfg` – Pointer to a mesh client configuration structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -21,10 +21,10 @@ int mesh_delete_client(MeshClient **mc)
 ```
 Deletes the mesh client and its resources.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `mc` – Address of a pointer to a mesh client structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -35,11 +35,11 @@ int mesh_create_connection(MeshClient *mc,
 ```
 Creates a new media connection for the given mesh client.
 
-#### Parameters
+### Parameters
 * `[IN]` `mc` – Pointer to a parent mesh client.
 * `[OUT]` `conn` – Address of a pointer to the connection structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -50,11 +50,11 @@ int mesh_apply_connection_config_memif(MeshConnection *conn,
 ```
 Applies the configuration to setup a single node direct connection via memif.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[IN]` `cfg` – Pointer to a configuration structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -65,11 +65,11 @@ int mesh_apply_connection_config_st2110(MeshConnection *conn,
 ```
 Applies the configuration to setup an SMPTE ST2110-xx connection via Media Proxy.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[IN]` `cfg` – Pointer to a configuration structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -80,11 +80,11 @@ int mesh_apply_connection_config_rdma(MeshConnection *conn,
 ```
 Applies the configuration to setup an RDMA connection via Media Proxy.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[IN]` `cfg` – Pointer to a configuration structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -95,11 +95,11 @@ int mesh_apply_connection_config_video(MeshConnection *conn,
 ```
 Applies the configuration to setup the connection payload for Video frames.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[IN]` `cfg` – Pointer to a configuration structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -110,11 +110,11 @@ int mesh_apply_connection_config_audio(MeshConnection *conn,
 ```
 Applies the configuration to setup the connection payload for Audio packets.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[IN]` `cfg` – Pointer to a configuration structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -125,11 +125,11 @@ int mesh_establish_connection(MeshConnection *conn,
 ```
 Applies the configuration to setup the connection payload for Audio packets.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[IN]` `kind` – Connection kind: Sender or Receiver.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -139,10 +139,10 @@ int mesh_shutdown_connection(MeshConnection *conn)
 ```
 Closes the active mesh connection.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -152,10 +152,10 @@ int mesh_delete_connection(MeshConnection **conn)
 ```
 Deletes the connection and its resources.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `conn` – Address of a pointer to the connection structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -166,11 +166,11 @@ int mesh_get_buffer(MeshConnection *conn,
 ```
 Gets a buffer from the media connection.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -182,12 +182,12 @@ int mesh_get_buffer_timeout(MeshConnection *conn,
 ```
 Gets a buffer from the media connection with a timeout.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 * `[IN]` `timeout_ms` – Timeout interval in milliseconds.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -197,10 +197,10 @@ int mesh_put_buffer(MeshBuffer **buf)
 ```
 Puts the buffer to the media connection.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -211,11 +211,11 @@ int mesh_put_buffer_timeout(MeshBuffer **buf,
 ```
 Puts the buffer to the media connection with a timeout.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 * `[IN]` `timeout_ms` – Timeout interval in milliseconds.
 
-#### Returns
+### Returns
 0 on success; an error code otherwise.
 
 
@@ -225,8 +225,8 @@ const char *mesh_err2str(int err)
 ```
 Gets a text description of the error code.
 
-#### Parameters
+### Parameters
 * `[IN]` `err` – Error code returned from any Mesh Data Plane API call.
 
-#### Returns
+### Returns
 NULL-terminated string describing the error code.

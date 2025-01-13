@@ -1,8 +1,8 @@
-# Mesh Data Plane SDK – Example / SMPTE ST2110-22 Tx Flow
+# Mesh Data Plane SDK – Example / SMPTE ST2110-22 TX Flow
 
 The diagram in this document shows interaction between a user app and Mesh Data Plane in the video transmit mode over SMPTE ST2110-22.
 
-### Tx flow stages
+## TX flow stages
 1. Create client.
 1. Create connection.
 1. Configure connection.
