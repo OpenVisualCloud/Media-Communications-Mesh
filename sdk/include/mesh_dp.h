@@ -124,6 +124,14 @@ typedef struct MeshConfig_ST2110 {
 #define MESH_CONN_TRANSPORT_ST2110_22 1 ///< SMPTE ST2110-22 Constant Bit-Rate Compressed Video transport
 #define MESH_CONN_TRANSPORT_ST2110_30 2 ///< SMPTE ST2110-30 Audio transport
 
+    /**
+     * SMPTE ST2110-20 rfc4175 compliant transport format.
+     * Required only for ST2110-20 transport.
+     * Any value of the MESH_CONN_ST2110_20_TRANSPORT_FMT_* constants.
+     */
+    int transport_format;
+#define MESH_CONN_ST2110_20_TRANSPORT_FMT_YUV422_10BIT 0 ///< YUV 4:2:2 10-bit, "yuv422p10rfc4175"
+
 } MeshConfig_ST2110;
 
 /**
@@ -170,11 +178,9 @@ typedef struct MeshConfig_Video {
      * Any value of the MESH_VIDEO_PIXEL_FORMAT_* constants.
      */
     int pixel_format;
-#define MESH_VIDEO_PIXEL_FORMAT_NV12        0 ///< planar YUV 4:2:0, 12bpp
-#define MESH_VIDEO_PIXEL_FORMAT_YUV422P     1 ///< planar YUV 4:2:2, 16bpp
-#define MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE 2 ///< planar YUV 4:2:2, 20bpp
-#define MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE 3 ///< planar YUV 4:4:4, 30bpp
-#define MESH_VIDEO_PIXEL_FORMAT_RGB8        4 ///< packed RGB 3:3:2,  8bpp
+#define MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE      0 ///< planar YUV 4:2:2, 10bit, "yuv422p10le"
+#define MESH_VIDEO_PIXEL_FORMAT_V210                  1 ///< packed YUV 4:2:2, 10bit, "v210"
+#define MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10     2 ///< packed RFC4175 compliant YUV 4:2:2, 10bit, "yuv422p10rfc4175"
 
 } MeshConfig_Video;
 
