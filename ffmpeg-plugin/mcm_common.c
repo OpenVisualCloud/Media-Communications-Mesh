@@ -234,20 +234,8 @@ int mcm_parse_video_pix_fmt(AVFormatContext* avctx, int *pix_fmt,
                             enum AVPixelFormat value)
 {
     switch (value) {
-    case AV_PIX_FMT_NV12:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_NV12;
-        return 0;
-    case AV_PIX_FMT_YUV422P:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
-        return 0;
-    case AV_PIX_FMT_YUV444P10LE:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-        return 0;
-    case AV_PIX_FMT_RGB8:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_RGB8;
-        return 0;
     case AV_PIX_FMT_YUV422P10LE:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
+        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
         return 0;
     default:
         av_log(avctx, AV_LOG_ERROR, "Unknown pixel format (%s)\n",
