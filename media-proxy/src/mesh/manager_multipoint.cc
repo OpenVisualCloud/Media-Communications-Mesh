@@ -279,7 +279,7 @@ Result GroupManager::reconcile_config(context::Context& ctx,
             if (err) {
                 log::error("[RECONCILE] Add bridge err: %d", err)
                           ("group_id", group->id)
-                          ("bridge_id", bridge_id);
+                          ("bridge_id", bridge_id)
                           ("kind", kind2str(kind));
                 continue;
             }

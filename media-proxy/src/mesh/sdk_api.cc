@@ -49,14 +49,17 @@ public:
 
         // log::debug("Has config?")("yes", req->has_config());
 
+        if (!req->has_config()) {
+            log::error("SDK: no config provided");
+            return Status(StatusCode::INVALID_ARGUMENT, "no config provided");
+        }
+
         connection::Config conn_config;
-        if (req->has_config()) {
-            auto res = conn_config.assign_from_pb(req->config());
-            if (res != connection::Result::success) {
-                log::error("SDK: parse err: %s", connection::result2str(res));
-                return Status(StatusCode::INVALID_ARGUMENT,
-                              connection::result2str(res));
-            }
+        auto res = conn_config.assign_from_pb(req->config());
+        if (res != connection::Result::success) {
+            log::error("SDK: parse err: %s", connection::result2str(res));
+            return Status(StatusCode::INVALID_ARGUMENT,
+                            connection::result2str(res));
         }
 
         int sz = req->mcm_conn_param().size();
