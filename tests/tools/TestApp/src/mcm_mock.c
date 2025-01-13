@@ -60,9 +60,9 @@ void put_user_video_frames(void* ptr, const size_t len){
     }
 
     // Construct the source file path
-    snprintf(src_path, sizeof(src_path) + 1, "%s", file);
+    snprintf(src_path, sizeof(src_path), "%s", file);
     // Construct the destination file path
-    snprintf(dest_path, sizeof(dest_path) + 2, "%s/%s", COMMON_SPACE, basename(file));
+    snprintf(dest_path, sizeof(dest_path), "%s/%s", COMMON_SPACE, basename(file));
     // Move the file
     FILE *src_file = fopen(src_path, "rb");
     if (src_file == NULL) {
@@ -135,10 +135,10 @@ int get_user_video_frames(void* ptr, const size_t len){
         }
 
         // Construct the source file path
-        snprintf(src_path, sizeof(src_path) + 2, "%s/%s", COMMON_SPACE, entry->d_name);
+        snprintf(src_path, sizeof(src_path), "%s/%s", COMMON_SPACE, entry->d_name);
 
         // Construct the destination file path
-        snprintf(dest_path, sizeof(dest_path) + 2, "%s/%s", cwd, entry->d_name);
+        snprintf(dest_path, sizeof(dest_path), "%s/%s", cwd, entry->d_name);
         // Move the file
         if (rename(src_path, dest_path) != 0) {
             perror("rename");

@@ -14,6 +14,7 @@
 #include <sstream>
 #include "logger.h"
 #include "manager_multipoint.h"
+#include "proxy_config.h"
 
 namespace mesh {
 
@@ -39,13 +40,25 @@ using mediaproxy::CommandRequest;
 using mediaproxy::CommandReplyReceipt;
 using mediaproxy::DebugReply;
 using mediaproxy::ApplyConfigReply;
+using mediaproxy::Bridge;
+using mediaproxy::ST2110ProxyConfig;
+using mediaproxy::RDMAProxyConfig;
+using sdk::ConnectionConfig;
 
 std::unique_ptr<ProxyAPIClient> proxyApiClient;
 
-int ProxyAPIClient::RegisterMediaProxy(uint32_t sdk_port)
+int ProxyAPIClient::RegisterMediaProxy()
 {
     RegisterMediaProxyRequest request;
-    request.set_sdk_port(sdk_port);
+    request.set_sdk_api_port(config::proxy.sdk_api_port);
+
+    ST2110ProxyConfig* st2110_cfg = request.mutable_st2110_config();
+    st2110_cfg->set_dev_port_bdf(config::proxy.st2110.dev_port_bdf);
+    st2110_cfg->set_dataplane_ip_addr(config::proxy.st2110.dataplane_ip_addr);
+
+    RDMAProxyConfig* rdma_cfg = request.mutable_rdma_config();
+    rdma_cfg->set_dataplane_ip_addr(config::proxy.rdma.dataplane_ip_addr);
+    rdma_cfg->set_dataplane_local_ports(config::proxy.rdma.dataplane_local_ports);
 
     RegisterMediaProxyReply reply;
     ClientContext context;
@@ -85,16 +98,21 @@ int ProxyAPIClient::UnregisterMediaProxy()
     }
 }
 
-int ProxyAPIClient::RegisterConnection(std::string& conn_id, std::string& kind)
+int ProxyAPIClient::RegisterConnection(std::string& conn_id, const std::string& kind,
+                                       const connection::Config& config,
+                                       std::string& err)
 {
     RegisterConnectionRequest request;
     request.set_proxy_id(proxy_id);
     request.set_kind(kind);
 
+    ConnectionConfig* cfg = request.mutable_config();
+    config.assign_to_pb(*cfg);
+
     RegisterConnectionReply reply;
     ClientContext context;
     context.set_deadline(std::chrono::system_clock::now() +
-                         std::chrono::seconds(5));
+                        std::chrono::seconds(5));
 
     Status status = stub_->RegisterConnection(&context, request, &reply);
 
@@ -104,6 +122,7 @@ int ProxyAPIClient::RegisterConnection(std::string& conn_id, std::string& kind)
     } else {
         log::error("RegisterConnection RPC failed: %s",
                    status.error_message().c_str());
+        err = status.error_message();
         return -1;
     }
 }
@@ -212,77 +231,149 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
         switch (command_request.command_case()) {
 
-            case CommandRequest::kDebug:
-                {
-                    log::debug("Received Debug command: %s",
-                               command_request.debug().in_text().c_str())
-                              ("req_id", command_request.req_id());
+        case CommandRequest::kDebug:
+            {
+                log::debug("Received Debug command: %s",
+                            command_request.debug().in_text().c_str())
+                            ("req_id", command_request.req_id());
 
 
-                    // Create and populate the CommandReply message
-                    DebugReply* reply = new DebugReply();
-                    reply->set_out_text("Okay Okay!");
-                    result_request.set_allocated_debug(reply);
+                // Create and populate the CommandReply message
+                DebugReply* reply = new DebugReply();
+                reply->set_out_text("Okay Okay!");
+                result_request.set_allocated_debug(reply);
 
-                    SendCommandReply(result_request);
-                }
-                break;
+                SendCommandReply(result_request);
+            }
+            break;
 
-            case CommandRequest::kApplyConfig:
-                {
-                    auto& req = command_request.apply_config();
+        case CommandRequest::kApplyConfig:
+            {
+                auto& req = command_request.apply_config();
 
-                    multipoint::Config config;
+                multipoint::Config config;
 
-                    log::info("[AGENT] ApplyConfig")
-                              ("groups", req.groups_size())
-                              ("bridges", req.bridges_size());
+                log::info("[AGENT] ApplyConfig")
+                            ("groups", req.groups_size())
+                            ("bridges", req.bridges_size());
 
-                    for (const auto& group : req.groups()) {
-                        multipoint::GroupConfig group_config;
+                for (const auto& group : req.groups()) {
+                    multipoint::GroupConfig group_config;
 
-                        log::debug("- Multipoint Group")
-                                  ("group_id", group.group_id())
-                                  ("conns", group.conn_ids_size())
-                                  ("bridges", group.bridge_ids_size());
+                    log::info("* Group")
+                                ("group_id", group.group_id())
+                                ("conns", group.conn_ids_size())
+                                ("bridges", group.bridge_ids_size());
 
-                        for (const auto& conn_id : group.conn_ids()) {
-                            // log::debug("-- Conn")("conn_id", conn_id);
-                            group_config.conn_ids.emplace_back(conn_id);
-                        }
-                        for (const auto& bridge_id : group.bridge_ids()) {
-                            // log::debug("-- Bridge")("bridge_id", bridge_id);
-                            group_config.bridge_ids.emplace_back(bridge_id);
-                        }
-
-                        config.groups[group.group_id()] = group_config;
+                    for (const auto& conn_id : group.conn_ids()) {
+                        // log::debug("-- Conn")("conn_id", conn_id);
+                        group_config.conn_ids.emplace_back(conn_id);
+                    }
+                    for (const auto& bridge_id : group.bridge_ids()) {
+                        // log::debug("-- Bridge")("bridge_id", bridge_id);
+                        group_config.bridge_ids.emplace_back(bridge_id);
                     }
 
-                    for (const auto& bridge : req.bridges()) {
-                        log::debug("- Bridge config")
+                    config.groups[group.group_id()] = group_config;
+                }
+
+                for (const auto& bridge : req.bridges()) {
+                    log::info("* Bridge")
+                                ("bridge_id", bridge.bridge_id())
+                                ("type", bridge.type())
+                                ("kind", bridge.kind());
+
+                    connection::Kind kind;
+                    if (!bridge.kind().compare("tx")) {
+                        kind = connection::Kind::transmitter;
+                    } else if (!bridge.kind().compare("rx")) {
+                        kind = connection::Kind::receiver;
+                    } else {
+                        log::error("Bad bridge kind: '%s'", bridge.kind().c_str())
                                   ("bridge_id", bridge.bridge_id())
                                   ("type", bridge.type());
-                        // TODO: Add more configuration fields if needed
+                        continue;
                     }
 
-                    multipoint::group_manager.apply_config(ctx, config);
-                    // TODO: Do we need to check and return the result here?
+                    const auto& bridge_id = bridge.bridge_id();
 
-                    ApplyConfigReply* reply = new ApplyConfigReply();
-                    result_request.set_allocated_apply_config(reply);
+                    multipoint::BridgeConfig bridge_config = {
+                        .type = bridge.type(),
+                        .kind = kind,
+                    };
 
-                    SendCommandReply(result_request);
+                    if (bridge.has_conn_config())
+                        bridge_config.conn_config.assign_from_pb(bridge.conn_config());
+                    else
+                        log::error("No conn config for bridge")
+                                  ("bridge_id", bridge.bridge_id());
+
+                    switch (bridge.config_case()) {
+
+                    case Bridge::kSt2110:
+                        if (bridge_config.type.compare("st2110")) {
+                            log::error("st2110 bridge config provided for type '%s'",
+                                       bridge_config.type.c_str());
+                        } else {
+                            auto& req = bridge.st2110();
+                            
+                            log::info("** ST2110")
+                                     ("remote_ip", req.remote_ip())
+                                     ("port", req.port())
+                                     ("transport", req.transport());
+
+                            bridge_config.st2110.remote_ip = req.remote_ip();
+                            bridge_config.st2110.port = req.port();
+                            bridge_config.st2110.transport = req.transport();
+
+                            config.bridges[bridge_id] = std::move(bridge_config);
+                        }
+                        break;
+
+                    case Bridge::kRdma:
+                        if (bridge_config.type.compare("rdma")) {
+                            log::error("rdma bridge config provided for type '%s'",
+                                       bridge_config.type);
+                        } else {
+                            auto& req = bridge.rdma();
+                            
+                            log::info("** RDMA")
+                                     ("remote_ip", req.remote_ip())
+                                     ("port", req.port());
+
+                            bridge_config.rdma.remote_ip = req.remote_ip();
+                            bridge_config.rdma.port = req.port();
+
+                            config.bridges[bridge_id] = std::move(bridge_config);
+                        }
+                        break;
+                    
+                    default:
+                        log::error("Unknown bridge configuration")
+                                  ("bridge_id", bridge.bridge_id());
+                        break;
+
+                    }
                 }
-                break;
+
+                multipoint::group_manager.apply_config(ctx, config);
+                // TODO: Do we need to check and return the result here?
+
+                ApplyConfigReply* reply = new ApplyConfigReply();
+                result_request.set_allocated_apply_config(reply);
+
+                SendCommandReply(result_request);
+            }
+            break;
 
             // case CommandRequest::kResetMetrics:
             //     std::cout << "Received Reset Metrics Command: " << request->reset_metrics().metric_id() << std::endl;
             //     break;
 
-            default:
-                log::error("Unknown proxy command")
-                          ("req_id", command_request.req_id());
-                break;
+        default:
+            log::error("Unknown proxy command")
+                        ("req_id", command_request.req_id());
+            break;
         }
 
     }
@@ -298,7 +389,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
 int ProxyAPIClient::Run(context::Context& ctx)
 {
-    RegisterMediaProxy(12345);
+    RegisterMediaProxy();
 
     try {
         th = std::jthread([&]() {
@@ -323,7 +414,8 @@ void ProxyAPIClient::Shutdown()
 int RunProxyAPIClient(context::Context& ctx)
 {
     proxyApiClient = std::make_unique<ProxyAPIClient>(
-        grpc::CreateChannel("localhost:50051", grpc::InsecureChannelCredentials()));
+        grpc::CreateChannel(config::proxy.agent_addr,
+                            grpc::InsecureChannelCredentials()));
 
     return proxyApiClient->Run(ctx);
 }

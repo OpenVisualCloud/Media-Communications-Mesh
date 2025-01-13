@@ -4,8 +4,8 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef CLIENT_API_H
-#define CLIENT_API_H
+#ifndef SDK_API_H
+#define SDK_API_H
 
 #include "concurrency.h"
 
@@ -15,4 +15,4 @@ void RunSDKAPIServer(context::Context& ctx);
 
 } // namespace mesh
 
-#endif // CLIENT_API_H
+#endif // SDK_API_H

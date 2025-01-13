@@ -157,6 +157,13 @@ Result GroupManager::reconcile_config(context::Context& ctx,
                                       std::vector<GroupChangeConfig> deleted_groups,
                                       std::vector<GroupChangeConfig> updated_groups)
 {
+    if (added_groups.empty() && deleted_groups.empty() && updated_groups.empty()) {
+        log::info("[RECONCILE] Config is up to date");
+        return Result::success;
+    }
+    
+    log::info("[RECONCILE] Started =========");
+
     local_manager.lock();
     thread::Defer d([]{ local_manager.unlock(); });
 
@@ -255,20 +262,27 @@ Result GroupManager::reconcile_config(context::Context& ctx,
         for (const auto& bridge_id : bridge_ids) {
             Connection *bridge;
             Kind kind = Kind::transmitter;
-            
-            // DEBUG
-            auto err = bridges_manager.create_bridge(ctx, bridge, bridge_id, kind);
-            // DEBUG
-            if (!bridge) {
-                log::error("[RECONCILE] Add bridge: ")
-                          ("group_id", group->id)
-                          ("bridge_id", bridge_id);
-                          ("kind", kind2str(kind));
-                continue;
-            }
 
             log::info("[RECONCILE] Add bridge")("group_id", group->id)
                                                ("bridge_id", bridge_id);
+
+            auto it = cfg.bridges.find(bridge_id);
+            if (it == cfg.bridges.end()) {
+                log::error("[RECONCILE] Bridge cfg not found")
+                          ("bridge_id", bridge_id);
+                continue;
+            }
+            const auto& bridge_config = it->second;
+
+            auto err = bridges_manager.create_bridge(ctx, bridge, bridge_id,
+                                                     bridge_config);
+            if (err) {
+                log::error("[RECONCILE] Add bridge err: %d", err)
+                          ("group_id", group->id)
+                          ("bridge_id", bridge_id)
+                          ("kind", kind2str(kind));
+                continue;
+            }
 
             auto res = associate(ctx, group, bridge);
             if (res != Result::success)
@@ -318,15 +332,14 @@ Result GroupManager::reconcile_config(context::Context& ctx,
         add_bridges(group, cfg.added_bridge_ids);
     }
 
-    log::info("[RECONCILE] Completed")("groups", groups.size());
+    log::info("[RECONCILE] Completed =======")("groups", groups.size());
     for (const auto& pair : groups) {
         Group* group = pair.second;
 
-        log::info("- Group")
+        log::info("* Group")
                  ("group_id", group->id)
                  ("input", group->link() ? "assigned" : "n/a")
                  ("outputs", group->outputs_num());
-
     }
 
     // TODO: Remove all bridges that are not associated to any group.

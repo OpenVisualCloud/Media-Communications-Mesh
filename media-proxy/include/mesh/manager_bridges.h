@@ -13,10 +13,29 @@
 
 namespace mesh::connection {
 
+class BridgeConfig {
+public:
+    std::string type;
+    Kind kind;
+
+    Config conn_config;
+
+    struct {
+        std::string remote_ip;
+        uint16_t port;
+        sdk::ST2110Transport transport;
+    } st2110;
+
+    struct {
+        std::string remote_ip;
+        uint16_t port;
+    } rdma;
+};
+
 class BridgesManager {
 public:
     int create_bridge(context::Context& ctx, Connection*& bridge,
-                      const std::string& id, Kind kind);
+                      const std::string& id, const BridgeConfig& cfg);
 
     int delete_bridge(context::Context& ctx, const std::string& id);
 

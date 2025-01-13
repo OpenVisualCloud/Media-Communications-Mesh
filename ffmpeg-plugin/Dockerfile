@@ -8,14 +8,15 @@ ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/Warsaw
+ARG VERSIONS_FILE="versions.env"
+COPY "${VERSIONS_FILE}" /opt/versions.env
+ENV BASH_ENV=/opt/versions.env
 
+ARG GPRC_VER=""
+ARG FFMPEG_VER=""
 ARG MCM_DIR=/opt/mcm
 ARG PREFIX_DIR="/install"
-ARG GPRC_VER="v1.58.0"
 ARG GRPC_DIR="/opt/grpc"
-ARG FFMPEG_VER="7.0"
 
 SHELL ["/bin/bash", "-exo", "pipefail", "-c"]
 RUN apt-get update && \

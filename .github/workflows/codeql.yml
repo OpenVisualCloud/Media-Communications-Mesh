@@ -7,11 +7,12 @@ on:
     branches: [ "main" ]
 
 env:
-  BUILD_TYPE: Release
+  BUILD_TYPE: "Release"
   BUILD_DIR: "${{ github.workspace }}/_build"
+  BUILD_UNIT_TESTS: "OFF"
   PREFIX_DIR: "${{ github.workspace }}/_install"
   MTL_BUILD_DISABLE_PCAPNG: true
-  DEBIAN_FRONTEND: noninteractive
+  DEBIAN_FRONTEND: "noninteractive"
   TRY_CACHE_REFRESH: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
 
 permissions:

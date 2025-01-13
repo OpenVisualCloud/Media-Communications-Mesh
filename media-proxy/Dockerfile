@@ -8,24 +8,25 @@ ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
-ARG GITHUB_CREDENTIALS=""
-ARG PREFIX_DIR="/install"
+ARG VERSIONS_FILE="versions.env"
+COPY "${VERSIONS_FILE}" /opt/versions.env
+ENV BASH_ENV=/opt/versions.env
+
+ARG MTL_VER=""
+ARG DPDK_VER=""
+ARG GPRC_VER=""
+ARG JPEGXS_VER=""
+
 ARG MCM_DIR="/opt/mcm"
-ARG MTL_VER="maint-24.09"
-ARG MTL_REPO="OpenVisualCloud/Media-Transport-Library"
 ARG MTL_DIR="/opt/mtl"
-ARG DPDK_VER="23.11"
 ARG DPDK_DIR="/opt/dpdk"
 ARG XDP_DIR="/opt/xdp"
-ARG GPRC_VER="v1.58.0"
 ARG GRPC_DIR="/opt/grpc"
-# JPEGXS_VER Release
-ARG JPEGXS_VER="e1030c6c8ee2fb05b76c3fa14cccf8346db7a1fa"
 ARG JPEGXS_DIR="/opt/jpegxs"
 ARG LIBFABRIC_DIR="/opt/libfabric"
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ="Europe/Warsaw"
+ARG GITHUB_CREDENTIALS=""
+ARG PREFIX_DIR="/install"
 ENV PATH="${PREFIX_DIR}/bin:/root/.local/bin:/root/bin:/root/usr/bin:$PATH"
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig
 
@@ -34,7 +35,7 @@ SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
-        nasm cmake libbsd-dev git build-essential sudo \
+        curl nasm cmake libbsd-dev git build-essential sudo \
         meson python3-dev python3-pyelftools pkg-config \
         libnuma-dev libjson-c-dev libpcap-dev libgtest-dev \
         libsdl2-dev libsdl2-ttf-dev libssl-dev ca-certificates \
@@ -44,15 +45,25 @@ RUN apt-get update --fix-missing && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
+# Install golang and dependencies
+WORKDIR /usr/local/
+RUN curl -Lf "https://go.dev/dl/go${GOLANG_GO_VER}.linux-amd64.tar.gz" -o "/usr/local/go${GOLANG_GO_VER}.linux-amd64.tar.gz" && \
+    tar -C /usr/local -xzf /usr/local/go${GOLANG_GO_VER}.linux-amd64.tar.gz && \
+    rm -f "/usr/local/go${GOLANG_GO_VER}.linux-amd64.tar.gz" && \
+    ln -s /usr/local/go/bin/go /usr/bin/go && \
+    go version && \
+    go install "${GOLANG_PROTOBUF_GEN}" && \
+    go install "${GOLANG_GRPC_GEN}"
+
 # Clone MTL, DPDK and xdp-tools repo
 WORKDIR ${DPDK_DIR}
-RUN git clone --branch main https://${GITHUB_CREDENTIALS}github.com/${MTL_REPO} ${MTL_DIR} && \
-    git -C ${MTL_DIR} checkout ${MTL_VER} && \
-    git clone --branch v${DPDK_VER} --depth 1 https://github.com/DPDK/dpdk.git ${DPDK_DIR} && \
-    git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git ${XDP_DIR} && \
-    git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric ${LIBFABRIC_DIR} && \
-    git clone --branch ${GPRC_VER} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc ${GRPC_DIR} && \
-    git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS ${JPEGXS_DIR} && \
+RUN git clone --branch main https://${GITHUB_CREDENTIALS}github.com/OpenVisualCloud/Media-Transport-Library "${MTL_DIR}" && \
+    git -C "${MTL_DIR}" checkout ${MTL_VER} && \
+    git clone --branch v${DPDK_VER} --depth 1 https://github.com/DPDK/dpdk.git "${DPDK_DIR}" && \
+    git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git "${XDP_DIR}" && \
+    git clone --depth 1 --branch "${LIBFABRIC_VER}" https://github.com/ofiwg/libfabric "${LIBFABRIC_DIR}" && \
+    git clone --branch ${GPRC_VER} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc "${GRPC_DIR}" && \
+    git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS "${JPEGXS_DIR}" && \
     git -C ${JPEGXS_DIR} checkout ${JPEGXS_VER} && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
 

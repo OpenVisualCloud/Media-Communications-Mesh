@@ -11,23 +11,26 @@
 
 #include <csignal>
 #include "concurrency.h"
-#include "client_api.h"
+#include "sdk_api.h"
 #include "logger.h"
 #include "manager_local.h"
 #include "proxy_api.h"
 #include "metrics_collector.h"
+#include "proxy_config.h"
 
 #include <execinfo.h>
 #include <dlfcn.h>
+#include <cxxabi.h>
 
 #ifndef IMTL_CONFIG_PATH
 #define IMTL_CONFIG_PATH "./imtl.json"
 #endif
 
-#define DEFAULT_DEV_PORT "0000:31:00.0"
-#define DEFAULT_DP_IP "192.168.96.1"
 #define DEFAULT_GRPC_PORT "8001"
-#define DEFAULT_TCP_PORT "8002"
+#define DEFAULT_SDK_API_PORT "8002"
+#define DEFAULT_AGENT_PROXY_API_ADDR "localhost:50051"
+
+using namespace mesh;
 
 /* print a description of all supported options */
 void usage(FILE* fp, const char* path)
@@ -37,20 +40,26 @@ void usage(FILE* fp, const char* path)
     basename = basename ? basename + 1 : path;
 
     fprintf(fp, "Usage: %s [OPTION]\n", basename);
-    fprintf(fp, "-h, --help\t\t"
-                "Print this help and exit.\n");
-    fprintf(fp, "-d, --dev=dev_port\t"
-                "PCI device port (defaults: %s).\n",
-        DEFAULT_DEV_PORT);
-    fprintf(fp, "-i, --ip=ip_address\t"
-                "IP address for media data transportation (defaults: %s).\n",
-        DEFAULT_DP_IP);
-    fprintf(fp, "-g, --grpc=port_number\t"
-                "Port number gRPC controller (defaults: %s).\n",
-        DEFAULT_GRPC_PORT);
-    fprintf(fp, "-t, --tcp=port_number\t"
-                "Port number for TCP socket controller (defaults: %s).\n",
-        DEFAULT_TCP_PORT);
+    fprintf(fp, "-h, --help\t\t\t"
+                "Print this help and exit\n");
+    fprintf(fp, "-t, --sdk=port_number\t\t"
+                "Port number for SDK API server (default: %s)\n",
+        DEFAULT_SDK_API_PORT);
+    fprintf(fp, "-a, --agent=host:port\t\t"
+                "MCM Agent Proxy API address in the format host:port (default: %s)\n",
+        DEFAULT_AGENT_PROXY_API_ADDR);
+    fprintf(fp, "-d, --st2110_dev=dev_port\t"
+                "PCI device port for SMPTE 2110 media data transportation (default: %s)\n",
+            config::proxy.st2110.dev_port_bdf.c_str());
+    fprintf(fp, "-i, --st2110_ip=ip_address\t"
+                "IP address for SMPTE 2110 (default: %s)\n",
+            config::proxy.st2110.dataplane_ip_addr.c_str());
+    fprintf(fp, "-r, --rdma_ip=ip_address\t"
+                "IP address for RDMA (default: %s)\n",
+            config::proxy.rdma.dataplane_ip_addr.c_str());
+    fprintf(fp, "-p, --rdma_ports=ports_ranges\t"
+                "Local port ranges for incoming RDMA connections (default: %s)\n",
+            config::proxy.rdma.dataplane_local_ports.c_str());
 }
 
 void PrintStackTrace() {
@@ -86,8 +95,6 @@ void SignalHandler(int signal) {
     exit(1);
 }
 
-using namespace mesh;
-
 // Main context with cancellation
 auto ctx = context::WithCancel(context::Background());
 
@@ -95,24 +102,29 @@ int main(int argc, char* argv[])
 {
     signal(SIGSEGV, SignalHandler);
 
-    std::string grpc_port = DEFAULT_GRPC_PORT;
-    std::string tcp_port = DEFAULT_TCP_PORT;
-    std::string dev_port = DEFAULT_DEV_PORT;
-    std::string dp_ip = DEFAULT_DP_IP;
+    std::string sdk_port = DEFAULT_SDK_API_PORT;
+    std::string agent_addr = DEFAULT_AGENT_PROXY_API_ADDR;
+    std::string st2110_dev_port = config::proxy.st2110.dev_port_bdf;
+    std::string st2110_ip_addr = config::proxy.st2110.dataplane_ip_addr;
+    std::string rdma_ip_addr = config::proxy.rdma.dataplane_ip_addr;
+    std::string rdma_ports = config::proxy.rdma.dataplane_local_ports;
     int help_flag = 0;
+
     int opt;
     struct option longopts[] = {
         { "help", no_argument, &help_flag, 1 },
-        { "dev", required_argument, NULL, 'd' },
-        { "ip", required_argument, NULL, 'i' },
-        { "grpc", required_argument, NULL, 'g' },
-        { "tcp", required_argument, NULL, 't' },
+        { "sdk", required_argument, NULL, 't' },
+        { "agent", required_argument, NULL, 'a' },
+        { "st2110_dev", required_argument, NULL, 'd' },
+        { "st2110_ip", required_argument, NULL, 'i' },
+        { "rdma_ip", required_argument, NULL, 'r' },
+        { "rdma_ports", required_argument, NULL, 'p' },
         { 0 }
     };
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "hd:i:g:t:", longopts, 0);
+        opt = getopt_long(argc, argv, "hg:t:d:i:r:p:", longopts, 0);
         if (opt == -1) {
             break;
         }
@@ -121,17 +133,23 @@ int main(int argc, char* argv[])
         case 'h':
             help_flag = 1;
             break;
+        case 't':
+            sdk_port = optarg;
+            break;
+        case 'a':
+            agent_addr = optarg;
+            break;
         case 'd':
-            dev_port = optarg;
+            st2110_dev_port = optarg;
             break;
         case 'i':
-            dp_ip = optarg;
+            st2110_ip_addr = optarg;
             break;
-        case 'g':
-            grpc_port = optarg;
+        case 'r':
+            rdma_ip_addr = optarg;
             break;
-        case 't':
-            tcp_port = optarg;
+        case 'p':
+            rdma_ports = optarg;
             break;
         case '?':
             usage(stderr, argv[0]);
@@ -154,9 +172,36 @@ int main(int argc, char* argv[])
         setenv("KAHAWAI_CFG_PATH", IMTL_CONFIG_PATH, 0);
     }
 
-    ProxyContext* proxy_ctx = new ProxyContext("0.0.0.0:" + grpc_port, "0.0.0.0:" + tcp_port);
-    proxy_ctx->setDevicePort(dev_port);
-    proxy_ctx->setDataPlaneAddress(dp_ip);
+    config::proxy.agent_addr                 = std::move(agent_addr);
+    config::proxy.st2110.dev_port_bdf        = std::move(st2110_dev_port);
+    config::proxy.st2110.dataplane_ip_addr   = std::move(st2110_ip_addr);
+    config::proxy.rdma.dataplane_ip_addr     = std::move(rdma_ip_addr);
+    config::proxy.rdma.dataplane_local_ports = std::move(rdma_ports);
+
+    try {
+        config::proxy.sdk_api_port = std::stoi(sdk_port);
+    } catch (...) {
+        log::warn("Can't parse SDK API port. Using default port: %d",
+                  config::proxy.sdk_api_port);
+    }
+
+    log::info("SDK API port: %u", config::proxy.sdk_api_port);
+    log::info("MCM Agent Proxy API addr: %s", config::proxy.agent_addr.c_str());
+    log::info("ST2110 device port BDF: %s",
+              config::proxy.st2110.dev_port_bdf.c_str());
+    log::info("ST2110 dataplane local IP addr: %s",
+              config::proxy.st2110.dataplane_ip_addr.c_str());
+    log::info("RDMA dataplane local IP addr: %s",
+              config::proxy.rdma.dataplane_ip_addr.c_str());
+    log::info("RDMA dataplane local port ranges: %s",
+              config::proxy.rdma.dataplane_local_ports.c_str());
+
+    std::string legacy_grpc_port = DEFAULT_GRPC_PORT;
+    auto legacy_tcp_port = std::to_string(config::proxy.sdk_api_port + 10000); // DEBUG
+    ProxyContext* proxy_ctx = new ProxyContext("0.0.0.0:" + legacy_grpc_port,
+                                               "0.0.0.0:" + legacy_tcp_port);
+    proxy_ctx->setDevicePort(config::proxy.st2110.dev_port_bdf);
+    proxy_ctx->setDataPlaneAddress(config::proxy.st2110.dataplane_ip_addr);
 
     // Intercept shutdown signals to cancel the main context
     auto signal_handler = [](int sig) {
@@ -167,8 +212,6 @@ int main(int argc, char* argv[])
     };
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
-
-    // mesh::Experiment3(ctx);
 
     // Start ProxyAPI client
     RunProxyAPIClient(ctx);

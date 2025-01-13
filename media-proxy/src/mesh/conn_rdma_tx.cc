@@ -6,7 +6,6 @@ namespace mesh::connection {
 
 RdmaTx::RdmaTx() : Rdma() {
     _kind = Kind::transmitter; // Set the Kind in the constructor
-    dir = direction::TX;       // Set the direction in the constructor
 }
 
 RdmaTx::~RdmaTx()
@@ -17,6 +16,11 @@ RdmaTx::~RdmaTx()
 Result RdmaTx::configure(context::Context& ctx, const mcm_conn_param& request,
                          libfabric_ctx *& dev_handle)
 {
+    log::debug("RdmaTx configure")("local_ip", request.local_addr.ip)
+                                  ("local_port", request.local_addr.port)
+                                  ("remote_ip", request.remote_addr.ip)
+                                  ("remote_port", request.remote_addr.port);
+
     return Rdma::configure(ctx, request, dev_handle);
 }
 

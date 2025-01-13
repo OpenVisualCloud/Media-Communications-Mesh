@@ -8,6 +8,8 @@ package mediaproxy;
 
 option go_package = "control-plane-agent/api/proxy/proto/mediaproxy";
 
+import "conn-config.proto";
+
 service ProxyAPI {
   rpc RegisterMediaProxy (RegisterMediaProxyRequest) returns (RegisterMediaProxyReply) {}
 
@@ -24,31 +26,20 @@ service ProxyAPI {
   rpc SendMetrics (SendMetricsRequest) returns (SendMetricsReply) {}
 }
 
-message MetricField {
-  string name = 1;
-  oneof value {
-    string str_value = 2;
-    uint64 uint_value = 3;
-    double double_value = 4;
-    bool bool_value = 5;
-  }
+message ST2110ProxyConfig {
+  string dataplane_ip_addr = 1;
+  string dev_port_bdf      = 2;
 }
 
-message Metric {
-  int64 timestamp_ms = 1;
-  string provider_id = 2;
-  repeated MetricField fields = 3;
-}
-
-message SendMetricsRequest {
-  repeated Metric metrics = 1;
-}
-
-message SendMetricsReply {
+message RDMAProxyConfig {
+  string dataplane_ip_addr     = 1;
+  string dataplane_local_ports = 2;
 }
 
 message RegisterMediaProxyRequest {
-  uint32 sdk_port = 1; // SDK API port - something to identify Media Proxy
+  uint32 sdk_api_port             = 1;
+  ST2110ProxyConfig st2110_config = 2;
+  RDMAProxyConfig rdma_config     = 3;
 }
 
 message RegisterMediaProxyReply {
@@ -63,11 +54,9 @@ message UnregisterMediaProxyReply {
 }
 
 message RegisterConnectionRequest {
-  string proxy_id = 1;
-  string kind = 2;
-  uint32 conn_type = 3;
-  uint32 payload_type = 4;
-  uint64 buffer_size = 5;
+  string proxy_id             = 1;
+  string kind                 = 2;
+  sdk.ConnectionConfig config = 3;
 }
 
 message RegisterConnectionReply {
@@ -76,7 +65,7 @@ message RegisterConnectionReply {
 
 message UnregisterConnectionRequest {
   string proxy_id = 1;
-  string conn_id = 2; // id assigned by Agent at registration
+  string conn_id  = 2; // id assigned by Agent at registration
 }
 
 message UnregisterConnectionReply {
@@ -87,29 +76,45 @@ message StartCommandQueueRequest {
 }
 
 message CommandRequest {
-  string req_id = 1;
+  string req_id                       = 1;
   oneof command {
-    ApplyConfigRequest apply_config = 6;
+    ApplyConfigRequest apply_config   = 6;
     ResetMetricsRequest reset_metrics = 100;
-    DebugRequest debug = 101;
+    DebugRequest debug                = 101;
   }
 }
 
 message MultipointGroup {
-  string group_id = 1;
-  repeated string conn_ids = 2;
+  string group_id            = 1;
+  repeated string conn_ids   = 2;
   repeated string bridge_ids = 3;
 }
 
+message BridgeST2110 {
+  string remote_ip              = 1;
+  uint32 port                   = 2;
+  sdk.ST2110Transport transport = 3;
+}
+
+message BridgeRDMA {
+  string remote_ip = 1;
+  uint32 port      = 2;
+}
+
 message Bridge {
-  string bridge_id = 1;
-  string type = 2;
-  // TODO: Add more configuration fields
+  string bridge_id                 = 1;
+  string type                      = 2;
+  string kind                      = 3;
+  sdk.ConnectionConfig conn_config = 4;
+  oneof config {
+    BridgeST2110 st2110            = 5;
+    BridgeRDMA rdma                = 6;
+  }
 }
 
 message ApplyConfigRequest {
   repeated MultipointGroup groups = 1;
-  repeated Bridge bridges = 2;
+  repeated Bridge bridges         = 2;
 }
 
 message ResetMetricsRequest {
@@ -120,12 +125,12 @@ message DebugRequest {
 }
 
 message CommandReply {
-  string req_id = 1;
-  string proxy_id = 2;
+  string req_id                     = 1;
+  string proxy_id                   = 2;
   oneof reply {
-    ApplyConfigReply apply_config = 7;
+    ApplyConfigReply apply_config   = 3;
     ResetMetricsReply reset_metrics = 100;
-    DebugReply debug = 101;
+    DebugReply debug                = 101;
   }
 }
 
@@ -141,4 +146,27 @@ message DebugReply {
 }
 
 message CommandReplyReceipt {
+}
+
+message MetricField {
+  string name           = 1;
+  oneof value {
+    string str_value    = 2;
+    uint64 uint_value   = 3;
+    double double_value = 4;
+    bool bool_value     = 5;
+  }
+}
+
+message Metric {
+  int64 timestamp_ms          = 1;
+  string provider_id          = 2;
+  repeated MetricField fields = 3;
+}
+
+message SendMetricsRequest {
+  repeated Metric metrics = 1;
+}
+
+message SendMetricsReply {
 }
