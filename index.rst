@@ -25,9 +25,9 @@ Contents
    :caption: Contents:
 
    docs/dp-sdk-api-ref
-   docs/IPCamera-RTP-Memif
    docs/memif-sharing
    docs/setup-mcm-with-k8s
+   docs/RDMA-example
    media-proxy/README
 
 FFmpeg-plugin
