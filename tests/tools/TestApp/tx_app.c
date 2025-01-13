@@ -19,7 +19,7 @@ int main(int argc, char** argv){
   }
 
   char* file_name = argv[1];
-  receiver_pid = atoi(argv[2]);
+  //receiver_pid = atoi(argv[2]);
   printf("launching TX app \n");
   printf("reading client configuration... \n");  
   client_cfg = parse_json_to_string("client.json");

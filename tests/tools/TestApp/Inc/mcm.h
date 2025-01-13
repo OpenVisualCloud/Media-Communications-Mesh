@@ -1,6 +1,12 @@
 #ifndef _MCM_H_
 #define _MCM_H_
+
+#ifdef DEMO
+#include "mcm_demo.h"
+#else 
 #include "mcm_dp.h"
+#include "mesh_dp.h"
+#endif
 
 #define DUMMY_LEN 1
 typedef struct mcm_ts{
