@@ -3,7 +3,8 @@
 
 #ifdef DEMO
 #include "mcm_demo.h"
-#else 
+#else
+#include <stdio.h>
 #include "mcm_dp.h"
 #include "mesh_dp.h"
 #endif
