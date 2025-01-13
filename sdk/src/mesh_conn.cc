@@ -136,16 +136,12 @@ int ConnectionJsonConfig::parse_json(const char *str)
             payload.video.fps = video.value("fps", 60.0);
 
             std::string str = video.value("pixelFormat", "yuv422p10le");
-            if (!str.compare("nv12")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_NV12;
-            } else if (!str.compare("yuv422p")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
-            } else if (!str.compare("yuv422p10le")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-            } else if (!str.compare("yuv444p10le")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE;
-            } else if (!str.compare("rgb8")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_RGB8;
+            if (!str.compare("yuv422p10le")) {
+                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
+            } else if (!str.compare("v210")) {
+                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
+            } else if (!str.compare("yuv422p10rfc4175")) {
+                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
             } else {
                 log::error("video: wrong pixel format: %s", str.c_str());
                 return -MESH_ERR_CONN_CONFIG_INVAL;
@@ -361,20 +357,14 @@ int ConnectionJsonConfig::assign_to_mcm_conn_param(mcm_conn_param& param) const
     if (payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
 
         switch (payload.video.pixel_format) {
-        case MESH_VIDEO_PIXEL_FORMAT_NV12:
-            param.pix_fmt = PIX_FMT_NV12;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:
+            param.pix_fmt = PIX_FMT_YUV422PLANAR10LE;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P:
-            param.pix_fmt = PIX_FMT_YUV422P;
+        case MESH_VIDEO_PIXEL_FORMAT_V210:
+            param.pix_fmt = PIX_FMT_V210;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE:
-            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE:
-            param.pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_RGB8:
-            param.pix_fmt = PIX_FMT_RGB8;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10:
+            param.pix_fmt = PIX_FMT_YUV422RFC4175BE10;
             break;
         default:
             return -MESH_ERR_CONN_CONFIG_INVAL;
@@ -546,20 +536,14 @@ int ConnectionContext::parse_payload_config(mcm_conn_param *param)
     if (cfg.payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
 
         switch (cfg.payload.video.pixel_format) {
-        case MESH_VIDEO_PIXEL_FORMAT_NV12:
-            param->pix_fmt = PIX_FMT_NV12;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:
+            param->pix_fmt = PIX_FMT_YUV422PLANAR10LE;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P:
-            param->pix_fmt = PIX_FMT_YUV422P;
+        case MESH_VIDEO_PIXEL_FORMAT_V210:
+            param->pix_fmt = PIX_FMT_V210;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE:
-            param->pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE:
-            param->pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_RGB8:
-            param->pix_fmt = PIX_FMT_RGB8;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10:
+            param->pix_fmt = PIX_FMT_YUV422RFC4175BE10;
             break;
         default:
             return -MESH_ERR_CONN_CONFIG_INVAL;

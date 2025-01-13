@@ -187,7 +187,7 @@ TEST(APITests_MeshConnection, Test_CreateEstablishShutdownDeleteConnection) {
         .width = 1920,
         .height = 1080,
         .fps = 60,
-        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE,
+        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE,
     };
     MeshConfig_Audio audio_config = {
         .channels = 2,
@@ -305,7 +305,7 @@ TEST(APITests_MeshConnection, Test_ApplyConfig) {
         .width = 1920,
         .height = 1080,
         .fps = 60,
-        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE,
+        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE,
     };
     MeshConfig_Audio audio_config_empty = {};
     MeshConfig_Audio audio_config = {
@@ -839,7 +839,7 @@ TEST(APITests_MeshConnection, Test_ParseVideoPayloadConfig) {
         .width = 1920,
         .height = 1080,
         .fps = 60,
-        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE,
+        .pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE,
     };
     mesh::ClientContext mc_ctx(nullptr);
     mesh::ConnectionContext ctx(&mc_ctx);
@@ -858,36 +858,22 @@ TEST(APITests_MeshConnection, Test_ParseVideoPayloadConfig) {
     ASSERT_EQ(param.payload_args.video_args.height, 1080);
     ASSERT_EQ(param.fps, 60);
     ASSERT_EQ(param.payload_args.video_args.fps, 60);
-    ASSERT_EQ(param.pix_fmt, PIX_FMT_YUV444P_10BIT_LE);
-    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_YUV444P_10BIT_LE);
+    ASSERT_EQ(param.pix_fmt, PIX_FMT_YUV422PLANAR10LE);
+    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_YUV422PLANAR10LE);
 
-    cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_NV12;
+    cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
     mesh_apply_connection_config_video(conn, &cfg);
     err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
-    ASSERT_EQ(param.pix_fmt, PIX_FMT_NV12);
-    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_NV12);
+    ASSERT_EQ(param.pix_fmt, PIX_FMT_V210);
+    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_V210);
 
-    cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
+    cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
     mesh_apply_connection_config_video(conn, &cfg);
     err = ctx.parse_payload_config(&param);
     ASSERT_EQ(err, 0) << mesh_err2str(err);
-    ASSERT_EQ(param.pix_fmt, PIX_FMT_YUV422P);
-    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_YUV422P);
-
-    cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-    mesh_apply_connection_config_video(conn, &cfg);
-    err = ctx.parse_payload_config(&param);
-    ASSERT_EQ(err, 0) << mesh_err2str(err);
-    ASSERT_EQ(param.pix_fmt, PIX_FMT_YUV422P_10BIT_LE);
-    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_YUV422P_10BIT_LE);
-
-    cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_RGB8;
-    mesh_apply_connection_config_video(conn, &cfg);
-    err = ctx.parse_payload_config(&param);
-    ASSERT_EQ(err, 0) << mesh_err2str(err);
-    ASSERT_EQ(param.pix_fmt, PIX_FMT_RGB8);
-    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_RGB8);
+    ASSERT_EQ(param.pix_fmt, PIX_FMT_YUV422RFC4175BE10);
+    ASSERT_EQ(param.payload_args.video_args.pix_fmt, PIX_FMT_YUV422RFC4175BE10);
 }
 
 /**

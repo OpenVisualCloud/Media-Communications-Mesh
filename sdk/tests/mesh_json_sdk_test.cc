@@ -113,7 +113,7 @@ TEST(mesh_json_sdk, parse_conn_cfg_video) {
     EXPECT_EQ(config.payload.video.width, 1920);
     EXPECT_EQ(config.payload.video.height, 1080);
     EXPECT_EQ(config.payload.video.fps, 59.9);
-    EXPECT_EQ(config.payload.video.pixel_format, MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE);
+    EXPECT_EQ(config.payload.video.pixel_format, MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE);
 }
 
 TEST(mesh_json_sdk, parse_conn_cfg_video_calc) {
