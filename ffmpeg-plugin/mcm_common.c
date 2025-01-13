@@ -14,6 +14,14 @@ static pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 static MeshClient *client;
 static int refcnt;
 
+void mcm_replace_back_quotes(char *str) {
+    while (*str) {
+        if (*str == '`')
+            *str = '"';
+        str++;
+    }
+}
+
 /**
  * Get MCM client. Create one if needed.
  * Thread-safe.
@@ -27,9 +35,20 @@ int mcm_get_client(MeshClient **mc)
         return err;
 
     if (!client) {
-        MeshClientConfig config = { 0 };
+        static char json_config[150];
 
-        err = mesh_create_client(&client, &config);
+        static const char json_config_format[] =
+            "{"
+            "`apiVersion`: `v1`,"
+            "`apiConnectionString`: `Server=; Port=`,"
+            "`apiDefaultTimeoutMicroseconds`: 100000,"
+            "`maxMediaConnections`: 32"
+            "}";
+
+        snprintf(json_config, sizeof(json_config), json_config_format);
+        mcm_replace_back_quotes(json_config);
+
+        err = mesh_create_client_json(&client, json_config);
         if (err)
             client = NULL;
         else
@@ -70,6 +89,78 @@ int mcm_put_client(MeshClient **mc)
 
     return err;
 }
+
+const char mcm_json_config_multipoint_group_video_format[] =
+    "{"
+      "`connection`: {"
+        "`multipointGroup`: {"
+          "`urn`: `%s`"
+        "}"
+      "},"
+      "`payload`: {"
+        "`video`: {"
+          "`width`: %d,"
+          "`height`: %d,"
+          "`fps`: %0.2f,"
+          "`pixelFormat`: `%s`"
+        "}"
+      "}"
+    "}";
+
+const char mcm_json_config_st2110_video_format[] =
+    "{"
+      "`connection`: {"
+        "`st2110`: {"
+          "`remoteIpAddr`: `%s`,"
+          "`remotePort`: %d,"
+          "`transport`: `%s`"
+        "}"
+      "},"
+      "`payload`: {"
+        "`video`: {"
+          "`width`: %d,"
+          "`height`: %d,"
+          "`fps`: %0.2f,"
+          "`pixelFormat`: `%s`"
+        "}"
+      "}"
+    "}";
+
+const char mcm_json_config_multipoint_group_audio_format[] =
+    "{"
+      "`connection`: {"
+        "`multipointGroup`: {"
+          "`urn`: `%s`"
+        "}"
+      "},"
+      "`payload`: {"
+        "`audio`: {"
+          "`channels`: %d,"
+          "`sampleRate`: %d,"
+          "`format`: `%s`,"
+          "`packetTime`: `%s`"
+        "}"
+      "}"
+    "}";
+
+const char mcm_json_config_st2110_audio_format[] =
+    "{"
+      "`connection`: {"
+        "`st2110`: {"
+          "`remoteIpAddr`: `%s`,"
+          "`remotePort`: %d,"
+          "`transport`: `st2110-30`"
+        "}"
+      "},"
+      "`payload`: {"
+        "`audio`: {"
+          "`channels`: %d,"
+          "`sampleRate`: %d,"
+          "`format`: `%s`,"
+          "`packetTime`: `%s`"
+        "}"
+      "}"
+    "}";
 
 /**
  * Parse MCM connection parameters and fill the structure.

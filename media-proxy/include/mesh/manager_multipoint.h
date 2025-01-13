@@ -9,6 +9,7 @@
 #include <memory>
 #include <iostream>
 #include "multipoint.h"
+#include "manager_bridges.h"
 
 namespace mesh::multipoint {
 
@@ -30,6 +31,7 @@ public:
 class Config {
 public:
     std::unordered_map<std::string, GroupConfig> groups;
+    std::unordered_map<std::string, connection::BridgeConfig> bridges;
 };
 
 class GroupManager {

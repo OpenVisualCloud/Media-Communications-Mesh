@@ -16,6 +16,8 @@ Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
 {
     this->frame_size = frame_size;
 
+    log::debug("FRAME SIZE %lu", frame_size);
+
     bzero(memif_socket_args.app_name, sizeof(memif_socket_args.app_name));
     bzero(memif_socket_args.path, sizeof(memif_socket_args.path));
 
@@ -37,7 +39,7 @@ Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
     ready = false;
     memif_conn_args.interface_id = ops->interface_id;
     memif_conn_args.buffer_size = (uint32_t)frame_size;
-    memif_conn_args.log2_ring_size = 2;
+    memif_conn_args.log2_ring_size = 4;
     snprintf((char*)memif_conn_args.interface_name,
              sizeof(memif_conn_args.interface_name), "%s", ops->interface_name);
     memif_conn_args.is_master = 1;

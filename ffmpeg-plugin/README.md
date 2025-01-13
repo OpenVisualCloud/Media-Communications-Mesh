@@ -33,14 +33,15 @@ Install dependencies and build Media Communications Mesh as described in the top
 
 The next arguments are supported to configure a connection to Media Communications Mesh
 
-| Argument        | Type    | Description                                               | Default          |
-| --------------- | :-----: | --------------------------------------------------------- | :--------------: |
-| `ip_addr`       | String  | Remote IP address                                         | `"192.168.96.1"` |
-| `port`          | String  | Remote port (Sender), or Local port (Receiver)            | `"9001"`         |
-| `protocol_type` | String  | Media Communications Mesh Protocol type (`"auto"`, `"memif"`, etc.)             | `"auto"`         |
-| `payload_type`  | String  | Payload type (`"st20"`, `"st22"`, `"st30", "rdma"`, etc.) | `"st20"`         |
-| `socket_name`   | String  | Memif socket name                                         | -                |
-| `interface_id`  | Integer | Memif interface id                                        | `0`              |
+| Argument        | Type    | Description                                                                     | Default              |
+| --------------- | :-----: | ------------------------------------------------------------------------------- | :------------------: |
+| `conn_type`     | String  | Connection type (`"multipoint-group"` or `"st2110"`)                            | `"multipoint-group"` |
+| `urn`           | String  | Multipoint group URN                                                            | `"192.168.97.1"`     |
+| `ip_addr`       | String  | SMPTE ST2110 remote IP address                                                  | `"192.168.96.1"`     |
+| `port`          | String  | SMPTE ST2110 remote port (Transmitter), or local port (Receiver)                | `9001`               |
+| `transport`     | String  | SMPTE ST2110 transport type (`"st2110-20"`, `"st2110-22"`, `"st2110-30"`, etc.) | `"st2110-20"`        |
+| `socket_name`   | String  | Memif socket name                                                               | -                    |
+| `interface_id`  | Integer | Memif interface id                                                              | `0`                  |
 
 ## Video configuration
 
@@ -64,19 +65,19 @@ TBD
 
 1. Start Media Proxy
    ```bash
-   sudo media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8002
+   sudo media_proxy -d 0000:32:01.1 -i 192.168.96.11 -r 192.168.97.11 -p 9200-9299 -t 8002
    ```
 
 2. Start FFmpeg to receive frames from Media Communications Mesh and stream to a remote machine via UDP
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm \
+      -conn_type st2110 \
+      -transport st2110-20 \
+      -ip_addr 192.168.96.10 \
+      -port 9001 \
       -frame_rate 24 \
       -video_size nhd \
       -pixel_format yuv422p10le \
-      -protocol_type auto \
-      -payload_type st20 \
-      -ip_addr 192.168.96.1 \
-      -port 9001 \
       -i - -vcodec mpeg4 -f mpegts udp://<remote-ip>:<remote-port>
    ```
 
@@ -84,19 +85,19 @@ TBD
 
 1. Start Media Proxy
    ```bash
-   sudo media_proxy -d 0000:32:11.0 -i 192.168.96.1 -t 8001
+   sudo media_proxy -d 0000:32:01.0 -i 192.168.96.10 -r 192.168.97.10 -p 9100-9199 -t 8001
    ```
 
 2. Start FFmpeg to stream a video file to the receiver via Media Communications Mesh
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <video-file-path> -f mcm \
+      -conn_type st2110 \
+      -transport st2110-20 \
+      -ip_addr 192.168.96.11 \
+      -port 9001 \
       -frame_rate 24 \
       -video_size nhd \
-      -pixel_format yuv422p10le \
-      -protocol_type auto \
-      -payload_type st20 \
-      -ip_addr 192.168.96.2 \
-      -port 9001 -
+      -pixel_format yuv422p10le -
    ```
 
    When working with raw video files that lack metadata, you must explicitly provide FFmpeg with the necessary video frame details. This includes specifying the format `-f rawvideo`, pixel format `-pix_fmt`, and resolution `-s WxH`. For example:
@@ -143,20 +144,19 @@ TBD
 1. Start Media Proxy
 
    ```bash
-   sudo media_proxy -d 0000:32:11.1 -i 192.168.96.2 -t 8002
+   sudo media_proxy -d 0000:32:01.1 -i 192.168.96.11 -r 192.168.97.11 -p 9200-9299 -t 8002
    ```
 
 2. Start FFmpeg to receive packets from Media Communications Mesh and store on the disk
 
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm_audio_pcm24 \
+      -conn_type st2110 \
+      -ip_addr 192.168.96.10 \
+      -port 9001 \
       -channels 2 \
       -sample_rate 48000 \
       -ptime 1ms \
-      -protocol_type auto \
-      -payload_type st30 \
-      -ip_addr 192.168.96.1 \
-      -port 9001 \
       -i - output.wav
    ```
 
@@ -164,19 +164,18 @@ TBD
 
 1. Start Media Proxy
    ```bash
-   sudo media_proxy -d 0000:32:11.0 -i 192.168.96.1 -t 8001
+   sudo media_proxy -d 0000:32:01.0 -i 192.168.96.10 -r 192.168.97.10 -p 9100-9199 -t 8001
    ```
 2. Start FFmpeg to stream an audio file to the receiver via Media Communications Mesh
 
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <audio-file-path> -f mcm_audio_pcm24 \
+      -conn_type st2110 \
+      -ip_addr 192.168.96.11 \
+      -port 9001 \
       -channels 2 \
       -sample_rate 48000 \
-      -ptime 1ms \
-      -protocol_type auto \
-      -payload_type st30 \
-      -ip_addr 192.168.96.2 \
-      -port 9001 -
+      -ptime 1ms -
    ```
 
 ## Known Issues

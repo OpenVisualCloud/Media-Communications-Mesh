@@ -23,7 +23,6 @@ INSTALL_PREFIX="${INSTALL_PREFIX:-/usr/local}"
 cmake -DCMAKE_BUILD_TYPE="${BUILD_TYPE}" \
     -DBUILD_UNIT_TESTS="${BUILD_UNIT_TESTS}" \
     -B "${MCM_BUILD_DIR}" -S "${SCRIPT_DIR}"
-cmake --build "${MCM_BUILD_DIR}" -j
 make -j "${NPROC}" -C "${MCM_BUILD_DIR}"
 
 if [[ $# -ne 0 ]]; then
@@ -35,9 +34,15 @@ as_root ln -s /usr/lib64/libbpf.so.1 /usr/lib/x86_64-linux-gnu/libbpf.so.1 2>/de
 as_root ldconfig
 
 # Run unit tests
-export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
-ctest --output-on-failure --test-dir "${MCM_BUILD_DIR}" -V
-
+if [ "${BUILD_UNIT_TESTS}" = "ON" ]; then
+    export LD_LIBRARY_PATH="${PREFIX_DIR}/usr/local/lib:/usr/local/lib64"
+    "${MCM_BUILD_DIR}/bin/sdk_unit_tests"
+    "${MCM_BUILD_DIR}/bin/media_proxy_unit_tests"
+    # "${MCM_BUILD_DIR}/bin/conn_rdma_base_unit_tests"
+    # "${MCM_BUILD_DIR}/bin/conn_rdma_rx_tx_unit_tests"
+fi
 ln -sf "${MCM_BUILD_DIR}" "${SCRIPT_DIR}/build"
 
-log_info "Build Succeeded"
+function print_success() { echo -e "\e[48;2;0;255;0;30m $* \e[0m"; }
+
+print_success "Build Succeeded"

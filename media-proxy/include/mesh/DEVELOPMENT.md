@@ -1,10 +1,10 @@
 # Development – New Architecture of Media Proxy to Support Multipoint Groups
 
 ## Scope
-1. **`DONE`** Local connection (memif based)
-   * **`IN PROGRESS`** Local base class – `mesh::connection::Local`, derived from `mesh::connection::Connection`.
-      * **`IN PROGRESS`** Local Tx class – `mesh::connection::LocalTx`
-      * **`IN PROGRESS`** Local Rx class – `mesh::connection::LocalRx`
+1. Local connection (memif based)
+   * Local base class – `mesh::connection::Local`, derived from `mesh::connection::Connection`.
+      * Local Tx class – `mesh::connection::LocalTx`
+      * Local Rx class – `mesh::connection::LocalRx`
 1. RDMA connection
    * RDMA base class – `mesh::connection::Rdma`, derived from `mesh::connection::Connection`.
       * RDMA Tx class – `mesh::connection::RdmaTx`

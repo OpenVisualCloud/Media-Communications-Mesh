@@ -21,6 +21,9 @@ public:
 
     int dequeue(int timeout_ms);
     int enqueue(int timeout_ms);
+    int setPayloadLen(size_t size);
+    int setMetadataLen(size_t size);
+
 
     /**
      * NOTE: The __public structure is directly mapped in the memory to the

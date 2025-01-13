@@ -8,12 +8,13 @@
 #include <memory>
 #include <string>
 
-#include "client_api.h"
+#include "sdk_api.h"
 #include <grpcpp/grpcpp.h>
 #include "sdk.grpc.pb.h"
 #include "logger.h"
 #include "mcm_dp.h"
 #include "manager_local.h"
+#include "proxy_config.h"
 
 namespace mesh {
 
@@ -27,6 +28,17 @@ using sdk::CreateConnectionRequest;
 using sdk::CreateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
+using sdk::ConnectionConfig;
+using sdk::ConfigMultipointGroup;
+using sdk::ConfigST2110;
+using sdk::ConfigRDMA;
+using sdk::ConfigVideo;
+using sdk::ConfigAudio;
+using sdk::ST2110Transport;
+using sdk::VideoPixelFormat;
+using sdk::AudioSampleRate;
+using sdk::AudioFormat;
+using sdk::AudioPacketTime;
 
 class SDKAPIServiceImpl final : public SDKAPI::Service {
 public:
@@ -35,24 +47,40 @@ public:
         memif_conn_param memif_param = {};
         mcm_conn_param param = {};
 
+        // log::debug("Has config?")("yes", req->has_config());
+
+        connection::Config conn_config;
+        if (req->has_config()) {
+            auto res = conn_config.assign_from_pb(req->config());
+            if (res != connection::Result::success) {
+                log::error("SDK: parse err: %s", connection::result2str(res));
+                return Status(StatusCode::INVALID_ARGUMENT,
+                              connection::result2str(res));
+            }
+        }
+
         int sz = req->mcm_conn_param().size();
         if (sz != sizeof(mcm_conn_param)) {
             log::error("Param size (%d) not equal to mcm_conn_param (%ld)",
                        sz, sizeof(mcm_conn_param));
-            return Status(StatusCode::INVALID_ARGUMENT,
-                          "Wrong size of mcm_conn_param");
+            // return Status(StatusCode::INVALID_ARGUMENT,
+            //               "Wrong size of mcm_conn_param");
         }
         memcpy(&param, req->mcm_conn_param().data(), sz);
 
         auto ctx = context::WithCancel(context::Background());
         std::string conn_id;
+        std::string err_str;
 
         auto& mgr = connection::local_manager;
-        int err = mgr.create_connection_sdk(ctx, conn_id, &param, &memif_param);
+        int err = mgr.create_connection_sdk(ctx, conn_id, &param, &memif_param,
+                                            conn_config, err_str);
         if (err) {
             log::error("create_local_conn() failed (%d)", err);
-            return Status(StatusCode::INTERNAL,
-                          "create_local_conn() failed");
+            if (err_str.empty())
+                return Status(StatusCode::INTERNAL, "create_local_conn() failed");
+            else
+                return Status(StatusCode::INTERNAL, err_str);
         }
 
         memif_param.conn_args.is_master = 0; // SDK client is to be secondary
@@ -87,7 +115,8 @@ public:
 };
 
 void RunSDKAPIServer(context::Context& ctx) {
-    std::string server_address("0.0.0.0:50050"); // gRPC default 50051
+    std::string server_address("0.0.0.0:"); // gRPC default 50051
+    server_address += std::to_string(config::proxy.sdk_api_port);
     SDKAPIServiceImpl service;
 
     ServerBuilder builder;
