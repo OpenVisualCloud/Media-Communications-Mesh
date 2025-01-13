@@ -1,3 +1,4 @@
 [submodule "submodules/Media-Transport-Library"]
 	path = submodules/Media-Transport-Library
 	url = https://github.com/OpenVisualCloud/Media-Transport-Library/
+	branch = main
