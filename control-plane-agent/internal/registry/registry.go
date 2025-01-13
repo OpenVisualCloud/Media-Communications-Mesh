@@ -60,13 +60,15 @@ type Registry struct {
 	handler    RequestHandler
 }
 
+func (r *Registry) Init() {
+	r.queue = make(chan Request, 100) // TODO: capacity to be configured
+	r.items = make(map[string]interface{})
+}
+
 func (r *Registry) Run(ctx context.Context) error {
 	if r.handler == nil {
 		return errors.New("no request handler assigned")
 	}
-
-	r.queue = make(chan Request, 100) // TODO: capacity to be configured
-	r.items = make(map[string]interface{})
 
 	for {
 		select {

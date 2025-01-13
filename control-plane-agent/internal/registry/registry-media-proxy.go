@@ -28,6 +28,7 @@ var MediaProxyRegistry mediaProxyRegistry
 func (r *mediaProxyRegistry) Init(cfg MediaProxyRegistryConfig) {
 	r.handler = r
 	r.cfg = cfg
+	r.Registry.Init()
 }
 
 func (r *mediaProxyRegistry) HandleReadMany(req Request) {

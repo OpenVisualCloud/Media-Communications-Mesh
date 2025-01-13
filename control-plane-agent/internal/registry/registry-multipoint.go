@@ -24,6 +24,7 @@ var MultipointGroupRegistry multipointGroupRegistry
 
 func (r *multipointGroupRegistry) Init() {
 	r.handler = r
+	r.Registry.Init()
 }
 
 func (r *multipointGroupRegistry) HandleReadMany(req Request) {
