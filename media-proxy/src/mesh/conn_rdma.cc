@@ -5,7 +5,8 @@ namespace mesh::connection {
 
 std::atomic<int> Rdma::active_connections(0);
 
-Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), m_dev_handle(nullptr) {
+Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), m_dev_handle(nullptr),
+    buffer_block(nullptr), queue_size(0) {
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
     ++active_connections;
 }

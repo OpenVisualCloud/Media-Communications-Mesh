@@ -85,7 +85,6 @@ protected:
     bool init;                                  // Indicates if RDMA is initialized
     void *buffer_block;                         // Pointer to the allocated buffer block
     int queue_size;                             // Number of buffers in the queue
-    direction dir;                              // Data transfer direction
     static std::atomic<int> active_connections; // Number of active RDMA connections
 
     // Queue for managing buffers

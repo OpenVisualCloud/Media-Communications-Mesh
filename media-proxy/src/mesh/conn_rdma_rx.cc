@@ -6,7 +6,6 @@ namespace mesh::connection {
 
 RdmaRx::RdmaRx() : Rdma() {
     _kind = Kind::receiver; // Set the Kind in the constructor
-    dir = direction::RX;    // Set the direction in the constructor
 }
 
 RdmaRx::~RdmaRx()
