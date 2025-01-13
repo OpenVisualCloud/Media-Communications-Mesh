@@ -1,6 +1,11 @@
 #ifndef _MCM_H_
 #define _MCM_H_
-#include "mcm_mock.h"
+
+#if defined(DEMO)
+#include "mcm_demo.h"
+#else
+#include "mcm_dp.h"
+#endif
 
 #define DUMMY_LEN 1
 typedef struct mcm_ts{
