@@ -10,20 +10,26 @@ namespace mesh::connection {
 
 int mesh_video_format_to_st_format(int mesh_fmt, st_frame_fmt& st_fmt) {
     switch (mesh_fmt) {
-    case MESH_VIDEO_PIXEL_FORMAT_NV12:
-        st_fmt = ST_FRAME_FMT_YUV420CUSTOM8;
-        break;
-    case MESH_VIDEO_PIXEL_FORMAT_YUV422P:
-        st_fmt = ST_FRAME_FMT_YUV422PLANAR8;
-        break;
-    case MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE:
+    case MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:
         st_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
         break;
-    case MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE:
-        st_fmt = ST_FRAME_FMT_YUV444PLANAR10LE;
+    case MESH_VIDEO_PIXEL_FORMAT_V210:
+        st_fmt = ST_FRAME_FMT_V210;
         break;
-    case MESH_VIDEO_PIXEL_FORMAT_RGB8:
-        st_fmt = ST_FRAME_FMT_RGB8;
+    case MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10:
+        st_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
+        break;
+    default:
+        return -1; // Error: unknown format
+    }
+
+    return 0; // Success
+}
+
+int mesh_transport_video_format_to_st20_fmt(int transport_format, st20_fmt& st20_format) {
+    switch (transport_format) {
+    case MESH_CONN_ST2110_20_TRANSPORT_FMT_YUV422_10BIT:
+        st20_format = ST20_FMT_YUV_422_10BIT;
         break;
     default:
         return -1; // Error: unknown format
