@@ -101,7 +101,7 @@ void file_to_buffer(FILE *file, MeshBuffer* buf){
         return;
     }
 
-    // Move the file pointer to the end of the file to determine the file size
+    /* Move the file pointer to the end of the file to determine the file size */
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
     if (file_size > buf->payload_len) {
@@ -109,7 +109,7 @@ void file_to_buffer(FILE *file, MeshBuffer* buf){
         return;
     }
 
-    // Move the file pointer back to the beginning of the file
+    /* Move the file pointer back to the beginning of the file */
     fseek(file, 0, SEEK_SET);
 
     // Allocate memory for the byte array
@@ -121,11 +121,13 @@ void file_to_buffer(FILE *file, MeshBuffer* buf){
 
     // Read the file into the buffer
     fread(frame_buf, BYTE_SIZE, file_size, file);
-
-    // Clean the space under the specified address
+    /* buf->payload_ptr is const type, it cannot be reassigned,
+     * so frame_buf data needs to be copied under it's address
+     */
+    /* clear mesh buffer payload space */
     memset(buf->payload_ptr, FIRST_INDEX, buf->payload_len);
 
-    //Copy the serialized buffer to the specified address
+    /* copy frame_buf data into mesh buffer */
     memcpy(buf->payload_ptr, frame_buf, buf->payload_len);
     free(frame_buf);
 }
