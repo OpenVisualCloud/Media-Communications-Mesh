@@ -92,6 +92,10 @@ int ConnectionJsonConfig::parse_json(const char *str)
 
             conn.st2110.pacing = st2110.value("pacing", "");
             conn.st2110.payload_type = st2110.value("payloadType", 112);
+            if (conn.st2110.transport == MESH_CONN_TRANSPORT_ST2110_20) {
+                conn.st2110.transportPixelFormat =
+                    st2110.value("transportPixelFormat", "yuv422p10rfc4175");
+            }
         } else if (conn_type == MESH_CONN_TYPE_RDMA) {
             auto rdma = jconn["rdma"];
             conn.rdma.connection_mode = rdma.value("connectionMode", "RC");
@@ -336,12 +340,36 @@ int ConnectionJsonConfig::calc_audio_buf_size()
     return 0;
 }
 
+int ConnectionJsonConfig::calc_video_buf_size()
+{
+    uint32_t pixels = payload.video.width * payload.video.height;
+
+    if (payload.video.pixel_format == MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE) {
+        calculated_payload_size = pixels * 4;
+    } else if (payload.video.pixel_format == MESH_VIDEO_PIXEL_FORMAT_V210) {
+        if (pixels % 3) {
+            log::error("Invalid width %u height %u for v210 fmt, not multiple of 3",
+                       payload.video.width, payload.video.height);
+            return -MESH_ERR_CONN_CONFIG_INVAL;
+        }
+        calculated_payload_size = pixels * 8 / 3;
+    } else if (payload.video.pixel_format == MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10) {
+        if (pixels % 2) {
+            log::error("Invalid width %u height %u for yuv422rfc4175be10 fmt, not multiple of 2",
+                       payload.video.width, payload.video.height);
+            return -MESH_ERR_CONN_CONFIG_INVAL;
+        }
+        calculated_payload_size = pixels * 5 / 2;
+    } else
+        return -MESH_ERR_CONN_CONFIG_INVAL;
+    return 0;
+}
+
 int ConnectionJsonConfig::calc_payload_size()
 {
     switch (payload_type) {
     case MESH_PAYLOAD_TYPE_VIDEO:
-        calculated_payload_size = payload.video.width * payload.video.height * 4;
-        return 0;
+        return calc_video_buf_size();
     case MESH_PAYLOAD_TYPE_AUDIO:
         return calc_audio_buf_size();
     }
