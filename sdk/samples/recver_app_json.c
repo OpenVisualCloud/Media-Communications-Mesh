@@ -12,7 +12,7 @@
 #include <time.h>
 #include "mesh_dp.h"
 
-#define RECV_JSON_FILE "recv.json"
+#define RECV_JSON_FILE "recver.json"
 
 static volatile bool keepRunning = true;
 
