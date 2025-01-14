@@ -12,7 +12,6 @@
 #include <time.h>
 #include "mesh_dp.h"
 
-#define RECV_LOCAL_FILE "recv.yuv"
 #define RECV_JSON_FILE "recv.json"
 
 static volatile bool keepRunning = true;
@@ -53,10 +52,8 @@ void usage(FILE *fp, const char *path) {
             "-j, --json=file_name\t"
             "JSON file with receiver configuration(example: %s)\n",
             RECV_JSON_FILE);
-    fprintf(fp,
-            "-o, --outputfile=file_name\t"
-            "Save stream to local file (example: %s)\n",
-            RECV_LOCAL_FILE);
+    fprintf(fp, "-o, --outputfile=file_name\t"
+                "Save stream to local file (example: data.yuv)\n");
     fprintf(fp, "\n");
 }
 

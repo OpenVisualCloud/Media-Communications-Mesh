@@ -14,7 +14,6 @@
 #include <unistd.h>
 #include "mesh_dp.h"
 
-#define SENDER_LOCAL_FILE "sender.yuv"
 #define SENDER_JSON_FILE "sender.json"
 
 static volatile bool keepRunning = true;
@@ -55,10 +54,8 @@ void usage(FILE *fp, const char *path) {
             "-j, --json=file_name\t"
             "JSON file with sender configuration(example: %s)\n",
             SENDER_JSON_FILE);
-    fprintf(fp,
-            "-i, --iputfile=file_name\t"
-            "Input file to send (example: %s)\n",
-            SENDER_LOCAL_FILE);
+    fprintf(fp, "-i, --iputfile=file_name\t"
+                "Input file to send (example: data.yuv)\n");
     fprintf(fp, "-n, --number=frame_number\t"
                 "Number of fraems to be sent, (default: -1, infinite)\n");
 }
