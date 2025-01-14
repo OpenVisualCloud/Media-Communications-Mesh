@@ -45,7 +45,5 @@ const char* parse_json_to_string(const char* file_name) {
     return buffer;
 }
 
-int is_mock_enabled(int argc, char *argv[]){
-    return (argc == 2 && strcmp("mock", argv[1]) == 0) ? 1 : 0;
-}
+
 

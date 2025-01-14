@@ -1,7 +1,11 @@
-#include "mcm.h"
-#include <stdio.h>
 #include <stdlib.h>
-#include <assert.h>
+#include <string.h>
+#include "mcm.h"
+#include "mcm_dp.h"
+#include "mesh_dp.h"
+
+/* PRIVATE */
+void file_to_buffer(FILE *file, MeshBuffer* buf);
 
 int mcm_init_client(mcm_ts* mcm, const char* cfg){
     int err = mesh_create_client_json(&(mcm->client), cfg);
@@ -32,9 +36,10 @@ int mcm_create_rx_connection(mcm_ts* mcm, const char* cfg){
 }
 
 
-int mcm_send_video_frame(mcm_ts* mcm, const char* frame, int frame_len ){
+int mcm_send_video_frame(mcm_ts* mcm, FILE* frame){
     int err = 0;
     MeshBuffer *buf;
+
 
     /* Ask the mesh to allocate a shared memory buffer for user data */
     err = mesh_get_buffer(mcm->connection, &buf);
@@ -43,8 +48,8 @@ int mcm_send_video_frame(mcm_ts* mcm, const char* frame, int frame_len ){
     }
 
     /* Fill the buffer with user data */
-    buf->payload_ptr = frame;
-    put_user_video_frames(buf->payload_ptr, frame_len);
+    //put_user_video_frames(buf->payload_ptr, buff->payload_len);
+    //void * data = serialize_user_video_frame(frame);
 
     /* Send the buffer */
     err = mesh_put_buffer(&buf);
@@ -73,7 +78,7 @@ int mcm_receive_video_frames(mcm_ts* mcm){
     }
 
     /* Process the received user data */
-    get_user_video_frames(buf->payload_ptr, buf->payload_len);
+    //get_user_video_frames(buf->payload_ptr, buf->payload_len);
 
 
     /* Release and put the buffer back to the mesh */
@@ -90,15 +95,41 @@ int mcm_receive_video_frames(mcm_ts* mcm){
     return err;
 }
 
-int file_to_buffer(FILE* fp, MeshBuffer* buf, int frame_size)
-{
-    int ret = 0;
-
-    assert(fp != NULL && buf != NULL);
-    assert(buf->payload_len >= frame_size);
-
-    if (fread(buf->payload_ptr, frame_size, 1, fp) < 1) {
-        ret = -1;
+void file_to_buffer(FILE *file, MeshBuffer* buf){
+    if (file == NULL) {
+        printf("Failed to serialize file: file is null \n");
+        return;
     }
-    return ret;
+
+    // Move the file pointer to the end of the file to determine the file size
+    fseek(file, 0, SEEK_END);
+    long file_size = ftell(file);
+    if (file_size > buf->payload_len) {
+        printf("Failed to serialize file into buffer: file size exceed buffer size\n");
+        return;
+    }
+
+    // Move the file pointer back to the beginning of the file
+    fseek(file, 0, SEEK_SET);
+
+    // Allocate memory for the byte array
+    unsigned char *frame_buf = (unsigned char*)malloc(file_size);
+    if (frame_buf == NULL) {
+        printf("Failed to serialize file into buffer: failed to allocate memory\n");
+        return;
+    }
+
+    // Read the file into the buffer
+    fread(frame_buf, BYTE_SIZE, file_size, file);
+
+    // Clean the space under the specified address
+    memset(buf->payload_ptr, FIRST_INDEX, buf->payload_len);
+
+    //Copy the serialized buffer to the specified address
+    memcpy(buf->payload_ptr, frame_buf, buf->payload_len);
+    free(frame_buf);
+}
+
+void get_user_video_frames(){
+    //get buffer and save it to the file
 }
