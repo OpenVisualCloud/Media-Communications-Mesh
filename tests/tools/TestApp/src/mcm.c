@@ -4,7 +4,7 @@
 #include <assert.h>
 
 int mcm_init_client(mcm_ts* mcm, const char* cfg){
-    int err = mesh_create_client(&(mcm->client), cfg);
+    int err = mesh_create_client_json(&(mcm->client), cfg);
     if (err) {
         printf("Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
         exit(1);
@@ -16,7 +16,7 @@ int mcm_create_tx_connection(mcm_ts* mcm, const char* cfg){
     int err = mesh_create_tx_connection(mcm->client, &(mcm->connection), cfg);
     if (err) {
         printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
-        mesh_delete_client(&(mcm->connection));
+        mesh_delete_client(&(mcm->client));
     }
     return err;
 }
@@ -26,7 +26,7 @@ int mcm_create_rx_connection(mcm_ts* mcm, const char* cfg){
     int err = mesh_create_rx_connection(mcm->client, &(mcm->connection), cfg);
     if (err) {
         printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
-         mesh_delete_client(&(mcm->connection));
+         mesh_delete_client(&(mcm->client));
     }
     return err;
 }
