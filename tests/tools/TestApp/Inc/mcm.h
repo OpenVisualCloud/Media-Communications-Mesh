@@ -17,6 +17,6 @@ int mcm_init_client(mcm_ts* mcm, const char* cfg);
 int mcm_create_tx_connection(mcm_ts* mcm, const char* cfg);
 int mcm_create_rx_connection(mcm_ts* mcm, const char* cfg);
 int mcm_send_video_frame(mcm_ts* mcm, FILE* frame);
-int mcm_receive_video_frames(mcm_ts* mcm);
+int mcm_receive_video_frames(mcm_ts* mcm, FILE* frame);
 
 #endif /* _MCM_H_*/

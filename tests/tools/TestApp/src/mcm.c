@@ -6,6 +6,7 @@
 
 /* PRIVATE */
 void file_to_buffer(FILE *file, MeshBuffer* buf);
+void buffer_to_file(FILE *file, MeshBuffer* buf);
 
 int mcm_init_client(mcm_ts* mcm, const char* cfg){
     int err = mesh_create_client_json(&(mcm->client), cfg);
@@ -64,7 +65,7 @@ int mcm_send_video_frame(mcm_ts* mcm, FILE* frame){
 }
 
 
-int mcm_receive_video_frames(mcm_ts* mcm){
+int mcm_receive_video_frames(mcm_ts* mcm, FILE* frame){
     int err = 0;
     MeshBuffer *buf;
 
@@ -78,7 +79,7 @@ int mcm_receive_video_frames(mcm_ts* mcm){
     }
 
     /* Process the received user data */
-    //get_user_video_frames(buf->payload_ptr, buf->payload_len);
+    buffer_to_file(frame,buf);
 
 
     /* Release and put the buffer back to the mesh */
@@ -132,6 +133,19 @@ void file_to_buffer(FILE *file, MeshBuffer* buf){
     free(frame_buf);
 }
 
-void get_user_video_frames(){
-    //get buffer and save it to the file
+void buffer_to_file(FILE *file, MeshBuffer* buf){
+    if (file == NULL) {
+        perror("Failed to open file for writing");
+        return;
+    }
+
+    // Write the buffer to the file
+    size_t written_size = fwrite(buf->payload_ptr, BYTE_SIZE, buf->payload_len, file);
+    if (written_size != buf->payload_len) {
+        perror("Failed to write buffer to file");
+        fclose(file);
+        return;
+    }
+    
+    fclose(file);
 }
