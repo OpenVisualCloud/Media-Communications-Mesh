@@ -26,6 +26,17 @@ int mesh_video_format_to_st_format(int mesh_fmt, st_frame_fmt& st_fmt) {
     return 0; // Success
 }
 
+/**
+ * Converts a mesh transport video format to an ST 2110-20 format.
+ *
+ * This function currently supports only one specific transport format:
+ * MESH_CONN_ST2110_20_TRANSPORT_FMT_YUV422_10BIT. The function uses a switch
+ * statement to handle the conversion, even though there is only one case
+ * supported at the moment. This design choice is intentional. By using a switch statement,
+ * we can easily accommodate any future changes or requests from the customers/architects. If new
+ * transport formats need to be supported in the future, we can simply add new cases to the switch
+ * statement. This approach ensures that the code remains maintainable and scalable.
+ */
 int mesh_transport_video_format_to_st20_fmt(int transport_format, st20_fmt& st20_format) {
     switch (transport_format) {
     case MESH_CONN_ST2110_20_TRANSPORT_FMT_YUV422_10BIT:
