@@ -1,0 +1,23 @@
+{
+    "apiVersion": "v1",
+    "apiConnectionString": "Server=127.0.0.1; Port=8002",
+    "apiDefaultTimeoutMicroseconds": 100000,
+    "maxMediaConnections": 32,
+    "connection": {
+        "st2110": {
+            "transport": "st2110-20",
+            "remoteIpAddr": "192.168.96.11",
+            "remotePort": 9002,
+            "pacing": "narrow",
+            "payloadType": 112
+          }
+    },
+    "payload": {
+        "video": {
+            "width": 1920,
+            "height": 1080,
+            "fps": 30,
+            "pixelFormat": "yuv422p10le"
+        }
+    }
+}

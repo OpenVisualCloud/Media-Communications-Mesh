@@ -35,6 +35,7 @@ file(GLOB MEDIA_PROXY_TEST_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/libfabric_mocks.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/libfabric_mr_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/proxy_context_tests.cc"
+    "${CMAKE_CURRENT_SOURCE_DIR}/st2110_tests.cc"
 )
 
 # Find source files for RDMA-specific tests
