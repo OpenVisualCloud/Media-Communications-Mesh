@@ -41,7 +41,11 @@ Result ST2110_20Rx::configure(context::Context& ctx, const std::string& dev_port
     ops.width = cfg_video.width;
     ops.height = cfg_video.height;
     ops.fps = st_frame_rate_to_st_fps(cfg_video.fps);
-    ops.transport_fmt = ST20_FMT_YUV_422_PLANAR10LE;
+
+    if(mesh_transport_video_format_to_st20_fmt(cfg_st2110.transport_format, ops.transport_fmt)) {
+        set_state(ctx, State::not_configured);
+        return set_result(Result::error_bad_argument);
+    }
 
     if (mesh_video_format_to_st_format(cfg_video.pixel_format, ops.output_fmt)) {
         set_state(ctx, State::not_configured);

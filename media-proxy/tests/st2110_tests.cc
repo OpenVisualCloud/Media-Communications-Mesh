@@ -191,7 +191,7 @@ static void get_ST2110_video_cfg(MeshConfig_Video& cfg_video) {
     cfg_video.fps = 30;
     cfg_video.width = 1920;
     cfg_video.height = 1080;
-    cfg_video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
+    cfg_video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
 }
 
 static void get_ST2110_audio_cfg(MeshConfig_Audio& cfg_audio) {

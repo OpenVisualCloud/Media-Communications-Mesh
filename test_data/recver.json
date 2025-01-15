@@ -9,7 +9,8 @@
             "remoteIpAddr": "192.168.96.10",
             "remotePort": 9002,
             "pacing": "narrow",
-            "payloadType": 112
+            "payloadType": 112,
+            "transportPixelFormat": "yuv422p10rfc4175"
           }
     },
     "payload": {

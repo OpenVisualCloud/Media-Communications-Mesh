@@ -72,6 +72,7 @@ public:
 
             std::string pacing;
             uint32_t payload_type;
+            std::string transportPixelFormat;
         } st2110;
 
         struct {
@@ -115,6 +116,7 @@ public:
 
 private:
     int calc_audio_buf_size();
+    int calc_video_buf_size();
 };
 
 /**

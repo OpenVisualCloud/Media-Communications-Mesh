@@ -46,6 +46,13 @@ Result ST2110_22Rx::configure(context::Context& ctx, const std::string& dev_port
         set_state(ctx, State::not_configured);
         return set_result(Result::error_bad_argument);
     }
+    if(ops.output_fmt != ST_FRAME_FMT_YUV422PLANAR10LE) {
+        set_state(ctx, State::not_configured);
+        log::error("ST2110_22Rx: unsupported format")
+                  ("expected", ST_FRAME_FMT_YUV422PLANAR10LE)
+                  ("provided", ops.output_fmt);
+        return set_result(Result::error_not_supported);
+    }
 
     ops.device = ST_PLUGIN_DEVICE_AUTO;
     ops.pack_type = ST22_PACK_CODESTREAM;
