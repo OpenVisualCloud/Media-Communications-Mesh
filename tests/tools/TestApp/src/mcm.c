@@ -49,8 +49,7 @@ int mcm_send_video_frame(mcm_ts* mcm, FILE* frame){
     }
 
     /* Fill the buffer with user data */
-    //put_user_video_frames(buf->payload_ptr, buff->payload_len);
-    //void * data = serialize_user_video_frame(frame);
+    file_to_buffer(frame, buf);
 
     /* Send the buffer */
     err = mesh_put_buffer(&buf);
@@ -77,7 +76,6 @@ int mcm_receive_video_frames(mcm_ts* mcm, FILE* frame){
     if (err) {
         printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
     }
-
     /* Process the received user data */
     buffer_to_file(frame,buf);
 
