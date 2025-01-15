@@ -121,7 +121,7 @@ void file_to_buffer(FILE *file, MeshBuffer* buf){
     // Read the file into the buffer
     fread(frame_buf, BYTE_SIZE, file_size, file);
     /* buf->payload_ptr is const type, it cannot be reassigned,
-     * so frame_buf data needs to be copied under it's address
+     * so frame_buf data needs to be copied under its address
      */
     /* clear mesh buffer payload space */
     memset(buf->payload_ptr, FIRST_INDEX, buf->payload_len);
