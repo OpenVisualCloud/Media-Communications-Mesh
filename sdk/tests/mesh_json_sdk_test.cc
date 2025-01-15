@@ -52,7 +52,8 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
             "remoteIpAddr": "192.168.95.2",
             "remotePort": 9002,
             "pacing": "narrow",
-            "payloadType": 110
+            "payloadType": 110,
+            "transportPixelFormat": "yuv422p10rfc4175"
           }
         }
       })";
@@ -67,6 +68,7 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
     EXPECT_EQ(config.conn.st2110.remote_port, 9002);
     EXPECT_EQ(config.conn.st2110.pacing, "narrow");
     EXPECT_EQ(config.conn.st2110.payload_type, 110);
+    EXPECT_EQ(config.conn.st2110.transportPixelFormat, "yuv422p10rfc4175");
     EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
 }
 
