@@ -178,9 +178,9 @@ typedef struct MeshConfig_Video {
      * Any value of the MESH_VIDEO_PIXEL_FORMAT_* constants.
      */
     int pixel_format;
-#define MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE      0 ///< planar YUV 4:2:2, 10bit, "yuv422p10le"
-#define MESH_VIDEO_PIXEL_FORMAT_V210                  1 ///< packed YUV 4:2:2, 10bit, "v210"
-#define MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10     2 ///< packed RFC4175 compliant YUV 4:2:2, 10bit, "yuv422p10rfc4175"
+#define MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE  0 ///< planar YUV 4:2:2, 10bit, "yuv422p10le"
+#define MESH_VIDEO_PIXEL_FORMAT_V210              1 ///< packed YUV 4:2:2, 10bit, "v210"
+#define MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10 2 ///< packed RFC4175 compliant YUV 4:2:2, 10bit, "yuv422p10rfc4175"
 
 } MeshConfig_Video;
 
