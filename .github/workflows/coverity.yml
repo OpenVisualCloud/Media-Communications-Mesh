@@ -14,6 +14,7 @@ env:
   BUILD_TYPE: Release
   BUILD_DIR: "${{ github.workspace }}/_build"
   PREFIX_DIR: "${{ github.workspace }}/_install"
+  BUILD_UNIT_TESTS: "OFF"
   MTL_BUILD_DISABLE_PCAPNG: true
   DEBIAN_FRONTEND: noninteractive
 
@@ -44,7 +45,7 @@ jobs:
 
     - name: 'Check local dependencies build cache'
       id: load-local-dependencies-cache
-      uses: actions/cache/restore@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+      uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.1.2
       with:
         path: ${{ env.BUILD_DIR }}
         key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
@@ -80,6 +81,14 @@ jobs:
     - name: 'Build gRPC and dependencies'
       run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
 
+    - name: 'Configure ffmpeg and dependencies'
+      run: |
+        sed -i 's/strlen (MEMIF_DEFAULT_APP_NAME)/(sizeof(MEMIF_DEFAULT_APP_NAME) - 1)/g' ${{ github.workspace }}/sdk/3rdparty/libmemif/src/memif_private.h && \
+        ${{ github.workspace }}/build.sh && \
+        ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh "6.1" && \
+        ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh "7.0" && \
+        rm -rf ${{ github.workspace }}/_build/mcm
+
     - name: 'Run coverity'
       uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
       with:
@@ -89,9 +98,9 @@ jobs:
         build_language: 'cxx'
         build_platform: 'linux64'
         command: |
-            ${{ github.workspace }}/build.sh && \
-            ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh && \
-            ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh
+          ${{ github.workspace }}/build.sh && \
+          ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh "6.1" && \
+          ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh "7.0"
 
     - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
