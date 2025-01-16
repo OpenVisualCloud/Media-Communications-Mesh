@@ -14,7 +14,6 @@ env:
   BUILD_TYPE: Release
   BUILD_DIR: "${{ github.workspace }}/_build"
   PREFIX_DIR: "${{ github.workspace }}/_install"
-  BUILD_UNIT_TESTS: "OFF"
   MTL_BUILD_DISABLE_PCAPNG: true
   DEBIAN_FRONTEND: noninteractive
 
@@ -88,6 +87,8 @@ jobs:
         ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
         ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
         rm -rf ${{ github.workspace }}/_build/mcm
+        echo "\"${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh\" \"6.1\"" > ${{ github.workspace }}/build.sh
+        echo "\"${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh\" \"7.0\"" > ${{ github.workspace }}/build.sh
 
     - name: 'Run coverity'
       uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
@@ -97,10 +98,7 @@ jobs:
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
         build_language: 'cxx'
         build_platform: 'linux64'
-        command: |
-          ${{ github.workspace }}/build.sh && \
-          ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh "6.1" && \
-          ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh "7.0"
+        command: ${{ github.workspace }}/build.sh
 
     - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
