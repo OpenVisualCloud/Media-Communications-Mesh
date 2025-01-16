@@ -1,11 +1,20 @@
 # Source repository: https://github.com/actions/dependency-review-action
 
 name: scan-dependency-review
-on: [pull_request]
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the scans on'
+        default: 'main'
+        type: string
 
 permissions:
   contents: read
 env:
+  INPUT_BRANCH: ${{ inputs.branch || github.sha }}
   LINTER_RULES_PATH: .github/configs/super-linter
 
 concurrency:
