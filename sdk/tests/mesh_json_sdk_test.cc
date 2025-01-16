@@ -52,7 +52,8 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
             "remoteIpAddr": "192.168.95.2",
             "remotePort": 9002,
             "pacing": "narrow",
-            "payloadType": 110
+            "payloadType": 110,
+            "transportPixelFormat": "yuv422p10rfc4175"
           }
         }
       })";
@@ -67,6 +68,7 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
     EXPECT_EQ(config.conn.st2110.remote_port, 9002);
     EXPECT_EQ(config.conn.st2110.pacing, "narrow");
     EXPECT_EQ(config.conn.st2110.payload_type, 110);
+    EXPECT_EQ(config.conn.st2110.transportPixelFormat, "yuv422p10rfc4175");
     EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
 }
 
@@ -113,7 +115,7 @@ TEST(mesh_json_sdk, parse_conn_cfg_video) {
     EXPECT_EQ(config.payload.video.width, 1920);
     EXPECT_EQ(config.payload.video.height, 1080);
     EXPECT_EQ(config.payload.video.fps, 59.9);
-    EXPECT_EQ(config.payload.video.pixel_format, MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE);
+    EXPECT_EQ(config.payload.video.pixel_format, MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE);
 }
 
 TEST(mesh_json_sdk, parse_conn_cfg_video_calc) {

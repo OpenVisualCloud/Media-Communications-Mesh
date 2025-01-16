@@ -24,6 +24,7 @@ namespace mesh::connection {
 #define ST_APP_PAYLOAD_TYPE_ST22 (114)
 
 int mesh_video_format_to_st_format(int fmt, st_frame_fmt& st_fmt);
+int mesh_transport_video_format_to_st20_fmt(int transport_format, st20_fmt& st20_format);
 int mesh_audio_format_to_st_format(int fmt, st30_fmt& st_fmt);
 int mesh_audio_sampling_to_st_sampling(int sampling, st30_sampling& st_sampling);
 int mesh_audio_ptime_to_st_ptime(int ptime, st30_ptime& st_ptime);

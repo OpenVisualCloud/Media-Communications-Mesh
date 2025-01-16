@@ -48,7 +48,9 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
               ("transport", cfg.st2110.transport);
 
     if (!cfg.type.compare("st2110")) {
-        MeshConfig_ST2110 cfg_st2110;
+        MeshConfig_ST2110 cfg_st2110 = {
+            .transport_format = MESH_CONN_ST2110_20_TRANSPORT_FMT_YUV422_10BIT,
+        };
 
         strlcpy(cfg_st2110.local_ip_addr,
                 config::proxy.st2110.dataplane_ip_addr.c_str(),
