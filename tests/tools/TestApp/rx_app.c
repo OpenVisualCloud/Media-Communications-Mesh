@@ -25,7 +25,7 @@ int main(int argc, char* argv[]){
   mcm_init_client(&mcm, client_cfg);
   mcm_create_rx_connection(&mcm, conn_cfg);
   printf("waiting for frames... \n");
-  FILE *frame = fopen(frame_file, "rb");
+  FILE *frame = fopen(frame_file, "w");
   while(1){
     mcm_receive_video_frames(&mcm, frame);
   }
