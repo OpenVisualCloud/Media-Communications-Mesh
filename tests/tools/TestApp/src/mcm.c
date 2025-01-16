@@ -86,7 +86,7 @@ int mcm_send_video_frame(mcm_ts* mcm, FILE* file){
     return err;
 }
 
-int mcm_receive_video_frames(mcm_ts* mcm, FILE* frame){
+int mcm_receive_video_frames(mcm_ts* mcm, FILE* file){
     int err = 0;
     MeshBuffer *buf;
 
@@ -99,7 +99,7 @@ int mcm_receive_video_frames(mcm_ts* mcm, FILE* frame){
         printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
     }
     /* Process the received user data */
-    buffer_to_file(frame,buf);
+    buffer_to_file(file,buf);
 
 
     /* Release and put the buffer back to the mesh */
@@ -121,7 +121,6 @@ void buffer_to_file(FILE *file, MeshBuffer* buf){
         perror("Failed to open file for writing");
         return;
     }
-
     // Write the buffer to the file
     size_t written_size = fwrite(buf->payload_ptr, BYTE_SIZE, buf->payload_len, file);
     if (written_size != buf->payload_len) {
