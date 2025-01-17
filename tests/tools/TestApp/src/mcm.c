@@ -73,8 +73,7 @@ int mcm_send_video_frame(mcm_ts* mcm, FILE* file){
         memset(buf->payload_ptr, FIRST_INDEX, buf->payload_len);
         /* copy frame_buf data into mesh buffer */
         memcpy(buf->payload_ptr, temp_buf, buf->payload_len);
-        printf("payload_len: %li\n", buf->payload_len);
-        printf("sending %d  frame \n", i);
+        printf("sending %d  frame \n", i+1);
         /* Send the buffer */
         err = mesh_put_buffer(&buf);
         if (err) {
@@ -128,11 +127,8 @@ void buffer_to_file(FILE *file, MeshBuffer* buf){
     }
     // Write the buffer to the file
     size_t written_size = fwrite(buf->payload_ptr, BYTE_SIZE, buf->payload_len, file);
-    if (written_size != buf->payload_len) {
-        perror("Failed to write buffer to file");
-        fclose(file);
-        return;
+    if(fputs(buf->payload_ptr, file) == EOF) {
+       perror("Failed to write buffer to file");
+       fclose(file);
     }
-    
-    // fclose(file);
 }
