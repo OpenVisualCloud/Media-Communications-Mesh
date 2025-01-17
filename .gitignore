@@ -35,3 +35,5 @@ media-proxy/tests/memif_test_rx
 media-proxy/tests/memif_test_tx
 tests/single-node-sample-apps/error_*
 tests/single-node-sample-apps/out
+
+cov-int*

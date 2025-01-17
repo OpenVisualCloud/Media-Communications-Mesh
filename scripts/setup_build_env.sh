@@ -197,7 +197,8 @@ function lib_build_and_install_jsonc()
 # Get and install golang from source
 function lib_build_and_install_golang()
 {
-    as_root wget_download_strip_unpack "https://go.dev/dl/go${GOLANG_GO_VER}.linux-amd64.tar.gz" "/usr/local/go/"
+    wget_download_strip_unpack "https://go.dev/dl/go${GOLANG_GO_VER}.linux-amd64.tar.gz" "${BUILD_DIR}/golang"
+    as_root cp -r "${BUILD_DIR}/golang" "/usr/local/go"
     as_root ln -s /usr/local/go/bin/go /usr/bin/go
     go version
     go install "${GOLANG_PROTOBUF_GEN}"

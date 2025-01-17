@@ -51,7 +51,7 @@ jobs:
 
     - name: 'Check local dependencies build cache'
       id: load-local-dependencies-cache
-      uses: actions/cache/restore@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+      uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
       with:
         path: ${{ env.BUILD_DIR }}
         key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
@@ -90,7 +90,7 @@ jobs:
     - name: 'Save local dependencies build cache'
       if: env.TRY_CACHE_REFRESH == 'true' && steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
       id: save-local-dependencies-cache
-      uses: actions/cache/save@6849a6489940f00c2f30c0fb92c6274307ccb58a # v4.1.2
+      uses: actions/cache/save@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
       with:
         path: ${{ env.BUILD_DIR }}
         key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
