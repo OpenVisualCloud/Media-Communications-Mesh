@@ -78,16 +78,16 @@ int init_conn(MeshConnection *conn, Config *config, int kind, int id)
         /* video */
         MeshConfig_Video cfg;
 
-        if (!strncmp(config->pix_fmt_string, "yuv422p", sizeof(config->pix_fmt_string)))
-            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
-        else if (!strncmp(config->pix_fmt_string, "yuv422p10le", sizeof(config->pix_fmt_string)))
-            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-        else if (!strncmp(config->pix_fmt_string, "yuv444p10le", sizeof(config->pix_fmt_string)))
-            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE;
-        else if (!strncmp(config->pix_fmt_string, "rgb8", sizeof(config->pix_fmt_string)))
-            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_RGB8;
-        else
-            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_NV12;
+        if (!strncmp(config->pix_fmt_string, "yuv422p10le", sizeof(config->pix_fmt_string)))
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
+        else if (!strncmp(config->pix_fmt_string, "v210", sizeof(config->pix_fmt_string)))
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
+        else if (!strncmp(config->pix_fmt_string, "yuv422p10rfc4175", sizeof(config->pix_fmt_string)))
+            cfg.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
+        else {
+            printf("Unknown video pixel format: %s\n", config->pix_fmt_string);
+            return -1;
+        }
 
         cfg.width = config->width;
         cfg.height = config->height;

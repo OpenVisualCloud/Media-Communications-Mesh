@@ -66,7 +66,8 @@ Creates a transmitter connection with the provided JSON configuration.
       "remoteIpAddr": "192.168.95.2",
       "remotePort": 9002,
       "pacing": "narrow",
-      "payloadType": 112
+      "payloadType": 112,
+      "transportPixelFormat": "yuv422p10rfc4175"
     },
     "rdma": {
       "connectionMode": "RC" | "UC" | "UD" | "RD",
@@ -78,7 +79,7 @@ Creates a transmitter connection with the provided JSON configuration.
       "width": 1920,
       "height": 1080,
       "fps": 60.0,
-      "pixelFormat": "yuv422p10le" | "..."
+      "pixelFormat": "yuv422p10rfc4175" | "yuv422p10le" | "v210"
     },
     "audio": {
       "channels": 2,
@@ -93,9 +94,31 @@ Creates a transmitter connection with the provided JSON configuration.
   }
 }
 ```
+The `transportPixelFormat` is required only for st2110-20 transport type, otherwise shall not be present.
 
 #### Returns
 0 if successful. Otherwise, returns an error.
+
+Allowed use cases of "transportPixelFormat" and "pixelFormat" for st2110-20
+
+| pixelFormat       | transportPixelFormat | internal conversion | ffmpeg support | ffmpeg enum and string             |
+|-------------------|----------------------|---------------------|----------------|------------------------------------|
+| yuv422p10rfc4175  | yuv422p10rfc4175     | No                  | No             | N/A                                |
+| yuv422p10le       | yuv422p10rfc4175     | Yes                 | Yes            | PIX_FMT_YUV422P10LE, "yuv422p10le" |
+| v210              | yuv422p10rfc4175     | Yes                 | No             | N/A                                |
+
+Allowed use cases of "pixelFormat" for st2110-22
+
+| pixelFormat  | ffmpeg support | ffmpeg enum and string             |
+|--------------|----------------|------------------------------------|
+| yuv422p10le  | Yes            | PIX_FMT_YUV422P10LE, "yuv422p10le" |
+
+Allowed use cases of "pixelFormat" for rdma
+
+| pixelFormat  | ffmpeg support | ffmpeg enum and string             |
+|--------------|----------------|------------------------------------|
+| yuv422p10le  | Yes            | PIX_FMT_YUV422P10LE, "yuv422p10le" |
+| v210         | No             | N/A                                |
 
 
 ## mesh_create_rx_connection()

@@ -92,6 +92,10 @@ int ConnectionJsonConfig::parse_json(const char *str)
 
             conn.st2110.pacing = st2110.value("pacing", "");
             conn.st2110.payload_type = st2110.value("payloadType", 112);
+            if (conn.st2110.transport == MESH_CONN_TRANSPORT_ST2110_20) {
+                conn.st2110.transportPixelFormat =
+                    st2110.value("transportPixelFormat", "yuv422p10rfc4175");
+            }
         } else if (conn_type == MESH_CONN_TYPE_RDMA) {
             auto rdma = jconn["rdma"];
             conn.rdma.connection_mode = rdma.value("connectionMode", "RC");
@@ -136,16 +140,12 @@ int ConnectionJsonConfig::parse_json(const char *str)
             payload.video.fps = video.value("fps", 60.0);
 
             std::string str = video.value("pixelFormat", "yuv422p10le");
-            if (!str.compare("nv12")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_NV12;
-            } else if (!str.compare("yuv422p")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
-            } else if (!str.compare("yuv422p10le")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-            } else if (!str.compare("yuv444p10le")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE;
-            } else if (!str.compare("rgb8")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_RGB8;
+            if (!str.compare("yuv422p10le")) {
+                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
+            } else if (!str.compare("v210")) {
+                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
+            } else if (!str.compare("yuv422p10rfc4175")) {
+                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
             } else {
                 log::error("video: wrong pixel format: %s", str.c_str());
                 return -MESH_ERR_CONN_CONFIG_INVAL;
@@ -340,12 +340,45 @@ int ConnectionJsonConfig::calc_audio_buf_size()
     return 0;
 }
 
+int ConnectionJsonConfig::calc_video_buf_size()
+{
+    uint32_t pixels = payload.video.width * payload.video.height;
+
+    switch (payload.video.pixel_format) {
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:
+            calculated_payload_size = pixels * 4;
+            break;
+
+        case MESH_VIDEO_PIXEL_FORMAT_V210:
+            if (pixels % 3) {
+                log::error("Invalid width %u height %u for v210 fmt, not multiple of 3",
+                           payload.video.width, payload.video.height);
+                return -MESH_ERR_CONN_CONFIG_INVAL;
+            }
+            calculated_payload_size = pixels * 8 / 3;
+            break;
+
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10:
+            if (pixels % 2) {
+                log::error("Invalid width %u height %u for yuv422rfc4175be10 fmt, not multiple of 2",
+                           payload.video.width, payload.video.height);
+                return -MESH_ERR_CONN_CONFIG_INVAL;
+            }
+            calculated_payload_size = pixels * 5 / 2;
+            break;
+
+        default:
+            return -MESH_ERR_CONN_CONFIG_INVAL;
+    }
+    
+    return 0;
+}
+
 int ConnectionJsonConfig::calc_payload_size()
 {
     switch (payload_type) {
     case MESH_PAYLOAD_TYPE_VIDEO:
-        calculated_payload_size = payload.video.width * payload.video.height * 4;
-        return 0;
+        return calc_video_buf_size();
     case MESH_PAYLOAD_TYPE_AUDIO:
         return calc_audio_buf_size();
     }
@@ -361,20 +394,14 @@ int ConnectionJsonConfig::assign_to_mcm_conn_param(mcm_conn_param& param) const
     if (payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
 
         switch (payload.video.pixel_format) {
-        case MESH_VIDEO_PIXEL_FORMAT_NV12:
-            param.pix_fmt = PIX_FMT_NV12;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:
+            param.pix_fmt = PIX_FMT_YUV422PLANAR10LE;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P:
-            param.pix_fmt = PIX_FMT_YUV422P;
+        case MESH_VIDEO_PIXEL_FORMAT_V210:
+            param.pix_fmt = PIX_FMT_V210;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE:
-            param.pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE:
-            param.pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_RGB8:
-            param.pix_fmt = PIX_FMT_RGB8;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10:
+            param.pix_fmt = PIX_FMT_YUV422RFC4175BE10;
             break;
         default:
             return -MESH_ERR_CONN_CONFIG_INVAL;
@@ -546,20 +573,14 @@ int ConnectionContext::parse_payload_config(mcm_conn_param *param)
     if (cfg.payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
 
         switch (cfg.payload.video.pixel_format) {
-        case MESH_VIDEO_PIXEL_FORMAT_NV12:
-            param->pix_fmt = PIX_FMT_NV12;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:
+            param->pix_fmt = PIX_FMT_YUV422PLANAR10LE;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P:
-            param->pix_fmt = PIX_FMT_YUV422P;
+        case MESH_VIDEO_PIXEL_FORMAT_V210:
+            param->pix_fmt = PIX_FMT_V210;
             break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE:
-            param->pix_fmt = PIX_FMT_YUV422P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_YUV444P10LE:
-            param->pix_fmt = PIX_FMT_YUV444P_10BIT_LE;
-            break;
-        case MESH_VIDEO_PIXEL_FORMAT_RGB8:
-            param->pix_fmt = PIX_FMT_RGB8;
+        case MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10:
+            param->pix_fmt = PIX_FMT_YUV422RFC4175BE10;
             break;
         default:
             return -MESH_ERR_CONN_CONFIG_INVAL;

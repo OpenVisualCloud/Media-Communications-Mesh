@@ -495,12 +495,10 @@ const char * Config::payload_type2str() const
 const char * Config::video_pixel_format2str() const
 {
     switch (payload.video.pixel_format) {
-    case sdk::VIDEO_PIXEL_FORMAT_NV12:        return "nv12";
-    case sdk::VIDEO_PIXEL_FORMAT_YUV422P:     return "yuv422p";
-    case sdk::VIDEO_PIXEL_FORMAT_YUV422P10LE: return "yuv422p10le";
-    case sdk::VIDEO_PIXEL_FORMAT_YUV444P10LE: return "yuv444p10le";
-    case sdk::VIDEO_PIXEL_FORMAT_RGB8:        return "rgb8";
-    default:                                  return str_unknown;
+    case sdk::VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:  return "yuv422p10le";
+    case sdk::VIDEO_PIXEL_FORMAT_V210:              return "v210";
+    case sdk::VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10: return "yuv422p10rfc4175";
+    default:                                        return str_unknown;
     }
 }
 

@@ -83,19 +83,13 @@ st_frame_fmt get_st_frame_fmt(video_pixel_format mcm_frame_fmt)
 {
     st_frame_fmt mtl_frame_fmt;
     switch (mcm_frame_fmt) {
-    case PIX_FMT_NV12:
-        mtl_frame_fmt = ST_FRAME_FMT_YUV420CUSTOM8;
+    case PIX_FMT_V210:
+        mtl_frame_fmt = ST_FRAME_FMT_V210;
         break;
-    case PIX_FMT_YUV422P:
-        mtl_frame_fmt = ST_FRAME_FMT_YUV422PLANAR8;
+    case PIX_FMT_YUV422RFC4175BE10:
+        mtl_frame_fmt = ST_FRAME_FMT_YUV422RFC4175PG2BE10;
         break;
-    case PIX_FMT_YUV444P_10BIT_LE:
-        mtl_frame_fmt = ST_FRAME_FMT_YUV444PLANAR10LE;
-        break;
-    case PIX_FMT_RGB8:
-        mtl_frame_fmt = ST_FRAME_FMT_RGB8;
-        break;
-    case PIX_FMT_YUV422P_10BIT_LE:
+    case PIX_FMT_YUV422PLANAR10LE:
     default:
         mtl_frame_fmt = ST_FRAME_FMT_YUV422PLANAR10LE;
     }
