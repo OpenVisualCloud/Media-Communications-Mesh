@@ -333,7 +333,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                     case Bridge::kRdma:
                         if (bridge_config.type.compare("rdma")) {
                             log::error("rdma bridge config provided for type '%s'",
-                                       bridge_config.type);
+                                       bridge_config.type.c_str());
                         } else {
                             auto& req = bridge.rdma();
                             
