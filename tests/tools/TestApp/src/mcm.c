@@ -49,11 +49,15 @@ int mcm_send_video_frame(mcm_ts* mcm, FILE* file){
     unsigned char *file_buf = (unsigned char*)malloc(file_size);
     fread(file_buf, BYTE_SIZE, file_size, file);
 
-    int num_of_frames = file_size/(int)buf->payload_len;
+    err = mesh_get_buffer(mcm->connection, &buf);
+    int num_of_frames = file_size / buf->payload_len;
+    printf("file_size: %li\n", file_size);
+    printf("payload_len: %li\n", buf->payload_len);
     if (num_of_frames == 0 ){
         num_of_frames = 1;
     }
     printf("%d frames to send\n", num_of_frames);
+    fseek(file, 0, SEEK_SET);
 
     for(int i = 0 ; i < num_of_frames; i++){
         
@@ -69,6 +73,7 @@ int mcm_send_video_frame(mcm_ts* mcm, FILE* file){
         memset(buf->payload_ptr, FIRST_INDEX, buf->payload_len);
         /* copy frame_buf data into mesh buffer */
         memcpy(buf->payload_ptr, temp_buf, buf->payload_len);
+        printf("payload_len: %li\n", buf->payload_len);
         printf("sending %d  frame \n", i);
         /* Send the buffer */
         err = mesh_put_buffer(&buf);
@@ -129,5 +134,5 @@ void buffer_to_file(FILE *file, MeshBuffer* buf){
         return;
     }
     
-    fclose(file);
+    // fclose(file);
 }
