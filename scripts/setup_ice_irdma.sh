@@ -32,26 +32,38 @@ function get_and_patch_intel_drivers()
 
 function build_install_and_config_intel_drivers()
 {
+    log_info "Intel ICE: Driver starting the build and install workflow."
+    if ! as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install; then
+        log_error "Intel ICE: Failed to build and install drivers"
+        exit 5
+    fi
+    log_success "Intel ICE: Drivers finished install process."
     # TO-DO: Check why installing IAVF break the ICE and IRDMA workflow.
 
-    # log_info "Intel IAVF: Driver starting the build and install workflow."
-    # if as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install; then
-    # fi
-
-    log_info "Intel ICE: Driver starting the build and install workflow."
-    if as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install; then
-        log_success "Intel ICE: Drivers finished install process."
-        return 0
+    log_info "Intel IAVF: Driver starting the build and install workflow."
+    if ! as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install; then
+        log_error "Intel IAVF: Failed to build and install drivers"
+        exit 6
     fi
-    log_error "Intel ICE: Failed to build and install drivers"
-    return 1
+    log_success "Intel IAVF: Drivers finished install process."
+    return 0
 }
 
 function build_install_and_config_irdma_drivers()
 {
-    if pushd "${IRDMA_DIR}" && as_root ./build.sh && as_root modprobe irdma && popd; then
-        log_success "Intel irdma: Finished configuration and installation successfully."
-        return 0
+    if pushd "${IRDMA_DIR}"; then
+
+        "${IRDMA_DIR}/build_core.sh" -y || exit 2
+        as_root "${IRDMA_DIR}/install_core.sh"  || exit 3
+
+        if as_root "${IRDMA_DIR}/build.sh"; then
+            popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
+            log_success "Intel irdma: Finished configuration and installation successfully."
+            return 0
+        fi
+
+        log_error "Intel irdma: Errors while building '${IRDMA_DIR}/build.sh'"
+        popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
     fi
     log_error "Intel irdma: Error while performing configuration/installation."
     return 1
