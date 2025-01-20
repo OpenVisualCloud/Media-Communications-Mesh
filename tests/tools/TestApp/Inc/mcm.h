@@ -7,16 +7,11 @@
 
 #define BYTE_SIZE 1
 #define FIRST_INDEX 0
-typedef struct mcm_ts{
-    MeshConnection *connection;
-    MeshClient *client;
-}mcm_ts;
 
-
-int mcm_init_client(mcm_ts* mcm, const char* cfg);
-int mcm_create_tx_connection(mcm_ts* mcm, const char* cfg);
-int mcm_create_rx_connection(mcm_ts* mcm, const char* cfg);
-int mcm_send_video_frame(mcm_ts* mcm, FILE* file);
-int mcm_receive_video_frames(mcm_ts* mcm, FILE* file);
+int mcm_init_client(MeshConnection **connection, MeshClient *client, const char* cfg);
+int mcm_create_tx_connection(MeshConnection *connection, MeshClient *client, const char* cfg);
+int mcm_create_rx_connection(MeshConnection *connection, MeshClient *client, const char* cfg);
+int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* file);
+int mcm_receive_video_frames(MeshConnection *connection, MeshClient *client, FILE* file, int frame);
 
 #endif /* _MCM_H_*/
