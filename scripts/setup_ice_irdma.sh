@@ -12,6 +12,9 @@ PERF_DIR="${DRIVERS_DIR}/perftest"
 function get_and_patch_intel_drivers()
 {
     log_info "Intel drivers: Starting download and patching actions."
+    if [[ ! -d "${MTL_DIR}" ]]; then
+        git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
+    fi
     if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
@@ -20,9 +23,6 @@ function get_and_patch_intel_drivers()
     git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}" && \
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
-    if [[ ! -d "${MTL_DIR}" ]]; then
-        git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
-    fi
     pushd "${ICE_DIR}" && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
     popd && \
