@@ -3,7 +3,8 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
-export REPO_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")/..")"
+REPO_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")/..")"
+export REPO_DIR
 export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
 export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
 export PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
