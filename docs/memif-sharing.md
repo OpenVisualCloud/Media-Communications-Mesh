@@ -1,6 +1,6 @@
 # Memif sharing
 
-## 1. Getting started
+## Getting started
 The micro-services running in one node can share memory to transfer data directly. The following is the SW stack architecture and user interface API.
 
 ![instance](_static/memif-sharing-in-one-node.png)
@@ -12,7 +12,7 @@ For detailed information on api calls and structures please refer to `mcm_dp.h`.
 - The interface id is used to identify peer connection. Set it as the same value in the `memif_interface_param.interface_id` for the two micro-services.
 - `PROTO_MEMIF` defined in proto_type struct in `mcm_dp.h` is used for services memory sharing in one node.
 
-## 2. Set up memif connection
+## 1. Set up memif connection
 First fill out the `mcm_conn_param` structure for master micro-service. The minimum required configuration is the `memif_interface`, `type`, `protocol`, `width`, `height`; > Example implementation `sdk/samples/common/recver_app.c`.
 
 ```c
@@ -45,7 +45,7 @@ param.height = height;
 dp_ctx = mcm_create_connection(&param);
 ```
 
-## 3. Transmit packets
+## 2. Transmit packets
 
 Now you are ready to transmit packets. To transmit or receive data you will need to use `mcm_buffer` and `mcm_conn_context` structure. The data pointer points directly to the shared memory packet buffer. This is where you will find/insert your packets.
 

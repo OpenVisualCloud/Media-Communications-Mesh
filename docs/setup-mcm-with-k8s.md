@@ -67,7 +67,7 @@ Use the following command to set the number of nodes for your Minikube cluster:
 minikube start --nodes $num_nodes --namespace mcm --mount-string="/var/run/imtl:/var/run/imtl" --mount
 ```
 
-### 2.3. Enabling add-ons and Loading Docker Images
+### 2.3. Enabling Add-ons and Loading Docker Images
 Once the Minikube cluster is running, enable the metrics-server add-on:
 ```bash
 minikube addons enable metrics-server

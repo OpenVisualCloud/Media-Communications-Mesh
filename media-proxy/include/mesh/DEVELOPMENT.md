@@ -199,7 +199,7 @@ exit:
 1. Start **Rx Side**.
 2. Start **Tx Side**.
 3. Check the **Rx Side** log output to be as the following
-```text
+```bash
 Received Hello world (12)
 Received Hello world (12)
 Received Hello world (12)

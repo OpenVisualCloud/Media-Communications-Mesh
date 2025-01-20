@@ -12,7 +12,7 @@ The context handler of the created connect session (`mcm_conn_context*`).
 
 ## mcm_destroy_connection
 ### Description
-Destroys an Media Communications Mesh DP connection.
+Destroys a Media Communications Mesh DP connection.
 
 ### Parameters
 - `pctx`: The context handler of the connection to be destroyed.
