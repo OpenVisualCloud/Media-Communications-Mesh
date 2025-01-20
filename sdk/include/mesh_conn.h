@@ -3,12 +3,13 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef MESH_CONN_H
-#define MESH_CONN_H
+#ifndef _SDK_INCLUDE_MESH_CONN_H_
+#define _SDK_INCLUDE_MESH_CONN_H_
 
-#include "mesh_dp.h"
-#include "mcm_dp.h"
-#include "mesh_client.h"
+#include "./mcm_dp.h"
+#include "./mesh_client.h"
+#include "./mesh_dp.h"
+#include <string>
 
 namespace mesh {
 class ConnectionJsonConfig;
@@ -59,7 +60,7 @@ public:
         struct {
             // Unified Resource Name of Multipoint Group.
             // Example: "ipv4:224.0.0.1:9003".
-            std::string urn; 
+            std::string urn;
         } multipoint_group;
 
         struct {
@@ -124,7 +125,7 @@ private:
  */
 class ConnectionContext {
 public:
-    ConnectionContext(ClientContext *parent);
+    explicit ConnectionContext(ClientContext *parent);
     ~ConnectionContext();
 
     int apply_config_memif(MeshConfig_Memif *config);
@@ -216,4 +217,4 @@ public:
 
 } // namespace mesh
 
-#endif // MESH_CONN_H
+#endif // _SDK_INCLUDE_MESH_CONN_H_

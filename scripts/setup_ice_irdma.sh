@@ -4,8 +4,8 @@ set -eEo pipefail
 set +x
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
-PERF_DIR="${DRIVERS_DIR}/perftest"
+export WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
+export PERF_DIR="${DRIVERS_DIR}/perftest"
 
 . "${SCRIPT_DIR}/common.sh"
 
