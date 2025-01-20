@@ -79,7 +79,7 @@
 |-------------------------------------------|---------------|--------------|
 | Sometimes starting new ST22 stream fails  |  Media Communications Mesh  | Issue detected on a single system. Not reproduced elsewhere as of now. |
 | ST22 720p 60FPS failure/instability  |  Media Communications Mesh  | Issue detected on a single system. Not reproduced elsewhere as of now. |
-| New iavf driver (4.12.5) is causing instabilities to Media Communications Mesh Media Proxy  | Media Proxy | N/A |
+| New iavf driver (4.12.5) is causing instabilities to Media Proxy  | Media Proxy | N/A |
 | Audio transmission of length not divisible by ptime is padded with zeros at the end  |  Media Communications Mesh  | N/A |
 | Senders/Receivers must be started in proper order, or the transmission does not happen  | Media Proxy | For MEMIF transmissions Sender must be started first, and only then Receiver, in order for the transmission to happen. Reversed situation happens for ST30 transmission using MTL; Receiver first, then Sender. |
 | FFmpeg st30 audio 96K 125us, instability, received stream differ  |  FFmpeg plugin  | May be connected with length/ptime issues |
@@ -93,7 +93,7 @@
 #### 1.1. Media Communications Mesh FFmpeg plugin:
 
 - Video Input/output plugin for FFmpeg – video processing pipeline framework.
-- Single or multiple instances of FFmpeg with Media Communications Mesh Plugin connect to selected Media Proxy instance.
+- Single or multiple instances of FFmpeg with Mesh Plugin connect to selected Media Proxy instance.
 - Supported video pixel formats:
 
  - YUV 422, 8bit packed
@@ -129,5 +129,5 @@ Added parameter to stream configuration allowing to pass multicast group IP addr
 
 |              Title              |             Component   |  Description |
 |-------------------------------------------|---------------|--------------|
-| UDP packets are sent with TTL=1           |  Media Proxy  | In case of mapping Media Communications Mesh Media Proxy to Physical function all packets are sent with TTL=1 SDBQ-129 |
+| UDP packets are sent with TTL=1           |  Media Proxy  | In case of mapping Media Proxy to Physical function all packets are sent with TTL=1 SDBQ-129 |
 | "Segmentation Fault” crash of Media Proxy |  Media Proxy  | In case of providing pixel format for a stream not aligned with real video stream pixel format there can happen “Segmentation Fault” crash of Media Proxy application SDBQ-409 |

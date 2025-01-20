@@ -41,7 +41,7 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
 ✅ **Key point**: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
 
-✅ Detailed information about Media Communications Mesh SDK can be found in the [sdk](../sdk/README.md) directory.
+✅ Detailed information about Media Communications Mesh SDK (further on called just SDK) can be found in the [sdk](../sdk/README.md) directory.
 
 ✅ Detailed information about FFmpeg with Media Communications Mesh plugin can be found in the [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
 
@@ -206,9 +206,9 @@ INFO: gRPC Server listening on 0.0.0.0:8001
 
 This will start the "Media Proxy" program. When the "Media Proxy" program launches successfully, it will open two ports to listen for control messages:
 - gRPC port (default 8001) is for service mesh control plane connection.
-- TCP port (default 8002) is for the connection with Media Communications Mesh SDK.
+- TCP port (default 8002) is for the connection with SDK.
 
-To get a full list of all supported parameters, use the `-h` flag alongside the `media_proxy` call:
+To get the full list of all supported parameters, use the `-h` flag alongside the `media_proxy` call:
 
 ```bash
 media_proxy -h

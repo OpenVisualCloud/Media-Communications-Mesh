@@ -1,4 +1,4 @@
-# Mesh Data Plane SDK – Example / SMPTE ST2110-22 RX Flow
+# Mesh Data Plane SDK – Example / SMPTE ST2110-22 Rx Flow
 
 The diagram in this document shows interaction between a user app and Mesh Data Plane in the video receive mode over SMPTE ST2110-22.
 

@@ -7,7 +7,7 @@ Diagrams in this document show interaction between FFmpeg and the Media Communic
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as Media Communications Mesh Plugin
+   participant mux as (Media Communications) Mesh Plugin
 
    ffmpeg ->> ffmpeg: Open video file
    ffmpeg ->> mux: Write header
@@ -23,10 +23,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as Media Communications Mesh Plugin
-   participant sdk as Media Communications Mesh SDK
+   participant mux as Mesh Plugin
+   participant sdk as (Media Communications Mesh) SDK
    participant memif as Memif
-   participant proxy as Media Communications Mesh Media Proxy
+   participant proxy as Media Proxy
    participant mtl as MTL
    participant network as Network
 
@@ -55,10 +55,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as Media Communications Mesh Plugin
-   participant sdk as Media Communications Mesh SDK
+   participant mux as Mesh Plugin
+   participant sdk as SDK
    participant memif as Memif
-   participant proxy as Media Communications Mesh Media Proxy
+   participant proxy as Media Proxy
    participant mtl as MTL
    participant network as Network
 
@@ -86,10 +86,10 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
    participant ffmpeg as FFmpeg
-   participant mux as Media Communications Mesh Plugin
-   participant sdk as Media Communications Mesh SDK
+   participant mux as Mesh Plugin
+   participant sdk as SDK
    participant memif as Memif
-   participant proxy as Media Communications Mesh Media Proxy
+   participant proxy as Media Proxy
    participant mtl as MTL
    participant network as Network
 
