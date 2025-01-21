@@ -27,8 +27,8 @@ mesh-agent -h
 ```
 ```text
 Usage of mesh-agent:
-  -c uint
-    	Control API port number (default 8100)
-  -p uint
-    	Proxy API port number (default 50051)
+-c uint
+  Control API port number (default 8100)
+-p uint
+  Proxy API port number (default 50051)
 ```
