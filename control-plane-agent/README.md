@@ -11,7 +11,9 @@ components by the repo build system. See README.md in the root folder.
 ## Run
 
 ```bash
-$ mesh-agent 
+mesh-agent
+```
+```text
 INFO[0000] Mesh Control Plane Agent started             
 DEBU[0000] JSON business logic manifest
 ...
@@ -21,7 +23,9 @@ INFO[0000] Server starts listening at :8100 - Control Plane API (REST)
 
 Optional argument list is the following
 ```bash
-$ mesh-agent -h
+mesh-agent -h
+```
+```text
 Usage of mesh-agent:
   -c uint
     	Control API port number (default 8100)

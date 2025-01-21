@@ -18,7 +18,9 @@ The program "media_proxy" can be installed on system, after the `build.sh` scrip
 And the "Media Proxy" can be run with below command.
 
 ```bash
-$ media_proxy
+media_proxy
+```
+```text
 Dec 31 11:03:00.377 [INFO] Media Proxy started
 Dec 31 11:03:00.377 [DEBU] Set MTL configure file path to /usr/local/etc/imtl.json
 Dec 31 11:03:00.377 [INFO] SDK API port: 8002
