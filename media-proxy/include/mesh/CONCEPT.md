@@ -186,7 +186,6 @@ flowchart
 * Can have no Producers and no Consumers – _Empty group_.
 * Business logic
   * If no Producers or no Consumers, no traffic is passing. Status: `Inactive`.
-  * 
 * State – When changes, triggers an Event.
   * `Created` – _After initialization._
   * `Enabling`

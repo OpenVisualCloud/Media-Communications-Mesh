@@ -180,7 +180,7 @@ TBD
 
 ## Known Issues
 
-### Shared libraries error:
+### Shared libraries error
 FFmpeg build was successful but trying to run `ffmpeg` results in shared libraries error:
 ```text
 root@my-machine:~# ffmpeg

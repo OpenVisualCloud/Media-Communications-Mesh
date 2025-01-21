@@ -11,7 +11,8 @@ To set up your Minikube cluster and deploy resources, please ensure that the fol
 
 ### 1.1. Scripted build
 
-To build Dockerfiles Media Proxy, FFmpeg and SDK follow the [guide](./README.md#build-the-docker-images). Sample applications will be available inside `mcm/SDK:latest` Docker image at `/opt/mcm` path. For more information refer to [sample applications](../sdk/README.md#sample-applications). For more advanced and/or production environment usage, we encourage use the FFmpeg based workflow, either minimalistic [Media Communications Mesh FFmpeg plugin](../ffmpeg-plugin/README.md) version or full-capabilities all-in-one [Intel® Tiber™ Broadcast Suite](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite).
+To build Dockerfiles Media Proxy, FFmpeg and SDK follow the [guide](./README.md#build-the-docker-images). Sample applications will be available inside `mcm/SDK:latest` Docker image at `/opt/mcm` path. For more information refer to [sample applications](../sdk/README.md#sample-applications).
+For more advanced and/or production environment usage, we encourage use the FFmpeg based workflow, either minimalistic [Media Communications Mesh FFmpeg plugin](../ffmpeg-plugin/README.md) version or full-capabilities all-in-one [Intel® Tiber™ Broadcast Suite](https://github.com/OpenVisualCloud/Intel-Tiber-Broadcast-Suite).
 
 ```bash
 # below script accept all docker build parameters, for example fresh rebuild:
@@ -35,7 +36,7 @@ docker build --build-arg=http_proxy --build-arg=https_proxy --build-arg=no_proxy
       "<mcm-dir>"
 ```
 
-### 1.3. MTL Manager build:
+### 1.3. MTL Manager build
 
 To build MTL Manager you need to fetch and build MTL Library from the source, this can be done by following below commands:
 
@@ -51,7 +52,7 @@ Once these prerequisites are in place, you can proceed with setting up your Mini
 
 ## 2. Setup Steps
 
-### 2.1. Launch MTL Manager on the host server.
+### 2.1. Launch MTL Manager on the host server
 The MTL Manager is needed to manage the lcore for MTL instances. It needs to be run on each physical host server of the Media Communications Mesh cluster.
 ```bash
 docker run -d \
