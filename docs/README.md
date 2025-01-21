@@ -12,7 +12,8 @@
 
 ## 1. Introduction
 
-The Media Communications Mesh enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
+The Media Communications Mesh enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments.
+The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
 
 
 ### 1.1. Media Communications Mesh
@@ -53,7 +54,7 @@ The Media Communications Mesh enables efficient, low-latency media transport for
 
 - Linux server (Intel Xeon processor recommended, e.g., Sapphire Rapids).
 - Network Interface Card (NIC) compatible with DPDK (e.g., Intel Ethernet Controller E810-C).
-- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#support).
+- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#4-support).
 
 #### 2.1.2. Steps
 
@@ -142,7 +143,7 @@ This will start the Media Proxy in blocking mode and confirm that build was succ
 
 - Linux server (Intel Xeon processor recommended, e.g. Sapphire Rapids).
 - Network Interface Card (NIC) compatible with DPDK (e.g. Intel Ethernet Controller E810-C).
-- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#support).
+- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#4-support).
 - Docker engine (recommended with Buildx toolkit) configured and installed.
 
 #### 2.3.2. Build the Docker Images

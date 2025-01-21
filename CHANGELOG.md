@@ -2,7 +2,7 @@
 
 ## Release version: 24.09
 
-### 1. New Features:
+### 1. New Features
 1.1 Support for RDMA data transfer between media proxies
 * Added RDMA implementation and rdma_args in payload_args; Created script to prepare environment for RDMA (#187)
 * Build and install libfabric, libxdp and libbpf (#188) and updated codeql.yml, coverity.yml to include changes from Ubuntu build: libfabric, libxdp and libbpf; Added LIBFABRIC_DIR to Media Proxy Dockerfile
@@ -37,7 +37,7 @@
 1.7 Other
 * Added memif_buffer_alloc_timeout()
 
-### 2. Changes to Existing Features:
+### 2. Changes to Existing Features
 
 * Changed how threads are cancelled: Resources may not have been deallocated at all or deallocated while the thread was still running
 * Not printing error if pthread_join() returns ESRCH: ESRCH means the thread has already exited
@@ -56,13 +56,13 @@
 * Updated udp_impl.c and fix the ssize_t overflow issue.
 * Updated CMakeLists.txt append "-fPIC" flag
 * Full code for library version control and load from tag
-    - Libraries libraisr and libmcm_dp use position code independent properties from now on.
-    - Added scripting for version from git parsing (exactly from tag) or if this fails default one is being set.
+  - Libraries libraisr and libmcm_dp use position code independent properties from now on.
+  - Added scripting for version from git parsing (exactly from tag) or if this fails default one is being set.
 * Changed default patch actions for ffmpeg-plugin
 * Dockerfiles adjustments to meet Trivy requirements: ports exposed, default user, entrypoint, other minor
 * Various dependency bumps from Dependabot suggestions
 
-### 3. Fixed Issues:
+### 3. Fixed Issues
 
 |              Title              |    Component  |                            Description                       |
 |---------------------------------|---------------|--------------------------------------------------------------|
@@ -73,7 +73,7 @@
 | Frames sent with ext_frame feature are corrupted |  Media Communications Mesh  | Fixed. |
 | Media Proxy crashes with Segfault when closing st22 session |  Media Proxy  | Fixed. |
 
-### 4. Known Issues:
+### 4. Known Issues
 
 |              Title              |             Component   |  Description |
 |-------------------------------------------|---------------|--------------|
@@ -88,26 +88,26 @@
 
 ## Release version: 24.06
 
-### 1. New Features:
+### 1. New Features
 
-#### 1.1. Media Communications Mesh FFmpeg plugin:
+#### 1.1. Media Communications Mesh FFmpeg plugin
 
 - Video Input/output plugin for FFmpeg – video processing pipeline framework.
 - Single or multiple instances of FFmpeg with Mesh Plugin connect to selected Media Proxy instance.
 - Supported video pixel formats:
 
- - YUV 422, 8bit packed
- - RGB 8 bit
- - NV12 – YUV 420 planar 8 bit
- - YUV 444 planar, 10 bit, little endian
- - YUV 422 planar, 10 bit, little endian
- - No support for audio streams
+  - YUV 422, 8bit packed
+  - RGB 8 bit
+  - NV12 – YUV 420 planar 8 bit
+  - YUV 444 planar, 10 bit, little endian
+  - YUV 422 planar, 10 bit, little endian
+  - No support for audio streams
 
-#### 1.2. Enablement of PTP Time synchronization to Media Communications Mesh.
+#### 1.2. Enablement of PTP Time synchronization to Media Communications Mesh
 
 This feature uses Media Transport Library PTP Time synchronization feature.
 
-#### 1.3. Added support to Media Proxy/SDK for changing input and output streams Payload ID.
+#### 1.3. Added support to Media Proxy/SDK for changing input and output streams Payload ID
 
 Payload IDs beside of having defined default values (according to RFC or SMPTE specification) are passed as parameters for each stream.
 
@@ -115,17 +115,17 @@ Payload IDs beside of having defined default values (according to RFC or SMPTE s
 
 Added parameter to stream configuration allowing to pass multicast group IP address.
 
-### 2. Changes to Existing Features:
+### 2. Changes to Existing Features
 
-#### 2.1. Modified docker file to decrease docker image minimal runtime size.
+#### 2.1. Modified docker file to decrease docker image minimal runtime size
 
-### 3. Fixed Issues:
+### 3. Fixed Issues
 
 |              Title              |    Component  |                            Description                       |
 |---------------------------------|---------------|--------------------------------------------------------------|
 | Incorrect received frame number |  Media Proxy  | Fixed passing frame number to a structure passed to the SDK. |
 
-### 4. Known Issues:
+### 4. Known Issues
 
 |              Title              |             Component   |  Description |
 |-------------------------------------------|---------------|--------------|
