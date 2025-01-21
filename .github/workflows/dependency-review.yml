@@ -1,12 +1,26 @@
 # Source repository: https://github.com/actions/dependency-review-action
 
 name: scan-dependency-review
-on: [pull_request]
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to run the scans on'
+        default: 'main'
+        type: string
+      all_codebase:
+        description: 'Validate all codebase or changes/diff only'
+        default: 'false'
+        type: string
 
 permissions:
   contents: read
 env:
+  INPUT_BRANCH: ${{ inputs.branch || github.sha }}
   LINTER_RULES_PATH: .github/configs/super-linter
+  VALIDATE_ALL_CODEBASE: ${{ inputs.all_codebase || 'false' }}
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
@@ -56,7 +70,8 @@ jobs:
       uses: super-linter/super-linter/slim@e1cb86b6e8d119f789513668b4b30bf17fe1efe4 # v7.2.0 x-release-please-version
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        DISABLE_ERRORS: true
+        DISABLE_ERRORS: false
+        BASH_SEVERITY: "warning"
         VALIDATE_PROTOBUF: true
         VALIDATE_MARKDOWN: true
         VALIDATE_MARKDOWN_PRETTIER: true

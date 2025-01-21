@@ -3,10 +3,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
-script_dir=$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")
-repository_root=$(readlink -f "${script_dir}/../..")
+script_dir="$(readlink -f "$(dirname "${BASH_SOURCE[0]}")")"
+repository_root="$(readlink -f "${script_dir}/../..")"
 
-# shellcheck source="../../scripts/common.sh"
+# shellcheck source="SCRIPTDIR/../../scripts/common.sh"
 . "${repository_root}/scripts/common.sh"
 
 allow_non_ascii_filenames="false"
@@ -16,21 +16,20 @@ function get_main_sha()
   log_info "Getting origin/main commit SHA"
   git_origin_main=$(git rev-parse --verify origin/main)
   log_info "running against origin/master=${git_origin_main}"
-  echo $git_origin_main
+  echo "$git_origin_main"
 }
 
 function get_head_sha()
 {
   log_info "Getting HEAD commit SHA"
-  if $(git rev-parse --verify HEAD >/dev/null 2>&1)
-  then
+  if git rev-parse --verify HEAD >/dev/null 2>&1; then
     git_current_hash=$(git rev-parse --verify HEAD)
   else
     echo "This is first commit, nothing to check, exiting"
     exit 0
   fi
   log_info "running against HEAD=${git_current_hash}"
-  echo $git_current_hash
+  echo "${git_current_hash}"
 }
 
 function check_nonascii_files()
@@ -41,7 +40,7 @@ function check_nonascii_files()
 
   if [ "$allow_non_ascii" == "false" ]
   then
-    if test $(git diff --diff-filter=AR --relative --name-only -z $github_origin_main $github_current_hash | LC_ALL=C tr -d '[ -~]\0' | wc -c) != 0
+    if test "$(git diff --diff-filter=AR --relative --name-only -z "${github_origin_main}" "${github_current_hash}" | LC_ALL=C tr -d '[ -~]\0' | wc -c)" != 0
     then
       cat <<EOF
 Error: You attempted to add a non-ASCII file name.
@@ -59,10 +58,10 @@ function check_file_subdir_type()
 
   if [ -z "$modified_file" ]
   then
-    printf "Function check_file_subdir_type requires exacly 1 valid argument." 1>&2
+    printf "Function check_file_subdir_type requires exactly 1 valid argument." 1>&2
     exit 1
   fi
-  printf "${modified_file}" | cut -d'/' "-f${fields_range}"
+  printf "%s" "${modified_file}" | cut -d'/' "-f${fields_range}"
 }
 
 function files_subdir_types()
@@ -72,7 +71,7 @@ function files_subdir_types()
 
 # diff-filter params, uppercase include, lowercase exclude:
 # Added (A), Copied (C), Deleted (D), Modified (M), Renamed (R), changed (T), Unmerged (U), Unknown (X), pairing Broken (B)
-  modified_file_list="$(git diff --diff-filter=dxb --relative --name-only -z $github_origin_main $github_current_hash | xargs -0)"
+  modified_file_list="$(git diff --diff-filter=dxb --relative --name-only -z "${github_origin_main}" "${github_current_hash}" | xargs -0)"
 
   for pt in $modified_file_list
   do
@@ -180,12 +179,14 @@ function other_file_check() {
   log_info "Other file path, not categorized. ${filepath}"
 }
 
-function start_git_head_parsing() {
-  cd "${repository_root}"
+function start_git_head_parsing()
+{
+  pushd "${repository_root}" || exit 10
   git_current_hash="$(get_head_sha)"
   git_origin_main="$(get_main_sha)"
-  check_nonascii_files "$git_origin_main" "$git_current_hash" allow_non_ascii_filenames
+  check_nonascii_files "$git_origin_main" "$git_current_hash" "${allow_non_ascii_filenames}"
   files_subdir_types "$git_origin_main" "$git_current_hash" || true
+  popd || exit 11
 }
 
 start_git_head_parsing

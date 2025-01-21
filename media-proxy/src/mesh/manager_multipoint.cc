@@ -86,25 +86,38 @@ Result GroupManager::apply_config(context::Context& ctx, const Config& new_cfg)
             added_bridge_ids.empty() && deleted_bridge_ids.empty())
             continue;
 
-        updated_groups.emplace_back(group_id, added_conn_ids, deleted_conn_ids,
-                                    added_bridge_ids, deleted_bridge_ids);
+        GroupChangeConfig cc = {
+            .group_id = group_id,
+            .added_conn_ids = added_conn_ids,
+            .deleted_conn_ids = deleted_conn_ids,
+            .added_bridge_ids = added_bridge_ids,
+            .deleted_bridge_ids = deleted_bridge_ids,
+        };
+        updated_groups.push_back(std::move(cc));
     }
 
     for (const auto& group_id : added_groups_ids) {
         auto it = new_cfg.groups.find(group_id);
-        if (it != new_cfg.groups.end())
-            added_groups.emplace_back(group_id, it->second.conn_ids,
-                                      std::vector<std::string>{},
-                                      it->second.bridge_ids);
+        if (it != new_cfg.groups.end()) {
+            GroupChangeConfig cc = {
+                .group_id = group_id,
+                .added_conn_ids = it->second.conn_ids,
+                .added_bridge_ids = it->second.bridge_ids,
+            };
+            added_groups.push_back(std::move(cc));
+        }
     }
 
     for (const auto& group_id : deleted_groups_ids) {
         auto it = cfg.groups.find(group_id);
-        if (it != cfg.groups.end())
-            deleted_groups.emplace_back(group_id, std::vector<std::string>{},
-                                        it->second.conn_ids,
-                                        std::vector<std::string>{},
-                                        it->second.bridge_ids);
+        if (it != cfg.groups.end()) {
+            GroupChangeConfig cc = {
+                .group_id = group_id,
+                .deleted_conn_ids = it->second.conn_ids,
+                .deleted_bridge_ids = it->second.bridge_ids,
+            };
+            deleted_groups.push_back(std::move(cc));
+        }
     }
 
     cfg = std::move(new_cfg);
