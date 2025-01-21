@@ -5,7 +5,7 @@
 
 ## Overview
 
-The Media Communications Mesh SDK is a lightweight and versatile library designed to facilitate seamless media data transportation between microservices, with or without the Media Communications Mesh Media Proxy. By leveraging the Media Communications Mesh SDK, developers can easily establish efficient media streaming and enable zero-copied handling of media data transfers.
+The Media Communications Mesh SDK (further on called just SDK) is a lightweight and versatile library designed to facilitate seamless media data transportation between microservices, with or without the Media Proxy. By leveraging the SDK, developers can easily establish efficient media streaming and enable zero-copied handling of media data transfers.
 
 ## Installation
 
@@ -26,7 +26,7 @@ cmake --build out -j 4
 
 3. Install on System
 
-To install the Media Communications Mesh SDK on your system, execute the following command:
+To install the SDK on your system, execute the following command:
 
 ```bash
 cmake --install out

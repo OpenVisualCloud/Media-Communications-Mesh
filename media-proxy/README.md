@@ -1,4 +1,4 @@
-# Media Communications Mesh Media Proxy
+# Media Proxy
 
 ![Media Proxy](../docs/_static/media-proxy-media-communications-mesh-1.png)
 
@@ -101,9 +101,9 @@ Before deploying the Media Proxy on Kubernetes using Minikube, you'll need to en
 Once you've completed the above steps, you'll have Docker, a hypervisor, kubectl, and Minikube installed and ready to deploy the Media Proxy on your local Kubernetes cluster.
 
 ### Setup K8s Cluster
-Before deploy Media Proxy to the K8s cluster, you need to execute following steps to setup the K8s cluster to be ready for Media Communications Mesh.
+Before deploying Media Proxy to the K8s cluster, you need to execute the following steps to setup the K8s cluster to be ready for Media Communications Mesh.
 
-1. Start the K8s Cluster, and add Media Communications Mesh worker node on it.
+1. Start the K8s Cluster, and add worker node on it.
 
 ```bash
 minikube start
@@ -124,7 +124,7 @@ kubectl apply -f deployment/DaemonSet/media-proxy.yaml
 kubectl get daemonsets.apps -n mcm
 ```
 
-If all commands are executed successfully, you will see the Media Communications Mesh Media Proxy deployed as a K8s DaemonSet to the Media Communications Mesh worker node (labeled with "mcm.intel.com/role=worker").
+If all commands are executed successfully, you will see the Media Proxy deployed as a K8s DaemonSet to the worker node (labeled with "mcm.intel.com/role=worker").
 
 ## Known Issues
 - There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
