@@ -19,8 +19,6 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
 
-    unsigned char *file_buf = (unsigned char*)malloc(frame_size);
-    fread(file_buf, BYTE_SIZE, frame_size, file);
 
     // err = mesh_get_buffer(connection, &buf);
     int num_of_frames = file_size / frame_size;
@@ -29,33 +27,44 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
     if (num_of_frames == 0 ){
         num_of_frames = 1;
     }
+
+    // unsigned char *file_buf = (unsigned char*)malloc(frame_size);
+    unsigned char *file_buf = (unsigned char*)calloc(num_of_frames, frame_size);
+    fread(file_buf, BYTE_SIZE, frame_size, file);
+
     printf("%d frames to send\n", num_of_frames);
     fseek(file, 0, SEEK_SET);
 
-    for(int i = 0 ; i < 500; i++){
+    unsigned char *temp_buf = file_buf;
+    for(int i = 0 ; i < num_of_frames; i++){
         MeshBuffer *buf;
 
         printf("Getting a buffer\n");
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
+
+        temp_buf = file_buf + (i * buf->payload_len);
+        printf("temp_buf = %p\n", temp_buf);
+        printf("file_buf = %p\n", file_buf);
+
         if (err) {
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
         }
         printf("Buffer fetched %lu\n", buf->payload_len);
-        /* get next chunk data, move pointer to the next chunk start */
-        // unsigned char *temp_buf = file_buf + (i * buf->payload_len);
-        unsigned char *temp_buf = file_buf;
 
         /* clear mesh buffer payload space */
         // memset(buf->payload_ptr, FIRST_INDEX, buf->payload_len);
         /* copy frame_buf data into mesh buffer */
+        printf("Before memcpy\n");
         memcpy(buf->payload_ptr, temp_buf, buf->payload_len);
+        printf("After memcpy\n");
         printf("sending %d  frame \n", i+1);
         /* Send the buffer */
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
         }
+        /* get next chunk data, move pointer to the next chunk start */
         printf("Before usleep\n");
         usleep(40000);
     }

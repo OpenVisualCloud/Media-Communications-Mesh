@@ -41,7 +41,7 @@ int main(int argc, char* argv[]){
         return err;
     }
 
-    // FILE *out = fopen(frame_file, "wb");
+    FILE *out = fopen(frame_file, "wb");
 
     printf("waiting for frames... \n");
     int timeout = MESH_TIMEOUT_INFINITE;
@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
         }
         printf("Received buf of %lu B length\n", buf->payload_len);
         /* Process the received user data */
-        // buffer_to_file(file, buf);
+        buffer_to_file(out, buf);
         // fwrite(buf->data, buf->data_len, 1, out);
         // printf("Received 1 video frame of %li B and saved it into the file\n", buf->data_len);
         // printf("---\n");
