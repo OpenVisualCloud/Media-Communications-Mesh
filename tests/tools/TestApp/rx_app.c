@@ -41,7 +41,7 @@ int main(int argc, char* argv[]){
         return err;
     }
 
-    FILE *out = fopen(frame_file, "wb");
+    FILE *out = fopen(frame_file, "a");
 
     printf("waiting for frames... \n");
     int timeout = MESH_TIMEOUT_INFINITE;
@@ -69,13 +69,9 @@ int main(int argc, char* argv[]){
         }
         printf("Received buf of %lu B length\n", buf->payload_len);
         /* Process the received user data */
-        buffer_to_file(out, buf);
-        // fwrite(buf->data, buf->data_len, 1, out);
-        // printf("Received 1 video frame of %li B and saved it into the file\n", buf->data_len);
-        // printf("---\n");
 
-        /* Release and put the buffer back to the mesh */
-        printf("Buf addr: %p\n", &buf);
+        buffer_to_file(out, buf);
+
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
@@ -87,5 +83,6 @@ int main(int argc, char* argv[]){
     }
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
+    fclose(out);
     return 0;
 }

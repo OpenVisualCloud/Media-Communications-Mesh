@@ -52,24 +52,21 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
         }
         printf("Buffer fetched %lu\n", buf->payload_len);
 
-        /* clear mesh buffer payload space */
-        // memset(buf->payload_ptr, FIRST_INDEX, buf->payload_len);
         /* copy frame_buf data into mesh buffer */
         printf("Before memcpy\n");
         memcpy(buf->payload_ptr, temp_buf, buf->payload_len);
         printf("After memcpy\n");
         printf("sending %d  frame \n", i+1);
+
         /* Send the buffer */
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
         }
-        /* get next chunk data, move pointer to the next chunk start */
-        printf("Before usleep\n");
+
         usleep(40000);
     }
     free(file_buf);
-    fclose(file);
 
     err = mesh_shutdown_connection(connection);
     if (err){
@@ -78,49 +75,12 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
     return err;
 }
 
-int mcm_receive_video_frames(MeshConnection *connection, MeshClient *client, FILE* file, int frame){
-    int err = 0;
-    MeshBuffer *buf = NULL;
-
-    /* Receive a buffer from the mesh */
-    err = mesh_get_buffer(connection, &buf);
-    if (err == MESH_ERR_CONN_CLOSED) {
-        printf("Connection closed\n");
-    }
-    if (err) {
-        printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
-    }
-    printf("Received buf of %li B length\n", buf->payload_len);
-    /* Process the received user data */
-    buffer_to_file(file, buf);
-    printf("---\n");
-
-
-    /* Release and put the buffer back to the mesh */
-    err = mesh_put_buffer(&buf);
-    if (err) {
-        printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
-    }
-    printf("Released the buffer buf of %li B length\n", buf->payload_len);
-
-    /* Shutdown the connection */
-    // err = mesh_shutdown_connection(connection);
-    // if (err){
-    //     printf("Failed to shutdown connection: %s (%d)\n", mesh_err2str(err), err);
-    // }
-    // printf("The connection has been shut down\n");
-    // return err;
-    printf("Frame: %i", frame);
-    frame += 1;
-}
-
 void buffer_to_file(FILE *file, MeshBuffer* buf){
     if (file == NULL) {
         perror("Failed to open file for writing");
         return;
     }
     // Write the buffer to the file
-    size_t written_size = fwrite(buf->payload_ptr, BYTE_SIZE, buf->payload_len, file);
     if(fputs(buf->payload_ptr, file) == EOF) {
        perror("Failed to write buffer to file");
        fclose(file);
