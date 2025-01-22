@@ -18,7 +18,7 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
     }
     fseek(file, 0, SEEK_END);
     long file_size = ftell(file);
-
+    fseek(file, 0, SEEK_SET);
 
     // err = mesh_get_buffer(connection, &buf);
     int num_of_frames = file_size / frame_size;
@@ -30,10 +30,15 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
 
     // unsigned char *file_buf = (unsigned char*)malloc(frame_size);
     unsigned char *file_buf = (unsigned char*)calloc(num_of_frames, frame_size);
-    fread(file_buf, BYTE_SIZE, frame_size, file);
+    fread(file_buf, frame_size, num_of_frames, file);
+    printf("file_buf directly after fread: first bytes from file_buf: %04x, %04x, %04x, %04x, %04x \n",
+         file_buf[0],
+         file_buf[1],
+         file_buf[2],
+         file_buf[3],
+         file_buf[4]);
 
     printf("%d frames to send\n", num_of_frames);
-    fseek(file, 0, SEEK_SET);
 
     unsigned char *temp_buf = file_buf;
     for(int i = 0 ; i < num_of_frames; i++){
@@ -51,11 +56,21 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
         }
         printf("Buffer fetched %lu\n", buf->payload_len);
-
+        printf("temp_buf directly before memcpy: first bytes from temp_buf: %04x, %04x, %04x, %04x, %04x \n",
+         temp_buf[0],
+         temp_buf[1],
+         temp_buf[2],
+         temp_buf[3],
+         temp_buf[4]);
         /* copy frame_buf data into mesh buffer */
-        printf("Before memcpy\n");
         memcpy(buf->payload_ptr, temp_buf, buf->payload_len);
-        printf("After memcpy\n");
+        temp_buf = buf->payload_ptr;
+        printf("mesh_buf directly after memcpy: first bytes from mesh buf: %04x, %04x, %04x, %04x, %04x \n",
+         temp_buf[0],
+         temp_buf[1],
+         temp_buf[2],
+         temp_buf[3],
+         temp_buf[4]);
         printf("sending %d  frame \n", i+1);
 
         /* Send the buffer */
@@ -81,6 +96,13 @@ void buffer_to_file(FILE *file, MeshBuffer* buf){
         return;
     }
     // Write the buffer to the file
+    unsigned char *temp_buf = buf->payload_ptr;
+    printf("buffer_to_file: first bytes from mesh buf: %02x, %02x, %02x, %02x, %02x \n",
+         temp_buf[0],
+         temp_buf[1],
+         temp_buf[2],
+         temp_buf[3],
+         temp_buf[4]);
     if(fputs(buf->payload_ptr, file) == EOF) {
        perror("Failed to write buffer to file");
        fclose(file);

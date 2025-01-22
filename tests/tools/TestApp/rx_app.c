@@ -72,9 +72,15 @@ int main(int argc, char* argv[]){
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
             break;
         }
-        printf("Received buf of %lu B length\n", buf->payload_len);
-        /* Process the received user data */
 
+        unsigned char *temp_buf = buf->payload_ptr;
+        printf("rxApp directly after mesh_get_buffer_timeout: first bytes from mesh buf: %02x, %02x, %02x, %02x, %02x \n",
+         temp_buf[0],
+         temp_buf[1],
+         temp_buf[2],
+         temp_buf[3],
+         temp_buf[4]);
+        /* Process the received user data */
         buffer_to_file(out, buf);
 
         err = mesh_put_buffer(&buf);

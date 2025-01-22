@@ -52,7 +52,7 @@ int main(int argc, char** argv){
     }
 
     /* Do not remove the sleep(), required for proper alignment */
-    sleep(5);
+    // sleep(5);
 
     /* Open file and send its contents */
     FILE *frame = fopen(frame_file, "rb");
