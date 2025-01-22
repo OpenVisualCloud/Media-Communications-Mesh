@@ -87,3 +87,7 @@ void buffer_to_file(FILE *file, MeshBuffer* buf){
     }
     printf("Received 1 video frame of %li B and saved it into the file\n", buf->payload_len);
 }
+
+int is_root() {
+    return (geteuid() == 0) ? 1 : 0; 
+}

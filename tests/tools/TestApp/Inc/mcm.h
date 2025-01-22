@@ -13,5 +13,5 @@ int mcm_create_tx_connection(MeshConnection *connection, MeshClient *client, con
 int mcm_create_rx_connection(MeshConnection *connection, MeshClient *client, const char* cfg);
 int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* file);
 void buffer_to_file(FILE *file, MeshBuffer* buf);
-
+int is_root();
 #endif /* _MCM_H_*/

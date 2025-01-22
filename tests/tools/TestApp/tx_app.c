@@ -13,10 +13,15 @@ const char* client_cfg;
 const char* conn_cfg;
 
 int main(int argc, char** argv){
+    if(!is_root()){
+        fprintf(stderr, "This program must be run as root. Exiting.\n");
+        exit(EXIT_FAILURE);
+    }
     if (argc != 4) {
         fprintf(stderr, "Usage: %s <client_cfg.json> <connection_cfg.json> <abs path>/file|frame>\n", argv[0]);
         exit(EXIT_FAILURE);
     }
+
 
     char* client_cfg_file = argv[1];
     char* conn_cfg_file = argv[2];
