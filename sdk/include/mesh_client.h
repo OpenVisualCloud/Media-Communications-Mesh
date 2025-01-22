@@ -3,12 +3,13 @@
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
-#ifndef MESH_CLIENT_H
-#define MESH_CLIENT_H
+#ifndef _SDK_INCLUDE_MESH_CLIENT_H_
+#define _SDK_INCLUDE_MESH_CLIENT_H_
 
+#include "./mesh_dp.h"
 #include <list>
 #include <mutex>
-#include "mesh_dp.h"
+#include <string>
 
 namespace mesh {
 
@@ -31,7 +32,7 @@ public:
 class ClientContext {
 public:
     ClientContext();
-    ClientContext(MeshClientConfig *cfg);
+    explicit ClientContext(MeshClientConfig *cfg);
 
     int init();
     int shutdown();
@@ -69,4 +70,4 @@ public:
 #define MESH_CONN_TYPE_UNINITIALIZED    -1 ///< Connection type is uninitialized
 #define MESH_PAYLOAD_TYPE_UNINITIALIZED -1 ///< Payload type is uninitialized
 
-#endif // MESH_CLIENT_H
+#endif // _SDK_INCLUDE_MESH_CLIENT_H_

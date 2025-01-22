@@ -9,21 +9,47 @@ PERF_DIR="${DRIVERS_DIR}/perftest"
 
 . "${SCRIPT_DIR}/common.sh"
 
-function install_perftest() {
+function print_usage()
+{
+    log_info ""
+    log_info "Usage:"
+    log_info "\t $0 [option]"
+    log_info ""
+    log_info "Options:"
+    log_info "\tinstall"
+    log_info "\t\t setup irdma driver and libfabric"
+    log_info "\tinstall_perftest"
+    log_info "\t\t install perftest"
+    log_info "\tcheck"
+    log_info "\t\t check environment"
+    log_info "\tset_mtu <INTERFACE>"
+    log_info "\t\t temporarily set MTU to 9000 on given interface"
+    log_info "\tperftest <INTERFACE>"
+    log_info "\t\t run perftest"
+}
+
+function install_perftest()
+{
     log_info "Start of install_perftest method. Installing apt packages."
-    apt update
+    apt-get update --fix-missing && \
     apt install -y jq libibverbs-dev librdmacm-dev libibumad-dev libpci-dev
     log_info "Install_perftest method. Installing apt packages successful."
 
     log_info "Install_perftest method. Downloading and installing perftest-24.07.0."
     wget_download_strip_unpack "${PERF_REPO}" "${PERF_DIR}"
 
-    pushd "${PERF_DIR}"
-    ./autogen.sh
-    ./configure
-    make -j "${NPROC}"
-    make install
-    popd
+    if pushd "${PERF_DIR}"; then
+       { ./autogen.sh && ./configure; } || \
+       { log_error "Intel install_perftest: Could not configure the perftest."; return 1; }
+    else
+        log_error "Intel install_perftest: Could not enter the directory ${PERF_DIR}, exiting."
+        exit 1
+    fi
+    make -j "${NPROC}" && \
+    as_root make install
+
+    log_error "Intel irdma: Could not make and/or install the perftest."
+    popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
     log_info "End of install_perftest method. Finished installing perftest-24.07.0."
 }
 
@@ -37,7 +63,8 @@ function check_roce() {
     log_info "OK"
 }
 
-function check_mtu() {
+function check_mtu()
+{
     log_info "Checking MTU..."
     rdma_devices=()
     rdma_links="$(rdma link -j | jq -r '.[] | select(.physical_state == "LINK_UP") | .netdev')"
@@ -61,13 +88,15 @@ function check_mtu() {
     fi
 }
 
-function set_mtu() {
+function set_mtu()
+{
     log_info -n "Setting MTU to 9000 on $1... "
     ip link set dev "${1}" mtu 9000
     log_info "DONE"
 }
 
-function run_perftest() {
+function run_perftest()
+{
     # Usage: run_perftest <interface_name> [network_address] [network_mask]
     interface_name="$1"
     network_address="${2:-192.168.255.255}"
@@ -101,11 +130,10 @@ then
     mkdir -p "${WORKING_DIR}" "${PERF_DIR}"
 
     if [[ "$1" == "install" ]]; then
-    rm -rf "${WORKING_DIR}" && \
-    mkdir -p "${WORKING_DIR}" && \
-    build_install_and_config_irdma_drivers
-    lib_install_fabrics
-    log_warning "For changes to take place, an OS reboot is required."
+        rm -rf "${WORKING_DIR}" && mkdir -p "${WORKING_DIR}" && \
+        build_install_and_config_irdma_drivers
+        lib_install_fabrics
+        log_warning "For changes to take place, an OS reboot is required."
     elif [[ "$1" == "install_perftest" ]]; then
         rm -rf "${WORKING_DIR}" && \
         mkdir -p "${WORKING_DIR}" && \
@@ -119,19 +147,6 @@ then
     elif [[ "$1" == "perftest" ]] && [[ -n "$2" ]]; then
         run_perftest "${2}"
     else
-        log_info "Usage:"
-        log_info "\t $0 [option]"
-        log_info ""
-        log_info "Options:"
-        log_info "\tinstall"
-        log_info "\t\t setup irdma driver and libfabric"
-        log_info "\tinstall_perftest"
-        log_info "\t\t install perftest"
-        log_info "\tcheck"
-        log_info "\t\t check environment"
-        log_info "\tset_mtu <INTERFACE>"
-        log_info "\t\t temporarily set MTU to 9000 on given interface"
-        log_info "\tperftest <INTERFACE>"
-        log_info "\t\t run perftest"
+        print_usage
     fi
 fi

@@ -4,9 +4,10 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef PROXY_CONFIG_H
-#define PROXY_CONFIG_H
+#ifndef _MEDIA_PROXY_INCLUDE_MESH_PROXY_CONFIG_H_
+#define _MEDIA_PROXY_INCLUDE_MESH_PROXY_CONFIG_H_
 
+#include <cstdint>
 #include <string>
 
 namespace mesh::config {
@@ -37,4 +38,4 @@ extern Proxy proxy;
 
 } // namespace mesh::config
 
-#endif // PROXY_CONFIG_H
+#endif // _MEDIA_PROXY_INCLUDE_MESH_PROXY_CONFIG_H_

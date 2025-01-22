@@ -4,12 +4,13 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef METRICS_H
-#define METRICS_H
+#ifndef _MEDIA_PROXY_INCLUDE_MESH_METRICS_H_
+#define _MEDIA_PROXY_INCLUDE_MESH_METRICS_H_
 
-#include <vector>
+#include <cstdint>
 #include <string>
 #include <variant>
+#include <vector>
 
 namespace mesh::telemetry {
 
@@ -33,7 +34,7 @@ public:
 
 class Metric {
 public:
-    Metric(int64_t timestamp_ms)
+    explicit Metric(int64_t timestamp_ms)
         : timestamp_ms(timestamp_ms) {}
 
     void addFieldString(const std::string& name, const std::string& str_value) {
@@ -76,4 +77,4 @@ protected:
 
 } // namespace mesh::telemetry
 
-#endif // METRICS_H
+#endif // _MEDIA_PROXY_INCLUDE_MESH_METRICS_H_
