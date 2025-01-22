@@ -5,7 +5,7 @@ Application for utilizing MCM api.
 *Disclaimer*  
 TX/RXapp is prepared for new api (/docs/sdk-json-proposal) that is not implemented yet, so, so far it works with simple mocks, that move a file from TxApp to RxApp.
 
-# Usage
+## Usage
 
 1. Create dir:
 ```bash
