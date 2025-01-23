@@ -16,17 +16,11 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
         return 1;
     }
 
-    err = mesh_get_buffer(connection, &buf);
-    if (err) {
-        printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
-    }
-
-
     unsigned char frame_num = 0;
     size_t read_size = 1;
     while(1){
 
-            /* Ask the mesh to allocate a shared memory buffer for user data */
+        /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
         if (err) {
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
