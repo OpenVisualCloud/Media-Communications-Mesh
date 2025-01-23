@@ -2,7 +2,6 @@
 #define _MCM_H_
 
 #include <stdio.h>
-#include "mcm_dp.h"
 #include "mesh_dp.h"
 
 #define BYTE_SIZE 1

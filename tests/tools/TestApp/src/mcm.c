@@ -2,7 +2,6 @@
 #include <string.h>
 #include <unistd.h>
 #include "mcm.h"
-#include "mcm_dp.h"
 #include "mesh_dp.h"
 
 /* PRIVATE */
