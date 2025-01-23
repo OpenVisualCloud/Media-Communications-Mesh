@@ -55,6 +55,7 @@ int main(int argc, char* argv[]){
     MeshBuffer *buf = NULL;
 
     while(1){
+        FILE *out = fopen(frame_file, "a");
         /* Set loop's  error*/
         err = 0;
         // mcm_receive_video_frames(connection, client, out, frame);
@@ -73,8 +74,8 @@ int main(int argc, char* argv[]){
             break;
         }
 
-        unsigned char *temp_buf = buf->payload_ptr;
-        printf("rxApp directly after mesh_get_buffer_timeout: first bytes from mesh buf: %02x, %02x, %02x, %02x, %02x \n",
+        unsigned int *temp_buf = buf->payload_ptr;
+        printf("rxApp directly after mesh_get_buffer_timeout: first bytes from mesh buf: %04x, %04x, %04x, %04x, %04x \n",
          temp_buf[0],
          temp_buf[1],
          temp_buf[2],
@@ -89,11 +90,11 @@ int main(int argc, char* argv[]){
             break;
         }
 
-        printf("Frame: %d\n", frame+1);
-        frame++;
+        printf("Frame: %d\n", ++frame);
+        fclose(out);
     }
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
-    fclose(out);
+
     return 0;
 }
