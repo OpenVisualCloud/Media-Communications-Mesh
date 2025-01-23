@@ -1,3 +1,11 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
+#include "mcm.h"
+#include "mesh_dp.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -41,10 +49,11 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
         /* Temporary implementation for pacing */
         /* TODO: Implement pacing calculation */
         usleep(40000);
-    };
+    }
     printf("[TX] data sent successfully \n");
     return err;
 }
+
 
 void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int timeout = MESH_TIMEOUT_INFINITE;

@@ -1,9 +1,13 @@
-#include "input.h"
-
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #include <stdio.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
+#include "input.h"
 
 const char *parse_json_to_string(const char *file_name) {
     FILE *input_fp = fopen(file_name, "rb");

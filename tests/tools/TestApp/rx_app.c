@@ -1,8 +1,8 @@
 #include <stdio.h>
-#include "Inc/input.h"
-#include "Inc/mcm.h"
 #include <unistd.h>
 #include <stdlib.h>
+#include "Inc/input.h"
+#include "Inc/mcm.h"
 
 const char *client_cfg;
 const char *conn_cfg;

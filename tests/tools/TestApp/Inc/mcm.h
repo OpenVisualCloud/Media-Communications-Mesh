@@ -1,9 +1,13 @@
-#ifndef _MCM_H_
-#define _MCM_H_
+#ifndef TESTS_TOOLS_TESTAPP_INC_MCM_H_
+#define TESTS_TOOLS_TESTAPP_INC_MCM_H_
 
 #include <stdio.h>
 #include "mesh_dp.h"
-
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
 #define BYTE_SIZE 1
 #define FIRST_INDEX 0
 
@@ -14,4 +18,4 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 void read_data_in_loop(MeshConnection *connection, const char *filename);
 int is_root();
-#endif /* _MCM_H_*/
+#endif  // TESTS_TOOLS_TESTAPP_INC_MCM_H_
