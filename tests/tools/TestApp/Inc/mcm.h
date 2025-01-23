@@ -18,4 +18,4 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 void read_data_in_loop(MeshConnection *connection, const char *filename);
 int is_root();
-#endif  // TESTS_TOOLS_TESTAPP_INC_MCM_H_
+#endif // TESTS_TOOLS_TESTAPP_INC_MCM_H_

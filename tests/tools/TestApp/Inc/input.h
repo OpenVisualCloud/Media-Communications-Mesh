@@ -9,4 +9,4 @@
 
 const char *parse_json_to_string(const char *file_name);
 
-#endif  // TESTS_TOOLS_TESTAPP_INC_INPUT_H_
+#endif // TESTS_TOOLS_TESTAPP_INC_INPUT_H_

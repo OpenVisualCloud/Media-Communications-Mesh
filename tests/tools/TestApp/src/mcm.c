@@ -54,7 +54,6 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
     return err;
 }
 
-
 void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int timeout = MESH_TIMEOUT_INFINITE;
     int frame = 0;
