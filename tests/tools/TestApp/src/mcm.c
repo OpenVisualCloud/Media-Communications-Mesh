@@ -26,12 +26,10 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
     size_t read_size = 1;
     while(1){
 
-        if (frame_num > 0){
             /* Ask the mesh to allocate a shared memory buffer for user data */
-            err = mesh_get_buffer(connection, &buf);
-            if (err) {
-                printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
-            }
+        err = mesh_get_buffer(connection, &buf);
+        if (err) {
+            printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
         }
         read_size = fread(buf->payload_ptr, 1, buf->payload_len , file);
         if(read_size == 0) {
@@ -39,6 +37,7 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
         }
 
         /* Send the buffer */
+        printf("[TXAPP INFO] sending %d \n  frame", ++frame_num);
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
@@ -46,13 +45,8 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
 
         usleep(40000);
     };
-    printf("[TXAPP DEBUG]closing mesh connection\n");
-    err = mesh_shutdown_connection(connection);
-    if (err){
-        printf("Failed to shutdown connection: %s (%d)\n", mesh_err2str(err), err);
-    }
+    printf("[TXAPP INFO] data sent succesfully \n");
     return err;
-
 }
 
 void read_data_in_loop(MeshConnection *connection,const char* filename){
@@ -75,6 +69,7 @@ void read_data_in_loop(MeshConnection *connection,const char* filename){
             printf("Connection closed\n");
             break;
         }
+        printf("[RXAPP INFO] fetched mesh data buffer\n");
         if (err) {
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
             break;
@@ -89,7 +84,8 @@ void read_data_in_loop(MeshConnection *connection,const char* filename){
         }
         printf("Frame: %d\n", ++frame);
         fclose(out);
-    } 
+    }
+    printf("[RXAPP INFO] done reading the data \n"); 
 }
 
 
@@ -100,8 +96,8 @@ void buffer_to_file(FILE *file, MeshBuffer* buf){
     }
     // Write the buffer to the file
     unsigned int *temp_buf = buf->payload_ptr;
-    printf("[RXAPP DEBUG ] saving buffer data to a file\n");
     fwrite(buf->payload_ptr,buf->payload_len, 1, file);
+    printf("[RXAPP DEBUG ] saving buffer data to a file\n");
 }
 
 int is_root() {

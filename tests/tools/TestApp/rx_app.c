@@ -45,10 +45,12 @@ int main(int argc, char* argv[]){
         mesh_delete_client(&client);
         return err;
     }
-    printf("waiting for frames... \n");
+    printf("[RXAPP INFO ] waiting for frames... \n");
     read_data_in_loop(connection, out_filename);
+    printf("[RXAPP INFO ] shuting down connection and client\n");
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
+    printf("[RXAPP INFO ] shutdown completed exiting\n");
 
     return 0;
 }
