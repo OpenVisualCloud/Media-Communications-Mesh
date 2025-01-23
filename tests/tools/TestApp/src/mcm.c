@@ -7,7 +7,7 @@
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *file) {
+int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *file) {
     int err = 0;
     MeshBuffer *buf;
     if (file == NULL) {

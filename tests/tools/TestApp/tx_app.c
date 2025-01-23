@@ -21,7 +21,7 @@ int main(int argc, char **argv) {
 
     char *client_cfg_file = argv[1];
     char *conn_cfg_file = argv[2];
-    char *frame_file = argv[3];
+    char *video_file = argv[3];
 
     MeshConnection *connection = NULL;
     MeshClient *client = NULL;
@@ -48,8 +48,8 @@ int main(int argc, char **argv) {
     }
 
     /* Open file and send its contents */
-    FILE *frame = fopen(frame_file, "rb");
-    mcm_send_video_frame(connection, client, frame);
+    FILE *frames = fopen(video_file, "rb");
+    mcm_send_video_frames(connection, client, frames);
 
     printf("[TX] Shuting down connection and client\n");
     mesh_delete_connection(&connection);
