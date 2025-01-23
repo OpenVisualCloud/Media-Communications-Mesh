@@ -26,23 +26,23 @@ int main(int argc, char **argv) {
     MeshConnection *connection = NULL;
     MeshClient *client = NULL;
 
-    printf("launching TX app \n");
-    printf("reading client configuration... \n");
+    printf("[TX] Launching TX app \n");
+    printf("[TX] Reading client configuration... \n");
     client_cfg = parse_json_to_string(client_cfg_file);
-    printf("reading connection configuration... \n");
+    printf("[TX] Reading connection configuration... \n");
     conn_cfg = parse_json_to_string(conn_cfg_file);
 
     /* Initialize mcm client */
     int err = mesh_create_client_json(&client, client_cfg);
     if (err) {
-        printf("Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
+        printf("[TX] Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
         exit(err);
     }
 
     /* Create mesh connection */
     err = mesh_create_tx_connection(client, &connection, conn_cfg);
     if (err) {
-        printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
+        printf("[TX] Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
         mesh_delete_client(&client);
         exit(err);
     }
@@ -54,9 +54,9 @@ int main(int argc, char **argv) {
     FILE *frame = fopen(frame_file, "rb");
     mcm_send_video_frame(connection, client, frame);
 
-    printf("[TXAPP INFO ] shuting down connection and client\n");
+    printf("[TX] Shuting down connection and client\n");
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
-    printf("[TXAPP INFO ] shutdown completed exiting\n");
+    printf("[TX] Shutdown completed. Exiting\n");
     return 0;
 }

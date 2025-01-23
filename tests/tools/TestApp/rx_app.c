@@ -24,32 +24,32 @@ int main(int argc, char *argv[]) {
     MeshConnection *connection = NULL;
     MeshClient *client = NULL;
 
-    printf("launching RX App \n");
-    printf("reading client configuration... \n");
+    printf("[RX] Launching RX App \n");
+    printf("[RX] Reading client configuration... \n");
     client_cfg = parse_json_to_string(client_cfg_file);
-    printf("reading connection configuration... \n");
+    printf("[RX] Reading connection configuration... \n");
     conn_cfg = parse_json_to_string(conn_cfg_file);
 
     /* Initialize mcm client */
     int err = mesh_create_client_json(&client, client_cfg);
     if (err) {
-        printf("Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
+        printf("[RX] Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
         exit(err);
     }
 
     /* Create mesh connection */
     err = mesh_create_rx_connection(client, &connection, conn_cfg);
     if (err) {
-        printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
+        printf("[RX] Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
         mesh_delete_client(&client);
         exit(err);
     }
-    printf("[RXAPP INFO ] waiting for frames... \n");
+    printf("[RX] Waiting for frames... \n");
     read_data_in_loop(connection, out_filename);
-    printf("[RXAPP INFO ] shuting down connection and client\n");
+    printf("[RX] Shuting down connection and client\n");
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
-    printf("[RXAPP INFO ] shutdown completed exiting\n");
+    printf("[RX] Shutdown completed exiting\n");
 
     return 0;
 }

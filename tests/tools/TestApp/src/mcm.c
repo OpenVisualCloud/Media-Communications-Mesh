@@ -12,7 +12,7 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *f
     int err = 0;
     MeshBuffer *buf;
     if (file == NULL) {
-        printf("Failed to serialize video: file is null \n");
+        printf("[TX] Failed to serialize video: file is null \n");
         exit(1);
     }
 
@@ -23,7 +23,7 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *f
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
         if (err) {
-            printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+            printf("[TX] Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
             exit(err);
         }
         read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
@@ -32,15 +32,15 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *f
         }
 
         /* Send the buffer */
-        printf("[TXAPP INFO] sending %d \n  frame", ++frame_num);
+        printf("[TX] Sending frame: %d\n", ++frame_num);
         err = mesh_put_buffer(&buf);
         if (err) {
-            printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
+            printf("[TX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
         }
 
         usleep(40000);
     };
-    printf("[TXAPP INFO] data sent successfully \n");
+    printf("[TX] data sent successfully \n");
     return err;
 }
 
@@ -61,12 +61,12 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
         /* Receive a buffer from the mesh */
         err = mesh_get_buffer_timeout(connection, &buf, timeout);
         if (err == MESH_ERR_CONN_CLOSED) {
-            printf("Connection closed\n");
+            printf("[RX] Connection closed\n");
             exit(err);
         }
-        printf("[RXAPP INFO] fetched mesh data buffer\n");
+        printf("[RX] Fetched mesh data buffer\n");
         if (err) {
-            printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+            printf("[RX] Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
             exit(err);
         }
         /* Process the received user data */
@@ -74,24 +74,24 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
 
         err = mesh_put_buffer(&buf);
         if (err) {
-            printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
+            printf("[RX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
             exit(err);
         }
-        printf("Frame: %d\n", ++frame);
+        printf("[RX] Frame: %d\n", ++frame);
         fclose(out);
     }
-    printf("[RXAPP INFO] done reading the data \n");
+    printf("[RX] Done reading the data \n");
 }
 
 void buffer_to_file(FILE *file, MeshBuffer *buf) {
     if (file == NULL) {
-        perror("Failed to open file for writing");
+        perror("[RX] Failed to open file for writing");
         return;
     }
     // Write the buffer to the file
     unsigned int *temp_buf = buf->payload_ptr;
     fwrite(buf->payload_ptr, buf->payload_len, 1, file);
-    printf("[RXAPP DEBUG ] saving buffer data to a file\n");
+    printf("[RX] Saving buffer data to a file\n");
 }
 
 int is_root() { return (geteuid() == 0) ? 1 : 0; }
