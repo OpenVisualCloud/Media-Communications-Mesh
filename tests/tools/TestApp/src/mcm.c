@@ -38,6 +38,8 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
             exit(err);
         }
 
+        /* Temporary implementation for pacing */
+        /* TODO: Implement pacing calculation */
         usleep(40000);
     };
     printf("[TX] data sent successfully \n");
