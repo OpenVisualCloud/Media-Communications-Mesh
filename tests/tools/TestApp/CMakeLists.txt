@@ -28,5 +28,5 @@ add_executable(RxApp rx_app.c ${SRC})
 
 
 target_link_libraries(TxApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)
-target_link_libraries(RxApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT}${BSD_LIB} mcm_dp)
+target_link_libraries(RxApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)
 
