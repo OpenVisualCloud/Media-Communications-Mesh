@@ -13,7 +13,7 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *f
     MeshBuffer *buf;
     if (file == NULL) {
         printf("Failed to serialize video: file is null \n");
-        return 1;
+        exit(1);
     }
 
     unsigned char frame_num = 0;
@@ -24,10 +24,11 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *f
         err = mesh_get_buffer(connection, &buf);
         if (err) {
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+            exit(err);
         }
         read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
         if (read_size == 0) {
-            break;
+            exit(2);
         }
 
         /* Send the buffer */
@@ -61,12 +62,12 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
         err = mesh_get_buffer_timeout(connection, &buf, timeout);
         if (err == MESH_ERR_CONN_CLOSED) {
             printf("Connection closed\n");
-            break;
+            exit(err);
         }
         printf("[RXAPP INFO] fetched mesh data buffer\n");
         if (err) {
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
-            break;
+            exit(err);
         }
         /* Process the received user data */
         buffer_to_file(out, buf);
@@ -74,7 +75,7 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
-            break;
+            exit(err);
         }
         printf("Frame: %d\n", ++frame);
         fclose(out);

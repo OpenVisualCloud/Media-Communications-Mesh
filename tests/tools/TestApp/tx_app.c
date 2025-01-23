@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     int err = mesh_create_client_json(&client, client_cfg);
     if (err) {
         printf("Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
-        return err;
+        exit(err);
     }
 
     /* Create mesh connection */
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
     if (err) {
         printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
         mesh_delete_client(&client);
-        return err;
+        exit(err);
     }
 
     /* Do not remove the sleep(), required for proper alignment */
