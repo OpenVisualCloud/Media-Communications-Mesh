@@ -35,6 +35,7 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("[TX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
+            exit(err);
         }
 
         usleep(40000);
