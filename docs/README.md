@@ -24,7 +24,7 @@ The framework creates a secure, standards-based media data plane for inter-micro
 
 ✅ **Key point**: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
 
-### 1.2. Media Proxy Introduction
+### 1.2. Media Proxy
 
 - **Core Functionality**: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
 - **Low Latency & Efficiency**: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
@@ -38,13 +38,13 @@ The framework creates a secure, standards-based media data plane for inter-micro
 
 - **Key Features**: Zero Memory Copy, uses a zero-copy memory technique for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
 - **Media Stream Compatibility**: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
-- **Multiple Protocols**: Works with protocols such as SMPTE ST 2110 and RTSP, enhancing its versatility in different media service setups.
+- **Multiple Protocols**: Works with SMPTE ST-2110 protocols, enhancing versatility in different media service setups.
 
 ✅ **Key point**: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
 
-✅ Detailed information about Media Communications Mesh SDK (further on called just SDK) can be found in the [sdk](../sdk/README.md) directory.
+✅ Detailed information about Media Communications Mesh SDK (further referred to as SDK) can be found in the [sdk](../sdk/README.md) directory.
 
-✅ Detailed information about FFmpeg with Media Communications Mesh plugin can be found in the [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
+✅ Detailed information about FFmpeg with Media Communications Mesh plugin can be found in the [ffmpeg-plugin](../ffmpeg-plugin/README.md) directory.
 
 ## 2. Getting Started
 
@@ -54,7 +54,7 @@ The framework creates a secure, standards-based media data plane for inter-micro
 
 - Linux server (Intel Xeon processor recommended, e.g., Sapphire Rapids).
 - Network Interface Card (NIC) compatible with DPDK (e.g., Intel Ethernet Controller E810-C).
-- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#4-support).
+- (_Recommended_) Update NIC drivers and firmware. For more information and latest drivers, see [Support](#4-support).
 
 #### 2.1.2. Steps
 
@@ -122,7 +122,7 @@ The framework creates a secure, standards-based media data plane for inter-micro
 
     By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
 
-### 2.2. Basic Usage
+### 2.2. Basic Usage – Standalone
 
 The program "media_proxy" and SDK library will be installed on the system after the "build.sh" script run successfully. To run "Media Proxy", execute the below command:
 
@@ -137,7 +137,7 @@ INFO: gRPC Server listening on 0.0.0.0:8001
 
 This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`.
 
-### 2.3. Dockerfiles Build
+### 2.3. Build for Docker
 
 #### 2.3.1. Prerequisites
 
@@ -146,7 +146,7 @@ This will start the Media Proxy in blocking mode and confirm that build was succ
 - (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#4-support).
 - Docker engine (recommended with Buildx toolkit) configured and installed.
 
-#### 2.3.2. Build the Docker Images
+#### 2.3.2. Build Docker Images
 
 1. **Clone the repository**
 
@@ -160,18 +160,18 @@ This will start the Media Proxy in blocking mode and confirm that build was succ
     cd Media-Communications-Mesh
     ```
 
-3. **Build the Dockerfiles**
+3. **Build Docker images**
 
-> [!WARNING]
-> Depending on your Docker installation, this step may require being run as `root`.
+    > [!WARNING]
+    > Depending on your Docker installation, this step may require being run as `root`.
 
-Run the below command from the root directory of the repository to build all of the Dockerfiles:
+    Run the below command from the root directory of the repository to build all of the Dockerfiles:
 
-```bash
-./build_docker.sh
-```
+    ```bash
+    ./build_docker.sh
+    ```
 
-### 2.4. Basic Usage (Docker)
+### 2.4. Basic Usage – Docker
 
 After running the `build_docker.sh` the following Docker images will be available in the current Docker context if the script runs successfully:
 - `mcm/sample-app:latest`
@@ -190,7 +190,7 @@ INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+This will start the Media Proxy as a container and confirm that build was successful. To close it, press `Ctrl+C`
 
 ### 2.5. Parameters Breakdown and Ports
 
@@ -209,12 +209,12 @@ This will start the "Media Proxy" program. When the "Media Proxy" program launch
 - gRPC port (default 8001) is for service mesh control plane connection.
 - TCP port (default 8002) is for the connection with SDK.
 
-To get the full list of all supported parameters, use the `-h` flag alongside the `media_proxy` call:
+To get the full list of all supported parameters, use the `-h` flag:
 
 ```bash
 media_proxy -h
 ```
-which should print a similar usage information:
+which should print the usage information:
 ```text
 Usage: media_proxy [OPTION]
 -h, --help              Print this help and exit.
@@ -226,7 +226,7 @@ Usage: media_proxy [OPTION]
 
 ## 3. Known Issues
 
-- There is one bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install the docker-ce package following [instructions from Docker community](https://docs.docker.com/engine/install/ubuntu/).
+- There is a bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install the docker-ce package following [instructions from Docker community](https://docs.docker.com/engine/install/ubuntu/).
 
 - The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
 

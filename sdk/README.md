@@ -5,7 +5,7 @@
 
 ## Overview
 
-The Media Communications Mesh SDK (further on called just SDK) is a lightweight and versatile library designed to facilitate seamless media data transportation between microservices, with or without the Media Proxy. By leveraging the SDK, developers can easily establish efficient media streaming and enable zero-copied handling of media data transfers.
+The Media Communications Mesh SDK (further referred to as SDK) is a lightweight and versatile library designed to facilitate seamless media data transportation between microservices, with or without the Media Proxy. By leveraging the SDK, developers can easily establish efficient media streaming and enable zero-copied handling of media data transfers.
 
 ## Installation
 

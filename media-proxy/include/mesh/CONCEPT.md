@@ -42,7 +42,7 @@
   * Created at.
   * Established at.
 * Interface for sending metrics.
-* Metrics Reset interface – _Access from Media Communications Mesh Agent (later called just Agent), option to clear all or certain metrics_.
+* Metrics Reset interface – _Access from Mesh Agent, option to clear all or certain metrics_.
 
 ### Intermediary Layer: ST2110, RDMA, Local
 * Base functionality of the specific backend.

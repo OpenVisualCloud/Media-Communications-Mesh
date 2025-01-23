@@ -10,7 +10,7 @@ Install dependencies and build Media Communications Mesh as described in the top
 
 ### Build flow
 
-1. Clone the FFmpeg repository (Release 7.0 by default) and apply Media Communications Mesh patches
+1. Clone the FFmpeg repository (Release 7.0 by default) and apply FFmpeg patches
 
    ```bash
    ./clone-and-patch-ffmpeg.sh
@@ -23,13 +23,13 @@ Install dependencies and build Media Communications Mesh as described in the top
    ./configure-ffmpeg.sh
    ```
 
-3. Build and install FFmpeg with the Media Communications Mesh plugin
+3. Build and install FFmpeg with the Media Communications Mesh FFmpeg plugin
 
    ```bash
    ./build-ffmpeg.sh
    ```
 
-## Media Communications Mesh connection configuration
+## Connection configuration
 
 The next arguments are supported to configure a connection to Media Communications Mesh
 
