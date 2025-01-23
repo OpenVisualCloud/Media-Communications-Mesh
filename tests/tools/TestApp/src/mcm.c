@@ -39,7 +39,7 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *f
 
         usleep(40000);
     };
-    printf("[TXAPP INFO] data sent succesfully \n");
+    printf("[TXAPP INFO] data sent successfully \n");
     return err;
 }
 
