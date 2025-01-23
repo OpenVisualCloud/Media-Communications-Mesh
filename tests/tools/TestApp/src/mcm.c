@@ -6,9 +6,9 @@
 #include "mesh_dp.h"
 
 /* PRIVATE */
-void buffer_to_file(FILE *file, MeshBuffer* buf);
+void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* file){
+int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE *file) {
     int err = 0;
     MeshBuffer *buf;
     if (file == NULL) {
@@ -18,15 +18,15 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
 
     unsigned char frame_num = 0;
     size_t read_size = 1;
-    while(1){
+    while (1) {
 
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
         if (err) {
             printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
         }
-        read_size = fread(buf->payload_ptr, 1, buf->payload_len , file);
-        if(read_size == 0) {
+        read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
+        if (read_size == 0) {
             break;
         }
 
@@ -43,17 +43,17 @@ int mcm_send_video_frame(MeshConnection *connection, MeshClient *client, FILE* f
     return err;
 }
 
-void read_data_in_loop(MeshConnection *connection,const char* filename){
+void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int timeout = MESH_TIMEOUT_INFINITE;
     int frame = 0;
     int err = 0;
     MeshBuffer *buf = NULL;
-       while(1){
+    while (1) {
         FILE *out = fopen(filename, "a");
         /* Set loop's  error*/
         err = 0;
         // mcm_receive_video_frames(connection, client, out, frame);
-        if (frame){
+        if (frame) {
             timeout = 1000;
         }
 
@@ -79,21 +79,18 @@ void read_data_in_loop(MeshConnection *connection,const char* filename){
         printf("Frame: %d\n", ++frame);
         fclose(out);
     }
-    printf("[RXAPP INFO] done reading the data \n"); 
+    printf("[RXAPP INFO] done reading the data \n");
 }
 
-
-void buffer_to_file(FILE *file, MeshBuffer* buf){
+void buffer_to_file(FILE *file, MeshBuffer *buf) {
     if (file == NULL) {
         perror("Failed to open file for writing");
         return;
     }
     // Write the buffer to the file
     unsigned int *temp_buf = buf->payload_ptr;
-    fwrite(buf->payload_ptr,buf->payload_len, 1, file);
+    fwrite(buf->payload_ptr, buf->payload_len, 1, file);
     printf("[RXAPP DEBUG ] saving buffer data to a file\n");
 }
 
-int is_root() {
-    return (geteuid() == 0) ? 1 : 0; 
-}
+int is_root() { return (geteuid() == 0) ? 1 : 0; }

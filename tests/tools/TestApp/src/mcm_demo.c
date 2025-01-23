@@ -15,22 +15,20 @@ int fd;
 char buffer[BUFFER_SIZE];
 pid_t receiver_pid = 1000;
 struct sigaction sa;
-void rx_signal_handler(int sig) {
-    get_user_video_frames(NULL, DUMMY_LEN);
+void rx_signal_handler(int sig) { get_user_video_frames(NULL, DUMMY_LEN); }
+
+const char *mesh_err2str(int err) { return "error"; }
+int mesh_create_client(MeshClient **client, const char *config_json) { return 0; }
+void mesh_delete_client(MeshClient **client) {}
+int mesh_shutdown_connection(MeshConnection **conn) {
+    close(fd);
+    return 0;
 }
 
-
-const char* mesh_err2str(int err) {return "error";}
-int mesh_create_client(MeshClient **client,const char *config_json){ return 0;}
-void mesh_delete_client(MeshClient **client){}
-int mesh_shutdown_connection(MeshConnection **conn){ 
-  close(fd);
-  return 0;}
-
-int mesh_create_tx_connection(MeshClient *client, MeshConnection **conn, const char *config_json){
-  return 0;
+int mesh_create_tx_connection(MeshClient *client, MeshConnection **conn, const char *config_json) {
+    return 0;
 }
-int mesh_create_rx_connection(MeshClient *client, MeshConnection **conn, const char *config_json){
+int mesh_create_rx_connection(MeshClient *client, MeshConnection **conn, const char *config_json) {
     sa.sa_handler = rx_signal_handler;
     sa.sa_flags = 0;
     sigemptyset(&sa.sa_mask);
@@ -38,17 +36,17 @@ int mesh_create_rx_connection(MeshClient *client, MeshConnection **conn, const c
     if (sigaction(SIGUSR1, &sa, NULL) == -1) {
         perror("sigaction");
         exit(EXIT_FAILURE);
-    }  
-  return 0;
+    }
+    return 0;
 }
 
-int mesh_get_buffer(MeshConnection *conn, MeshBuffer **buf){return 0;}
-int mesh_put_buffer(MeshBuffer **buf){return 0;}
+int mesh_get_buffer(MeshConnection *conn, MeshBuffer **buf) { return 0; }
+int mesh_put_buffer(MeshBuffer **buf) { return 0; }
 
-void put_user_video_frames(void* ptr, const size_t len){
-  printf("sending: %s\n", (char*)ptr);
+void put_user_video_frames(void *ptr, const size_t len) {
+    printf("sending: %s\n", (char *)ptr);
 
-    char *file = (char*)ptr;
+    char *file = (char *)ptr;
     char cwd[2048];
     char src_path[2048];
     char dest_path[2048];
@@ -99,16 +97,15 @@ void put_user_video_frames(void* ptr, const size_t len){
 
     // Print the message
 
-  
     if (kill(receiver_pid, SIGUSR1) == -1) {
-      perror("triggering rx app");
-      exit(EXIT_FAILURE);
+        perror("triggering rx app");
+        exit(EXIT_FAILURE);
     }
     printf("Stream sent\n");
 }
 
-int get_user_video_frames(void* ptr, const size_t len){
-     char cwd[2048];
+int get_user_video_frames(void *ptr, const size_t len) {
+    char cwd[2048];
     char src_path[2048];
     char dest_path[2048];
     DIR *dir;
@@ -147,7 +144,6 @@ int get_user_video_frames(void* ptr, const size_t len){
         }
         // Print the message
         printf("Stream received\n");
-
     }
     closedir(dir);
     return 0;
