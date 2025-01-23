@@ -52,7 +52,6 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
         FILE *out = fopen(filename, "a");
         /* Set loop's  error*/
         err = 0;
-        // mcm_receive_video_frames(connection, client, out, frame);
         if (frame) {
             timeout = 1000;
         }

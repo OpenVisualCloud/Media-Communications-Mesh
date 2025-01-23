@@ -47,9 +47,6 @@ int main(int argc, char **argv) {
         exit(err);
     }
 
-    /* Do not remove the sleep(), required for proper alignment */
-    // sleep(5);
-
     /* Open file and send its contents */
     FILE *frame = fopen(frame_file, "rb");
     mcm_send_video_frame(connection, client, frame);
