@@ -21,14 +21,14 @@ INFO[0000] Server starts listening at :50051 - Media Proxy API (gRPC)
 INFO[0000] Server starts listening at :8100 - Control Plane API (REST) 
 ```
 
-Optional argument list is the following
+Optional argument list is the following:
 ```bash
 mesh-agent -h
 ```
 ```text
 Usage of mesh-agent:
--c uint
-  Control API port number (default 8100)
--p uint
-  Proxy API port number (default 50051)
+  -c uint
+    	Control API port number (default 8100)
+  -p uint
+    	Proxy API port number (default 50051)
 ```

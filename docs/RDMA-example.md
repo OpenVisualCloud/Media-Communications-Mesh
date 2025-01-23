@@ -54,11 +54,11 @@ sudo media_proxy -t 8002
 ```bash
 sudo media_proxy -t 8003
 ```
-- process number 3, (replace \<IPv4> with the address of the RDMA-capable interface):
+- process number 3, replace \<IPv4> with the address of the RDMA-capable interface:
 ```bash
 sudo MCM_MEDIA_PROXY_PORT=8002 ./out/bin/recver_app -r <IPv4> -t rdma -i 9000 -w 1920 -h 1080 -x yuv422p10le -b ./received_video.bin -o auto
 ```
-- process number 4, (replace \<IPv4> with the address of the RDMA-capable interface):
+- process number 4, replace \<IPv4> with the address of the RDMA-capable interface:
 ```bash
 sudo MCM_MEDIA_PROXY_PORT=8003  ./out/bin/sender_app -p 9000 -s <IPv4> -t rdma -w 1920 -h 1080 -x yuv422p10le -b dummy_video.bin -n 60 -o auto
 ```
