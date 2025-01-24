@@ -1,6 +1,6 @@
 # Memif sharing
 
-## Getting started:
+## Getting started
 The micro-services running in one node can share memory to transfer data directly. The following is the SW stack architecture and user interface API.
 
 ![instance](_static/memif-sharing-in-one-node.png)
