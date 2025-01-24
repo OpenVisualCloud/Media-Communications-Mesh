@@ -7,6 +7,8 @@ import os
 import signal
 import subprocess
 
+from pathlib import Path
+
 import Engine.client_json
 import Engine.connection
 import Engine.connection_json
@@ -50,12 +52,15 @@ def stop_rx_app(rx: Engine.execute.AsyncProcess):
     rx.process.wait()
 
 
-def remove_sent_file(file_path: str, app_path: str):
+def remove_sent_file(file_path: str, app_path: str) -> None:
     # filepath "/x/y/z.yuv", app_path "/a/b/"
     # removes /a/b/z.yuv
-    removal_path = f'{app_path}/{file_path.split("/")[-1]}'
-    logging.debug(f"Removing: {removal_path}")
-    os.remove(removal_path)
+    removal_path = os.path.join(app_path, Path(file_path).name)
+    if os.path.isfile(removal_path):
+        logging.debug(f"Removing: {removal_path}")
+        os.remove(removal_path)
+    else:
+        logging.debug(f"Cannot remove. File does not exist: {removal_path}")
 
 
 def run_rx_tx_with_file(file_path: str, build: str):
