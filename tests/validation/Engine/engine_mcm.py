@@ -3,7 +3,6 @@
 # Media Communications Mesh
 
 import logging
-import os
 import signal
 import subprocess
 
@@ -20,7 +19,7 @@ def create_client_json(build: str, client: Engine.client_json.ClientJson):
     logging.debug("Client JSON:")
     for line in client.to_json().splitlines():
         logging.debug(line)
-    output_path = os.path.join(build, "tests", "tools", "TestApp", "build", "client.json")
+    output_path = Path(build, "tests", "tools", "TestApp", "build", "client.json")
     logging.debug(f"Client JSON path: {output_path}")
     client.prepare_and_save_json(output_path=output_path)
 
@@ -29,7 +28,7 @@ def create_connection_json(build: str, connection: Engine.connection_json.Connec
     logging.debug("Connection JSON:")
     for line in connection.to_json().splitlines():
         logging.debug(line)
-    output_path = os.path.join(build, "tests", "tools", "TestApp", "build", "connection.json")
+    output_path = Path(build, "tests", "tools", "TestApp", "build", "connection.json")
     logging.debug(f"Connection JSON path: {output_path}")
     connection.prepare_and_save_json(output_path=output_path)
 
@@ -55,16 +54,17 @@ def stop_rx_app(rx: Engine.execute.AsyncProcess):
 def remove_sent_file(file_path: str, app_path: str) -> None:
     # filepath "/x/y/z.yuv", app_path "/a/b/"
     # removes /a/b/z.yuv
-    removal_path = os.path.join(app_path, Path(file_path).name)
-    if os.path.isfile(removal_path):
-        logging.debug(f"Removing: {removal_path}")
-        os.remove(removal_path)
-    else:
+    removal_path = Path(app_path, Path(file_path).name)
+    try:
+        removal_path.unlink()
+        logging.debug(f"Removed: {removal_path}")
+    # except makes the test pass if there's no file to remove
+    except (FileNotFoundError, NotADirectoryError):
         logging.debug(f"Cannot remove. File does not exist: {removal_path}")
 
 
 def run_rx_tx_with_file(file_path: str, build: str):
-    app_path = os.path.join(build, "tests", "tools", "TestApp", "build")
+    app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
         rx = run_rx_app(cwd=app_path)
