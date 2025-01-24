@@ -1,19 +1,21 @@
-#ifndef _MCM_H_
-#define _MCM_H_
-#include "mcm_mock.h"
+#ifndef TESTS_TOOLS_TESTAPP_INC_MCM_H_
+#define TESTS_TOOLS_TESTAPP_INC_MCM_H_
 
-#define DUMMY_LEN 1
-typedef struct mcm_ts{
-    MeshConnection *connection;
-    MeshClient *client;
-}mcm_ts;
+#include <stdio.h>
+#include "mesh_dp.h"
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+#define BYTE_SIZE 1
+#define FIRST_INDEX 0
 
-
-int mcm_init_client(mcm_ts* mcm, const char* cfg);
-int mcm_create_tx_connection(mcm_ts* mcm, const char* cfg);
-int mcm_create_rx_connection(mcm_ts* mcm, const char* cfg);
-int mcm_send_video_frame(mcm_ts* mcm, const char* frame, int frame_len);
-int mcm_receive_video_frames(mcm_ts* mcm);
-int file_to_buffer(FILE* fp, MeshBuffer* buf, int frame_size);
-
-#endif /* _MCM_H_*/
+int mcm_init_client(MeshConnection **connection, MeshClient *client, const char *cfg);
+int mcm_create_tx_connection(MeshConnection *connection, MeshClient *client, const char *cfg);
+int mcm_create_rx_connection(MeshConnection *connection, MeshClient *client, const char *cfg);
+int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *file);
+void buffer_to_file(FILE *file, MeshBuffer *buf);
+void read_data_in_loop(MeshConnection *connection, const char *filename);
+int is_root();
+#endif // TESTS_TOOLS_TESTAPP_INC_MCM_H_
