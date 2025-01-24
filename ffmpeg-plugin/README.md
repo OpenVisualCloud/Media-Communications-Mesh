@@ -1,16 +1,16 @@
-# FFmpeg plugin for MCM
+# FFmpeg plugin for Media Communications Mesh
 
-![MCM FFmpeg Plugins](../docs/_static/ffmpeg-plugins-media-communications-mesh-1.webp)
+![Media Communications Mesh FFmpeg Plugins](../docs/_static/ffmpeg-plugins-media-communications-mesh-1.webp)
 
 ## Build
 
 ### Prerequisites
 
-Install dependencies and build MCM as described in the top level README.md, paragraph "Basic Installation".
+Install dependencies and build Media Communications Mesh as described in the top level README.md, paragraph "Basic Installation".
 
 ### Build flow
 
-1. Clone the FFmpeg repository (Release 7.0 by default) and apply MCM patches
+1. Clone the FFmpeg repository (Release 7.0 by default) and apply patches
 
    ```bash
    ./clone-and-patch-ffmpeg.sh
@@ -23,15 +23,15 @@ Install dependencies and build MCM as described in the top level README.md, para
    ./configure-ffmpeg.sh
    ```
 
-3. Build and install FFmpeg with the MCM plugin
+3. Build and install FFmpeg with the Media Communications Mesh FFmpeg plugin
 
    ```bash
    ./build-ffmpeg.sh
    ```
 
-## MCM connection configuration
+## Connection configuration
 
-The next arguments are supported to configure a connection to MCM
+The next arguments are supported to configure a connection to Media Communications Mesh
 
 | Argument        | Type    | Description                                                                     | Default              |
 | --------------- | :-----: | ------------------------------------------------------------------------------- | :------------------: |
@@ -55,7 +55,7 @@ The next arguments are supported to configure a video transmission
 
 ## Example – Run video transmission
 
-This example demonstrates sending a video file from the 1st FFmpeg instance to the 2nd FFmpeg instance via MCM and then stream it to a remote machine via UDP.
+This example demonstrates sending a video file from the 1st FFmpeg instance to the 2nd FFmpeg instance via Media Communications Mesh, then streaming it to a remote machine via UDP.
 
 ### NIC setup
 
@@ -63,12 +63,12 @@ TBD
 
 ### Receiver side setup
 
-1. Start media_proxy
+1. Start Media Proxy
    ```bash
    sudo media_proxy -d 0000:32:01.1 -i 192.168.96.11 -r 192.168.97.11 -p 9200-9299 -t 8002
    ```
 
-2. Start FFmpeg to receive frames from MCM and stream to a remote machine via UDP
+2. Start FFmpeg to receive frames from Media Communications Mesh and stream to a remote machine via UDP
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm \
       -conn_type st2110 \
@@ -83,12 +83,12 @@ TBD
 
 ### Sender side setup
 
-1. Start media_proxy
+1. Start Media Proxy
    ```bash
    sudo media_proxy -d 0000:32:01.0 -i 192.168.96.10 -r 192.168.97.10 -p 9100-9199 -t 8001
    ```
 
-2. Start FFmpeg to stream a video file to the receiver via MCM
+2. Start FFmpeg to stream a video file to the receiver via Media Communications Mesh
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <video-file-path> -f mcm \
       -conn_type st2110 \
@@ -102,15 +102,15 @@ TBD
 
    When working with raw video files that lack metadata, you must explicitly provide FFmpeg with the necessary video frame details. This includes specifying the format `-f rawvideo`, pixel format `-pix_fmt`, and resolution `-s WxH`. For example:
 
-    ```bash
-    ffmpeg -f rawvideo -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
+   ```bash
+   ffmpeg -f rawvideo -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
    ```
 
 
 ### VLC player setup
 
 On the remote machine start the VLC player and open a network stream from the next URL:
-```
+```text
 udp://@:1234
 ```
 
@@ -133,7 +133,7 @@ The next arguments are supported to configure an audio transmission
 
 ## Example – Run audio transmission, PCM 24-bit
 
-This example demonstrates sending a PCM 24-bit encoded audio file from the 1st FFmpeg instance to the 2nd FFmpeg instance via MCM.
+This example demonstrates sending a PCM 24-bit encoded audio file from the 1st FFmpeg instance to the 2nd FFmpeg instance via Media Communications Mesh.
 
 ### NIC setup
 
@@ -141,13 +141,13 @@ TBD
 
 ### Receiver side setup
 
-1. Start media_proxy
+1. Start Media Proxy
 
    ```bash
    sudo media_proxy -d 0000:32:01.1 -i 192.168.96.11 -r 192.168.97.11 -p 9200-9299 -t 8002
    ```
 
-2. Start FFmpeg to receive packets from MCM and store on the disk
+2. Start FFmpeg to receive packets from Media Communications Mesh and store on the disk
 
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -re -f mcm_audio_pcm24 \
@@ -162,11 +162,11 @@ TBD
 
 ### Sender side setup
 
-1. Start media_proxy
+1. Start Media Proxy
    ```bash
    sudo media_proxy -d 0000:32:01.0 -i 192.168.96.10 -r 192.168.97.10 -p 9100-9199 -t 8001
    ```
-2. Start FFmpeg to stream an audio file to the receiver via MCM
+2. Start FFmpeg to stream an audio file to the receiver via Media Communications Mesh
 
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <audio-file-path> -f mcm_audio_pcm24 \
@@ -180,9 +180,9 @@ TBD
 
 ## Known Issues
 
-### Shared libraries error:
+### Shared libraries error
 FFmpeg build was successful but trying to run `ffmpeg` results in shared libraries error:
-```
+```text
 root@my-machine:~# ffmpeg
 
 ffmpeg: error while loading shared libraries: libavfilter.so.9: cannot open shared object file: No such file or directory
@@ -190,14 +190,14 @@ ffmpeg: error while loading shared libraries: libavfilter.so.9: cannot open shar
 
 **Resolution:**
 Try running ffmpeg or exporting the `LD_LIBRARY_PATH` in your shell session by pointing to the `/usr/local/lib` folder. Examples:
-```
+```text
 root@my-machine:~# LD_LIBRARY_PATH=/usr/local/lib ffmpeg
 
 ffmpeg version n6.1.1-152-ge821e6c21d Copyright (c) 2000-2023 the FFmpeg developers
   built with gcc 11 (Ubuntu 11.4.0-1ubuntu1~22.04)
 ```
 Using export:
-```
+```text
 root@my-machine:~# export LD_LIBRARY_PATH=/usr/local/lib
 root@my-machine:~# ffmpeg
 

@@ -7,11 +7,11 @@ int mesh_create_client(MeshClient **client,
 ```
 Creates a new mesh client with the provided JSON configuration.
 
-#### Parameters
+### Parameters
 * `[OUT]` `client` – Address of a pointer to a mesh client structure.
 * `[IN]` `config_json` – Pointer to a mesh client configuration string in JSON format.
 
-#### Client Configuration Example
+### Client Configuration Example
 ```json
 {
   "apiVersion": "v1",
@@ -21,7 +21,7 @@ Creates a new mesh client with the provided JSON configuration.
 }
 ```
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -31,10 +31,10 @@ int mesh_delete_client(MeshClient **client)
 ```
 Deletes the mesh client and its resources.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `client` – Address of a pointer to a mesh client structure.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -46,12 +46,12 @@ int mesh_create_tx_connection(MeshClient *client,
 ```
 Creates a transmitter connection with the provided JSON configuration.
 
-#### Parameters
+### Parameters
 * `[IN]` `client` – Pointer to a parent mesh client.
 * `[OUT]` `conn` – Address of a pointer to the connection structure.
 * `[IN]` `config_json` – Pointer to a connection configuration structure.
 
-#### Transmitter/Receiver Connection Configuration Example
+### Transmitter/Receiver Connection Configuration Example
 ```json
 {
   "bufferQueueCapacity": 16,
@@ -96,7 +96,7 @@ Creates a transmitter connection with the provided JSON configuration.
 ```
 The `transportPixelFormat` is required only for st2110-20 transport type, otherwise shall not be present.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 Allowed use cases of "transportPixelFormat" and "pixelFormat" for st2110-20
@@ -129,12 +129,12 @@ int mesh_create_rx_connection(MeshClient *client,
 ```
 Creates a receiver connection with the provided JSON configuration.
 
-#### Parameters
+### Parameters
 * `[IN]` `client` – Pointer to a parent mesh client.
 * `[OUT]` `conn` – Address of a pointer to the connection structure.
 * `[IN]` `config_json` – Pointer to a connection configuration structure.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -144,10 +144,10 @@ int mesh_delete_connection(MeshConnection **conn)
 ```
 Deletes the connection and its resources.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `conn` – Address of a pointer to the connection structure.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -158,11 +158,11 @@ int mesh_get_buffer(MeshConnection *conn,
 ```
 Gets a buffer from the media connection.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -174,12 +174,12 @@ int mesh_get_buffer_timeout(MeshConnection *conn,
 ```
 Gets a buffer from the media connection with a timeout.
 
-#### Parameters
+### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 * `[IN]` `timeout_us` – Timeout interval in microseconds.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -194,7 +194,7 @@ typedef struct{
     const size_t metadata_len;
 } MeshBuffer;
 ```
-#### Fields
+### Fields
 * `conn` – Pointer to a parent connection structure.
 * `payload_ptr` – Pointer to shared memory area storing payload data.
 * `payload_len` – Actual length of payload data in the buffer.
@@ -209,10 +209,10 @@ int mesh_put_buffer(MeshBuffer **buf)
 ```
 Puts the buffer to the media connection.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -223,11 +223,11 @@ int mesh_put_buffer_timeout(MeshBuffer **buf,
 ```
 Puts the buffer to the media connection with a timeout.
 
-#### Parameters
+### Parameters
 * `[IN/OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 * `[IN]` `timeout_us` – Timeout interval in microseconds.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -238,11 +238,11 @@ int mesh_buffer_set_payload_len(MeshBuffer **buf,
 ```
 Sets the payload length in the buffer provided by the media connection.
 
-#### Parameters
+### Parameters
 * `[IN]` `buf` – Address of a pointer to a mesh buffer structure.
 * `[IN]` `len` – Payload length.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -253,11 +253,11 @@ int mesh_buffer_set_metadata_len(MeshBuffer **buf,
 ```
 Sets the metadata length in the buffer provided by the media connection.
 
-#### Parameters
+### Parameters
 * `[IN]` `buf` – Address of a pointer to a mesh buffer structure.
 * `[IN]` `len` – Metadata length.
 
-#### Returns
+### Returns
 0 if successful. Otherwise, returns an error.
 
 
@@ -267,8 +267,8 @@ const char *mesh_err2str(int err)
 ```
 Gets a text description of the error code.
 
-#### Parameters
+### Parameters
 * `[IN]` `err` – Error code returned from any Mesh DP API call.
 
-#### Returns
+### Returns
 NULL-terminated string describing the error code.

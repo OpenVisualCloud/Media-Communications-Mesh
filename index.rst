@@ -1,14 +1,14 @@
-.. Intel® Intel® Media Communications Mesh documentation master file, created by
+.. Media Communications Mesh documentation master file, created by
    sphinx-quickstart
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
    SPDX-License-Identifier: BSD-3-Clause
    Copyright(©) 2024 Intel Corporation
-   Intel® Intel® Media Communications Mesh
+   Media Communications Mesh
 
 
-Intel® Media Communications Mesh
+Media Communications Mesh
 ======================================================
 
 .. toctree::
@@ -25,9 +25,9 @@ Contents
    :caption: Contents:
 
    docs/dp-sdk-api-ref
-   docs/IPCamera-RTP-Memif
    docs/memif-sharing
    docs/setup-mcm-with-k8s
+   docs/RDMA-example
    media-proxy/README
 
 FFmpeg-plugin
