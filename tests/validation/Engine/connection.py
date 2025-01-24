@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2024 Intel Corporation
-# Intel® Media Communications Mesh
+# Copyright 2024-2025 Intel Corporation
+# Media Communications Mesh
 
 from enum import Enum
 
@@ -72,7 +72,7 @@ class St2110(Connection):
         return {
             "connection": {
                 "st2110": {
-                    "transport": self.transport.value[0],
+                    "transport": self.transport.value,
                     "remoteIpAddr": self.remoteIpAddr,
                     "remotePort": self.remotePort,
                     "pacing": self.pacing,
