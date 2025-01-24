@@ -10,7 +10,7 @@ Install dependencies and build Media Communications Mesh as described in the top
 
 ### Build flow
 
-1. Clone the FFmpeg repository (Release 7.0 by default) and apply FFmpeg patches
+1. Clone the FFmpeg repository (Release 7.0 by default) and apply patches
 
    ```bash
    ./clone-and-patch-ffmpeg.sh
@@ -55,7 +55,7 @@ The next arguments are supported to configure a video transmission
 
 ## Example – Run video transmission
 
-This example demonstrates sending a video file from the 1st FFmpeg instance to the 2nd FFmpeg instance via Media Communications Mesh and then stream it to a remote machine via UDP.
+This example demonstrates sending a video file from the 1st FFmpeg instance to the 2nd FFmpeg instance via Media Communications Mesh, then streaming it to a remote machine via UDP.
 
 ### NIC setup
 

@@ -70,7 +70,7 @@ usage: recver_app [OPTION]
 3. RAISR Microservice
 
 Standalone microservice to apply "super resolution" to RAW YUV format video frames.
-This application use Media Communications Mesh DP SDK to handle on the data input/output functions.
+This application uses Media Communications Mesh SDK to handle input/output.
 
 Source code: (will be released later)
 

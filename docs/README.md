@@ -12,14 +12,14 @@
 
 ## 1. Introduction
 
-The Media Communications Mesh enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments.
+Media Communications Mesh enables efficient, low-latency media transport for media microservices in Edge, Edge-to-Cloud, Private Cloud, and Public Cloud environments.
 The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
 
 
 ### 1.1. Media Communications Mesh
 
-- **Framework Introduction**: Media Communications Mesh is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
-- **Purpose**: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
+- **Framework Introduction**: Media Communications Mesh is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, by connecting media microservices.
+- **Purpose**: Its main role is to establish a secure data plane for media, allowing communication between microservices. This ensures media can be reliably transmitted across different environments.
 - **Technological Basis**: The Media Transport Library (MTL) helps form the media data plane, and a control-plane communications infrastructure adds support for media control protocols.
 
 ✅ **Key point**: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
@@ -28,7 +28,7 @@ The framework creates a secure, standards-based media data plane for inter-micro
 
 - **Core Functionality**: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
 - **Low Latency & Efficiency**: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
-- **Service Mesh Role**: It acts as a Data Plane component within a larger service mesh for media applications, utilizing `MTL` `ST 2110` API, `libfabric` for `RDMA` API, `MemIF` shared memory APIs, and many more, to abstract the complexities involved in efficient media transport.
+- **Service Mesh Role**: It acts as a Data Plane component within a larger service mesh for media applications, utilizing `MTL` `ST 2110` API, `libfabric` for `RDMA` API, `memif` shared memory APIs, and many more, to abstract the complexities involved in efficient media transport.
 
 ✅ **Key point**: Media Proxy handles the data transport layer of media streams, focusing on real-time efficiency and ensuring media routing between microservices in the mesh.
 
@@ -98,7 +98,7 @@ The framework creates a secure, standards-based media data plane for inter-micro
                 sudo apt-get update
                 sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
                 ```
-            - CentOS stream
+            - CentOS Stream
                 ```bash
                 sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
                 ```
@@ -124,7 +124,7 @@ The framework creates a secure, standards-based media data plane for inter-micro
 
 ### 2.2. Basic Usage – Standalone
 
-The program "media_proxy" and SDK library will be installed on the system after the "build.sh" script run successfully. To run "Media Proxy", execute the below command:
+The program "media_proxy" and SDK library will be installed on the system after the successful execution of `build.sh` script. To run Media Proxy, execute the following command:
 
 ```bash
 media_proxy
@@ -135,15 +135,15 @@ INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-This will start the Media Proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`.
+This will start the Media Proxy in blocking mode and confirm that the build was successful. To close it, press `Ctrl+C`.
 
 ### 2.3. Build for Docker
 
 #### 2.3.1. Prerequisites
 
-- Linux server (Intel Xeon processor recommended, e.g. Sapphire Rapids).
-- Network Interface Card (NIC) compatible with DPDK (e.g. Intel Ethernet Controller E810-C).
-- (Recommended) Update NIC drivers and firmware. More info and latest drivers [Support](#4-support).
+- Linux server (Intel Xeon processor recommended, e.g., Sapphire Rapids).
+- Network Interface Card (NIC) compatible with DPDK (e.g., Intel Ethernet Controller E810-C).
+- (_Recommended_) Update NIC drivers and firmware. For more information and latest drivers, see [Support](#4-support).
 - Docker engine (recommended with Buildx toolkit) configured and installed.
 
 #### 2.3.2. Build Docker Images
@@ -165,7 +165,7 @@ This will start the Media Proxy in blocking mode and confirm that build was succ
     > [!WARNING]
     > Depending on your Docker installation, this step may require being run as `root`.
 
-    Run the below command from the root directory of the repository to build all of the Dockerfiles:
+    Run the command below from the root directory of the repository to build all of the Dockerfiles:
 
     ```bash
     ./build_docker.sh
@@ -179,7 +179,7 @@ After running the `build_docker.sh` the following Docker images will be availabl
 - `mcm/ffmpeg:latest`
 - `mcm/ffmpeg:6.1-latest`
 
-Now the "Media Proxy" can be run inside the container. To check it, execute the below command:
+Media Proxy can be run inside a container now. To check it, execute the following command:
 
 ```bash
 docker run --privileged -it -v /var/run/mcm:/run/mcm -v /dev/hugepages:/dev/hugepages mcm/media-proxy:latest
@@ -190,9 +190,9 @@ INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-This will start the Media Proxy as a container and confirm that build was successful. To close it, press `Ctrl+C`
+This will start the Media Proxy as a container and confirm that the build was successful. To close it, press `Ctrl+C`.
 
-### 2.5. Parameters Breakdown and Ports
+### 2.5. Parameters and Ports
 
 Running the Media Proxy with:
 
@@ -205,7 +205,7 @@ INFO: TCP Server listening on 0.0.0.0:8002
 INFO: gRPC Server listening on 0.0.0.0:8001
 ```
 
-This will start the "Media Proxy" program. When the "Media Proxy" program launches successfully, it will open two ports to listen for control messages:
+This will start Media Proxy with two ports opened to listen for control messages:
 - gRPC port (default 8001) is for service mesh control plane connection.
 - TCP port (default 8002) is for the connection with SDK.
 
@@ -226,7 +226,7 @@ Usage: media_proxy [OPTION]
 
 ## 3. Known Issues
 
-- There is a bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install the docker-ce package following [instructions from Docker community](https://docs.docker.com/engine/install/ubuntu/).
+- There is a bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) do not work as expected. It is preferred to install the `docker-ce` package, following an [instruction from Docker Docs](https://docs.docker.com/engine/install/ubuntu/).
 
 - The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
 
@@ -247,7 +247,7 @@ We are here to help, so don't hesitate to reach out if you need assistance.
 ## 5. Note
 
 This project is under development.
-All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
+All source code and features on the main branch are shared for the purpose of testing or evaluation, and not production ready.
 
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg

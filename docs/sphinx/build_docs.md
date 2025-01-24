@@ -24,15 +24,15 @@ python3 -m pip install        \
         sphinx-copybutton
 ```
 
-## 2. Build documentation (html)
+## 2. Build HTML documentation
 
-Execute make build command to build html option
+Execute make build command to build HTML option
 
 ```bash
 make -C {project_dir}/docs/sphinx html
 ```
 
-## 3. Open built documentation (html)
+## 3. Open created HTML documentation
 
 ```bash
 cd {project_dir}/docs/_build/html
@@ -40,7 +40,9 @@ cd {project_dir}/docs/_build/html
 
 Open index.html via web browser
 
-### 3.1. Alternative run nginx server
+### 4. Publish with nginx server
+
+> Note: This step is optional.
 
 ```bash
 docker run -it --rm -d -p 8080:80 --name web -v ./docs/_build/html:/usr/share/nginx/html nginx

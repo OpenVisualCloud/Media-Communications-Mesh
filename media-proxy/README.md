@@ -7,15 +7,14 @@
 
 The primary function of the Media Proxy is to provide a single memory-mapped API to all media microservices to abstract away the complexity of media transport.
 
-## Compile
+## Compile and Install
 
 ```bash
 ./build.sh
 ```
 
 ## Run
-The program "media_proxy" can be installed on system, after the `build.sh` script run successfully.
-And the "Media Proxy" can be run with below command.
+Media Proxy can be started with the following command
 
 ```bash
 media_proxy
@@ -35,7 +34,7 @@ Dec 31 11:03:00.394 [INFO] [AGENT] ApplyConfig groups=0 bridges=0
 Dec 31 11:03:00.394 [INFO] [RECONCILE] Config is up to date
 ```
 
-The Media Proxy requires the Mesh Agent to be running and listening at localhost:50051 for incoming gRPC requests.
+The Media Proxy requires Mesh Agent to be running and listening at `localhost:50051` for incoming gRPC requests.
 
 If Media Proxy successfully launches up, it opens a port for listening to control requests from SDK via gRPC (default 8002).
 
@@ -57,7 +56,7 @@ Usage: media_proxy [OPTION]
 
 ### Run Media Proxy using `native_af_xdp`
 
-To use Media Proxy with the native `af_xdp/ebpf` device a device name should be provided with the `native_af_xdp:` prefix, for example `media-proxy --dev native_af_xdp:ens259f0np0`.
+To use Media Proxy with the native `af_xdp/ebpf` device, a device name should be provided with the `native_af_xdp:` prefix, for example `media-proxy --dev native_af_xdp:ens259f0np0`.
 Notice that the device must have a pre-assigned IP address. The `--ip` parameter is not applied in this mode.
 
 > [!CAUTION]
@@ -129,7 +128,7 @@ kubectl get daemonsets.apps -n mcm
 If all commands are executed successfully, you will see the Media Proxy deployed as a K8s DaemonSet to the worker node (labeled with "mcm.intel.com/role=worker").
 
 ## Known Issues
-- There is a bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
+- There is a bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) do not work as expected. It is preferred to install the `docker-ce` package, following an [instruction from Docker Docs](https://docs.docker.com/engine/install/ubuntu/).
 
 - The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
 
