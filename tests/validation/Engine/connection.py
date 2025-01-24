@@ -51,32 +51,32 @@ class St2110(Connection):
         transport=TransportType.ST20,
         remoteIpAddr="192.168.95.2",
         remotePort="9002",
-        pacing="narrow",
-        payloadType=112,
+        # pacing="narrow",
+        # payloadType=112,
     ):
         self.transport = transport
         self.remoteIpAddr = remoteIpAddr
         self.remotePort = remotePort
-        self.pacing = pacing
-        self.payloadType = payloadType
+        # self.pacing = pacing
+        # self.payloadType = payloadType
         self.connection_type = ConnectionType.ST2110
 
     def set_st2110(self, edits: dict):
         self.transport = edits.get("transport", self.transport)
         self.remoteIpAddr = edits.get("remoteIpAddr", self.remoteIpAddr)
         self.remotePort = edits.get("remotePort", self.remotePort)
-        self.pacing = edits.get("pacing", self.pacing)
-        self.payloadType = edits.get("payloadType", self.payloadType)
+        # self.pacing = edits.get("pacing", self.pacing)
+        # self.payloadType = edits.get("payloadType", self.payloadType)
 
     def to_dict(self) -> dict:
         return {
             "connection": {
                 "st2110": {
-                    "transport": self.transport.value[0],
+                    "transport": self.transport.value,
                     "remoteIpAddr": self.remoteIpAddr,
                     "remotePort": self.remotePort,
-                    "pacing": self.pacing,
-                    "payloadType": self.payloadType,
+                    # "pacing": self.pacing,
+                    # "payloadType": self.payloadType,
                 }
             }
         }
