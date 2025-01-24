@@ -74,7 +74,6 @@ jobs:
         BASH_SEVERITY: "warning"
         VALIDATE_PROTOBUF: true
         VALIDATE_MARKDOWN: true
-        VALIDATE_MARKDOWN_PRETTIER: true
         VALIDATE_JSONC: true
         VALIDATE_GO: true
         VALIDATE_GITHUB_ACTIONS: true

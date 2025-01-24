@@ -1,7 +1,7 @@
 
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
-# Intel® Media Communications Mesh
+# Media Communications Mesh
 
 # Minimal makefile for Sphinx documentation
 
