@@ -53,8 +53,8 @@ int main(int argc, char *argv[]) {
     printf("[RX] Shutdown completed exiting\n");
     goto safe_exit;
 
-    safe_exit:
-        free((char*)client_cfg);
-        free((char*)conn_cfg);
-        return  (err == 0 ) ? 0 : err;
+safe_exit:
+    free((char *)client_cfg);
+    free((char *)conn_cfg);
+    return (err == 0) ? 0 : err;
 }

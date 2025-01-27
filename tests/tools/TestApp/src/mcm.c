@@ -73,7 +73,6 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
         err = mesh_get_buffer_timeout(connection, &buf, timeout);
         if (err == MESH_ERR_CONN_CLOSED) {
             printf("[RX] Connection closed\n");
-
         }
         printf("[RX] Fetched mesh data buffer\n");
         if (err) {
