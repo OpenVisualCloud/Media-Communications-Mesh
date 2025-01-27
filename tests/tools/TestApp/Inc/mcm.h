@@ -1,13 +1,14 @@
-#ifndef _MCM_H_
-#define _MCM_H_
 
-#include <stdio.h>
-#include "mesh_dp.h"
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
  *
  * SPDX-License-Identifier: BSD-3-Clause
  */
+#ifndef _MCM_H_
+#define _MCM_H_
+
+#include <stdio.h>
+#include "mesh_dp.h"
 #define BYTE_SIZE 1
 #define FIRST_INDEX 0
 
