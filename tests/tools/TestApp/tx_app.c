@@ -56,5 +56,7 @@ int main(int argc, char **argv) {
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
     printf("[TX] Shutdown completed. Exiting\n");
+    free((char*)client_cfg);
+    free((char*)conn_cfg);
     return 0;
 }

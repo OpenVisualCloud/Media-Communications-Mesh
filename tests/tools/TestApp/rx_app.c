@@ -51,6 +51,7 @@ int main(int argc, char *argv[]) {
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
     printf("[RX] Shutdown completed exiting\n");
-
+    free((char*)client_cfg);
+    free((char*)conn_cfg);
     return 0;
 }
