@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     int err = mesh_create_client_json(&client, client_cfg);
     if (err) {
         printf("[RX] Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
-        exit(err);
+        goto safe_exit;
     }
 
     /* Create mesh connection */
@@ -43,7 +43,7 @@ int main(int argc, char *argv[]) {
     if (err) {
         printf("[RX] Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
         mesh_delete_client(&client);
-        exit(err);
+        goto safe_exit;
     }
     printf("[RX] Waiting for frames... \n");
     read_data_in_loop(connection, out_filename);
@@ -51,7 +51,10 @@ int main(int argc, char *argv[]) {
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
     printf("[RX] Shutdown completed exiting\n");
-    free((char*)client_cfg);
-    free((char*)conn_cfg);
-    return 0;
+    goto safe_exit;
+
+    safe_exit:
+        free((char*)client_cfg);
+        free((char*)conn_cfg);
+        return  (err == 0 ) ? 0 : err;
 }
