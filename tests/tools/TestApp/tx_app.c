@@ -49,9 +49,8 @@ int main(int argc, char **argv) {
     }
 
     /* Open file and send its contents */
-    FILE *frames = fopen(video_file, "rb");
-    mcm_send_video_frames(connection, client, frames);
-
+ 
+    err = mcm_send_video_frames(connection, video_file);
     printf("[TX] Shuting down connection and client\n");
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);

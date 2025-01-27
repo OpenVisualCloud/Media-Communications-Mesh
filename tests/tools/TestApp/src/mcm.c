@@ -13,9 +13,10 @@
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *file) {
+int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     int err = 0;
     MeshBuffer *buf;
+    FILE *file = fopen(filename, "rb");
     if (file == NULL) {
         printf("[TX] Failed to serialize video: file is null \n");
         err = 1;
@@ -30,12 +31,12 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
         err = mesh_get_buffer(connection, &buf);
         if (err) {
             printf("[TX] Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
-            err = 2;
+            goto close_file;
             return err;
         }
         read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
         if (read_size == 0) {
-            err = 2;
+            goto close_file;
             return err;
         }
 
@@ -44,7 +45,7 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("[TX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
-            err = 2;
+            goto close_file;
             return err;
         }
 
@@ -53,6 +54,8 @@ int mcm_send_video_frames(MeshConnection *connection, MeshClient *client, FILE *
         usleep(40000);
     }
     printf("[TX] data sent successfully \n");
+    close_file:
+        fclose(file);
     return 0;
 }
 
@@ -61,8 +64,9 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int frame = 0;
     int err = 0;
     MeshBuffer *buf = NULL;
+    FILE *out = fopen(filename, "a");
     while (1) {
-        FILE *out = fopen(filename, "a");
+
         /* Set loop's  error*/
         err = 0;
         if (frame) {
@@ -89,8 +93,8 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
             break;
         }
         printf("[RX] Frame: %d\n", ++frame);
-        fclose(out);
     }
+    fclose(out);
     printf("[RX] Done reading the data \n");
 }
 
