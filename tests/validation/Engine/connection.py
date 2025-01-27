@@ -46,40 +46,54 @@ class TransportType(Enum):
 class St2110(Connection):
     """Prepares st2110 part of connection.json file"""
 
-    def __init__(
-        self,
-        transport=TransportType.ST20,
-        remoteIpAddr="192.168.95.2",
-        remotePort="9002",
-        pacing="narrow",
-        payloadType=112,
-    ):
+    def __init__(self, transport, remoteIpAddr, remotePort):
         self.transport = transport
         self.remoteIpAddr = remoteIpAddr
         self.remotePort = remotePort
-        self.pacing = pacing
-        self.payloadType = payloadType
         self.connection_type = ConnectionType.ST2110
 
-    def set_st2110(self, edits: dict):
-        self.transport = edits.get("transport", self.transport)
-        self.remoteIpAddr = edits.get("remoteIpAddr", self.remoteIpAddr)
-        self.remotePort = edits.get("remotePort", self.remotePort)
-        self.pacing = edits.get("pacing", self.pacing)
-        self.payloadType = edits.get("payloadType", self.payloadType)
-
-    def to_dict(self) -> dict:
+    def to_dict(self):
         return {
             "connection": {
                 "st2110": {
                     "transport": self.transport.value,
                     "remoteIpAddr": self.remoteIpAddr,
                     "remotePort": self.remotePort,
-                    "pacing": self.pacing,
-                    "payloadType": self.payloadType,
                 }
             }
         }
+
+
+class St2110_20(St2110):
+    def __init__(
+        self,
+        remoteIpAddr="192.168.95.2",
+        remotePort="9002",
+        pacing="narrow",
+        payloadType=112,
+    ):
+        super().__init__(transport=TransportType.ST20, remoteIpAddr=remoteIpAddr, remotePort=remotePort)
+        self.pacing = pacing
+        self.payloadType = payloadType
+
+    def to_dict(self):
+        base_dict = super().to_dict()
+        base_dict.update(
+            {
+                "pacing": self.pacing,
+                "payloadType": self.payloadType,
+            }
+        )
+        return base_dict
+
+
+class St2110_30(St2110):
+    def __init__(
+        self,
+        remoteIpAddr="192.168.95.2",
+        remotePort="9002",
+    ):
+        super().__init__(transport=TransportType.ST30, remoteIpAddr=remoteIpAddr, remotePort=remotePort)
 
 
 class ConnectionMode(Enum):
