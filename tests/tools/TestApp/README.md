@@ -2,6 +2,13 @@
 
 Application for utilizing Media Communications Mesh SDK API.
 
+## Prerequisities
+before building this code following libreries need to be build and installed on host system:
+* [grpc](grpcMedia-Communications-Mesh/sdk/README.md)
+* [memif](Media-Communications-Mesh/sdk/3rdparty/libmemif/docs/buildinstructions_doc.rst)
+
+test apps use them as shared libraries during linking stage, without them, compilation will fail.
+
 ## Usage
 1. Build binaries:
     ```shell
