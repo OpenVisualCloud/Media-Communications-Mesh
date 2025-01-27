@@ -33,12 +33,12 @@ def create_connection_json(build: str, connection: Engine.connection_json.Connec
     connection.prepare_and_save_json(output_path=output_path)
 
 
-def run_rx_app(cwd: str, timeout: int = 0) -> Engine.execute.AsyncProcess:
-    return Engine.execute.call("./RxApp", cwd=cwd, timeout=timeout)
+def run_rx_app(client_cfg_file: str, connection_cfg_file: str, path_to_output_file: str, cwd: str, timeout: int = 0) -> Engine.execute.AsyncProcess:
+    return Engine.execute.call(f"./RxApp {client_cfg_file} {connection_cfg_file} {path_to_output_file}", cwd=cwd, timeout=timeout)
 
 
-def run_tx_app(file_path: str, rx_pid: int, cwd: str, testcmd: bool = True) -> subprocess.CompletedProcess:
-    return Engine.execute.run(f"./TxApp {file_path} {rx_pid}", testcmd=testcmd, cwd=cwd)
+def run_tx_app(client_cfg_file: str, connection_cfg_file: str, path_to_input_file: str, cwd: str, testcmd: bool = True) -> subprocess.CompletedProcess:
+    return Engine.execute.run(f"./TxApp {client_cfg_file} {connection_cfg_file} {path_to_input_file}", cwd=cwd)
 
 
 def handle_tx_failure(tx: subprocess.CompletedProcess):
@@ -67,10 +67,14 @@ def run_rx_tx_with_file(file_path: str, build: str):
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
-        rx = run_rx_app(cwd=app_path)
-        tx = run_tx_app(file_path=file_path, rx_pid=rx.process.pid, cwd=app_path)
+        client_cfg_file = Path(app_path.resolve(), "client.json")
+        connection_cfg_file = Path(app_path.resolve(), "connection.json")
+        output_file_path = str(Path(app_path, Path(file_path).name + "_MCMoutput.yuv").resolve())
+        rx = run_rx_app(client_cfg_file=client_cfg_file, connection_cfg_file=connection_cfg_file, path_to_output_file=output_file_path, cwd=app_path)
+        tx = run_tx_app(client_cfg_file=client_cfg_file, connection_cfg_file=connection_cfg_file, path_to_input_file=file_path, cwd=app_path)
         handle_tx_failure(tx)
-    finally:
         stop_rx_app(rx)
+    finally:
+        pass
         # TODO: Add checks for transmission errors
-        remove_sent_file(file_path, app_path)
+        # remove_sent_file(output_file_path, Path(output_file_path).name)
