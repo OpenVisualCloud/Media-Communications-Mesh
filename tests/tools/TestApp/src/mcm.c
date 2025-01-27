@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include "mcm.h"
-#include "mesh_dp.h"
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
