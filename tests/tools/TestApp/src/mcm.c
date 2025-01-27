@@ -1,104 +1,108 @@
-#include "mcm.h"
-#include <stdio.h>
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include <stdlib.h>
-#include <assert.h>
+#include <string.h>
+#include <unistd.h>
+#include "mcm.h"
+#include "mesh_dp.h"
 
-int mcm_init_client(mcm_ts* mcm, const char* cfg){
-    int err = mesh_create_client(&(mcm->client), cfg);
-    if (err) {
-        printf("Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
-        exit(1);
-    }
-    return err;
-}
+/* PRIVATE */
+void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-int mcm_create_tx_connection(mcm_ts* mcm, const char* cfg){
-    int err = mesh_create_tx_connection(mcm->client, &(mcm->connection), cfg);
-    if (err) {
-        printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
-        mesh_delete_client(&(mcm->connection));
-    }
-    return err;
-}
-
-
-int mcm_create_rx_connection(mcm_ts* mcm, const char* cfg){
-    int err = mesh_create_rx_connection(mcm->client, &(mcm->connection), cfg);
-    if (err) {
-        printf("Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
-         mesh_delete_client(&(mcm->connection));
-    }
-    return err;
-}
-
-
-int mcm_send_video_frame(mcm_ts* mcm, const char* frame, int frame_len ){
+int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     int err = 0;
     MeshBuffer *buf;
-
-    /* Ask the mesh to allocate a shared memory buffer for user data */
-    err = mesh_get_buffer(mcm->connection, &buf);
-    if (err) {
-        printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        printf("[TX] Failed to serialize video: file is null \n");
+        err = 1;
+        return err;
     }
 
-    /* Fill the buffer with user data */
-    buf->payload_ptr = frame;
-    put_user_video_frames(buf->payload_ptr, frame_len);
+    unsigned char frame_num = 0;
+    size_t read_size = 1;
+    while (1) {
 
-    /* Send the buffer */
-    err = mesh_put_buffer(&buf);
-    if (err) {
-        printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
+        /* Ask the mesh to allocate a shared memory buffer for user data */
+        err = mesh_get_buffer(connection, &buf);
+        if (err) {
+            printf("[TX] Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+            goto close_file;
+        }
+        read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
+        if (read_size == 0) {
+            goto close_file;
+        }
+
+        /* Send the buffer */
+        printf("[TX] Sending frame: %d\n", ++frame_num);
+        err = mesh_put_buffer(&buf);
+        if (err) {
+            printf("[TX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
+            goto close_file;
+        }
+
+        /* Temporary implementation for pacing */
+        /* TODO: Implement pacing calculation */
+        usleep(40000);
     }
-    err = mesh_shutdown_connection(&(mcm->connection));
-    if (err){
-        printf("Failed to shutdown connection: %s (%d)\n", mesh_err2str(err), err);
-    }
+    printf("[TX] data sent successfully \n");
+close_file:
+    fclose(file);
     return err;
 }
 
-
-int mcm_receive_video_frames(mcm_ts* mcm){
+void read_data_in_loop(MeshConnection *connection, const char *filename) {
+    int timeout = MESH_TIMEOUT_INFINITE;
+    int frame = 0;
     int err = 0;
-    MeshBuffer *buf;
+    MeshBuffer *buf = NULL;
+    FILE *out = fopen(filename, "a");
+    while (1) {
 
-    /* Receive a buffer from the mesh */
-    err = mesh_get_buffer(mcm->connection, &buf);
-    if (err == MESH_ERR_CONNECTION_CLOSED) {
-        printf("Connection closed\n");
+        /* Set loop's  error*/
+        err = 0;
+        if (frame) {
+            timeout = 1000;
+        }
+
+        /* Receive a buffer from the mesh */
+        err = mesh_get_buffer_timeout(connection, &buf, timeout);
+        if (err == MESH_ERR_CONN_CLOSED) {
+            printf("[RX] Connection closed\n");
+            break;
+        }
+        printf("[RX] Fetched mesh data buffer\n");
+        if (err) {
+            printf("[RX] Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+            break;
+        }
+        /* Process the received user data */
+        buffer_to_file(out, buf);
+
+        err = mesh_put_buffer(&buf);
+        if (err) {
+            printf("[RX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
+            break;
+        }
+        printf("[RX] Frame: %d\n", ++frame);
     }
-    if (err) {
-        printf("Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
-    }
-
-    /* Process the received user data */
-    get_user_video_frames(buf->payload_ptr, buf->payload_len);
-
-
-    /* Release and put the buffer back to the mesh */
-    err = mesh_put_buffer(&buf);
-    if (err) {
-        printf("Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
-    }
-
-    /* Shutdown the connection */
-    err = mesh_shutdown_connection(&(mcm->connection));
-    if (err){
-        printf("Failed to shutdown connection: %s (%d)\n", mesh_err2str(err), err);
-    }
-    return err;
+    fclose(out);
+    printf("[RX] Done reading the data \n");
 }
 
-int file_to_buffer(FILE* fp, MeshBuffer* buf, int frame_size)
-{
-    int ret = 0;
-
-    assert(fp != NULL && buf != NULL);
-    assert(buf->payload_len >= frame_size);
-
-    if (fread(buf->payload_ptr, frame_size, 1, fp) < 1) {
-        ret = -1;
+void buffer_to_file(FILE *file, MeshBuffer *buf) {
+    if (file == NULL) {
+        perror("[RX] Failed to open file for writing");
+        return;
     }
-    return ret;
+    // Write the buffer to the file
+    fwrite(buf->payload_ptr, buf->payload_len, 1, file);
+    printf("[RX] Saving buffer data to a file\n");
 }
+
+int is_root() { return geteuid() == 0; }
