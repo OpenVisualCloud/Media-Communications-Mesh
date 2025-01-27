@@ -52,8 +52,8 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     }
     printf("[TX] data sent successfully \n");
     close_file:
-        fclose(file);
-        return err;
+      fclose(file);
+      return err;
 }
 
 void read_data_in_loop(MeshConnection *connection, const char *filename) {
