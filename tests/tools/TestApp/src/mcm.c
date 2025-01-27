@@ -51,9 +51,9 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         usleep(40000);
     }
     printf("[TX] data sent successfully \n");
-    close_file:
-      fclose(file);
-      return err;
+close_file:
+    fclose(file);
+    return err;
 }
 
 void read_data_in_loop(MeshConnection *connection, const char *filename) {
@@ -105,4 +105,4 @@ void buffer_to_file(FILE *file, MeshBuffer *buf) {
     printf("[RX] Saving buffer data to a file\n");
 }
 
-int is_root() { return geteuid() == 0;}
+int is_root() { return geteuid() == 0; }

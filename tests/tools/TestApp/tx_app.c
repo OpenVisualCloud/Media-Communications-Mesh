@@ -49,7 +49,7 @@ int main(int argc, char **argv) {
     }
 
     /* Open file and send its contents */
- 
+
     err = mcm_send_video_frames(connection, video_file);
     printf("[TX] Shuting down connection and client\n");
     mesh_delete_connection(&connection);
