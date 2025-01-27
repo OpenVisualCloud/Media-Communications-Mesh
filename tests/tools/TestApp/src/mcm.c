@@ -32,12 +32,10 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         if (err) {
             printf("[TX] Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
             goto close_file;
-            return err;
         }
         read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
         if (read_size == 0) {
             goto close_file;
-            return err;
         }
 
         /* Send the buffer */
@@ -46,7 +44,6 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         if (err) {
             printf("[TX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
             goto close_file;
-            return err;
         }
 
         /* Temporary implementation for pacing */
@@ -56,7 +53,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     printf("[TX] data sent successfully \n");
     close_file:
         fclose(file);
-    return 0;
+        return err;
 }
 
 void read_data_in_loop(MeshConnection *connection, const char *filename) {
