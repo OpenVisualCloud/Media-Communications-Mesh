@@ -11,13 +11,12 @@ import Engine.execute
 import Engine.payload
 import pytest
 from Engine.media_files import audio_files
-from Engine.connection import TransportType
 
 
 @pytest.mark.parametrize("file", audio_files.values())
 def test_audio(build: str, media: str, file: dict):
     client = Engine.client_json.ClientJson()
-    conn_mpg = Engine.connection.St2110(transport=TransportType.ST30)
+    conn_mpg = Engine.connection.St2110_30()
     payload = Engine.payload.Audio(
         channels=file["channels"],
         sampleRate=file["sample_rate"],
