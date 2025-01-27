@@ -46,8 +46,8 @@ class TransportType(Enum):
 class St2110(Connection):
     """Prepares st2110 part of connection.json file"""
 
-    def __init__(self, transport, remoteIpAddr, remotePort):
-        self.transport = transport
+    def __init__(self, remoteIpAddr, remotePort):
+        self.transport = None
         self.remoteIpAddr = remoteIpAddr
         self.remotePort = remotePort
         self.connection_type = ConnectionType.ST2110
@@ -72,7 +72,8 @@ class St2110_20(St2110):
         pacing="narrow",
         payloadType=112,
     ):
-        super().__init__(transport=TransportType.ST20, remoteIpAddr=remoteIpAddr, remotePort=remotePort)
+        super().__init__(remoteIpAddr=remoteIpAddr, remotePort=remotePort)
+        self.transport = TransportType.ST20
         self.pacing = pacing
         self.payloadType = payloadType
 
@@ -93,7 +94,8 @@ class St2110_30(St2110):
         remoteIpAddr="192.168.95.2",
         remotePort="9002",
     ):
-        super().__init__(transport=TransportType.ST30, remoteIpAddr=remoteIpAddr, remotePort=remotePort)
+        super().__init__(remoteIpAddr=remoteIpAddr, remotePort=remotePort)
+        self.transport = TransportType.ST30
 
 
 class ConnectionMode(Enum):
