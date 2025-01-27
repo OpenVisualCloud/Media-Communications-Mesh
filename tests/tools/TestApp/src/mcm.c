@@ -73,10 +73,12 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
         err = mesh_get_buffer_timeout(connection, &buf, timeout);
         if (err == MESH_ERR_CONN_CLOSED) {
             printf("[RX] Connection closed\n");
+            break;
         }
         printf("[RX] Fetched mesh data buffer\n");
         if (err) {
             printf("[RX] Failed to get buffer: %s (%d)\n", mesh_err2str(err), err);
+            break;
         }
         /* Process the received user data */
         buffer_to_file(out, buf);
@@ -84,6 +86,7 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
         err = mesh_put_buffer(&buf);
         if (err) {
             printf("[RX] Failed to put buffer: %s (%d)\n", mesh_err2str(err), err);
+            break;
         }
         printf("[RX] Frame: %d\n", ++frame);
         fclose(out);
@@ -101,4 +104,4 @@ void buffer_to_file(FILE *file, MeshBuffer *buf) {
     printf("[RX] Saving buffer data to a file\n");
 }
 
-int is_root() { return (geteuid() == 0) ? 1 : 0; }
+int is_root() { return geteuid() == 0;}
