@@ -10,7 +10,7 @@
 #include <string.h>
 #include "input.h"
 
-const char *parse_json_to_string(const char *file_name) {
+char *parse_json_to_string(const char *file_name) {
     FILE *input_fp = fopen(file_name, "rb");
     if (input_fp == NULL) {
         perror("Failed to open a file");

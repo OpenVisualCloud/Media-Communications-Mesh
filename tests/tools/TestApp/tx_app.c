@@ -6,8 +6,8 @@
 #include "Inc/input.h"
 #include "Inc/mcm.h"
 
-const char *client_cfg;
-const char *conn_cfg;
+char *client_cfg;
+char *conn_cfg;
 
 int main(int argc, char **argv) {
     if (!is_root()) {
@@ -56,10 +56,9 @@ int main(int argc, char **argv) {
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
     printf("[TX] Shutdown completed. Exiting\n");
-    goto safe_exit;
 
 safe_exit:
-    free((char *)client_cfg);
-    free((char *)conn_cfg);
-    return (err == 0) ? 0 : err;
+    free(client_cfg);
+    free(conn_cfg);
+    return err;
 }
