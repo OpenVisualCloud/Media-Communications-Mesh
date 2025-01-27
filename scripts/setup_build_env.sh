@@ -1,7 +1,5 @@
 #!/bin/bash
 
-set -eEo pipefail
-
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 . "${SCRIPT_DIR}/common.sh"
 
@@ -40,6 +38,7 @@ function install_package_dependencies()
     log_warning OS reboot is required for all of the changes to take place.
     return 0
 }
+
 function install_ubuntu_package_dependencies()
 {
     APT_LINUX_HEADERS="linux-headers-${KERNEL_VERSION}"
@@ -324,6 +323,7 @@ function full_build_and_install_workflow()
 # Allow sourcing of the script.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
+    set -exEo pipefail
     if [ "${EUID}" != "0" ]; then
         log_error "Must be run as root. Try running below command:"
         log_error "sudo \"${BASH_SOURCE[0]}\""
