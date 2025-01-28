@@ -1,0 +1,15 @@
+{
+  "connection": {
+    "multipointGroup": {
+      "urn": "ipv4:192.168.123.123"
+    }
+  },
+  "payload": {
+    "video": {
+      "width": 1920,
+      "height": 1080,
+      "fps": 60.0,
+      "pixelFormat": "yuv422p10rfc4175"
+    }
+  }
+}

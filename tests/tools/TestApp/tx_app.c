@@ -6,28 +6,58 @@
 #include "Inc/input.h"
 #include "Inc/mcm.h"
 
+char *client_cfg;
+char *conn_cfg;
 
+int main(int argc, char **argv) {
+    if (!is_root()) {
+        fprintf(stderr, "This program must be run as root. Exiting.\n");
+        exit(EXIT_FAILURE);
+    }
+    if (argc != 4) {
+        fprintf(stderr, "Usage: %s <client_cfg.json> <connection_cfg.json> <path_to_input_file>\n",
+                argv[0]);
+        exit(EXIT_FAILURE);
+    }
 
+    char *client_cfg_file = argv[1];
+    char *conn_cfg_file = argv[2];
+    char *video_file = argv[3];
 
-const char* client_cfg;
-const char* conn_cfg;
+    MeshConnection *connection = NULL;
+    MeshClient *client = NULL;
 
-int main(int argc, char** argv){
-  if (argc != 3) {
-      fprintf(stderr, "Usage: %s <abs path>/file> <receiver app PID>\n", argv[0]);
-      exit(EXIT_FAILURE);
-  }
+    printf("[TX] Launching TX app \n");
+    printf("[TX] Reading client configuration... \n");
+    client_cfg = parse_json_to_string(client_cfg_file);
+    printf("[TX] Reading connection configuration... \n");
+    conn_cfg = parse_json_to_string(conn_cfg_file);
 
-  char* file_name = argv[1];
-  receiver_pid = atoi(argv[2]);
-  printf("launching TX app \n");
-  printf("reading client configuration... \n");  
-  client_cfg = parse_json_to_string("client.json");
-  printf("reading connection configuration... \n");
-  conn_cfg = ""; //parse_json_to_string("connection.json");  # Segfault on GNRD18
-  mcm_ts mcm;
-  mcm_init_client(&mcm, client_cfg);
-  mcm_create_tx_connection(&mcm, conn_cfg);
-  mcm_send_video_frame(&mcm, file_name, DUMMY_LEN);
-  return 0;
+    /* Initialize mcm client */
+    int err = mesh_create_client_json(&client, client_cfg);
+    if (err) {
+        printf("[TX] Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
+        goto safe_exit;
+    }
+
+    /* Create mesh connection */
+    err = mesh_create_tx_connection(client, &connection, conn_cfg);
+    if (err) {
+        printf("[TX] Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
+        mesh_delete_client(&client);
+        goto safe_exit;
+    }
+
+    /* Open file and send its contents */
+
+    err = mcm_send_video_frames(connection, video_file);
+    printf("[TX] Shuting down connection and client\n");
+    mesh_delete_connection(&connection);
+    mesh_delete_client(&client);
+    printf("[TX] Shutdown completed. Exiting\n");
+
+safe_exit:
+    free(client_cfg);
+    free(conn_cfg);
+    return err;
 }

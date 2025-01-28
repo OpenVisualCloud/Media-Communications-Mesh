@@ -1,8 +1,12 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #ifndef _INPUT_H_
 #define _INPUT_H_
 
-const char* parse_json_to_string(const char* file_name);
-int is_mock_enabled();
+char *parse_json_to_string(const char *file_name);
 
-
-#endif /* _INPUT_H_*/
+#endif /* _INPUT_H_ */

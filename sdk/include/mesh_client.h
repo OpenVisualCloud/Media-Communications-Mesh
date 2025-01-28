@@ -8,6 +8,7 @@
 
 #include <list>
 #include <mutex>
+#include <string>
 #include "mesh_dp.h"
 
 namespace mesh {
@@ -31,7 +32,7 @@ public:
 class ClientContext {
 public:
     ClientContext();
-    ClientContext(MeshClientConfig *cfg);
+    explicit ClientContext(MeshClientConfig *cfg);
 
     int init();
     int shutdown();

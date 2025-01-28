@@ -1,13 +1,63 @@
 #!/usr/bin/env bash
 
-set -eEo pipefail
-set +x
-
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 export WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
 export PERF_DIR="${DRIVERS_DIR}/perftest"
 
 . "${SCRIPT_DIR}/common.sh"
+
+function install_os_dependencies()
+{
+    log_info Starting: OS packages installation.
+    log_info Starting: OS package manager auto-detection.
+    setup_package_manager "apt-get"
+    if [[ "${PM}" == "apt" || "${PM}" == "apt-get" ]]; then
+        log_success "Found ${PM}. Using Ubuntu package dependencies approach"
+        as_root "${PM}" update --fix-missing && \
+        as_root "${PM}" install -y \
+            cmake \
+            cython3 \
+            debhelper \
+            dh-systemd \
+            dh-python \
+            dpkg-dev \
+            libnl-3-dev \
+            libnl-route-3-dev \
+            libsystemd-dev \
+            libudev-dev \
+            ninja-build \
+            pandoc \
+            pkg-config \
+            python3-dev \
+            python3-docutils \
+            valgrind \
+            build-essential \
+            gcc \
+            python3-pyverbs \
+            libelf-dev \
+            infiniband-diags \
+            rdma-core \
+            ibverbs-utils \
+            perftest \
+            ethtool
+
+    elif [[ "${PM}" == "yum" || "${PM}" == "dnf" ]]; then
+        log_success "Found ${PM}. Using CentOS package dependencies approach"
+        as_root "${PM}" -y update && \
+        as_root "${PM}" -y install ethtool && \
+        as_root "${PM}" builddep redhat/rdma-core.spec
+    else
+        log_error "Exiting: No supported package manager found. Contact support"
+        exit 1
+    fi
+    log_info "Finished: Successful OS packages installation."
+    log_warning OS reboot is required for all of the changes to take place.
+    return 0
+}
+
+function get_irdma_driver_tgz() {
+    echo "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz"
+}
 
 function get_and_patch_intel_drivers()
 {
@@ -19,6 +69,7 @@ function get_and_patch_intel_drivers()
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
+    IRDMA_REPO="$(get_irdma_driver_tgz)"
     wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}" && \
     git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}" && \
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
@@ -32,26 +83,42 @@ function get_and_patch_intel_drivers()
 
 function build_install_and_config_intel_drivers()
 {
-    # TO-DO: Check why installing IAVF break the ICE and IRDMA workflow.
-
-    # log_info "Intel IAVF: Driver starting the build and install workflow."
-    # if as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install; then
-    # fi
-
     log_info "Intel ICE: Driver starting the build and install workflow."
-    if as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install; then
-        log_success "Intel ICE: Drivers finished install process."
-        return 0
+    if ! as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install; then
+        log_error "Intel ICE: Failed to build and install drivers"
+        exit 5
     fi
-    log_error "Intel ICE: Failed to build and install drivers"
-    return 1
+    as_root rmmod irdma 2>&1 || true
+    as_root rmmod ice
+    as_root modprobe ice
+    log_success "Intel ICE: Drivers finished install process."
+
+    log_info "Intel IAVF: Driver starting the build and install workflow."
+    if ! as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install; then
+        log_error "Intel IAVF: Failed to build and install drivers"
+        exit 6
+    fi
+    log_success "Intel IAVF: Drivers finished install process."
+    return 0
 }
 
 function build_install_and_config_irdma_drivers()
 {
-    if pushd "${IRDMA_DIR}" && as_root ./build.sh && as_root modprobe irdma && popd; then
-        log_success "Intel irdma: Finished configuration and installation successfully."
-        return 0
+    if pushd "${IRDMA_DIR}"; then
+
+        "${IRDMA_DIR}/build_core.sh" -y || exit 2
+        as_root "${IRDMA_DIR}/install_core.sh"  || exit 3
+
+        if as_root "${IRDMA_DIR}/build.sh"; then
+            popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
+            log_success "Intel irdma: Finished configuration and installation successfully."
+            as_root rmmod irdma 2>&1 || true
+            as_root modprobe irdma
+            return 0
+        fi
+
+        log_error "Intel irdma: Errors while building '${IRDMA_DIR}/build.sh'"
+        popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
     fi
     log_error "Intel irdma: Error while performing configuration/installation."
     return 1
@@ -94,9 +161,11 @@ function config_intel_rdma_driver()
 # Allow sourcing of the script.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
+    set -exEo pipefail
+    install_os_dependencies && \
     get_and_patch_intel_drivers && \
-    build_install_and_config_irdma_drivers && \
     build_install_and_config_intel_drivers && \
+    build_install_and_config_irdma_drivers && \
     config_intel_rdma_driver
     return_code="$?"
     [[ "${return_code}" == "0" ]] && { log_success "Finished: Build, install and configuration of Intel drivers."; exit 0; }
