@@ -32,4 +32,4 @@ def test_video(build_TestApp, build: str, media_proxy_single, media: str, video_
     media_file = yuv_files[video_type]["filename"]
     media_file_path = os.path.join(media, media_file)
 
-    utils.run_rx_tx_with_file(file_path=media_file_path, build=build)
+    utils.run_rx_tx_with_file(file_path=media_file_path, build=build, timeout=10)

@@ -5,6 +5,7 @@
 import logging
 import signal
 import subprocess
+import time
 
 from pathlib import Path
 
@@ -76,7 +77,7 @@ def remove_sent_file(full_path: Path) -> None:
         logging.debug(f"Cannot remove. File does not exist: {full_path}")
 
 
-def run_rx_tx_with_file(file_path: str, build: str):
+def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0):
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
@@ -87,8 +88,10 @@ def run_rx_tx_with_file(file_path: str, build: str):
             client_cfg_file=client_cfg_file,
             connection_cfg_file=connection_cfg_file,
             path_to_output_file=str(output_file_path),
-            cwd=app_path
+            cwd=app_path,
+            timeout=timeout
             )
+        time.sleep(2)
         tx = run_tx_app(
             client_cfg_file=client_cfg_file,
             connection_cfg_file=connection_cfg_file,
