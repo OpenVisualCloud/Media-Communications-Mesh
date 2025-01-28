@@ -52,7 +52,7 @@ class Payload:
 
 
 class Video(Payload):
-    def __init__(self, width=1920, height=1080, fps=60.0, pixelFormat="yuv422p10rfc4175"):
+    def __init__(self, width=1920, height=1080, fps=60.0, pixelFormat="yuv422p10le"):
         self.width = width
         self.height = height
         self.fps = fps

@@ -15,6 +15,10 @@ import Engine.execute
 import Engine.payload
 
 
+def media_to_pixelformat(pixel_format: str) -> str:
+    return ("yuv422p10rfc4175" if pixel_format == "YUV_422_10bit" else pixel_format)
+
+
 def create_client_json(build: str, client: Engine.client_json.ClientJson):
     logging.debug("Client JSON:")
     for line in client.to_json().splitlines():
