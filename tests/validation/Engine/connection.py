@@ -32,7 +32,7 @@ class MultipointGroup(Connection):
         self.urn = edits.get("urn", self.urn)
 
     def to_dict(self) -> dict:
-        return {"connection": {"multipoint-group": {"urn": self.urn}}}
+        return {"connection": {"multipointGroup": {"urn": self.urn}}}
 
 
 class TransportType(Enum):
