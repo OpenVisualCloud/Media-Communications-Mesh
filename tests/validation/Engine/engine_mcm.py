@@ -67,18 +67,37 @@ def remove_sent_file(file_path: str, app_path: str) -> None:
         logging.debug(f"Cannot remove. File does not exist: {removal_path}")
 
 
+def remove_sent_file(full_path: Path) -> None:
+    try:
+        full_path.unlink()
+        logging.debug(f"Removed: {full_path}")
+    # except makes the test pass if there's no file to remove
+    except (FileNotFoundError, NotADirectoryError):
+        logging.debug(f"Cannot remove. File does not exist: {full_path}")
+
+
 def run_rx_tx_with_file(file_path: str, build: str):
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
         client_cfg_file = Path(app_path.resolve(), "client.json")
         connection_cfg_file = Path(app_path.resolve(), "connection.json")
-        output_file_path = str(Path(app_path, Path(file_path).name + "_MCMoutput.yuv").resolve())
-        rx = run_rx_app(client_cfg_file=client_cfg_file, connection_cfg_file=connection_cfg_file, path_to_output_file=output_file_path, cwd=app_path)
-        tx = run_tx_app(client_cfg_file=client_cfg_file, connection_cfg_file=connection_cfg_file, path_to_input_file=file_path, cwd=app_path)
+        output_file_path = Path(app_path, Path(file_path).name + "_MCMoutput.yuv").resolve()
+        rx = run_rx_app(
+            client_cfg_file=client_cfg_file,
+            connection_cfg_file=connection_cfg_file,
+            path_to_output_file=str(output_file_path),
+            cwd=app_path
+            )
+        tx = run_tx_app(
+            client_cfg_file=client_cfg_file,
+            connection_cfg_file=connection_cfg_file,
+            path_to_input_file=file_path,
+            cwd=app_path
+            )
         handle_tx_failure(tx)
         stop_rx_app(rx)
     finally:
         pass
         # TODO: Add checks for transmission errors
-        # remove_sent_file(output_file_path, Path(output_file_path).name)
+        remove_sent_file(output_file_path)
