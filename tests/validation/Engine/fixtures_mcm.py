@@ -24,8 +24,11 @@ def kill_all_existing_media_proxies():
     (subprocess.run(f"kill -9 {mp_pid}", shell=True) for mp_pid in mp_pids)
 
 
-@pytest.fixture(scope="package", autouse=False)
-def media_proxy_single(sender_mp_port: int, receiver_mp_port: int, kill_existing: bool = True):
+@pytest.fixture(scope="package", autouse=True)
+def media_proxy_single():
+    sender_mp_port = 8002
+    # receiver_mp_port = 8003
+    kill_existing = True
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
     """Opens new media_proxies for sender and receiver.
     May optionally kill the already-running media_proxies first.
@@ -38,14 +41,20 @@ def media_proxy_single(sender_mp_port: int, receiver_mp_port: int, kill_existing
         kill_existing(bool, optional): if use kill_all_existing_media_proxies() function to kill -9 all existing
                                        media_proxies before running new instances
     """
+    # temp adding mesh-agent starter
+    mesh_agent_proc = subprocess.Popen("mesh-agent")
+
     if kill_existing:
         kill_all_existing_media_proxies()
     # create new media_proxy processes for sender and receiver
-    sender_mp_proc = subprocess.Popen(f"media_proxy -t {sender_mp_port}")  # sender's media_proxy
-    receiver_mp_proc = subprocess.Popen(f"media_proxy -t {receiver_mp_port}")  # receiver media_proxy
+    sender_mp_proc = subprocess.Popen(f"media_proxy") # -t {sender_mp_port}")  # sender's media_proxy
+    # receiver_mp_proc = subprocess.Popen(f"media_proxy -t {receiver_mp_port}")  # receiver media_proxy
+
     yield
+
     sender_mp_proc.terminate()
-    receiver_mp_proc.terminate()
+    # receiver_mp_proc.terminate()
+    mesh_agent_proc.terminate()
 
 
 @pytest.fixture(scope="package")
