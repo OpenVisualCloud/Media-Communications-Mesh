@@ -17,7 +17,7 @@ jxs_files = dict(
 yuv_files = dict(
     i720p23={
         "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.yuv",
-        "format": "yuv422p10rfc4175",
+        "format": "YUV_422_10bit",
         "width": 1280,
         "height": 720,
         "fps": 23,
