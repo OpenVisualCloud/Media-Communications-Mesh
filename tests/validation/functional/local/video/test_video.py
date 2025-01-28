@@ -21,7 +21,7 @@ def test_video(build_TestApp, build: str, media: str, video_type):
         width=yuv_files[video_type]["width"],
         height=yuv_files[video_type]["height"],
         fps=yuv_files[video_type]["fps"],
-        pixelFormat=yuv_files[video_type]["format"],
+        pixelFormat=utils.media_to_pixelformat(yuv_files[video_type]["format"]),
     )
     connection = Engine.connection_json.ConnectionJson(connection=conn_mpg, payload=payload)
 
