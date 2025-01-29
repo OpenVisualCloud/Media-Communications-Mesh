@@ -7,6 +7,7 @@
 #ifndef PROXY_CONFIG_H
 #define PROXY_CONFIG_H
 
+#include <cstdint>
 #include <string>
 
 namespace mesh::config {

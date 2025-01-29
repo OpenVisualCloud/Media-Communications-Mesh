@@ -10,6 +10,7 @@
 #include <vector>
 #include <string>
 #include <variant>
+#include <cstdint>
 
 namespace mesh::telemetry {
 
@@ -33,7 +34,7 @@ public:
 
 class Metric {
 public:
-    Metric(int64_t timestamp_ms)
+    explicit Metric(int64_t timestamp_ms)
         : timestamp_ms(timestamp_ms) {}
 
     void addFieldString(const std::string& name, const std::string& str_value) {
