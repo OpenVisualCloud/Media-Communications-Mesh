@@ -14,6 +14,7 @@ import Engine.connection
 import Engine.connection_json
 import Engine.execute
 import Engine.payload
+from Engine.integrity import calculate_yuv_frame_size, check_st20p_integrity
 
 
 def media_to_pixelformat(pixel_format: str) -> str:
@@ -101,6 +102,7 @@ def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0):
         handle_tx_failure(tx)
         stop_rx_app(rx)
     finally:
-        pass
-        # TODO: Add checks for transmission errors
+        frame_size = calculate_yuv_frame_size(1280, 720, "YUV422RFC4175PG2BE10")
+        integrity_check = check_st20p_integrity(file_path, str(output_file_path), frame_size)
+        logging.debug(f"Integrity: {integrity_check}")
         remove_sent_file(output_file_path)
