@@ -11,7 +11,7 @@ class ClientJson:
     def __init__(
         self,
         apiVersion="v1",
-        apiConnectionString="Server=192.168.95.1; Port=8001",
+        apiConnectionString="Server=127.0.0.1; Port=8002",
         apiDefaultTimeoutMicroseconds=100000,
         maxMediaConnections=32,
     ):
