@@ -78,7 +78,7 @@ def remove_sent_file(full_path: Path) -> None:
         logging.debug(f"Cannot remove. File does not exist: {full_path}")
 
 
-def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0):
+def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info = {}):
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
@@ -102,7 +102,10 @@ def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0):
         handle_tx_failure(tx)
         stop_rx_app(rx)
     finally:
-        frame_size = calculate_yuv_frame_size(1280, 720, "YUV422RFC4175PG2BE10")
+        frame_size = calculate_yuv_frame_size(media_info.get("width"), media_info.get("height"), media_info.get("pixelFormat"))
         integrity_check = check_st20p_integrity(file_path, str(output_file_path), frame_size)
         logging.debug(f"Integrity: {integrity_check}")
         remove_sent_file(output_file_path)
+
+        if not integrity_check:
+            Engine.execute.log_fail("At least one of the received frames has not passed the integrity test")
