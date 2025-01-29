@@ -22,7 +22,9 @@ def test_audio(build: str, media: str, file: dict):
         sampleRate=file["sample_rate"],
         audio_format=file["format"],
     )
-    connection = Engine.connection_json.ConnectionJson(connection=conn_mpg, payload=payload)
+    connection = Engine.connection_json.ConnectionJson(
+        connection=conn_mpg, payload=payload
+    )
 
     utils.create_client_json(build, client)
     utils.create_connection_json(build, connection)
