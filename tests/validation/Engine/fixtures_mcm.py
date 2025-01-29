@@ -26,7 +26,7 @@ def kill_all_existing_media_proxies():
     (subprocess.run(f"kill -9 {mp_pid}", shell=True) for mp_pid in mp_pids)
 
 
-@pytest.fixture(scope="package", autouse=True)
+@pytest.fixture(scope="function", autouse=True)
 def media_proxy_single():
     kill_existing = True
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
