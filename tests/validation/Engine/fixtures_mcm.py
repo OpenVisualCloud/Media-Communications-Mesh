@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
+import logging
 import os
 import subprocess
+import time
 
 import pytest
 
@@ -26,6 +28,7 @@ def kill_all_existing_media_proxies():
 
 @pytest.fixture(scope="package", autouse=True)
 def media_proxy_single():
+    kill_existing = True
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
     # TODO: Re-add the parameters properly
     """Opens new media_proxies for sender and receiver.
@@ -44,14 +47,25 @@ def media_proxy_single():
 
     # mesh-agent start
     mesh_agent_proc = subprocess.Popen("mesh-agent")
+    time.sleep(0.2)
+    if mesh_agent_proc.returncode:
+        logging.debug(f"mesh-agent's return code: {mesh_agent_proc.returncode} of type {type(mesh_agent_proc.returncode)}")
     # single media_proxy start
     # TODO: Add parameters to media_proxy
     sender_mp_proc = subprocess.Popen("media_proxy")
+    time.sleep(0.2)
+    if sender_mp_proc.returncode:
+        logging.debug(f"media_proxy's return code: {sender_mp_proc.returncode} of type {type(sender_mp_proc.returncode)}")
 
     yield
 
     sender_mp_proc.terminate()
+    if not sender_mp_proc.returncode:
+        logging.debug(f"media_proxy terminated properly")
+    time.sleep(2)
     mesh_agent_proc.terminate()
+    if not mesh_agent_proc.returncode:
+        logging.debug(f"mesh-agent terminated properly")
 
 
 @pytest.fixture(scope="package")
