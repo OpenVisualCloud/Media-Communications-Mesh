@@ -25,8 +25,8 @@ class MultipointGroup(Connection):
     """Prepares multipoint-group part of connection.json file"""
 
     def __init__(self, urn="ipv4:224.0.0.1:9003"):
+        super().__init__(connection_type=ConnectionType.MPG)
         self.urn = urn
-        self.connection_type = ConnectionType.MPG
 
     def set_multipointgroup(self, edits: dict):
         self.urn = edits.get("urn", self.urn)
@@ -46,11 +46,12 @@ class TransportType(Enum):
 class St2110(Connection):
     """Prepares st2110 part of connection.json file"""
 
+    transport = None
+
     def __init__(self, remoteIpAddr, remotePort):
-        self.transport = None
+        super().__init__(connection_type=ConnectionType.ST2110)
         self.remoteIpAddr = remoteIpAddr
         self.remotePort = remotePort
-        self.connection_type = ConnectionType.ST2110
 
     def to_dict(self):
         return {
@@ -65,6 +66,8 @@ class St2110(Connection):
 
 
 class St2110_20(St2110):
+    transport = TransportType.ST20
+
     def __init__(
         self,
         remoteIpAddr="192.168.95.2",
@@ -73,13 +76,12 @@ class St2110_20(St2110):
         payloadType=112,
     ):
         super().__init__(remoteIpAddr=remoteIpAddr, remotePort=remotePort)
-        self.transport = TransportType.ST20
         self.pacing = pacing
         self.payloadType = payloadType
 
     def to_dict(self):
         base_dict = super().to_dict()
-        base_dict.update(
+        base_dict["connection"]["st2110"].update(
             {
                 "pacing": self.pacing,
                 "payloadType": self.payloadType,
@@ -89,13 +91,14 @@ class St2110_20(St2110):
 
 
 class St2110_30(St2110):
+    transport = TransportType.ST30
+
     def __init__(
         self,
         remoteIpAddr="192.168.95.2",
         remotePort="9002",
     ):
         super().__init__(remoteIpAddr=remoteIpAddr, remotePort=remotePort)
-        self.transport = TransportType.ST30
 
 
 class ConnectionMode(Enum):
@@ -109,9 +112,9 @@ class Rdma(Connection):
     """Prepares RDMA part of connection.json file"""
 
     def __init__(self, connectionMode=ConnectionMode.RC, maxLatencyNs=10000):
+        super().__init__(connection_type=ConnectionType.RDMA)
         self.connectionMode = connectionMode
         self.maxLatencyNs = maxLatencyNs
-        self.connection_type = ConnectionType.RDMA
 
     def set_rdma(self, edits: dict):
         self.connectionMode = edits.get("connectionMode", self.connectionMode)
