@@ -6,6 +6,7 @@
 #ifndef MESH_CONN_H
 #define MESH_CONN_H
 
+#include <string>
 #include "mesh_dp.h"
 #include "mcm_dp.h"
 #include "mesh_client.h"
@@ -59,7 +60,7 @@ public:
         struct {
             // Unified Resource Name of Multipoint Group.
             // Example: "ipv4:224.0.0.1:9003".
-            std::string urn; 
+            std::string urn;
         } multipoint_group;
 
         struct {
@@ -124,7 +125,7 @@ private:
  */
 class ConnectionContext {
 public:
-    ConnectionContext(ClientContext *parent);
+    explicit ConnectionContext(ClientContext *parent);
     ~ConnectionContext();
 
     int apply_config_memif(MeshConfig_Memif *config);
