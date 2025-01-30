@@ -17,8 +17,14 @@ import Engine.payload
 from Engine.integrity import calculate_yuv_frame_size, check_st20p_integrity
 
 
-def media_to_pixelformat(pixel_format: str) -> str:
-    return ("yuv422p10rfc4175" if pixel_format == "YUV_422_10bit" else pixel_format)
+video_format_matches = {
+    # file_format : payload format
+    "YUV422PLANAR10LE": "yuv422p10le",
+    "YUV422RFC4175PG2BE10": "yuv422p10rfc4175",
+}
+
+def video_file_format_to_payload_format(pixel_format: str) -> str:
+    return video_format_matches.get(pixel_format, pixel_format) # matched if matches, else original
 
 
 def create_client_json(build: str, client: Engine.client_json.ClientJson):
