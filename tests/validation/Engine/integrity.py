@@ -10,40 +10,29 @@ from math import floor
 from Engine.execute import log_fail
 
 
-def check_st20p_integrity(src_url: str, out_url: str, frame_size: int, expected_frame_percentage:int = 80):
-    src_chunk_sums = []
-
-    with open(src_url, "rb") as f:
-        while chunk := f.read(frame_size):
-            if len(chunk) != frame_size:
-                logging.debug(f"SOURCE CHUNK SIZE MISMATCH {len(chunk)} != {frame_size}")
+def calculate_chunk_hashes(file_url: str, chunk_size: int):
+    chunk_sums = []
+    with open(file_url, "rb") as f:
+        while chunk := f.read(chunk_size):
+            if len(chunk) != chunk_size:
+                logging.debug(f"CHUNK SIZE MISMATCH {len(chunk)} != {chunk_size}")
             chunk_sum = hashlib.md5(chunk).hexdigest()
-            src_chunk_sums.append(chunk_sum)
+            chunk_sums.append(chunk_sum)
+    return chunk_sums
 
-    out_chunk_sums = []
 
-    with open(out_url, "rb") as f:
-        while chunk := f.read(frame_size):
-            if len(chunk) != frame_size:
-                logging.debug(f"OUTPUT CHUNK SIZE MISMATCH {len(chunk)} != {frame_size}")
-            chunk_sum = hashlib.md5(chunk).hexdigest()
-            out_chunk_sums.append(chunk_sum)
-
+def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage: int = 80):
     logging.debug("SOURCE CHUNKS:")
     logging.debug(src_chunk_sums)
     logging.debug("OUTPUT CHUNKS:")
     logging.debug(out_chunk_sums)
 
-    if len(src_chunk_sums) < len(out_chunk_sums):
-        for i in range(len(src_chunk_sums)):
-            if src_chunk_sums[i] != out_chunk_sums[i]:
-                logging.debug(f"Received frame {i+1} is invalid")
-                return False
-    else:
-        for i in range(len(out_chunk_sums)):
-            if out_chunk_sums[i] != src_chunk_sums[i]:
-                logging.debug(f"Received frame {i+1} is invalid")
-                return False
+    min_len = min(len(src_chunk_sums), len(out_chunk_sums))
+    for i in range(min_len):
+        if src_chunk_sums[i] != out_chunk_sums[i]:
+            logging.debug(f"Received frame {i+1} is invalid")
+            return False
+
     # Ensure enough frames were sent
     if len(out_chunk_sums) / len(src_chunk_sums) * 100.00 < expected_frame_percentage:
         logging.warning(f"Received only {len(out_chunk_sums)/len(src_chunk_sums) * 100:.2f}% of the frames! Expected: {expected_frame_percentage:.2f}%")
@@ -51,6 +40,12 @@ def check_st20p_integrity(src_url: str, out_url: str, frame_size: int, expected_
         logging.debug(f"Received {len(out_chunk_sums)/len(src_chunk_sums) * 100:.2f}% of the frames")
 
     return True
+
+
+def check_st20p_integrity(src_url: str, out_url: str, frame_size: int, expected_frame_percentage: int = 80):
+    src_chunk_sums = calculate_chunk_hashes(src_url, frame_size)
+    out_chunk_sums = calculate_chunk_hashes(out_url, frame_size)
+    return check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage)
 
 
 def calculate_yuv_frame_size(width: int, height: int, file_format: str):
@@ -66,35 +61,9 @@ def calculate_yuv_frame_size(width: int, height: int, file_format: str):
 
 
 def check_st30p_integrity(src_url: str, out_url: str, size: int):
-    src_chunks = []
-
-    with open(src_url, "rb") as f:
-        while chunk := f.read(size):
-            src_chunks.append(chunk)
-
-    out_chunks = []
-
-    with open(out_url, "rb") as f:
-        while chunk := f.read(size):
-            out_chunks.append(chunk)
-
-    logging.debug("SOURCE CHUNKS:")
-    logging.debug(src_chunks)
-    logging.debug("OUTPUT CHUNKS:")
-    logging.debug(out_chunks)
-
-    if len(src_chunks) < len(out_chunks):
-        for i in range(len(src_chunks)):
-            if src_chunks[i] != out_chunks[i]:
-                logging.debug(f"Received frame {i+1} is invalid")
-                return False
-    else:
-        for i in range(len(out_chunks)):
-            if out_chunks[i] != src_chunks[i]:
-                logging.debug(f"Received frame {i+1} is invalid")
-                return False
-
-    return True
+    src_chunk_sums = calculate_chunk_hashes(src_url, size)
+    out_chunk_sums = calculate_chunk_hashes(out_url, size)
+    return check_chunk_integrity(src_chunk_sums, out_chunk_sums)
 
 
 def calculate_st30p_framebuff_size(
