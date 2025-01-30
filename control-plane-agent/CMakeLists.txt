@@ -75,7 +75,7 @@ add_custom_target(generate_grpc
 
 # Add a custom target to run all unit tests
 add_custom_target(gotest
-    COMMAND ${GO_EXECUTABLE} test ./...
+    COMMAND ${GO_EXECUTABLE} test -timeout=30s ./...
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running Go unit tests..."
     DEPENDS generate_grpc

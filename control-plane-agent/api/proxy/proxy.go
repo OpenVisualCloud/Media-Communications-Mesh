@@ -61,13 +61,21 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 		return nil, errors.New("proxy register request")
 	}
 
-	reply := event.PostEventSync(ctx, event.OnRegisterMediaProxy, map[string]interface{}{
-		"sdk_api_port":               in.SdkApiPort,
-		"st2110.dev_port_bdf":        in.St2110Config.DevPortBdf,
-		"st2110.dataplane_ip_addr":   in.St2110Config.DataplaneIpAddr,
-		"rdma.dataplane_ip_addr":     in.RdmaConfig.DataplaneIpAddr,
-		"rdma.dataplane_local_ports": in.RdmaConfig.DataplaneLocalPorts,
-	})
+	params := map[string]interface{}{
+		"sdk_api_port": in.SdkApiPort,
+	}
+
+	if in.St2110Config != nil {
+		params["st2110.dev_port_bdf"] = in.St2110Config.DevPortBdf
+		params["st2110.dataplane_ip_addr"] = in.St2110Config.DataplaneIpAddr
+	}
+
+	if in.RdmaConfig != nil {
+		params["rdma.dataplane_ip_addr"] = in.RdmaConfig.DataplaneIpAddr
+		params["rdma.dataplane_local_ports"] = in.RdmaConfig.DataplaneLocalPorts
+	}
+
+	reply := event.PostEventSync(ctx, event.OnRegisterMediaProxy, params)
 	if reply.Err != nil {
 		logrus.Errorf("Proxy register req err: %v", reply.Err)
 		return nil, reply.Err
