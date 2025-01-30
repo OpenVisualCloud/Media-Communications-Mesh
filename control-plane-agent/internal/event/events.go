@@ -96,6 +96,8 @@ func (ep *eventProcessor) Init(cfg EventProcessorConfig) error {
 	}
 	ep.cfg = cfg
 
+	ep.queue = make(chan Event, 1000) // TODO: capacity to be configured
+
 	events := GetEventDefinitions()
 	ep.definition.events = make(map[Type]string, len(events))
 	for k, v := range events {
@@ -106,8 +108,6 @@ func (ep *eventProcessor) Init(cfg EventProcessorConfig) error {
 }
 
 func (ep *eventProcessor) Run(ctx context.Context) {
-	ep.queue = make(chan Event, 1000) // TODO: capacity to be configured
-
 	for {
 		select {
 		case <-ctx.Done():
