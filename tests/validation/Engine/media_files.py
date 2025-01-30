@@ -179,7 +179,7 @@ yuv_files = dict(
     i2160p23={
         "filename": "test_3840x2160_for_25fps.yuv", # shows up as random pixels
         "format": "YUV_422_10bit",
-        "sourceformat": "yuv422p10fc4175",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 23,
