@@ -59,7 +59,7 @@ def handle_tx_failure(tx: subprocess.CompletedProcess):
 
 
 def stop_rx_app(rx: Engine.execute.AsyncProcess):
-    rx.process.send_signal(signal.SIGINT)
+    rx.process.terminate()
     rx.process.wait()
 
 
@@ -105,6 +105,7 @@ def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info
             path_to_input_file=file_path,
             cwd=app_path
             )
+        time.sleep(5)
         handle_tx_failure(tx)
         stop_rx_app(rx)
     finally:

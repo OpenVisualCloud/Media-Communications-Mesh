@@ -39,4 +39,4 @@ def test_video(build_TestApp, build: str, media_proxy_single, media: str, video_
         "pixelFormat": payload.pixelFormat,
     }
 
-    utils.run_rx_tx_with_file(file_path=media_file_path, build=build, timeout=10, media_info=media_info)
+    utils.run_rx_tx_with_file(file_path=media_file_path, build=build, timeout=0, media_info=media_info)
