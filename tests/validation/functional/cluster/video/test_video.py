@@ -14,7 +14,8 @@ from Engine.media_files import yuv_files
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_video(build_TestApp, build: str, media: str, video_type: str) -> None:
+def test_video(build_TestApp, build: str, media_proxy_cluster, media: str, video_type: str, tx_mp_port:int = 8002, rx_mp_port: int = 8003) -> None:
+    media_proxy_cluster
     client = Engine.client_json.ClientJson()
     conn_mpg = Engine.connection.Rdma()
     payload = Engine.payload.Video(
@@ -34,4 +35,18 @@ def test_video(build_TestApp, build: str, media: str, video_type: str) -> None:
     media_file = yuv_files[video_type]["filename"]
     media_file_path = os.path.join(media, media_file)
 
-    utils.run_rx_tx_with_file(file_path=media_file_path, build=build)
+    media_info = {
+        "width": payload.width,
+        "height": payload.height,
+        "fps": payload.fps,
+        "pixelFormat": payload.pixelFormat,
+    }
+
+    utils.run_rx_tx_with_file(
+        file_path=media_file_path,
+        build=build,
+        timeout=0,
+        media_info=media_info,
+        rx_mp_port=rx_mp_port,
+        tx_mp_port=tx_mp_port
+        )

@@ -153,7 +153,7 @@ def waitall(aps=List[AsyncProcess]):
     return
 
 
-def run(command: str, cwd: str = None, testcmd: bool = False, timeout: int = 60) -> subprocess.CompletedProcess:
+def run(command: str, cwd: str = None, testcmd: bool = False, timeout: int = 60, env: dict = None) -> subprocess.CompletedProcess:
     """Run single command and store logs."""
     if testcmd:
         logging.testcmd(command)
@@ -169,6 +169,7 @@ def run(command: str, cwd: str = None, testcmd: bool = False, timeout: int = 60)
             shell=True,
             text=True,
             cwd=cwd,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         logging.debug("Timeout expired")
