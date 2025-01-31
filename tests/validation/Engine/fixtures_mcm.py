@@ -28,7 +28,7 @@ def kill_all_existing_media_proxies() -> None:
     (subprocess.run(f"kill -9 {mp_pid}", shell=True) for mp_pid in mp_pids)
 
 
-@pytest.fixture(scope="function", autouse=True)
+@pytest.fixture(scope="function", autouse=False)
 def media_proxy_single() -> None:
     kill_existing = True
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
@@ -70,7 +70,47 @@ def media_proxy_single() -> None:
         logging.debug(f"mesh-agent terminated properly")
 
 
-@pytest.fixture(scope="package")
-def media_proxy_dual() -> None:
-    # Run dual media proxy
-    pass
+# Run dual media proxy
+@pytest.fixture(scope="package", autouse=False)
+def media_proxy_cluster(tx_mp_port: int = 8002, rx_mp_port: int = 8003) -> None:
+    # kill all existing media proxies first
+    kill_existing = True # TODO: Make it parametrized
+    if kill_existing:
+        kill_all_existing_media_proxies()
+
+    # start mesh-agent
+    mesh_agent_proc = Engine.execute.call(f"mesh-agent", cwd=".")
+    time.sleep(0.2) # short sleep used for mesh-agent to spin up
+    if mesh_agent_proc.process.returncode:
+        logging.debug(f"mesh-agent return code: {mesh_agent_proc.returncode} of type {type(mesh_agent_proc.returncode)}")
+
+    # start sender media_proxy
+    sender_mp_proc = Engine.execute.call(f"media_proxy -t {tx_mp_port}", cwd=".")
+    time.sleep(0.2) # short sleep used for media_proxy to spin up
+    if sender_mp_proc.process.returncode:
+        logging.debug(f"sender media_proxy return code: {sender_mp_proc.returncode} of type {type(sender_mp_proc.returncode)}")
+
+    # start receiver media_proxy
+    receiver_mp_proc = Engine.execute.call(f"media_proxy -t {rx_mp_port}", cwd=".")
+    time.sleep(0.2) # short sleep used for media_proxy to spin up
+    if receiver_mp_proc.process.returncode:
+        logging.debug(f"receiver media_proxy return code: {receiver_mp_proc.returncode} of type {type(receiver_mp_proc.returncode)}")
+
+    yield
+
+    # stop sender media_proxy
+    sender_mp_proc.process.terminate()
+    if not sender_mp_proc.process.returncode:
+        logging.debug(f"sender media_proxy terminated properly")
+
+    # stop receiver media_proxy
+    receiver_mp_proc.process.terminate()
+    if not receiver_mp_proc.process.returncode:
+        logging.debug(f"receiver media_proxy terminated properly")
+
+    time.sleep(2) # allow media_proxy to terminate properly, before terminating mesh-agent
+
+    # stop mesh-agent
+    mesh_agent_proc.process.terminate()
+    if not mesh_agent_proc.process.returncode:
+        logging.debug(f"mesh-agent terminated properly")

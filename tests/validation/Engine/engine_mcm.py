@@ -45,12 +45,37 @@ def create_connection_json(build: str, connection: Engine.connection_json.Connec
     connection.prepare_and_save_json(output_path=output_path)
 
 
-def run_rx_app(client_cfg_file: str, connection_cfg_file: str, path_to_output_file: str, cwd: str, timeout: int = 0) -> Engine.execute.AsyncProcess:
-    return Engine.execute.call(f"./RxApp {client_cfg_file} {connection_cfg_file} {path_to_output_file}", cwd=cwd, timeout=timeout)
+def run_rx_app(
+    client_cfg_file: str,
+    connection_cfg_file: str,
+    path_to_output_file: str,
+    cwd: str,
+    timeout: int = 0,
+    mcm_media_proxy_port: int = -1
+    ) -> Engine.execute.AsyncProcess:
+    env = ({"MCM_MEDIA_PROXY_PORT": mcm_media_proxy_port} if mcm_media_proxy_port != -1  else {})
+    return Engine.execute.call(
+        f"./RxApp {client_cfg_file} {connection_cfg_file} {path_to_output_file}",
+        cwd=cwd,
+        timeout=timeout,
+        env=env
+        )
 
 
-def run_tx_app(client_cfg_file: str, connection_cfg_file: str, path_to_input_file: str, cwd: str, testcmd: bool = True) -> subprocess.CompletedProcess:
-    return Engine.execute.run(f"./TxApp {client_cfg_file} {connection_cfg_file} {path_to_input_file}", cwd=cwd)
+def run_tx_app(
+    client_cfg_file: str,
+    connection_cfg_file: str,
+    path_to_input_file: str,
+    cwd: str,
+    testcmd: bool = True,
+    mcm_media_proxy_port: int = -1
+    ) -> subprocess.CompletedProcess:
+    env = ({"MCM_MEDIA_PROXY_PORT": mcm_media_proxy_port} if mcm_media_proxy_port != -1 else {})
+    return Engine.execute.run(
+        f"./TxApp {client_cfg_file} {connection_cfg_file} {path_to_input_file}",
+        cwd=cwd,
+        env=env
+        )
 
 
 def handle_tx_failure(tx: subprocess.CompletedProcess) -> None:
@@ -84,7 +109,7 @@ def remove_sent_file(full_path: Path) -> None:
         logging.debug(f"Cannot remove. File does not exist: {full_path}")
 
 
-def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info = {}) -> None:
+def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info = {}, rx_mp_port: int = -1, tx_mp_port: int = -1) -> None:
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
@@ -96,14 +121,16 @@ def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info
             connection_cfg_file=connection_cfg_file,
             path_to_output_file=str(output_file_path),
             cwd=app_path,
-            timeout=timeout
+            timeout=timeout,
+            mcm_media_proxy_port=rx_mp_port
             )
         time.sleep(2) # 2 seconds for RxApp to spin up
         tx = run_tx_app(
             client_cfg_file=client_cfg_file,
             connection_cfg_file=connection_cfg_file,
             path_to_input_file=file_path,
-            cwd=app_path
+            cwd=app_path,
+            mcm_media_proxy_port=tx_mp_port
             )
         time.sleep(5) # 5 seconds for TxApp to shut down before handling it as a failure
         handle_tx_failure(tx)
