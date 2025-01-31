@@ -27,6 +27,33 @@ Project uses flake8, black, isort and markdownlint as linters. All of these are 
 - setup.cfg - flake8 configuration
 - settings.json - example settings for VSCode, to be copied to .vscode/settings.json
 
+
+## Folder structure
+
+> **Note:** Some of the folders mentioned below may be unavailable in the current version of the repository.
+
+```text
+functional
+ +--- cluster ____ tests of multi-node RDMA-based transfers (simulated)
+ |     +- ancillary __ ancillary data
+ |     +- audio ______ raw audio data
+ |     +- blob _______ any other data not mentioned elsewhere
+ |     +- ffmpeg _____ ffmpeg plugin with all types of data
+ |     '- video ______ raw and compressed video data
+ +--- local ______ tests of single-node memory copy (memif)
+ |     +- ancillary __ ancillary data
+ |     +- audio ______ raw audio data
+ |     +- blob _______ any other data not mentioned elsewhere
+ |     +- ffmpeg _____ ffmpeg plugin with all types of data
+ |     '- video ______ raw and compressed video data
+ '--- st2110 _____ tests of ST 2210 standard with Media Transport Library
+       +- ffmpeg _____ ffmpeg plugin with all types of data
+       +- st20 _______ raw video (ST 2110-20)
+       +- st22 _______ compressed video (ST 2110-22)
+       '- st30 _______ raw audio (ST 2110-30)
+```
+
+
 ## Development setup
 
 ```bash
