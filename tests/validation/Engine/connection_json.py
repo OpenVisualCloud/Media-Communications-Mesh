@@ -20,7 +20,7 @@ class ConnectionJson:
         payload=Payload(),
     ):
         self.bufferQueueCapacity = bufferQueueCapacity
-        self.maxPayloadSize = maxPayloadSize if maxPayloadSize >= 0 else None
+        self.maxPayloadSize = maxPayloadSize if type(maxPayloadSize) == int and maxPayloadSize >= 0 else None
         self.maxMetadataSize = maxMetadataSize
         self.connection = connection
         self.payload = payload
