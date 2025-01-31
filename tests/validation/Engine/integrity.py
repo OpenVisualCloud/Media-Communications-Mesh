@@ -10,7 +10,7 @@ from math import floor
 from Engine.execute import log_fail
 
 
-def calculate_chunk_hashes(file_url: str, chunk_size: int):
+def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
     chunk_sums = []
     with open(file_url, "rb") as f:
         while chunk := f.read(chunk_size):
@@ -21,7 +21,7 @@ def calculate_chunk_hashes(file_url: str, chunk_size: int):
     return chunk_sums
 
 
-def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage: int = 80):
+def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage: int = 80) -> bool:
     logging.debug("SOURCE CHUNKS:")
     logging.debug(src_chunk_sums)
     logging.debug("OUTPUT CHUNKS:")
@@ -42,13 +42,13 @@ def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percent
     return True
 
 
-def check_st20p_integrity(src_url: str, out_url: str, frame_size: int, expected_frame_percentage: int = 80):
+def check_st20p_integrity(src_url: str, out_url: str, frame_size: int, expected_frame_percentage: int = 80) -> bool:
     src_chunk_sums = calculate_chunk_hashes(src_url, frame_size)
     out_chunk_sums = calculate_chunk_hashes(out_url, frame_size)
     return check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage)
 
 
-def calculate_yuv_frame_size(width: int, height: int, file_format: str):
+def calculate_yuv_frame_size(width: int, height: int, file_format: str) -> int:
     match file_format:
         case "YUV422RFC4175PG2BE10" | "yuv422p10rfc4175":
             pixel_size = 2.5
@@ -60,7 +60,7 @@ def calculate_yuv_frame_size(width: int, height: int, file_format: str):
     return int(width * height * pixel_size)
 
 
-def check_st30p_integrity(src_url: str, out_url: str, size: int):
+def check_st30p_integrity(src_url: str, out_url: str, size: int) -> bool:
     src_chunk_sums = calculate_chunk_hashes(src_url, size)
     out_chunk_sums = calculate_chunk_hashes(out_url, size)
     return check_chunk_integrity(src_chunk_sums, out_chunk_sums)
@@ -68,7 +68,7 @@ def check_st30p_integrity(src_url: str, out_url: str, size: int):
 
 def calculate_st30p_framebuff_size(
     format: str, ptime: str, sampling: str, channel: str
-):
+) -> int:
     match format:
         case "PCM8":
             sample_size = 1

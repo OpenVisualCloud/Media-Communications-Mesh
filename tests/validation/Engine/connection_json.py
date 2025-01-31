@@ -36,9 +36,9 @@ class ConnectionJson:
             result.update({"maxPayloadSize": self.maxPayloadSize})
         return result
 
-    def to_json(self):
+    def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
-    def prepare_and_save_json(self, output_path="connection.json"):
+    def prepare_and_save_json(self, output_path:str = "connection.json") -> None:
         with open(output_path, "w") as connection_json_file:
             connection_json_file.write(self.to_json())

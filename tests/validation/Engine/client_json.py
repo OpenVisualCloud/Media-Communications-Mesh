@@ -20,7 +20,7 @@ class ClientJson:
         self.apiDefaultTimeoutMicroseconds = apiDefaultTimeoutMicroseconds
         self.maxMediaConnections = maxMediaConnections
 
-    def set_client(self, edits: dict):
+    def set_client(self, edits: dict) -> None:
         self.apiVersion = edits.get("apiVersion", self.apiVersion)
         self.apiConnectionString = edits.get("apiConnectionString", self.apiConnectionString)
         self.apiDefaultTimeoutMicroseconds = edits.get(
@@ -37,6 +37,6 @@ class ClientJson:
         }
         return json.dumps(json_dict, indent=4)
 
-    def prepare_and_save_json(self, output_path="client.json"):
+    def prepare_and_save_json(self, output_path:str = "client.json") -> None:
         with open(output_path, "w") as client_json_file:
             client_json_file.write(self.to_json())

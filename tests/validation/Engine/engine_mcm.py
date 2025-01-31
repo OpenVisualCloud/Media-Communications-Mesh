@@ -27,7 +27,7 @@ def video_file_format_to_payload_format(pixel_format: str) -> str:
     return video_format_matches.get(pixel_format, pixel_format) # matched if matches, else original
 
 
-def create_client_json(build: str, client: Engine.client_json.ClientJson):
+def create_client_json(build: str, client: Engine.client_json.ClientJson) -> None:
     logging.debug("Client JSON:")
     for line in client.to_json().splitlines():
         logging.debug(line)
@@ -36,7 +36,7 @@ def create_client_json(build: str, client: Engine.client_json.ClientJson):
     client.prepare_and_save_json(output_path=output_path)
 
 
-def create_connection_json(build: str, connection: Engine.connection_json.ConnectionJson):
+def create_connection_json(build: str, connection: Engine.connection_json.ConnectionJson) -> None:
     logging.debug("Connection JSON:")
     for line in connection.to_json().splitlines():
         logging.debug(line)
@@ -53,12 +53,12 @@ def run_tx_app(client_cfg_file: str, connection_cfg_file: str, path_to_input_fil
     return Engine.execute.run(f"./TxApp {client_cfg_file} {connection_cfg_file} {path_to_input_file}", cwd=cwd)
 
 
-def handle_tx_failure(tx: subprocess.CompletedProcess):
+def handle_tx_failure(tx: subprocess.CompletedProcess) -> None:
     if tx.returncode != 0:
         Engine.execute.log_fail(f"TxApp failed with return code {tx.returncode}")
 
 
-def stop_rx_app(rx: Engine.execute.AsyncProcess):
+def stop_rx_app(rx: Engine.execute.AsyncProcess) -> None:
     rx.process.terminate()
     rx.process.wait()
 
@@ -84,7 +84,7 @@ def remove_sent_file(full_path: Path) -> None:
         logging.debug(f"Cannot remove. File does not exist: {full_path}")
 
 
-def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info = {}):
+def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info = {}) -> None:
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:

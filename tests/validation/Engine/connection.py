@@ -28,7 +28,7 @@ class MultipointGroup(Connection):
         self.urn = urn
         self.connection_type = ConnectionType.MPG
 
-    def set_multipointgroup(self, edits: dict):
+    def set_multipointgroup(self, edits: dict) -> None:
         self.urn = edits.get("urn", self.urn)
 
     def to_dict(self) -> dict:
@@ -61,7 +61,7 @@ class St2110(Connection):
         self.payloadType = payloadType
         self.connection_type = ConnectionType.ST2110
 
-    def set_st2110(self, edits: dict):
+    def set_st2110(self, edits: dict) -> None:
         self.transport = edits.get("transport", self.transport)
         self.remoteIpAddr = edits.get("remoteIpAddr", self.remoteIpAddr)
         self.remotePort = edits.get("remotePort", self.remotePort)
@@ -97,7 +97,7 @@ class Rdma(Connection):
         self.maxLatencyNs = maxLatencyNs
         self.connection_type = ConnectionType.RDMA
 
-    def set_rdma(self, edits: dict):
+    def set_rdma(self, edits: dict) -> None:
         self.connectionMode = edits.get("connectionMode", self.connectionMode)
         self.maxLatencyNs = edits.get("maxLatencyNs", self.maxLatencyNs)
 

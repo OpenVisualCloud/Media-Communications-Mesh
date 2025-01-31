@@ -12,7 +12,7 @@ import pytest
 
 
 @pytest.fixture(scope="session")
-def build_TestApp(build):
+def build_TestApp(build: str) -> None:
     path = os.path.join(build, "tests", "tools", "TestApp", "build")
     subprocess.run(f'rm -rf "{path}"', shell=True, timeout=10)
     subprocess.run(f'mkdir -p "{path}"', shell=True, timeout=10)
@@ -20,7 +20,7 @@ def build_TestApp(build):
     subprocess.run("make", cwd=path, shell=True, timeout=10)
 
 
-def kill_all_existing_media_proxies():
+def kill_all_existing_media_proxies() -> None:
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
     "Kills all existing media_proxy processes using their PIDs found with px -aux"
     existing_mps = subprocess.run("ps -aux | awk '/media_proxy/{print($2)}'", shell=True, capture_output=True)
@@ -29,7 +29,7 @@ def kill_all_existing_media_proxies():
 
 
 @pytest.fixture(scope="function", autouse=True)
-def media_proxy_single():
+def media_proxy_single() -> None:
     kill_existing = True
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
     # TODO: Re-add the parameters properly
@@ -71,6 +71,6 @@ def media_proxy_single():
 
 
 @pytest.fixture(scope="package")
-def media_proxy_dual():
+def media_proxy_dual() -> None:
     # Run dual media proxy
     pass
