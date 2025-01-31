@@ -504,17 +504,23 @@ yuv_files_422rfc10 = dict(
 )
 
 audio_files = dict(
-    PCM24={
-        "filename": "test.wav",
-        "format": "PCM24",
+    PCM8={
+        "filename": "bits8_channels2_rate48000.pcm",
+        "format": "pcm_s8",
+        "channels": 2,
+        "sample_rate": 48000,
     },
     PCM16={
-        "filename": "test.wav",
-        "format": "PCM16",
+        "filename": "bits16_channels2_rate48000.pcm",
+        "format": "pcm_s16be",
+        "channels": 2,
+        "sample_rate": 48000,
     },
-    PCM8={
-        "filename": "test.wav",
-        "format": "PCM8",
+    PCM24={
+        "filename": "bits24_channels2_rate48000.pcm",
+        "format": "pcm_s24be",
+        "channels": 2,
+        "sample_rate": 48000,
     },
 )
 

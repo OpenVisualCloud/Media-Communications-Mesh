@@ -23,7 +23,9 @@ def test_video(build_TestApp, build: str, media_proxy_single, media: str, video_
         fps=yuv_files[video_type]["fps"],
         pixelFormat=utils.video_file_format_to_payload_format(yuv_files[video_type]["file_format"]),
     )
-    connection = Engine.connection_json.ConnectionJson(connection=conn_mpg, payload=payload)
+    connection = Engine.connection_json.ConnectionJson(
+        connection=conn_mpg, payload=payload
+    )
 
     utils.create_client_json(build, client)
     utils.create_connection_json(build, connection)
