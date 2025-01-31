@@ -14,16 +14,13 @@ class ConnectionJson:
     def __init__(
         self,
         bufferQueueCapacity=16,
-        maxPayloadSize=0,
+        maxPayloadSize=None,
         maxMetadataSize=8192,
         connection=Connection(),
         payload=Payload(),
     ):
         self.bufferQueueCapacity = bufferQueueCapacity
-        if maxPayloadSize > 0:
-            self.maxPayloadSize = maxPayloadSize
-        else:
-            self.maxPayloadSize = None
+        self.maxPayloadSize = maxPayloadSize if maxPayloadSize >= 0 else None
         self.maxMetadataSize = maxMetadataSize
         self.connection = connection
         self.payload = payload
@@ -35,7 +32,7 @@ class ConnectionJson:
             **self.connection.to_dict(),
             **self.payload.to_dict(),
         }
-        if self.maxPayloadSize:
+        if self.maxPayloadSize != None:
             result.update({"maxPayloadSize": self.maxPayloadSize})
         return result
 
