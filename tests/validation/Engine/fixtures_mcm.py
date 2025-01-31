@@ -49,13 +49,13 @@ def media_proxy_single():
 
     # mesh-agent start
     mesh_agent_proc = Engine.execute.call(f"mesh-agent", cwd=".")
-    time.sleep(0.2)
+    time.sleep(0.2) # short sleep used for mesh-agent to spin up
     if mesh_agent_proc.process.returncode:
         logging.debug(f"mesh-agent's return code: {mesh_agent_proc.returncode} of type {type(mesh_agent_proc.returncode)}")
     # single media_proxy start
     # TODO: Add parameters to media_proxy
     sender_mp_proc = Engine.execute.call(f"media_proxy", cwd=".")
-    time.sleep(0.2)
+    time.sleep(0.2) # short sleep used for media_proxy to spin up
     if sender_mp_proc.process.returncode:
         logging.debug(f"media_proxy's return code: {sender_mp_proc.returncode} of type {type(sender_mp_proc.returncode)}")
 
@@ -64,7 +64,7 @@ def media_proxy_single():
     sender_mp_proc.process.terminate()
     if not sender_mp_proc.process.returncode:
         logging.debug(f"media_proxy terminated properly")
-    time.sleep(2)
+    time.sleep(2) # allow media_proxy to terminate properly, before terminating mesh-agent
     mesh_agent_proc.process.terminate()
     if not mesh_agent_proc.process.returncode:
         logging.debug(f"mesh-agent terminated properly")

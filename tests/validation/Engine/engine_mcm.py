@@ -98,14 +98,14 @@ def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info
             cwd=app_path,
             timeout=timeout
             )
-        time.sleep(2)
+        time.sleep(2) # 2 seconds for RxApp to spin up
         tx = run_tx_app(
             client_cfg_file=client_cfg_file,
             connection_cfg_file=connection_cfg_file,
             path_to_input_file=file_path,
             cwd=app_path
             )
-        time.sleep(5)
+        time.sleep(5) # 5 seconds for TxApp to shut down before handling it as a failure
         handle_tx_failure(tx)
         stop_rx_app(rx)
     finally:
