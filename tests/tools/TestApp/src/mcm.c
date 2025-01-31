@@ -24,7 +24,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         return err;
     }
 
-    unsigned char frame_num = 0;
+    unsigned int frame_num = 0;
     size_t read_size = 1;
     while (1) {
 

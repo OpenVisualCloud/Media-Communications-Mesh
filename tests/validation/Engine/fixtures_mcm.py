@@ -1,14 +1,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
+import logging
 import os
 import subprocess
+import time
+
+import Engine.execute
 
 import pytest
 
 
 @pytest.fixture(scope="session")
-def build_TestApp(build):
+def build_TestApp(build: str) -> None:
     path = os.path.join(build, "tests", "tools", "TestApp", "build")
     subprocess.run(f'rm -rf "{path}"', shell=True, timeout=10)
     subprocess.run(f'mkdir -p "{path}"', shell=True, timeout=10)
@@ -16,7 +20,7 @@ def build_TestApp(build):
     subprocess.run("make", cwd=path, shell=True, timeout=10)
 
 
-def kill_all_existing_media_proxies():
+def kill_all_existing_media_proxies() -> None:
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
     "Kills all existing media_proxy processes using their PIDs found with px -aux"
     existing_mps = subprocess.run("ps -aux | awk '/media_proxy/{print($2)}'", shell=True, capture_output=True)
@@ -24,9 +28,11 @@ def kill_all_existing_media_proxies():
     (subprocess.run(f"kill -9 {mp_pid}", shell=True) for mp_pid in mp_pids)
 
 
-@pytest.fixture(scope="package", autouse=False)
-def media_proxy_single(sender_mp_port: int, receiver_mp_port: int, kill_existing: bool = True):
+@pytest.fixture(scope="function", autouse=True)
+def media_proxy_single() -> None:
+    kill_existing = True
     # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
+    # TODO: Re-add the parameters properly
     """Opens new media_proxies for sender and receiver.
     May optionally kill the already-running media_proxies first.
 
@@ -40,15 +46,31 @@ def media_proxy_single(sender_mp_port: int, receiver_mp_port: int, kill_existing
     """
     if kill_existing:
         kill_all_existing_media_proxies()
-    # create new media_proxy processes for sender and receiver
-    sender_mp_proc = subprocess.Popen(f"media_proxy -t {sender_mp_port}")  # sender's media_proxy
-    receiver_mp_proc = subprocess.Popen(f"media_proxy -t {receiver_mp_port}")  # receiver media_proxy
+
+    # mesh-agent start
+    mesh_agent_proc = Engine.execute.call(f"mesh-agent", cwd=".")
+    time.sleep(0.2) # short sleep used for mesh-agent to spin up
+    if mesh_agent_proc.process.returncode:
+        logging.debug(f"mesh-agent's return code: {mesh_agent_proc.returncode} of type {type(mesh_agent_proc.returncode)}")
+    # single media_proxy start
+    # TODO: Add parameters to media_proxy
+    sender_mp_proc = Engine.execute.call(f"media_proxy", cwd=".")
+    time.sleep(0.2) # short sleep used for media_proxy to spin up
+    if sender_mp_proc.process.returncode:
+        logging.debug(f"media_proxy's return code: {sender_mp_proc.returncode} of type {type(sender_mp_proc.returncode)}")
+
     yield
-    sender_mp_proc.terminate()
-    receiver_mp_proc.terminate()
+
+    sender_mp_proc.process.terminate()
+    if not sender_mp_proc.process.returncode:
+        logging.debug(f"media_proxy terminated properly")
+    time.sleep(2) # allow media_proxy to terminate properly, before terminating mesh-agent
+    mesh_agent_proc.process.terminate()
+    if not mesh_agent_proc.process.returncode:
+        logging.debug(f"mesh-agent terminated properly")
 
 
 @pytest.fixture(scope="package")
-def media_proxy_dual():
+def media_proxy_dual() -> None:
     # Run dual media proxy
     pass

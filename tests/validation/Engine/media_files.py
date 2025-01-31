@@ -8,6 +8,7 @@ jxs_files = dict(
     i720p25={
         "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.jxs",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
         "width": 1280,
         "height": 720,
         "fps": 25,
@@ -18,6 +19,7 @@ yuv_files = dict(
     i720p23={
         "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
         "width": 1280,
         "height": 720,
         "fps": 23,
@@ -25,6 +27,7 @@ yuv_files = dict(
     i720p24={
         "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
         "width": 1280,
         "height": 720,
         "fps": 24,
@@ -32,6 +35,7 @@ yuv_files = dict(
     i720p25={
         "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
         "width": 1280,
         "height": 720,
         "fps": 25,
@@ -39,6 +43,7 @@ yuv_files = dict(
     i720p29={
         "filename": "Plalaedit_Pedestrian_10bit_1280x720_30Hz_P420_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1280,
         "height": 720,
         "fps": 29,
@@ -46,6 +51,7 @@ yuv_files = dict(
     i720p30={
         "filename": "Plalaedit_Pedestrian_10bit_1280x720_30Hz_P420_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1280,
         "height": 720,
         "fps": 30,
@@ -53,6 +59,7 @@ yuv_files = dict(
     i720p50={
         "filename": "ParkJoy_1280x720_10bit_50Hz_P422_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1280,
         "height": 720,
         "fps": 50,
@@ -60,6 +67,7 @@ yuv_files = dict(
     i720p59={
         "filename": "Netflix_Crosswalk_1280x720_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1280,
         "height": 720,
         "fps": 59,
@@ -67,6 +75,7 @@ yuv_files = dict(
     i720p60={
         "filename": "Netflix_Crosswalk_1280x720_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1280,
         "height": 720,
         "fps": 60,
@@ -74,6 +83,7 @@ yuv_files = dict(
     i720p119={
         "filename": "Netflix_Crosswalk_1280x720_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1280,
         "height": 720,
         "fps": 119,
@@ -81,6 +91,7 @@ yuv_files = dict(
     i1080p23={
         "filename": "HDR_BBC_v4_008_Penguin1_1920x1080_10bit_25Hz_180frames_yuv422p10be_To_yuv422rfc4175be10.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 23,
@@ -88,6 +99,7 @@ yuv_files = dict(
     i1080p24={
         "filename": "HDR_BBC_v4_008_Penguin1_1920x1080_10bit_25Hz_180frames_yuv422p10be_To_yuv422rfc4175be10.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 24,
@@ -95,6 +107,7 @@ yuv_files = dict(
     i1080p25={
         "filename": "HDR_BBC_v4_008_Penguin1_1920x1080_10bit_25Hz_180frames_yuv422p10be_To_yuv422rfc4175be10.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 25,
@@ -102,6 +115,7 @@ yuv_files = dict(
     i1080p29={
         "filename": "Plalaedit_Pedestrian_10bit_1920x1080_30Hz_P420_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 29,
@@ -109,6 +123,7 @@ yuv_files = dict(
     i1080p30={
         "filename": "HDR_BBC_v4_008_Penguin1_1920x1080_10bit_25Hz_180frames_yuv422p10be_To_yuv422rfc4175be10.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 30,
@@ -116,6 +131,7 @@ yuv_files = dict(
     i1080p50={
         "filename": "ParkJoy_1920x1080_10bit_50Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 50,
@@ -123,6 +139,7 @@ yuv_files = dict(
     i1080p59={
         "filename": "Netflix_Crosswalk_1920x1080_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 59,
@@ -130,6 +147,7 @@ yuv_files = dict(
     i1080p60={
         "filename": "Netflix_Crosswalk_1920x1080_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 60,
@@ -137,6 +155,7 @@ yuv_files = dict(
     i1080p100={
         "filename": "Netflix_Crosswalk_1920x1080_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 100,
@@ -144,6 +163,7 @@ yuv_files = dict(
     i1080p119={
         "filename": "Netflix_Crosswalk_1920x1080_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 119,
@@ -151,13 +171,15 @@ yuv_files = dict(
     i1080p120={
         "filename": "Netflix_Crosswalk_1920x1080_10bit_60Hz_P422_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 1920,
         "height": 1080,
         "fps": 120,
     },
     i2160p23={
-        "filename": "test_3840x2160_for_25fps.yuv",
+        "filename": "test_3840x2160_for_25fps.yuv", # shows up as random pixels
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 23,
@@ -165,6 +187,7 @@ yuv_files = dict(
     i2160p24={
         "filename": "test_3840x2160_for_25fps.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 24,
@@ -172,6 +195,7 @@ yuv_files = dict(
     i2160p25={
         "filename": "test_3840x2160_for_25fps.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 25,
@@ -179,6 +203,7 @@ yuv_files = dict(
     i2160p29={
         "filename": "Plalaedit_Pedestrian_10bit_3840x2160_30Hz_P420_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 29,
@@ -186,6 +211,7 @@ yuv_files = dict(
     i2160p30={
         "filename": "Plalaedit_Pedestrian_10bit_3840x2160_30Hz_P420_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 30,
@@ -193,6 +219,7 @@ yuv_files = dict(
     i2160p50={
         "filename": "ParkJoy_3840x2160_10bit_50Hz_P422_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 50,
@@ -200,6 +227,7 @@ yuv_files = dict(
     i2160p59={
         "filename": "Netflix_Crosswalk_3840x2160_10bit_60Hz_P422_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 59,
@@ -207,6 +235,7 @@ yuv_files = dict(
     i2160p60={
         "filename": "Netflix_Crosswalk_3840x2160_10bit_60Hz_P422_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 60,
@@ -214,13 +243,15 @@ yuv_files = dict(
     i2160p119={
         "filename": "Netflix_Crosswalk_3840x2160_10bit_60Hz_P422_To_yuv422p10be_To_yuv422YCBCR10be.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
         "height": 2160,
         "fps": 119,
     },
     i4320p23={
-        "filename": "test_8k.yuv",
+        "filename": "test_8k.yuv", # single frame?
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 23,
@@ -228,6 +259,7 @@ yuv_files = dict(
     i4320p24={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 24,
@@ -235,6 +267,7 @@ yuv_files = dict(
     i4320p25={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 25,
@@ -242,6 +275,7 @@ yuv_files = dict(
     i4320p29={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 29,
@@ -249,6 +283,7 @@ yuv_files = dict(
     i4320p30={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 30,
@@ -256,6 +291,7 @@ yuv_files = dict(
     i4320p50={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 50,
@@ -263,6 +299,7 @@ yuv_files = dict(
     i4320p59={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 59,
@@ -270,6 +307,7 @@ yuv_files = dict(
     i4320p60={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 60,
@@ -277,6 +315,7 @@ yuv_files = dict(
     i4320p119={
         "filename": "test_8k.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
         "height": 4320,
         "fps": 119,
@@ -284,6 +323,7 @@ yuv_files = dict(
     i480i59={
         "filename": "Netflix_Crosswalk_720x480_interlace_10bit_60Hz_P422.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
         "width": 720,
         "height": 480,
         "fps": 59,
@@ -291,6 +331,7 @@ yuv_files = dict(
     i576i50={
         "filename": "ParkJoy_720x576_interlace_10bit_50Hz_P422.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
         "width": 720,
         "height": 576,
         "fps": 50,
@@ -298,6 +339,7 @@ yuv_files = dict(
     i1080i50={
         "filename": "ParkJoy_1920x1080_interlace_10bit_50Hz_P422.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
         "width": 1920,
         "height": 1080,
         "fps": 50,
@@ -305,6 +347,7 @@ yuv_files = dict(
     i1080i59={
         "filename": "Netflix_Crosswalk_1920x1080_interlace_10bit_60Hz_P422.yuv",
         "format": "YUV_422_10bit",
+        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
         "width": 1920,
         "height": 1080,
         "fps": 59,
