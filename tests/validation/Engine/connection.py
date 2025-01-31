@@ -25,8 +25,8 @@ class MultipointGroup(Connection):
     """Prepares multipoint-group part of connection.json file"""
 
     def __init__(self, urn="ipv4:224.0.0.1:9003"):
+        super().__init__(connection_type=ConnectionType.MPG)
         self.urn = urn
-        self.connection_type = ConnectionType.MPG
 
     def set_multipointgroup(self, edits: dict):
         self.urn = edits.get("urn", self.urn)
@@ -46,40 +46,59 @@ class TransportType(Enum):
 class St2110(Connection):
     """Prepares st2110 part of connection.json file"""
 
-    def __init__(
-        self,
-        transport=TransportType.ST20,
-        remoteIpAddr="192.168.95.2",
-        remotePort="9002",
-        pacing="narrow",
-        payloadType=112,
-    ):
-        self.transport = transport
+    transport = None
+
+    def __init__(self, remoteIpAddr, remotePort):
+        super().__init__(connection_type=ConnectionType.ST2110)
         self.remoteIpAddr = remoteIpAddr
         self.remotePort = remotePort
-        self.pacing = pacing
-        self.payloadType = payloadType
-        self.connection_type = ConnectionType.ST2110
 
-    def set_st2110(self, edits: dict):
-        self.transport = edits.get("transport", self.transport)
-        self.remoteIpAddr = edits.get("remoteIpAddr", self.remoteIpAddr)
-        self.remotePort = edits.get("remotePort", self.remotePort)
-        self.pacing = edits.get("pacing", self.pacing)
-        self.payloadType = edits.get("payloadType", self.payloadType)
-
-    def to_dict(self) -> dict:
+    def to_dict(self):
         return {
             "connection": {
                 "st2110": {
                     "transport": self.transport.value,
                     "remoteIpAddr": self.remoteIpAddr,
                     "remotePort": self.remotePort,
-                    "pacing": self.pacing,
-                    "payloadType": self.payloadType,
                 }
             }
         }
+
+
+class St2110_20(St2110):
+    transport = TransportType.ST20
+
+    def __init__(
+        self,
+        remoteIpAddr="192.168.95.2",
+        remotePort="9002",
+        pacing="narrow",
+        payloadType=112,
+    ):
+        super().__init__(remoteIpAddr=remoteIpAddr, remotePort=remotePort)
+        self.pacing = pacing
+        self.payloadType = payloadType
+
+    def to_dict(self):
+        base_dict = super().to_dict()
+        base_dict["connection"]["st2110"].update(
+            {
+                "pacing": self.pacing,
+                "payloadType": self.payloadType,
+            }
+        )
+        return base_dict
+
+
+class St2110_30(St2110):
+    transport = TransportType.ST30
+
+    def __init__(
+        self,
+        remoteIpAddr="192.168.95.2",
+        remotePort="9002",
+    ):
+        super().__init__(remoteIpAddr=remoteIpAddr, remotePort=remotePort)
 
 
 class ConnectionMode(Enum):
@@ -93,9 +112,9 @@ class Rdma(Connection):
     """Prepares RDMA part of connection.json file"""
 
     def __init__(self, connectionMode=ConnectionMode.RC, maxLatencyNs=10000):
+        super().__init__(connection_type=ConnectionType.RDMA)
         self.connectionMode = connectionMode
         self.maxLatencyNs = maxLatencyNs
-        self.connection_type = ConnectionType.RDMA
 
     def set_rdma(self, edits: dict):
         self.connectionMode = edits.get("connectionMode", self.connectionMode)
