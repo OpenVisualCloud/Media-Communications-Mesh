@@ -68,6 +68,7 @@ For VSCode:
 - set Python interpreter to: tests/validation/.venv/bin/python
 - copy content of tests/validation/settings.json to .vscode/settings.json
 
+
 ## Creating virtual functions
 
 In order to create proper virtual functions (VFs):
@@ -123,13 +124,67 @@ In order to create proper virtual functions (VFs):
     Create 6 VFs on PF bdf: 0000:c0:00.1 eth1 succ
     ```
 
-This section was partially based on [Media Transport Library instruction](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md#321-create-intel-e810-vfs-and-bind-to-dpdk-pmd).
+
+## Listing virtual functions
+
+Use `nicctl.sh list all` command to list all existing devices.
+
+The script prints 6 columns:
+- `ID` - an ordinal number for an interface (not static, see below)
+- `PCI BDF` - a Bus:Device.Function describing a PCI device
+- `Driver` - a driver used to communicate with the interface; `vfio-pci` for virtual functions
+- `NUMA` - a NUMA node's number, assigned to the device
+- `IOMMU` - a device's iommu group
+- `IF Name` - interface name; except when virtual function, then `*`
+
+Example of a list including 6 virtual functions (at the top):
+
+```text
+ID      PCI BDF         Driver          NUMA    IOMMU   IF Name
+0       0000:c0:01.0    vfio-pci        1       346     *
+1       0000:c0:01.1    vfio-pci        1       347     *
+2       0000:c0:01.2    vfio-pci        1       348     *
+3       0000:c0:01.3    vfio-pci        1       349     *
+4       0000:c0:01.4    vfio-pci        1       350     *
+5       0000:c0:01.5    vfio-pci        1       351     *
+6       0000:32:00.0    ixgbe           0       31      eth2
+7       0000:32:00.1    ixgbe           0       32      eth3
+8       0000:c0:00.0    ice             1       201     eth0
+9       0000:c0:00.1    ice             1       202     eth1
+```
+
+And a version with only physical functions enabled:
+
+```text
+ID      PCI BDF         Driver          NUMA    IOMMU   IF Name
+0       0000:32:00.0    ixgbe           0       31      eth2
+1       0000:32:00.1    ixgbe           0       32      eth3
+2       0000:c0:00.0    ice             1       201     eth0
+3       0000:c0:00.1    ice             1       202     eth1
+```
+
+
+## Disabling virtual functions
+
+In order to disable all virtual functions for a selected physical interface, execute a following command:
+
+```shell
+nicctl.sh disable_vf <physical_device_pci_address>
+```
+
+For example, for eth0 interface from previous section, it is:
+
+```shell
+nicctl.sh disable_vf 0000:c0:00.0
+```
+
+> **Note:** Above sections about virtual functions were partially based on [Media Transport Library instruction](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md#321-create-intel-e810-vfs-and-bind-to-dpdk-pmd).
 
 ## Media Proxy hugepages requirement
 
 > **Note:** [Minimal Media Transport Library setup](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/run.md#4-setup-hugepage) specifies setting up 4 GB hugepages altogether. Below paragraph is just a recommendation, which should be used for testing purposes.
 
-To ensure stable testing of Media Proxy, as super user, `echo 4 > /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages` (creating 4 *1 GB hugepages) and `echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages` (creating 2048* 2 MB hugepages).
+To ensure stable testing of Media Proxy, as super user, `echo 4 > /sys/kernel/mm/hugepages/hugepages-1048576kB/nr_hugepages` (creating 4 x 1 GB hugepages) and `echo 2048 > /sys/kernel/mm/hugepages/hugepages-2048kB/nr_hugepages` (creating 2048 x 2 MB hugepages).
 
 Error thrown when the hugepages are not properly setup:
 
@@ -159,3 +214,11 @@ $ dpdk-devbind.py -s | grep Ethernet
 ```
 
 Switch the virtual interface's binding to vfio-pci with `dpdk-devbind.py -b vfio-pci <pci_address>`. For example, `dpdk-devbind.py -b vfio-pci 0000:c0:00.0`.
+
+
+
+## RDMA
+
+> **Note:** Current RDMA implementation allows only for simulated transfer (as of writing this section of the document).
+
+In order to use the RDMA-based solution, the virtual functions on a used interface must be disabled.
