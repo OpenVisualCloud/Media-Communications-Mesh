@@ -15,6 +15,7 @@ from Engine.media_files import yuv_files
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
 def test_video(build_TestApp, build: str, media_proxy_single, media: str, video_type: str) -> None:
+    media_proxy_single
     client = Engine.client_json.ClientJson()
     conn_mpg = Engine.connection.MultipointGroup()
     payload = Engine.payload.Video(
