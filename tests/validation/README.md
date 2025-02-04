@@ -216,6 +216,12 @@ $ dpdk-devbind.py -s | grep Ethernet
 Switch the virtual interface's binding to vfio-pci with `dpdk-devbind.py -b vfio-pci <pci_address>`. For example, `dpdk-devbind.py -b vfio-pci 0000:c0:00.0`.
 
 
+## Proxy settings
+
+Each address used within the tests (media_proxy included), should not be routed through a proxy.
+
+Easiest solution is to add them to environment variable called `no_proxy`, by `export no_proxy=${no_proxy},<ip_address>`.
+
 
 ## RDMA
 
