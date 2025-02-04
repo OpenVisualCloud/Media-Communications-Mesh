@@ -27,20 +27,20 @@ def video_file_format_to_payload_format(pixel_format: str) -> str:
     return video_format_matches.get(pixel_format, pixel_format) # matched if matches, else original
 
 
-def create_client_json(build: str, client: Engine.client_json.ClientJson) -> None:
+def create_client_json(build: str, client: Engine.client_json.ClientJson, filename: str = "client.json") -> None:
     logging.debug("Client JSON:")
     for line in client.to_json().splitlines():
         logging.debug(line)
-    output_path = Path(build, "tests", "tools", "TestApp", "build", "client.json")
+    output_path = Path(build, "tests", "tools", "TestApp", "build", filename)
     logging.debug(f"Client JSON path: {output_path}")
     client.prepare_and_save_json(output_path=output_path)
 
 
-def create_connection_json(build: str, connection: Engine.connection_json.ConnectionJson) -> None:
+def create_connection_json(build: str, connection: Engine.connection_json.ConnectionJson, filename: str = "connection.json") -> None:
     logging.debug("Connection JSON:")
     for line in connection.to_json().splitlines():
         logging.debug(line)
-    output_path = Path(build, "tests", "tools", "TestApp", "build", "connection.json")
+    output_path = Path(build, "tests", "tools", "TestApp", "build", filename)
     logging.debug(f"Connection JSON path: {output_path}")
     connection.prepare_and_save_json(output_path=output_path)
 
@@ -53,7 +53,7 @@ def run_rx_app(
     timeout: int = 0,
     mcm_media_proxy_port: int = -1
     ) -> Engine.execute.AsyncProcess:
-    env = ({"MCM_MEDIA_PROXY_PORT": mcm_media_proxy_port} if mcm_media_proxy_port != -1  else {})
+    env = ({"MCM_MEDIA_PROXY_PORT": str(mcm_media_proxy_port)} if mcm_media_proxy_port != -1 else {})
     return Engine.execute.call(
         f"./RxApp {client_cfg_file} {connection_cfg_file} {path_to_output_file}",
         cwd=cwd,
@@ -70,7 +70,7 @@ def run_tx_app(
     testcmd: bool = True,
     mcm_media_proxy_port: int = -1
     ) -> subprocess.CompletedProcess:
-    env = ({"MCM_MEDIA_PROXY_PORT": mcm_media_proxy_port} if mcm_media_proxy_port != -1 else {})
+    env = ({"MCM_MEDIA_PROXY_PORT": str(mcm_media_proxy_port)} if mcm_media_proxy_port != -1 else {})
     return Engine.execute.run(
         f"./TxApp {client_cfg_file} {connection_cfg_file} {path_to_input_file}",
         cwd=cwd,
@@ -109,16 +109,30 @@ def remove_sent_file(full_path: Path) -> None:
         logging.debug(f"Cannot remove. File does not exist: {full_path}")
 
 
-def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info = {}, rx_mp_port: int = -1, tx_mp_port: int = -1) -> None:
+def run_rx_tx_with_file(
+    file_path: str,
+    build: str,
+    timeout: int = 0,
+    media_info = {},
+    rx_mp_port: int = -1,
+    tx_mp_port: int = -1,
+    rx_client_filename: str = "client.json",
+    tx_client_filename: str = "client.json",
+    rx_connection_filename: str = "connection.json",
+    tx_connection_filename: str = "connection.json",
+    ) -> None:
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
-        client_cfg_file = Path(app_path.resolve(), "client.json")
-        connection_cfg_file = Path(app_path.resolve(), "connection.json")
+        rx_client_cfg_file = Path(app_path.resolve(), rx_connection_filename)
+        tx_client_cfg_file = Path(app_path.resolve(), tx_connection_filename)
+        rx_connection_cfg_file = Path(app_path.resolve(), rx_connection_filename)
+        tx_connection_cfg_file = Path(app_path.resolve(), tx_connection_filename)
+
         output_file_path = Path(app_path, Path(file_path).name + "_MCMoutput.yuv").resolve()
         rx = run_rx_app(
-            client_cfg_file=client_cfg_file,
-            connection_cfg_file=connection_cfg_file,
+            client_cfg_file=rx_client_cfg_file,
+            connection_cfg_file=rx_connection_cfg_file,
             path_to_output_file=str(output_file_path),
             cwd=app_path,
             timeout=timeout,
@@ -126,8 +140,8 @@ def run_rx_tx_with_file(file_path: str, build: str, timeout: int = 0, media_info
             )
         time.sleep(2) # 2 seconds for RxApp to spin up
         tx = run_tx_app(
-            client_cfg_file=client_cfg_file,
-            connection_cfg_file=connection_cfg_file,
+            client_cfg_file=tx_client_cfg_file,
+            connection_cfg_file=tx_connection_cfg_file,
             path_to_input_file=file_path,
             cwd=app_path,
             mcm_media_proxy_port=tx_mp_port
