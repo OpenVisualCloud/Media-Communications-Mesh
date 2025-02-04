@@ -17,7 +17,6 @@ import sys
 project = 'Media Communications Mesh'
 copyright = '2023-2024, Intel Corporation'
 author = 'Intel Corporation'
-version = release = '24.09'
 
 extensions = [
     'myst_parser',
