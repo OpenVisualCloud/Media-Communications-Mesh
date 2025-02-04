@@ -14,14 +14,14 @@ from Engine.media_files import yuv_files
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_video(build_TestApp, build: str, media: str, video_type):
+def test_video(build_TestApp, build: str, media: str, video_type: str) -> None:
     client = Engine.client_json.ClientJson()
     conn_mpg = Engine.connection.St2110_20()
     payload = Engine.payload.Video(
         width=yuv_files[video_type]["width"],
         height=yuv_files[video_type]["height"],
         fps=yuv_files[video_type]["fps"],
-        pixelFormat=yuv_files[video_type]["format"],
+        pixelFormat=utils.video_file_format_to_payload_format(yuv_files[video_type]["file_format"]),
     )
     connection = Engine.connection_json.ConnectionJson(
         connection=conn_mpg, payload=payload

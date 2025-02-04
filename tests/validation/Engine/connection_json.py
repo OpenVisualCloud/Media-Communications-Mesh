@@ -13,30 +13,32 @@ class ConnectionJson:
 
     def __init__(
         self,
-        bufferQueueCapacity=16,
-        maxPayloadSize=2097152,
-        maxMetadataSize=8192,
-        connection=Connection(),
-        payload=Payload(),
+        bufferQueueCapacity: int = 16,
+        maxPayloadSize: int = -1,
+        maxMetadataSize: int = 8192,
+        connection: Connection = Connection(),
+        payload: Payload = Payload(),
     ):
         self.bufferQueueCapacity = bufferQueueCapacity
-        self.maxPayloadSize = maxPayloadSize
+        self.maxPayloadSize = maxPayloadSize if maxPayloadSize >= 0 else -1
         self.maxMetadataSize = maxMetadataSize
         self.connection = connection
         self.payload = payload
 
     def to_dict(self) -> dict:
-        return {
+        result = {
             "bufferQueueCapacity": self.bufferQueueCapacity,
-            "maxPayloadSize": self.maxPayloadSize,
             "maxMetadataSize": self.maxMetadataSize,
             **self.connection.to_dict(),
             **self.payload.to_dict(),
         }
+        if self.maxPayloadSize >= 0:
+            result.update({"maxPayloadSize": self.maxPayloadSize})
+        return result
 
-    def to_json(self):
+    def to_json(self) -> str:
         return json.dumps(self.to_dict(), indent=4)
 
-    def prepare_and_save_json(self, output_path="connection.json"):
+    def prepare_and_save_json(self, output_path:str = "connection.json") -> None:
         with open(output_path, "w") as connection_json_file:
             connection_json_file.write(self.to_json())
