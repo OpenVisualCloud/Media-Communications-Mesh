@@ -28,11 +28,11 @@ class MultipointGroup(Connection):
         super().__init__(connection_type=ConnectionType.MPG)
         self.urn = urn
 
-    def set_multipointgroup(self, edits: dict):
+    def set_multipointgroup(self, edits: dict) -> None:
         self.urn = edits.get("urn", self.urn)
 
     def to_dict(self) -> dict:
-        return {"connection": {"multipoint-group": {"urn": self.urn}}}
+        return {"connection": {"multipointGroup": {"urn": self.urn}}}
 
 
 class TransportType(Enum):
@@ -116,7 +116,7 @@ class Rdma(Connection):
         self.connectionMode = connectionMode
         self.maxLatencyNs = maxLatencyNs
 
-    def set_rdma(self, edits: dict):
+    def set_rdma(self, edits: dict) -> None:
         self.connectionMode = edits.get("connectionMode", self.connectionMode)
         self.maxLatencyNs = edits.get("maxLatencyNs", self.maxLatencyNs)
 
