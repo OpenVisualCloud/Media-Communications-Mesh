@@ -17,17 +17,10 @@ modification, are permitted provided that the following conditions are met:
    this software without specific prior written permission.
 
 FFmpeg is an open source project licensed under LGPL and GPL.
-FFmpeg is an unmodified dependency of Media Communication Mesh software and not
-distributed by Intel, You are solely responsible for determining if users use of
-FFmpeg requires any additional licenses. Intel is not responsible for obtaining
-any such licenses, nor liable for any licensing fees due, in connection with your
-use of FFmpeg.
-_FFmpeg is an open source project licensed under LGPL and GPL.
-See https://www.ffmpeg.org/legal.html._
-You are solely responsible for determining if your use of FFmpeg requires any
-additional licenses.
-Intel is not responsible for obtaining any such licenses, nor liable for any
-licensing fees due, in connection with your use of FFmpeg.
+See https://www.ffmpeg.org/legal.html. You are solely responsible for
+determining if your use of FFmpeg requires any additional licenses.
+Intel is not responsible for obtaining any such licenses, nor liable
+for any licensing fees due, in connection with your use of FFmpeg.
 
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
