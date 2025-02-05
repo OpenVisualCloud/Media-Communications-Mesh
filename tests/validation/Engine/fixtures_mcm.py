@@ -70,7 +70,7 @@ def media_proxy_single() -> None:
 
 
 # Run dual media proxy
-@pytest.fixture(scope="package", autouse=False)
+@pytest.fixture(scope="function", autouse=False)
 def media_proxy_cluster(
     tx_mp_port: int = 8002,
     rx_mp_port: int = 8003,
