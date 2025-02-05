@@ -25,7 +25,7 @@ def test_video(build_TestApp, build: str, media_proxy_cluster, media: str, video
     tx_client_filename = "tx_client.json"
     utils.create_client_json(build, tx_client, tx_client_filename)
 
-    conn_mpg = Engine.connection.MultipointGroup(urn="rdma1") # FIXME: Temporary workaround for SDBQ-1949
+    conn_mpg = Engine.connection.MultipointGroup(urn="abc") # FIXME: Temporary workaround for SDBQ-1949
     payload = Engine.payload.Video(
         width=yuv_files[video_type]["width"],
         height=yuv_files[video_type]["height"],
