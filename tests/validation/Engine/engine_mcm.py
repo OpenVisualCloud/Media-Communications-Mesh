@@ -124,8 +124,8 @@ def run_rx_tx_with_file(
     app_path = Path(build, "tests", "tools", "TestApp", "build")
 
     try:
-        rx_client_cfg_file = Path(app_path.resolve(), rx_connection_filename)
-        tx_client_cfg_file = Path(app_path.resolve(), tx_connection_filename)
+        rx_client_cfg_file = Path(app_path.resolve(), rx_client_filename)
+        tx_client_cfg_file = Path(app_path.resolve(), tx_client_filename)
         rx_connection_cfg_file = Path(app_path.resolve(), rx_connection_filename)
         tx_connection_cfg_file = Path(app_path.resolve(), tx_connection_filename)
 
