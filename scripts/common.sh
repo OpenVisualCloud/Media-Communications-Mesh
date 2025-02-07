@@ -27,7 +27,6 @@ export JSONC_DIR="${BUILD_DIR}/json-c"
 export NASM_DIR="${BUILD_DIR}/nasm"
 
 export ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
-export IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
 export IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
 
 PM="${PM:-apt-get}"
