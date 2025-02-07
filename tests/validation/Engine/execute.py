@@ -9,6 +9,7 @@ import threading
 import time
 from queue import Queue
 from typing import Any, List
+import re
 
 import pytest
 from pytest_check import check
@@ -85,10 +86,13 @@ def readproc(process: subprocess.Popen):
     case_id = case_id[: case_id.rfind("(") - 1]
     logfile = os.path.join(LOG_FOLDER, "latest", f"{case_id}.pid{process.pid}.log")
 
+    ansi_esc = re.compile(r'\x1b\[[0-9;]*m')
+
     output = []
     with open(logfile, "w") as file:
         if process.stdout is not None:
             for line in iter(process.stdout.readline, ""):
+                line = ansi_esc.sub('', line) # Remove ANSI escape color codes
                 output.append(line)
                 file.write(line)
     return "".join(output)
