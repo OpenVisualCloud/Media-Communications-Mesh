@@ -27,4 +27,4 @@ if [[ $# -ne 0 ]]; then
 fi
 as_root make -C "${MCM_SDK_DIR}" install
 
-ln -s "${MCM_SDK_DIR}" "${SCRIPT_DIR}/build"
+ln -sf "${MCM_SDK_DIR}" "${SCRIPT_DIR}/build"
