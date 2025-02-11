@@ -8,6 +8,7 @@
 
 #include <list>
 #include <mutex>
+#include <string>
 #include "mesh_dp.h"
 
 namespace mesh {
