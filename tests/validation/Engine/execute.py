@@ -16,6 +16,7 @@ from pytest_check import check
 
 from .const import LOG_FOLDER
 from .stash import add_result_log, set_result_note
+from .utils import parse_logs
 
 
 class RaisingThread(threading.Thread):
@@ -93,6 +94,9 @@ def readproc(process: subprocess.Popen):
         if process.stdout is not None:
             for line in iter(process.stdout.readline, ""):
                 line = ansi_esc.sub('', line) # Remove ANSI escape color codes
+                response = parse_logs(line) # Check for keywords
+                if response != "": # TODO: Handle the response better (e.g. fail the test if wrong type found)
+                    logging.debug(f"FOUND TYPE: {response}")
                 output.append(line)
                 file.write(line)
     return "".join(output)
