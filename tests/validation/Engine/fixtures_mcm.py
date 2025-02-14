@@ -6,9 +6,30 @@ import os
 import subprocess
 import time
 
-import Engine.execute
+from .execute import log_fail, call
 
 import pytest
+
+
+@pytest.fixture(scope="function", autouse=False)
+def test_type_setter(request) -> None:
+    test_type = request.param
+    os.environ['MCM_EXPECTED_TEST_TYPE'] = test_type
+    os.environ['MCM_CURRENT_TEST_TYPE'] = ""
+    logging.debug(f"/start/ MCM_EXPECTED_TEST_TYPE={os.environ['MCM_EXPECTED_TEST_TYPE']}")
+    logging.debug(f"/start/ MCM_CURRENT_TEST_TYPE={os.environ['MCM_CURRENT_TEST_TYPE']}")
+    yield
+
+
+@pytest.fixture(scope="function", autouse=False)
+def test_type_checker(test_type: str = "memif") -> bool:
+    yield
+    logging.debug(f"/end/ MCM_EXPECTED_TEST_TYPE={os.environ['MCM_EXPECTED_TEST_TYPE']}")
+    logging.debug(f"/end/ MCM_CURRENT_TEST_TYPE={os.environ['MCM_CURRENT_TEST_TYPE']}")
+    if os.environ['MCM_EXPECTED_TEST_TYPE'] == os.environ['MCM_CURRENT_TEST_TYPE']:
+        logging.debug("Current test type matches expectations")
+    else:
+        log_fail("Wrong test type detected")
 
 
 @pytest.fixture(scope="session")
@@ -47,13 +68,13 @@ def media_proxy_single() -> None:
         kill_all_existing_media_proxies()
 
     # mesh-agent start
-    mesh_agent_proc = Engine.execute.call(f"mesh-agent", cwd=".")
+    mesh_agent_proc = call(f"mesh-agent", cwd=".")
     time.sleep(0.2) # short sleep used for mesh-agent to spin up
     if mesh_agent_proc.process.returncode:
         logging.debug(f"mesh-agent's return code: {mesh_agent_proc.returncode} of type {type(mesh_agent_proc.returncode)}")
     # single media_proxy start
     # TODO: Add parameters to media_proxy
-    sender_mp_proc = Engine.execute.call(f"media_proxy", cwd=".")
+    sender_mp_proc = call(f"media_proxy", cwd=".")
     time.sleep(0.2) # short sleep used for media_proxy to spin up
     if sender_mp_proc.process.returncode:
         logging.debug(f"media_proxy's return code: {sender_mp_proc.returncode} of type {type(sender_mp_proc.returncode)}")
@@ -85,19 +106,19 @@ def media_proxy_cluster(
         kill_all_existing_media_proxies()
 
     # start mesh-agent
-    mesh_agent_proc = Engine.execute.call(f"mesh-agent", cwd=".")
+    mesh_agent_proc = call(f"mesh-agent", cwd=".")
     time.sleep(0.2) # short sleep used for mesh-agent to spin up
     if mesh_agent_proc.process.returncode:
         logging.debug(f"mesh-agent return code: {mesh_agent_proc.returncode} of type {type(mesh_agent_proc.returncode)}")
 
     # start sender media_proxy
-    sender_mp_proc = Engine.execute.call(f"media_proxy -t {tx_mp_port} -r {tx_rdma_ip} -p {tx_rdma_port_range}", cwd=".")
+    sender_mp_proc = call(f"media_proxy -t {tx_mp_port} -r {tx_rdma_ip} -p {tx_rdma_port_range}", cwd=".")
     time.sleep(0.2) # short sleep used for media_proxy to spin up
     if sender_mp_proc.process.returncode:
         logging.debug(f"sender media_proxy return code: {sender_mp_proc.returncode} of type {type(sender_mp_proc.returncode)}")
 
     # start receiver media_proxy
-    receiver_mp_proc = Engine.execute.call(f"media_proxy -t {rx_mp_port} -r {rx_rdma_ip} -p {rx_rdma_port_range}", cwd=".")
+    receiver_mp_proc = call(f"media_proxy -t {rx_mp_port} -r {rx_rdma_ip} -p {rx_rdma_port_range}", cwd=".")
     time.sleep(0.2) # short sleep used for media_proxy to spin up
     if receiver_mp_proc.process.returncode:
         logging.debug(f"receiver media_proxy return code: {receiver_mp_proc.returncode} of type {type(receiver_mp_proc.returncode)}")

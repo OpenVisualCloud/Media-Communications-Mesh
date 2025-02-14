@@ -4,32 +4,33 @@
 import os
 import pytest
 
-import Engine.client_json
-import Engine.connection
-import Engine.connection_json
-import Engine.engine_mcm as utils
-import Engine.execute
-import Engine.payload
+from Engine.client_json import ClientJson
+from Engine.connection import MultipointGroup
+from Engine.connection_json import ConnectionJson
+from Engine.payload import Video
+from Engine.engine_mcm import video_file_format_to_payload_format, create_client_json, create_connection_json, run_rx_tx_with_file
 from Engine.media_files import yuv_files
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_video(build_TestApp, build: str, media_proxy_single, media: str, video_type: str) -> None:
+@pytest.mark.parametrize("test_type_setter", ["memif"], indirect=True, ids=["local"])
+def test_video(test_type_setter, test_type_checker, build_TestApp, build: str, media_proxy_single, media: str, video_type: str) -> None:
     media_proxy_single
-    client = Engine.client_json.ClientJson()
-    conn_mpg = Engine.connection.MultipointGroup()
-    payload = Engine.payload.Video(
+
+    client = ClientJson()
+    conn_mpg = MultipointGroup()
+    payload = Video(
         width=yuv_files[video_type]["width"],
         height=yuv_files[video_type]["height"],
         fps=yuv_files[video_type]["fps"],
-        pixelFormat=utils.video_file_format_to_payload_format(yuv_files[video_type]["file_format"]),
+        pixelFormat=video_file_format_to_payload_format(yuv_files[video_type]["file_format"]),
     )
-    connection = Engine.connection_json.ConnectionJson(
+    connection = ConnectionJson(
         connection=conn_mpg, payload=payload
     )
 
-    utils.create_client_json(build, client)
-    utils.create_connection_json(build, connection)
+    create_client_json(build, client)
+    create_connection_json(build, connection)
 
     # Use a specified file from media_files.py
     media_file = yuv_files[video_type]["filename"]
@@ -42,4 +43,4 @@ def test_video(build_TestApp, build: str, media_proxy_single, media: str, video_
         "pixelFormat": payload.pixelFormat,
     }
 
-    utils.run_rx_tx_with_file(file_path=media_file_path, build=build, timeout=0, media_info=media_info)
+    run_rx_tx_with_file(file_path=media_file_path, build=build, timeout=0, media_info=media_info)
