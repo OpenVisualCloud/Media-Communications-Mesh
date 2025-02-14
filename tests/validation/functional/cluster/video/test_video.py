@@ -14,7 +14,8 @@ from Engine.media_files import yuv_files
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_video(build_TestApp, build: str, media_proxy_cluster, media: str, video_type: str, tx_mp_port:int = 8002, rx_mp_port: int = 8003) -> None:
+@pytest.mark.parametrize("test_type_setter", ["rdma"], indirect=True, ids=["cluster"])
+def test_video(test_type_setter, test_type_checker, build_TestApp, build: str, media_proxy_cluster, media: str, video_type: str, tx_mp_port:int = 8002, rx_mp_port: int = 8003) -> None:
     media_proxy_cluster
 
     rx_client = Engine.client_json.ClientJson(apiConnectionString="Server=127.0.0.1; Port=8002")
