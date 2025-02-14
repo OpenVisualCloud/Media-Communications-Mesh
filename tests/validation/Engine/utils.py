@@ -11,5 +11,5 @@ KEYWORDS = {
 
 def parse_logs(log_line: str, expected_test_type:str) -> str:
     if KEYWORDS.get(expected_test_type, 'INFO - memif connected!') in log_line:
-        return connection_type
+        return expected_test_type
     return ""
