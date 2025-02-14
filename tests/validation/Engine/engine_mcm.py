@@ -9,13 +9,10 @@ import time
 
 from pathlib import Path
 
-import Engine.client_json
-import Engine.connection
-import Engine.connection_json
-import Engine.execute
-import Engine.payload
-from Engine.integrity import calculate_yuv_frame_size, check_st20p_integrity
-
+from .connection_json import ConnectionJson
+from .client_json import ClientJson
+from .execute import AsyncProcess, call, run, log_fail
+from .integrity import calculate_yuv_frame_size, check_st20p_integrity
 
 video_format_matches = {
     # file_format : payload format
@@ -23,11 +20,12 @@ video_format_matches = {
     "YUV422RFC4175PG2BE10": "yuv422p10rfc4175",
 }
 
+
 def video_file_format_to_payload_format(pixel_format: str) -> str:
     return video_format_matches.get(pixel_format, pixel_format) # matched if matches, else original
 
 
-def create_client_json(build: str, client: Engine.client_json.ClientJson, filename: str = "client.json") -> None:
+def create_client_json(build: str, client: ClientJson, filename: str = "client.json") -> None:
     logging.debug("Client JSON:")
     for line in client.to_json().splitlines():
         logging.debug(line)
@@ -36,7 +34,7 @@ def create_client_json(build: str, client: Engine.client_json.ClientJson, filena
     client.prepare_and_save_json(output_path=output_path)
 
 
-def create_connection_json(build: str, connection: Engine.connection_json.ConnectionJson, filename: str = "connection.json") -> None:
+def create_connection_json(build: str, connection: ConnectionJson, filename: str = "connection.json") -> None:
     logging.debug("Connection JSON:")
     for line in connection.to_json().splitlines():
         logging.debug(line)
@@ -52,9 +50,9 @@ def run_rx_app(
     cwd: str,
     timeout: int = 0,
     mcm_media_proxy_port: int = -1
-    ) -> Engine.execute.AsyncProcess:
+    ) -> AsyncProcess:
     env = ({"MCM_MEDIA_PROXY_PORT": str(mcm_media_proxy_port)} if mcm_media_proxy_port != -1 else {})
-    return Engine.execute.call(
+    return call(
         f"./RxApp {client_cfg_file} {connection_cfg_file} {path_to_output_file}",
         cwd=cwd,
         timeout=timeout,
@@ -71,7 +69,7 @@ def run_tx_app(
     mcm_media_proxy_port: int = -1
     ) -> subprocess.CompletedProcess:
     env = ({"MCM_MEDIA_PROXY_PORT": str(mcm_media_proxy_port)} if mcm_media_proxy_port != -1 else {})
-    return Engine.execute.run(
+    return run(
         f"./TxApp {client_cfg_file} {connection_cfg_file} {path_to_input_file}",
         cwd=cwd,
         env=env
@@ -80,10 +78,10 @@ def run_tx_app(
 
 def handle_tx_failure(tx: subprocess.CompletedProcess) -> None:
     if tx.returncode != 0:
-        Engine.execute.log_fail(f"TxApp failed with return code {tx.returncode}")
+        log_fail(f"TxApp failed with return code {tx.returncode}")
 
 
-def stop_rx_app(rx: Engine.execute.AsyncProcess) -> None:
+def stop_rx_app(rx: AsyncProcess) -> None:
     rx.process.terminate()
     rx.process.wait()
 
@@ -156,4 +154,4 @@ def run_rx_tx_with_file(
         remove_sent_file(output_file_path)
 
         if not integrity_check:
-            Engine.execute.log_fail("At least one of the received frames has not passed the integrity test")
+            log_fail("At least one of the received frames has not passed the integrity test")

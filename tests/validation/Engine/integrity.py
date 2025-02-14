@@ -7,7 +7,7 @@ import logging
 import re
 from math import floor
 
-from Engine.execute import log_fail
+from .execute import log_fail
 
 
 def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
