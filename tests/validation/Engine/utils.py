@@ -4,16 +4,12 @@
 import logging
 
 KEYWORDS = {
-    "memif": ' type="memif"',
-    "rdma_tx": ' type="rdma" kind="tx"',
-    "rdma_rx": ' type="rdma" kind="rx"',
+    "memif": 'INFO - memif connected!',
+    "rdma": ' type="rdma" kind="',
 }
 
 
-def parse_logs(log_line: str) -> str:
-    if ' type="' in log_line:
-        for connection_type, keyword in KEYWORDS.items():
-            logging.debug(f"Checking >>{keyword}<< against >>{log_line}<<")
-            if keyword in log_line:
-                return connection_type
+def parse_logs(log_line: str, expected_test_type:str) -> str:
+    if KEYWORDS.get(expected_test_type, 'INFO - memif connected!') in log_line:
+        return connection_type
     return ""
