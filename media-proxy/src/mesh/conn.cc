@@ -585,6 +585,8 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
         payload.audio.sample_rate = audio.sample_rate();
         payload.audio.format      = audio.format();
         payload.audio.packet_time = audio.packet_time();
+    } else if (config.has_blob()) {
+        payload_type = PayloadType::PAYLOAD_TYPE_BLOB;
     } else {
         return Result::error_payload_config_invalid;
     }
@@ -634,6 +636,9 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
         audio->set_format(payload.audio.format);
         audio->set_packet_time(payload.audio.packet_time);
         config.set_allocated_audio(audio);
+    } else if (payload_type == PayloadType::PAYLOAD_TYPE_BLOB) {
+        auto blob = new sdk::ConfigBlob();
+        config.set_allocated_blob(blob);
     }
 }
 

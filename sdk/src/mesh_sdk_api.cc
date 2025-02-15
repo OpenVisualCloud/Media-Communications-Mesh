@@ -29,6 +29,7 @@ using sdk::ConfigST2110;
 using sdk::ConfigRDMA;
 using sdk::ConfigVideo;
 using sdk::ConfigAudio;
+using sdk::ConfigBlob;
 using sdk::ST2110Transport;
 using sdk::VideoPixelFormat;
 using sdk::AudioSampleRate;
@@ -148,6 +149,9 @@ public:
             audio->set_format((AudioFormat)cfg.payload.audio.format);
             audio->set_packet_time((AudioPacketTime)cfg.payload.audio.packet_time);
             config->set_allocated_audio(audio);
+        } else if (cfg.payload_type == MESH_PAYLOAD_TYPE_BLOB) {
+            auto blob = new ConfigBlob();
+            config->set_allocated_blob(blob);
         }
 
         CreateConnectionResponse resp;

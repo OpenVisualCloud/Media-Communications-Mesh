@@ -45,6 +45,9 @@ type SDKConfigAudio struct {
 	PacketTimeStr string              `json:"packetTime"`
 }
 
+type SDKConfigBlob struct {
+}
+
 type SDKConnectionConfig struct {
 	BufQueueCapacity      uint32 `json:"bufQueueCapacity"`
 	MaxPayloadSize        uint32 `json:"maxPayloadSize"`
@@ -60,6 +63,7 @@ type SDKConnectionConfig struct {
 	Payload struct {
 		Video *SDKConfigVideo `json:"video,omitempty"`
 		Audio *SDKConfigAudio `json:"audio,omitempty"`
+		Blob  *SDKConfigBlob  `json:"blob,omitempty"`
 	} `json:"payload"`
 }
 
@@ -158,6 +162,8 @@ func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
 			Format:     payload.Audio.Format,
 			PacketTime: payload.Audio.PacketTime,
 		}
+	case *sdk.ConnectionConfig_Blob:
+		s.Payload.Blob = &SDKConfigBlob{}
 	default:
 		return errors.New("unknown sdk conn cfg payload type")
 	}
@@ -217,6 +223,10 @@ func (s *SDKConnectionConfig) AssignToPb(cfg *sdk.ConnectionConfig) {
 				PacketTime: s.Payload.Audio.PacketTime,
 			},
 		}
+	case s.Payload.Blob != nil:
+		cfg.Payload = &sdk.ConnectionConfig_Blob{
+			Blob: &sdk.ConfigBlob{},
+		}
 	}
 }
 
@@ -275,6 +285,13 @@ func (s *SDKConnectionConfig) CheckPayloadCompatibility(c *SDKConnectionConfig) 
 			return fmt.Errorf("incompatible audio: ch:%v sampling:%v fmt:%v ptime:%v vs. ch:%v sampling:%v fmt:%v ptime:%v",
 				s.Payload.Audio.Channels, s.Payload.Audio.SampleRate, s.Payload.Audio.Format, s.Payload.Audio.PacketTime,
 				c.Payload.Audio.Channels, c.Payload.Audio.SampleRate, c.Payload.Audio.Format, c.Payload.Audio.PacketTime)
+		}
+	case s.Payload.Blob != nil:
+		if c.Payload.Blob == nil {
+			return errors.New("no blob cfg")
+		}
+		if s.MaxPayloadSize != c.MaxPayloadSize {
+			return fmt.Errorf("incompatible blob: sz:%v vs. sz:%v", s.MaxPayloadSize, c.MaxPayloadSize)
 		}
 	default:
 		return errors.New("unknown payload type")
