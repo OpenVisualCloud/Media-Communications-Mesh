@@ -55,6 +55,9 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
             "payloadType": 110,
             "transportPixelFormat": "yuv422p10rfc4175"
           }
+        },
+        "payload": {
+          "video": {}
         }
       })";
 
@@ -69,27 +72,68 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
     EXPECT_EQ(config.conn.st2110.pacing, "narrow");
     EXPECT_EQ(config.conn.st2110.payload_type, 110);
     EXPECT_EQ(config.conn.st2110.transportPixelFormat, "yuv422p10rfc4175");
-    EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+    EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_VIDEO);
 }
 
-TEST(mesh_json_sdk, parse_conn_cfg_rdma) {
-    const char *str = R"({
-        "connection": {
-          "rdma": {
-            "connectionMode": "UC",
-            "maxLatencyNanoseconds": 10000
-          }
-        }
-      })";
+// Temporarily commented out until there is a decision on RDMA config in JSON
+// ----
+// TEST(mesh_json_sdk, parse_conn_cfg_rdma) {
+//     const char *str = R"({
+//         "connection": {
+//           "rdma": {
+//             "connectionMode": "UC",
+//             "maxLatencyNanoseconds": 10000
+//           }
+//         }
+//       })";
 
-    ConnectionJsonConfig config;
-    int err = config.parse_json(str);
+//     ConnectionJsonConfig config;
+//     int err = config.parse_json(str);
 
-    ASSERT_EQ(err, 0);
-    EXPECT_EQ(config.conn_type, MESH_CONN_TYPE_RDMA);
-    EXPECT_EQ(config.conn.rdma.connection_mode, "UC");
-    EXPECT_EQ(config.conn.rdma.max_latency_ns, 10000);
-    EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+//     ASSERT_EQ(err, 0);
+//     EXPECT_EQ(config.conn_type, MESH_CONN_TYPE_RDMA);
+//     EXPECT_EQ(config.conn.rdma.connection_mode, "UC");
+//     EXPECT_EQ(config.conn.rdma.max_latency_ns, 10000);
+//     EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+// }
+
+TEST(mesh_json_sdk, parse_conn_cfg_blob) {
+  const char *str = R"({
+      "maxPayloadSize": 921600,
+      "connection": {
+        "multipointGroup": {}
+      },
+      "payload": {
+        "blob": {}
+      }
+    })";
+
+  ConnectionJsonConfig config;
+  int err = config.parse_json(str);
+
+  ASSERT_EQ(err, 0);
+  EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+  EXPECT_EQ(config.max_payload_size, 921600);
+}
+
+TEST(mesh_json_sdk, parse_conn_cfg_blob_calc) {
+  const char *str = R"({
+      "maxPayloadSize": 921600,
+      "connection": {
+        "multipointGroup": {}
+      },
+      "payload": {
+        "blob": {}
+      }
+    })";
+
+  ConnectionJsonConfig config;
+  config.parse_json(str);
+  int err = config.calc_payload_size();
+
+  ASSERT_EQ(err, 0);
+  EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+  EXPECT_EQ(config.calculated_payload_size, 921600);
 }
 
 TEST(mesh_json_sdk, parse_conn_cfg_video) {
