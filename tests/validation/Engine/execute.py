@@ -97,7 +97,10 @@ def readproc(process: subprocess.Popen):
                 response = parse_logs(line, os.environ['MCM_EXPECTED_TEST_TYPE']) # Check for keywords
                 if response != "":
                     logging.debug(f"FOUND TYPE: {response}")
-                    os.environ['MCM_CURRENT_TEST_TYPE'] = response
+                    if os.environ['MCM_CURRENT_TEST_TYPE'] == "":
+                        os.environ['MCM_CURRENT_TEST_TYPE'] = response
+                    else:
+                        os.environ['MCM_CURRENT_TEST_TYPE'] += f",{response}"
                 output.append(line)
                 file.write(line)
     return "".join(output)
