@@ -16,17 +16,13 @@ def test_type_setter(request) -> None:
     test_type = request.param
     os.environ['MCM_EXPECTED_TEST_TYPE'] = test_type
     os.environ['MCM_CURRENT_TEST_TYPE'] = ""
-    logging.debug(f"/start/ MCM_EXPECTED_TEST_TYPE={os.environ['MCM_EXPECTED_TEST_TYPE']}")
-    logging.debug(f"/start/ MCM_CURRENT_TEST_TYPE={os.environ['MCM_CURRENT_TEST_TYPE']}")
     yield
 
 
 @pytest.fixture(scope="function", autouse=False)
-def test_type_checker(test_type: str = "memif") -> bool:
+def test_type_checker() -> bool:
     yield
-    logging.debug(f"/end/ MCM_EXPECTED_TEST_TYPE={os.environ['MCM_EXPECTED_TEST_TYPE']}")
-    logging.debug(f"/end/ MCM_CURRENT_TEST_TYPE={os.environ['MCM_CURRENT_TEST_TYPE']}")
-    if os.environ['MCM_EXPECTED_TEST_TYPE'] == os.environ['MCM_CURRENT_TEST_TYPE']:
+    if os.environ['MCM_EXPECTED_TEST_TYPE'] in os.environ['MCM_CURRENT_TEST_TYPE'].split(','):
         logging.debug("Current test type matches expectations")
     else:
         log_fail("Wrong test type detected")
