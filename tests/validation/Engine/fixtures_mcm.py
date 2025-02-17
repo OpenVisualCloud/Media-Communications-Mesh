@@ -46,22 +46,7 @@ def kill_all_existing_media_proxies() -> None:
 
 @pytest.fixture(scope="function", autouse=False)
 def media_proxy_single() -> None:
-    kill_existing = True
-    # TODO: This assumes the way previous media_proxy worked will not change in the new version, which is unlikely
-    # TODO: Re-add the parameters properly
-    """Opens new media_proxies for sender and receiver.
-    May optionally kill the already-running media_proxies first.
-
-    Arguments:
-        sender_mp_port(int): specifies the port number for sender
-        receiver_mp_port(int): specifies the port number for receiver
-
-    Keyword arguments:
-        kill_existing(bool, optional): if use kill_all_existing_media_proxies() function to kill -9 all existing
-                                       media_proxies before running new instances
-    """
-    if kill_existing:
-        kill_all_existing_media_proxies()
+    kill_all_existing_media_proxies()
 
     # mesh-agent start
     mesh_agent_proc = call(f"mesh-agent", cwd=".")
@@ -69,7 +54,6 @@ def media_proxy_single() -> None:
     if mesh_agent_proc.process.returncode:
         logging.debug(f"mesh-agent's return code: {mesh_agent_proc.returncode} of type {type(mesh_agent_proc.returncode)}")
     # single media_proxy start
-    # TODO: Add parameters to media_proxy
     sender_mp_proc = call(f"media_proxy", cwd=".")
     time.sleep(0.2) # short sleep used for media_proxy to spin up
     if sender_mp_proc.process.returncode:
@@ -89,17 +73,14 @@ def media_proxy_single() -> None:
 # Run dual media proxy
 @pytest.fixture(scope="function", autouse=False)
 def media_proxy_cluster(
-    tx_mp_port: int = 8002,
-    rx_mp_port: int = 8003,
-    tx_rdma_ip: str = "192.168.95.1",
-    rx_rdma_ip: str = "192.168.95.2",
-    tx_rdma_port_range: str = "9100-9119",
-    rx_rdma_port_range: str = "9120-9139",
-    ) -> None:
+        tx_mp_port: int = 8002,
+        rx_mp_port: int = 8003,
+        tx_rdma_ip: str = "192.168.95.1",
+        rx_rdma_ip: str = "192.168.95.2",
+        tx_rdma_port_range: str = "9100-9119",
+        rx_rdma_port_range: str = "9120-9139") -> None:
     # kill all existing media proxies first
-    kill_existing = True # TODO: Make it parametrized
-    if kill_existing:
-        kill_all_existing_media_proxies()
+    kill_all_existing_media_proxies()
 
     # start mesh-agent
     mesh_agent_proc = call(f"mesh-agent", cwd=".")

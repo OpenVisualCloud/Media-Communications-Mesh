@@ -112,8 +112,8 @@ def call(command: str, cwd: str, timeout: int = 60, sigint: bool = False, env: d
 
 
 def calls(
-    commands: List[str], cwd: str = None, timeout: int = 60, sigint: bool = False, env: dict = None
-) -> List[AsyncProcess]:
+        commands: List[str], cwd: str = None, timeout: int = 60,
+        sigint: bool = False, env: dict = None) -> List[AsyncProcess]:
     ret = []
     for command in commands:
         process = subprocess.Popen(
