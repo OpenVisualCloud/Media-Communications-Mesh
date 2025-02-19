@@ -80,6 +80,10 @@ message ConfigAudio {
   AudioPacketTime packet_time = 4;
 }
 
+message ConfigBlob {
+  // To configure the blob size, max_payload_size must be populated with a non-zero value.
+}
+
 message ConnectionConfig {
   ConnectionKind kind                      = 1;
   uint32 buf_queue_capacity                = 2;
@@ -94,5 +98,6 @@ message ConnectionConfig {
   oneof payload {
     ConfigVideo video                      = 9;
     ConfigAudio audio                      = 10;
+    ConfigBlob blob                        = 11;
   } 
 }
