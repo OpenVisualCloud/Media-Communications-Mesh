@@ -57,3 +57,12 @@
 Additionally:
 * Checking fps
 * Checking number of frames obtained
+
+# Test Run Steps
+
+1. Start one `mesh-agent` per cluster.
+2. Start `media_proxies` for the transmitter and receiver. Provide the IP of the node with the `mesh-agent` and the port number (found in `mesh-agent` logs) to the ones not running on the node with the `mesh-agent`.
+3. Start the receivers.
+4. Start the transmitter.
+
+This sequence ensures that the transmitter is ready to receive the transmission.
