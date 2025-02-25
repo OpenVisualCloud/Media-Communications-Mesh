@@ -46,7 +46,7 @@ flowchart LR
 | Resolutions     | Full HD 1920x1080    | Full HD 1920x1080      |
 |                 | 4k 3840x2160         | 4k 3840x2160           |
 | Framerate (FPS) | 59.94                | 59.94                  |
-|                 | 60                   | 60                   |
+|                 | 60                   | 60                     |
 | Color format    | YUV 4:2:2 10-bit planar | YUV 4:2:2 10-bit planar |
 | Interlace       | progressive          | progressive            |
 | Packing         | gpm                  | can't be changed in ffmpeg |
@@ -188,8 +188,34 @@ This sequence ensures that the transmitter is ready to receive the transmission.
     ```bash
     sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxApp client_rx.json connection_rx.json output_new.yuv
     ```
+#### Blob
 
-##### 2.2.1.1 
+| Test Case | Data Size | Data Source  | Notes |
+|-----------|-----------|--------------|-------|
+| 2.2.1.1   | 100 MB    | /dev/random  | Test transmission of random binary data block |
+
+#### Video
+
+| Test Case | Resolution | Framerate (FPS)  | Color Format            | Interlace   | Packing | Pacing | Notes                       |
+|-----------|------------|------------------|-------------------------|-------------|---------|--------|-----------------------------|
+| 2.2.1.2   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Default configuration       |
+| 2.2.1.3   | 1920x1080  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Test different framerate    |
+| 2.2.1.4   | 3840x2160  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Test higher resolution      |
+| 2.2.1.5   | 3840x2160  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Test higher res & framerate |
+| 2.2.1.6   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | bpm     | Wide   | Test different packing      |
+| 2.2.1.7   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm_sl  | Wide   | Test different packing      |
+| 2.2.1.8   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Narrow | Test different pacing       |
+| 2.2.1.9   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Linear | Test different pacing       |
+
+#### Audio
+
+| Test Case | Audio Format           | Sample Rate | Number of Channels | Notes                                       |
+|-----------|------------------------|-------------|--------------------|---------------------------------------------|
+| 2.2.1.10  | PCM 8-bit Big-Endian   | 44100 kHz   | Mono               | Default configuration for basic audio test  |
+| 2.2.1.11  | PCM 16-bit Big-Endian  | 48000 kHz   | Stereo             | Common configuration for high-quality audio |
+| 2.2.1.12  | PCM 24-bit Big-Endian  | 96000 kHz   | Mono               | High sample rate for professional audio     |
+| 2.2.1.13  | PCM 16-bit Big-Endian  | 44100 kHz   | Stereo             | Test lower sample rate with stereo          |
+| 2.2.1.14  | PCM 24-bit Big-Endian  | 48000 kHz   | Mono               | Test high bit depth with standard sample rate |
 
 #### 2.2.2 FFmpeg
 
@@ -210,4 +236,25 @@ sudo NO_PROXY=$NO_PROXY,<IP_A> media_proxy -r <IP_B> -p 9300-9399 -t 8003 --agen
 sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -f mcm -conn_type multipoint-group -frame_rate <FPS> -video_size <WIDTH>x<HEIGHT> -pixel_format <PIXEL_FORMAT> -i - ./out_video.yuv -y
 ```
 
-##### 2.2.2.1 Default
+#### Blob
+
+| Test Case | Data Size | Data Source  | Notes |
+|-----------|-----------|--------------|-------|
+| 2.2.2.1   | 100 MB    | /dev/random  | Test transmission of random binary data block |
+
+#### Video
+| Test Case | Resolution | Framerates (FPS) | Color Format            | Interlace   | Notes                       |
+|-----------|------------|------------------|-------------------------|-------------|-----------------------------|
+| 2.2.2.2   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | Default configuration       |
+| 2.2.2.3   | 1920x1080  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test different framerate    |
+| 2.2.2.4   | 3840x2160  | 60               | YUV 4:2:2 10-bit planar | Progressive | Test higher resolution      |
+| 2.2.2.5   | 3840x2160  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test higher res & framerate |
+
+#### Audio
+
+| Test Case | Audio Format           | Sample Rate | Number of Channels | Notes                                       |
+|-----------|------------------------|-------------|--------------------|---------------------------------------------|
+| 2.2.2.6   | PCM 16-bit Big-Endian  | 48000 kHz   | Mono               | Default configuration for FFmpeg audio test |
+| 2.2.2.7   | PCM 24-bit Big-Endian  | 96000 kHz   | Stereo             | High-quality audio configuration            |
+| 2.2.2.8   | PCM 16-bit Big-Endian  | 96000 kHz   | Stereo             | Test high sample rate with stereo           |
+| 2.2.2.9   | PCM 24-bit Big-Endian  | 48000 kHz   | Mono               | Test high bit depth with standard sample rate |
