@@ -27,13 +27,6 @@ flowchart LR
     sw --> proxy2
 ```
 
-### Payload Options
-
-* Blob
-* Video – Uncompressed
-* Audio
-
-
 ### Test Cases
 
 #### 2.2.1 Standalone

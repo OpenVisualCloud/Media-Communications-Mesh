@@ -24,68 +24,6 @@ flowchart LR
     meshAgent <--> sw
     sw --> proxy2
 ```
-### Transmission Modes
-
-* standalone
-* FFmpeg
-
-### Payload Options
-
-* Blob (random binary block)
-* Video – Uncompressed
-* Audio
-
-#### Supported Blob (random binary block) formats
-
-100 MB data generated based on /dev/random
-
-#### Supported video formats
-
-| Parameter       | Standalone          | FFmpeg                |
-|-----------------|----------------------|------------------------|
-| Resolutions     | Full HD 1920x1080    | Full HD 1920x1080      |
-|                 | 4k 3840x2160         | 4k 3840x2160           |
-| Framerate (FPS) | 59.94                | 59.94                  |
-|                 | 60                   | 60                     |
-| Color format    | YUV 4:2:2 10-bit planar | YUV 4:2:2 10-bit planar |
-| Interlace       | progressive          | progressive            |
-| Packing         | gpm                  | can't be changed in ffmpeg |
-|                 | bpm                  |          -             |
-|                 | gpm_sl               |          -             |
-| Pacing          | wide                 | can't be changed in ffmpeg |
-|                 | narrow               |          -             |
-|                 | linear               |          -             |
-
-
-#### Supported audio formats
-
-| Parameter       | Standalone          | FFmpeg                |
-|-----------------|----------------------|------------------------|
-| Audio formats   | PCM 8-bit Big-Endian | -                      |
-|                 | PCM 16-bit Big-Endian| PCM 16-bit Big-Endian  |
-|                 | PCM 24-bit Big-Endian| PCM 24-bit Big-Endian  |
-| Sample Rates    | 44100 kHz            | -                      |
-|                 | 48000 kHz            | 48000 kHz              |
-|                 | 96000 kHz            | 96000 kHz              |
-| Packet Time     | 1 ms (48/96 samples per group) | 1 ms (48/96 samples per group) |
-| Number of channels | 1 (M - Mono)      | 1 (M - Mono)           |
-|                 | 2 (ST - Stereo)      | 2 (ST - Stereo)        |
-| Sample Depth    | pcm_s24be            | pcm_s24be              |
-| Test mode       | frame                | frame                  |
-
-### Tested parameters
-buffer size
-
-metadata size
-
-number of buffers in allocated queue.
-
-Additionally:
-
-Checking fps
-
-Checking number of frames obtained
-( Our current implementation of RxTxApp may encounter issues supporting this. )
 
 ### Test Cases
 #### Test Run Steps
