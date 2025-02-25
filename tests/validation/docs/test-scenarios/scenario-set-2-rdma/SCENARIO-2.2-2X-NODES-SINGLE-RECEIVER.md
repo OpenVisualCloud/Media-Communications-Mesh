@@ -132,10 +132,10 @@ This sequence ensures that the transmitter is ready to receive the transmission.
         },
         "payload": {
             "video": {
-                "width": 1920,
-                "height": 1080,
-                "fps": 60,
-                "pixelFormat": "yuv422p10le"
+                "width": <WIDTH>,
+                "height": <HEIGHT>,
+                "fps": <FPS>,
+                "pixelFormat": <PIXEL_FORMAT>
             }
         }
     }
@@ -175,10 +175,10 @@ This sequence ensures that the transmitter is ready to receive the transmission.
         },
         "payload": {
             "video": {
-                "width": 1920,
-                "height": 1080,
-                "fps": 60,
-                "pixelFormat": "yuv422p10le"
+                "width": <WIDTH>,
+                "height": <HEIGHT>,
+                "fps": <FPS>,
+                "pixelFormat": <PIXEL_FORMAT>
             }
         }
     }
@@ -199,7 +199,7 @@ mesh-agent
 sudo media_proxy -r <IP_A> -p 9300-9399 -t 8003
 ```
 ```bash
-sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -re -video_size 1280x720 -pixel_format yuv422p10le -i ./input_video.yuv -f mcm -conn_type multipoint-group -frame_rate 60 -video_size 1280x720 -pixel_format yuv422p10le -
+sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -re -video_size <WIDTH>x<HEIGHT> -pixel_format <PIXEL_FORMAT> -i ./input_video.yuv -f mcm -conn_type multipoint-group -frame_rate <FPS> -video_size <WIDTH>x<HEIGHT> -pixel_format <PIXEL_FORMAT> -
 ```
 
 #### Node B
@@ -207,7 +207,7 @@ sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -re -video_size 1280x720 -pixel_format yuv
 sudo NO_PROXY=$NO_PROXY,<IP_A> media_proxy -r <IP_B> -p 9300-9399 -t 8003 --agent=<IP_A>:50051
 ```
 ```bash
-sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -f mcm -conn_type multipoint-group -frame_rate 60 -video_size 1280x720 -pixel_format yuv422p10le -i - ./out_video.yuv -y
+sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -f mcm -conn_type multipoint-group -frame_rate <FPS> -video_size <WIDTH>x<HEIGHT> -pixel_format <PIXEL_FORMAT> -i - ./out_video.yuv -y
 ```
 
 ##### 2.2.2.1 Default
