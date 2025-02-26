@@ -64,9 +64,7 @@ flowchart LR
             }
         },
         "payload": {
-            "blob": {
-            ...
-            }
+            "blob": {}
         },
         "maxPayloadSize": 2097152
     }
@@ -105,13 +103,9 @@ flowchart LR
             }
         },
         "payload": {
-            "video": {
-                "width": <WIDTH>,
-                "height": <HEIGHT>,
-                "fps": <FPS>,
-                "pixelFormat": <PIXEL_FORMAT>
-            }
-        }
+            "blob": {}
+        },
+        "maxPayloadSize": 2097152
     }
     ```
 
