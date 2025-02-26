@@ -334,6 +334,8 @@ flowchart LR
 
 #### Blob
 
+Not supported.
+
 #### Video
 
 #### Node A
@@ -400,23 +402,21 @@ sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -f mcm_audio_pcm<AUDIO_ENCODING> \
 
 #### Blob
 
-| Test Case | Data Size | Data Source  | Notes |
-|-----------|-----------|--------------|-------|
-| 2.2.2.1   | 100 MB    | /dev/random  | Test transmission of random binary data block |
+Not supported
 
 #### Video
 | Test Case | Resolution | Framerates (FPS) | Color Format            | Interlace   | Notes                       |
 |-----------|------------|------------------|-------------------------|-------------|-----------------------------|
-| 2.2.2.2   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | Default configuration       |
-| 2.2.2.3   | 1920x1080  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test different framerate    |
-| 2.2.2.4   | 3840x2160  | 60               | YUV 4:2:2 10-bit planar | Progressive | Test higher resolution      |
-| 2.2.2.5   | 3840x2160  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test higher res & framerate |
+| 2.2.2.1   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | Default configuration       |
+| 2.2.2.2   | 1920x1080  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test different framerate    |
+| 2.2.2.3   | 3840x2160  | 60               | YUV 4:2:2 10-bit planar | Progressive | Test higher resolution      |
+| 2.2.2.4   | 3840x2160  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test higher res & framerate |
 
 #### Audio
 
 | Test Case | Audio Format           | Sample Rate | Number of Channels | Notes                                       |
 |-----------|------------------------|-------------|--------------------|---------------------------------------------|
-| 2.2.2.6   | PCM 16-bit Big-Endian  | 48000 kHz   | Mono               | Default configuration for FFmpeg audio test |
-| 2.2.2.7   | PCM 24-bit Big-Endian  | 96000 kHz   | Stereo             | High-quality audio configuration            |
-| 2.2.2.8   | PCM 16-bit Big-Endian  | 96000 kHz   | Stereo             | Test high sample rate with stereo           |
-| 2.2.2.9   | PCM 24-bit Big-Endian  | 48000 kHz   | Mono               | Test high bit depth with standard sample rate |
+| 2.2.2.5   | PCM 16-bit Big-Endian  | 48000 kHz   | Mono               | Default configuration for FFmpeg audio test |
+| 2.2.2.6   | PCM 24-bit Big-Endian  | 96000 kHz   | Stereo             | High-quality audio configuration            |
+| 2.2.2.7   | PCM 16-bit Big-Endian  | 96000 kHz   | Stereo             | Test high sample rate with stereo           |
+| 2.2.2.8   | PCM 24-bit Big-Endian  | 48000 kHz   | Mono               | Test high bit depth with standard sample rate |
