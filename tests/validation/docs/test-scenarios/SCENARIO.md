@@ -15,6 +15,10 @@
 
 100 MB data generated based on /dev/random
 
+```bash
+dd if=/dev/random of=random_data.bin bs=1M count=100
+```
+
 ## Tested video formats
 
 | Parameter       | Standalone          | FFmpeg                |
@@ -31,6 +35,12 @@
 | Pacing          | wide                 | can't be changed in ffmpeg |
 |                 | narrow               |          -             |
 |                 | linear               |          -             |
+
+To check file data using FFmpeg, you can use the following command template:
+
+```bash
+ffmpeg -f rawvideo -pixel_format <pixel_format> -video_size <width>x<height> -i <input_file> -vframes <number_of_frames> -f null -
+```
 
 ## Tested audio formats
 
