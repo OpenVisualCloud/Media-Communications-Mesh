@@ -9,6 +9,17 @@ import (
 	"control-plane-agent/api/proxy/proto/sdk"
 )
 
+type SDKBufferPartition struct {
+	Offset uint32 `json:"offset"`
+	Size   uint32 `json:"size"`
+}
+
+type SDKBufferPartitions struct {
+	Payload  SDKBufferPartition `json:"payload"`
+	Metadata SDKBufferPartition `json:"metadata"`
+	Sysdata  SDKBufferPartition `json:"sysdata"`
+}
+
 type SDKConfigMultipointGroup struct {
 	URN string `json:"urn"`
 }
@@ -53,6 +64,8 @@ type SDKConnectionConfig struct {
 	MaxPayloadSize        uint32 `json:"maxPayloadSize"`
 	MaxMetadataSize       uint32 `json:"maxMetadataSize"`
 	CalculatedPayloadSize uint32 `json:"calculatedPayloadSize"`
+
+	BufParts SDKBufferPartitions `json:"bufPartitions"`
 
 	Conn struct {
 		MultipointGroup *SDKConfigMultipointGroup `json:"multipointGroup,omitempty"`
@@ -125,6 +138,22 @@ func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
 	s.MaxMetadataSize = cfg.MaxMetadataSize
 	s.CalculatedPayloadSize = cfg.CalculatedPayloadSize
 
+	if cfg.BufParts == nil ||
+		cfg.BufParts.Payload == nil ||
+		cfg.BufParts.Metadata == nil ||
+		cfg.BufParts.Sysdata == nil {
+		return errors.New("sdk buf parts cfg is nil")
+	}
+
+	s.BufParts.Payload.Offset = cfg.BufParts.Payload.Offset
+	s.BufParts.Payload.Size = cfg.BufParts.Payload.Size
+
+	s.BufParts.Metadata.Offset = cfg.BufParts.Metadata.Offset
+	s.BufParts.Metadata.Size = cfg.BufParts.Metadata.Size
+
+	s.BufParts.Sysdata.Offset = cfg.BufParts.Sysdata.Offset
+	s.BufParts.Sysdata.Size = cfg.BufParts.Sysdata.Size
+
 	switch conn := cfg.Conn.(type) {
 	case *sdk.ConnectionConfig_MultipointGroup:
 		s.Conn.MultipointGroup = &SDKConfigMultipointGroup{
@@ -177,6 +206,21 @@ func (s *SDKConnectionConfig) AssignToPb(cfg *sdk.ConnectionConfig) {
 	cfg.MaxPayloadSize = s.MaxPayloadSize
 	cfg.MaxMetadataSize = s.MaxMetadataSize
 	cfg.CalculatedPayloadSize = s.CalculatedPayloadSize
+
+	cfg.BufParts = &sdk.BufferPartitions{
+		Payload: &sdk.BufferPartition{
+			Offset: s.BufParts.Payload.Offset,
+			Size:   s.BufParts.Payload.Size,
+		},
+		Metadata: &sdk.BufferPartition{
+			Offset: s.BufParts.Metadata.Offset,
+			Size:   s.BufParts.Metadata.Size,
+		},
+		Sysdata: &sdk.BufferPartition{
+			Offset: s.BufParts.Sysdata.Offset,
+			Size:   s.BufParts.Sysdata.Size,
+		},
+	}
 
 	switch {
 	case s.Conn.MultipointGroup != nil:

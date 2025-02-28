@@ -58,8 +58,7 @@ public:
         auto res = conn_config.assign_from_pb(req->config());
         if (res != connection::Result::success) {
             log::error("SDK: parse err: %s", connection::result2str(res));
-            return Status(StatusCode::INVALID_ARGUMENT,
-                            connection::result2str(res));
+            return Status(StatusCode::INVALID_ARGUMENT, connection::result2str(res));
         }
 
         int sz = req->mcm_conn_param().size();

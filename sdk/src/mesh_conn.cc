@@ -399,6 +399,25 @@ int ConnectionJsonConfig::calc_payload_size()
     return -MESH_ERR_CONN_CONFIG_INVAL;
 }
 
+int ConnectionJsonConfig::configure_buf_partitions()
+{
+    buf_parts.sysdata.offset = 0;
+    buf_parts.sysdata.size = (sizeof(BufferSysData) + 7) & ~7;
+
+    buf_parts.payload.offset = buf_parts.sysdata.size;
+    buf_parts.payload.size = (calculated_payload_size + 7) & ~7;
+
+    buf_parts.metadata.offset = buf_parts.payload.offset + buf_parts.payload.size;
+    buf_parts.metadata.size = (max_metadata_size + 7) & ~7;
+
+    log::debug("BUF PARTS sysdata %u %u, payload %u %u, meta %u %u",
+               buf_parts.sysdata.offset, buf_parts.sysdata.size,
+               buf_parts.payload.offset, buf_parts.payload.size,
+               buf_parts.metadata.offset, buf_parts.metadata.size);
+
+    return 0;
+}
+
 int ConnectionJsonConfig::assign_to_mcm_conn_param(mcm_conn_param& param) const
 {
     /**
@@ -869,7 +888,11 @@ int ConnectionContext::apply_json_config(const char *config) {
 
     log::debug("JSON conn config: %s", config);
 
-    return cfg_json.calc_payload_size();
+    err = cfg_json.calc_payload_size();
+    if (err)
+        return err;
+
+    return cfg_json.configure_buf_partitions();
 }
 
 int ConnectionContext::establish_json()

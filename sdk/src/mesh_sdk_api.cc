@@ -23,6 +23,8 @@ using sdk::CreateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
 using sdk::ConnectionConfig;
+using sdk::BufferPartition;
+using sdk::BufferPartitions;
 using sdk::ConnectionKind;
 using sdk::ConfigMultipointGroup;
 using sdk::ConfigST2110;
@@ -114,6 +116,20 @@ public:
         config->set_max_metadata_size(cfg.max_metadata_size);
         config->set_calculated_payload_size(cfg.calculated_payload_size);
 
+        auto buf_parts = config->mutable_buf_parts();
+
+        auto buf_part_payload = buf_parts->mutable_payload();
+        buf_part_payload->set_offset(cfg.buf_parts.payload.offset);
+        buf_part_payload->set_size(cfg.buf_parts.payload.size);
+
+        auto buf_part_metadata = buf_parts->mutable_metadata();
+        buf_part_metadata->set_offset(cfg.buf_parts.metadata.offset);
+        buf_part_metadata->set_size(cfg.buf_parts.metadata.size);
+
+        auto buf_part_sysdata = buf_parts->mutable_sysdata();
+        buf_part_sysdata->set_offset(cfg.buf_parts.sysdata.offset);
+        buf_part_sysdata->set_size(cfg.buf_parts.sysdata.size);
+
         config->set_kind((ConnectionKind)cfg.kind);
 
         if (cfg.conn_type == MESH_CONN_TYPE_GROUP) {
@@ -157,7 +173,7 @@ public:
         CreateConnectionResponse resp;
         grpc::ClientContext context;
         context.set_deadline(std::chrono::system_clock::now() +
-                             std::chrono::seconds(5));
+                             std::chrono::seconds(20));
 
         Status status = stub_->CreateConnection(&context, req, &resp);
 
@@ -232,6 +248,9 @@ void * mesh_grpc_create_client()
 }
 
 void * mesh_grpc_create_client_json(const std::string& endpoint) {
+
+    log::info("SDK endpoint: %s", endpoint.c_str());
+
     auto client = new(std::nothrow)
         SDKAPIClient(grpc::CreateChannel(endpoint,
                      grpc::InsecureChannelCredentials()));
