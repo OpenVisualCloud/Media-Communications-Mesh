@@ -246,8 +246,8 @@ flowchart LR
             "audio": {
                 "channels": <CHANNELS>,
                 "sampleRate": <SAMPLE_RATE>,
-                "format": "pcm<AUDIO_ENCODING>",
-                "packetTime": "1ms"
+                "format": "<AUDIO_ENCODING>",
+                "packetTime": "<PACKET_TIME>"
             }
         }
     }
@@ -289,8 +289,8 @@ flowchart LR
             "audio": {
                 "channels": <CHANNELS>,
                 "sampleRate": <SAMPLE_RATE>,
-                "format": "pcm<AUDIO_ENCODING>",
-                "packetTime": "1ms"
+                "format": "<AUDIO_ENCODING>",
+                "packetTime": "<PACKET_TIME>"
             }
         }
     }
@@ -320,15 +320,40 @@ flowchart LR
 | 2.2.1.8   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Narrow | Test different pacing       |
 | 2.2.1.9   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Linear | Test different pacing       |
 
+Json parameters:
+
+| Test Case | WIDTH | HEIGHT | FPS  | PIXEL_FORMAT    |
+|-----------|-------|--------|------|-----------------|
+| 2.2.1.2   | 1920  | 1080   | 60   | yuv422p10le     |
+| 2.2.1.3   | 1920  | 1080   | 59.94| yuv422p10le     |
+| 2.2.1.4   | 3840  | 2160   | 60   | yuv422p10le     |
+| 2.2.1.5   | 3840  | 2160   | 59.94| yuv422p10le     |
+| 2.2.1.6   | 1920  | 1080   | 60   | yuv422p10le     |
+| 2.2.1.7   | 1920  | 1080   | 60   | yuv422p10le     |
+| 2.2.1.8   | 1920  | 1080   | 60   | yuv422p10le     |
+| 2.2.1.9   | 1920  | 1080   | 60   | yuv422p10le     |
+
+
 #### Audio
 
-| Test Case | Audio Format           | Sample Rate | Number of Channels | Notes                                       |
-|-----------|------------------------|-------------|--------------------|---------------------------------------------|
-| 2.2.1.10  | PCM 8-bit Big-Endian   | 44100 kHz   | Mono               | Default configuration for basic audio test  |
-| 2.2.1.11  | PCM 16-bit Big-Endian  | 48000 kHz   | Stereo             | Common configuration for high-quality audio |
-| 2.2.1.12  | PCM 24-bit Big-Endian  | 96000 kHz   | Mono               | High sample rate for professional audio     |
-| 2.2.1.13  | PCM 16-bit Big-Endian  | 44100 kHz   | Stereo             | Test lower sample rate with stereo          |
-| 2.2.1.14  | PCM 24-bit Big-Endian  | 48000 kHz   | Mono               | Test high bit depth with standard sample rate |
+| Test Case | Audio Format           | Sample Rate | Number of Channels | packetTime | Notes                                       |
+|-----------|------------------------|-------------|--------------------|------------|---------------------------------------------|
+| 2.2.1.10  | PCM 8-bit Big-Endian   | 44100 Hz    | Mono               | 1.09ms     | Default configuration for basic audio test  |
+| 2.2.1.11  | PCM 16-bit Big-Endian  | 48000 Hz    | Stereo             | 1ms        | Common configuration for high-quality audio |
+| 2.2.1.12  | PCM 24-bit Big-Endian  | 96000 Hz    | Mono               | 1ms        | High sample rate for professional audio     |
+| 2.2.1.13  | PCM 16-bit Big-Endian  | 44100 Hz    | Stereo             | 1ms        | Test lower sample rate with stereo          |
+| 2.2.1.14  | PCM 24-bit Big-Endian  | 48000 Hz    | Mono               | 1ms        | Test high bit depth with standard sample rate |
+
+Json parameters:
+
+| Test Case | CHANNELS | SAMPLE_RATE | AUDIO_ENCODING | PACKET_TIME |
+|-----------|----------|-------------|----------------|-------------|
+| 2.2.1.10  | 1        | 44100       | pcm_s8         | 1.09ms      |
+| 2.2.1.11  | 2        | 48000       | pcm_s16be      | 1ms         |
+| 2.2.1.12  | 1        | 96000       | pcm_s24be      | 1ms         |
+| 2.2.1.13  | 2        | 44100       | pcm_s16be      | 1.09ms      |
+| 2.2.1.14  | 1        | 48000       | pcm_s24be      | 1ms         |
+
 
 #### 2.2.2 FFmpeg
 
@@ -377,7 +402,7 @@ mesh-agent
 sudo media_proxy -r <IP_A> -p 9300-9399 -t 8003
 ```
 ```bash
-sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -i <AUDIO_INPUT_FILE_PATH> \
+sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -re -i <AUDIO_INPUT_FILE_PATH> \
     -f mcm_audio_pcm<AUDIO_ENCODING> \
     -conn_type multipoint-group \
     -channels <CHANNELS> \
@@ -416,7 +441,7 @@ Not supported
 
 | Test Case | Audio Format           | Sample Rate | Number of Channels | Notes                                       |
 |-----------|------------------------|-------------|--------------------|---------------------------------------------|
-| 2.2.2.5   | PCM 16-bit Big-Endian  | 48000 kHz   | Mono               | Default configuration for FFmpeg audio test |
-| 2.2.2.6   | PCM 24-bit Big-Endian  | 96000 kHz   | Stereo             | High-quality audio configuration            |
-| 2.2.2.7   | PCM 16-bit Big-Endian  | 96000 kHz   | Stereo             | Test high sample rate with stereo           |
-| 2.2.2.8   | PCM 24-bit Big-Endian  | 48000 kHz   | Mono               | Test high bit depth with standard sample rate |
+| 2.2.2.5   | PCM 16-bit Big-Endian  | 48000 Hz   | Mono               | Default configuration for FFmpeg audio test |
+| 2.2.2.6   | PCM 24-bit Big-Endian  | 96000 Hz   | Stereo             | High-quality audio configuration            |
+| 2.2.2.7   | PCM 16-bit Big-Endian  | 96000 Hz   | Stereo             | Test high sample rate with stereo           |
+| 2.2.2.8   | PCM 24-bit Big-Endian  | 48000 Hz   | Mono               | Test high bit depth with standard sample rate |
