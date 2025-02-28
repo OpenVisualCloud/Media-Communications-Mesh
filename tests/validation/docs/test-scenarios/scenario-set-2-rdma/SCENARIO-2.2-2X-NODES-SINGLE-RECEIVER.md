@@ -372,6 +372,7 @@ sudo media_proxy -r <IP_A> -p 9300-9399 -t 8003
 sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -re -video_size <WIDTH>x<HEIGHT> \
     -pixel_format <PIXEL_FORMAT> \
     -i <VIDEO_INPUT_FILE_PATH> \
+    -r <FPS>\
     -f mcm \
     -conn_type multipoint-group \
     -frame_rate <FPS> \
@@ -436,6 +437,7 @@ Not supported
 | 2.2.2.2   | 1920x1080  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test different framerate    |
 | 2.2.2.3   | 3840x2160  | 60               | YUV 4:2:2 10-bit planar | Progressive | Test higher resolution      |
 | 2.2.2.4   | 3840x2160  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test higher res & framerate |
+
 
 #### Audio
 
