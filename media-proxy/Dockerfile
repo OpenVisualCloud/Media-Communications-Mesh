@@ -187,8 +187,8 @@ HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "media_proxy" || exit 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as mesh-agent
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
-LABEL org.opencontainers.image.title="Media Communications Mesh Media Proxy Agent"
-LABEL org.opencontainers.image.description="Media Communications Mesh Media Proxy Agent application. Ubuntu 22.04 Docker Container Release Image"
+LABEL org.opencontainers.image.title="Media Communications Mesh Mesh Agent"
+LABEL org.opencontainers.image.description="Media Communications Mesh Mesh Agent application. Ubuntu 22.04 Docker Container Release Image"
 LABEL org.opencontainers.image.version="1.0.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
