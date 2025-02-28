@@ -44,19 +44,21 @@ ffmpeg -f rawvideo -pixel_format <pixel_format> -video_size <width>x<height> -i 
 
 ## Tested audio formats
 
-| Parameter       | Standalone          | FFmpeg                |
-|-----------------|----------------------|------------------------|
-| Audio formats   | PCM 8-bit Big-Endian | -                      |
-|                 | PCM 16-bit Big-Endian| PCM 16-bit Big-Endian  |
-|                 | PCM 24-bit Big-Endian| PCM 24-bit Big-Endian  |
-| Sample Rates    | 44100 kHz            | -                      |
-|                 | 48000 kHz            | 48000 kHz              |
-|                 | 96000 kHz            | 96000 kHz              |
-| Packet Time     | 1 ms (48/96 samples per group) | 1 ms (48/96 samples per group) |
-| Number of channels | 1 (M - Mono)      | 1 (M - Mono)           |
-|                 | 2 (ST - Stereo)      | 2 (ST - Stereo)        |
-| Sample Depth    | pcm_s24be            | pcm_s24be              |
-| Test mode       | frame                | frame                  |
+| Parameter         | Standalone          | FFmpeg                |
+|-------------------|---------------------|-----------------------|
+| Audio formats     | PCM 8-bit Big-Endian| -                     |
+|                   | PCM 16-bit Big-Endian| PCM 16-bit Big-Endian |
+|                   | PCM 24-bit Big-Endian| PCM 24-bit Big-Endian |
+| Sample Rates      | 44100 Hz            | -                     |
+|                   | 48000 Hz            | 48000 Hz              |
+|                   | 96000 Hz            | 96000 Hz              |
+| Packet Time*      | 1 ms (48/96 samples per group) | 1 ms (48/96 samples per group) |
+| Number of channels| 1 (M - Mono)        | 1 (M - Mono)          |
+|                   | 2 (ST - Stereo)     | 2 (ST - Stereo)       |
+| Sample Depth      | pcm_s24be           | pcm_s24be             |
+| Test mode         | frame               | frame                 |
+
+*For some sample rates like 44100 Hz, 1 ms is not available due to the fact that 1 ms at a sample rate of 44100 Hz would require 44.1 samples (since 44100 samples/second * 0.001 seconds = 44.1 samples), which is not possible. Consider adjusting the packet time (1.09ms for 44100 Hz) or using a compatible sample rate like 48000 Hz for 1 ms packet time compatibility.
 
 # Tested parameters
 
