@@ -230,4 +230,4 @@ CMD ["-h"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/local/bin/mesh-agent"]
 
-HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "mesh-agent" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "mesh-agent" | wc -l) != 2 )); then exit 1; fi
