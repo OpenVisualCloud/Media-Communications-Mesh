@@ -82,18 +82,44 @@ class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
 
   private:
     void frame_thread() {
+        if (this->transfer_size > this->config.buf_parts.payload.size) {
+            log::error("ST2110Rx frame thread transfer size larger than buf payload size")
+                      ("transfer_size", this->transfer_size)
+                      ("payload.size", this->config.buf_parts.payload.size);
+            return;
+        }
+
+        auto buf_sz = this->config.buf_parts.total_size();
+        auto buf = new char[buf_sz];
+        if (buf == nullptr) {
+            log::error("ST2110Rx frame thread buf out of memory");
+            return;
+        }
+
+        auto sysdata = (BufferSysData *)(buf + this->config.buf_parts.sysdata.offset);
+        auto payload_ptr = (void *)(buf + this->config.buf_parts.payload.offset);
+
+        sysdata->timestamp_ms = 0;
+        sysdata->seq = 0;
+        sysdata->payload_len = this->transfer_size;
+        sysdata->metadata_len = 0;
+
         while (!this->_ctx.cancelled()) {
             // Get full buffer from MTL
             FRAME *frame_ptr = this->get_frame(this->mtl_session);
             if (frame_ptr) {
+                std::memcpy(payload_ptr, get_frame_data_ptr(frame_ptr), this->transfer_size);
+
                 // Forward buffer to emulated receiver
-                this->transmit(this->_ctx, get_frame_data_ptr(frame_ptr), this->transfer_size);
+                this->transmit(this->_ctx, buf, buf_sz);
                 // Return used buffer to MTL
                 this->put_frame(this->mtl_session, frame_ptr);
             } else {
                 this->wait_frame_available();
             }
         }
+
+        delete[] buf;
     }
 };
 

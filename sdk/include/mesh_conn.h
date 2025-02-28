@@ -10,6 +10,7 @@
 #include "mesh_dp.h"
 #include "mcm_dp.h"
 #include "mesh_client.h"
+#include "mesh_buf.h"
 
 namespace mesh {
 class ConnectionJsonConfig;
@@ -40,6 +41,7 @@ class ConnectionJsonConfig {
 public:
     int parse_json(const char *str);
     int calc_payload_size();
+    int configure_buf_partitions();
     int assign_to_mcm_conn_param(mcm_conn_param& param) const;
 
     // Connection kind (transmitter, receiver).
@@ -51,6 +53,8 @@ public:
     uint32_t max_metadata_size;
 
     uint32_t calculated_payload_size;
+
+    BufferPartitions buf_parts;
 
     // Connection type (Multipoint Group, SMPTE ST2110-XX, RDMA).
     // Any value of the MESH_CONN_TYPE_* constants.

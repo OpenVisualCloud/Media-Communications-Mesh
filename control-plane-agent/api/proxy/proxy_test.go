@@ -249,6 +249,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "123",
 				Kind:    "tx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_MultipointGroup{
 						MultipointGroup: &sdk.ConfigMultipointGroup{
 							Urn: "abc",
@@ -272,6 +277,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "234",
 				Kind:    "rx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_MultipointGroup{
 						MultipointGroup: &sdk.ConfigMultipointGroup{
 							Urn: "ABC",
@@ -295,6 +305,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "345",
 				Kind:    "tx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_St2110{
 						St2110: &sdk.ConfigST2110{
 							RemoteIpAddr: "192.168.96.10",
@@ -319,6 +334,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "456",
 				Kind:    "rx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_St2110{
 						St2110: &sdk.ConfigST2110{
 							RemoteIpAddr: "192.168.97.10",
