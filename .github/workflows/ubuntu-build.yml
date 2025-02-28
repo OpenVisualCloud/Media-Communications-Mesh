@@ -94,6 +94,11 @@ jobs:
         ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
         ./build-ffmpeg.sh "7.0"
 
+    - name: 'upload media-proxy and mcm binaries'
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+      with:
+        name: mcm-build
+        path: '${{ env.BUILD_DIR }}/*'
     - name: 'Scanner: Send to VirusTotal for analysis'
       if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       id: vt
