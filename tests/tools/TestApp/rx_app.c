@@ -1,8 +1,15 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include <stdio.h>
 #include <unistd.h>
 #include <stdlib.h>
 #include "Inc/input.h"
 #include "Inc/mcm.h"
+#include "Inc/misc.h"
 
 char *client_cfg;
 char *conn_cfg;
@@ -25,32 +32,32 @@ int main(int argc, char *argv[]) {
     MeshConnection *connection = NULL;
     MeshClient *client = NULL;
 
-    printf("[RX] Launching RX App \n");
-    printf("[RX] Reading client configuration... \n");
+    LOG("[RX] Launching RX App");
+    LOG("[RX] Reading client configuration...");
     client_cfg = parse_json_to_string(client_cfg_file);
-    printf("[RX] Reading connection configuration... \n");
+    LOG("[RX] Reading connection configuration...");
     conn_cfg = parse_json_to_string(conn_cfg_file);
 
     /* Initialize mcm client */
     int err = mesh_create_client_json(&client, client_cfg);
     if (err) {
-        printf("[RX] Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
+        LOG("[RX] Failed to create mesh client: %s (%d)", mesh_err2str(err), err);
         goto safe_exit;
     }
 
     /* Create mesh connection */
     err = mesh_create_rx_connection(client, &connection, conn_cfg);
     if (err) {
-        printf("[RX] Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
+        LOG("[RX] Failed to create connection: %s (%d)", mesh_err2str(err), err);
         mesh_delete_client(&client);
         goto safe_exit;
     }
-    printf("[RX] Waiting for frames... \n");
+    LOG("[RX] Waiting for frames...");
     read_data_in_loop(connection, out_filename);
-    printf("[RX] Shuting down connection and client\n");
+    LOG("[RX] Shuting down connection and client");
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
-    printf("[RX] Shutdown completed exiting\n");
+    LOG("[RX] Shutdown completed exiting");
 
 safe_exit:
     free(client_cfg);

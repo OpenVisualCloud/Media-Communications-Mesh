@@ -71,7 +71,6 @@ function get_and_patch_intel_drivers()
     fi
     IRDMA_REPO="$(get_irdma_driver_tgz)"
     wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}" && \
-    git_download_strip_unpack "intel/ethernet-linux-iavf" "refs/tags/v${IAVF_VER}" "${IAVF_DIR}" && \
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
     pushd "${ICE_DIR}" && \
@@ -93,12 +92,6 @@ function build_install_and_config_intel_drivers()
     as_root modprobe ice
     log_success "Intel ICE: Drivers finished install process."
 
-    log_info "Intel IAVF: Driver starting the build and install workflow."
-    if ! as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install; then
-        log_error "Intel IAVF: Failed to build and install drivers"
-        exit 6
-    fi
-    log_success "Intel IAVF: Drivers finished install process."
     return 0
 }
 

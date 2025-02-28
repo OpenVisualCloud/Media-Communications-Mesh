@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -5,6 +11,7 @@
 
 #include "Inc/input.h"
 #include "Inc/mcm.h"
+#include "Inc/misc.h"
 
 char *client_cfg;
 char *conn_cfg;
@@ -27,23 +34,23 @@ int main(int argc, char **argv) {
     MeshConnection *connection = NULL;
     MeshClient *client = NULL;
 
-    printf("[TX] Launching TX app \n");
-    printf("[TX] Reading client configuration... \n");
+    LOG("[TX] Launching TX app");
+    LOG("[TX] Reading client configuration...");
     client_cfg = parse_json_to_string(client_cfg_file);
-    printf("[TX] Reading connection configuration... \n");
+    LOG("[TX] Reading connection configuration...");
     conn_cfg = parse_json_to_string(conn_cfg_file);
 
     /* Initialize mcm client */
     int err = mesh_create_client_json(&client, client_cfg);
     if (err) {
-        printf("[TX] Failed to create mesh client: %s (%d)\n", mesh_err2str(err), err);
+        LOG("[TX] Failed to create mesh client: %s (%d)", mesh_err2str(err), err);
         goto safe_exit;
     }
 
     /* Create mesh connection */
     err = mesh_create_tx_connection(client, &connection, conn_cfg);
     if (err) {
-        printf("[TX] Failed to create connection: %s (%d)\n", mesh_err2str(err), err);
+        LOG("[TX] Failed to create connection: %s (%d)", mesh_err2str(err), err);
         mesh_delete_client(&client);
         goto safe_exit;
     }
@@ -51,10 +58,10 @@ int main(int argc, char **argv) {
     /* Open file and send its contents */
 
     err = mcm_send_video_frames(connection, video_file);
-    printf("[TX] Shuting down connection and client\n");
+    LOG("[TX] Shuting down connection and client");
     mesh_delete_connection(&connection);
     mesh_delete_client(&client);
-    printf("[TX] Shutdown completed. Exiting\n");
+    LOG("[TX] Shutdown completed. Exiting");
 
 safe_exit:
     free(client_cfg);

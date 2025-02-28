@@ -18,7 +18,7 @@ execute_process(
 message(STATUS "************* root project dir: ${GIT_REPO_ROOT} *************")
 
 set(INC ${GIT_REPO_ROOT}/sdk/include Inc)
-set(SRC src/input.c src/mcm.c)
+set(SRC src/input.c src/mcm.c src/misc.c)
 
 include_directories(${INC})
 

@@ -16,6 +16,12 @@ modification, are permitted provided that the following conditions are met:
    contributors may be used to endorse or promote products derived from
    this software without specific prior written permission.
 
+FFmpeg is an open source project licensed under LGPL and GPL.
+See https://www.ffmpeg.org/legal.html. You are solely responsible for
+determining if your use of FFmpeg requires any additional licenses.
+Intel is not responsible for obtaining any such licenses, nor liable
+for any licensing fees due, in connection with your use of FFmpeg.
+
 THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
 AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
 IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE

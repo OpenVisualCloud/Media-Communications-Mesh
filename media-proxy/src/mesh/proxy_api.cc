@@ -63,7 +63,7 @@ int ProxyAPIClient::RegisterMediaProxy()
     RegisterMediaProxyReply reply;
     ClientContext context;
     context.set_deadline(std::chrono::system_clock::now() +
-                         std::chrono::seconds(5));
+                         std::chrono::seconds(15)); // Increased from 5 to 15 as a workaround for k8s
 
     Status status = stub_->RegisterMediaProxy(&context, request, &reply);
 
@@ -390,6 +390,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 int ProxyAPIClient::Run(context::Context& ctx)
 {
     RegisterMediaProxy();
+    // RegisterMediaProxy(); // Workaround for k8s. The first request fails for unknown reason.
 
     try {
         th = std::jthread([&]() {

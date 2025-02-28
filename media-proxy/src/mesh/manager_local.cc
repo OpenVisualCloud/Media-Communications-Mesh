@@ -62,10 +62,7 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     //                                   conn_config.payload.video.width,
     //                                   conn_config.payload.video.height, false);
 
-    // DEBUG
-    // TODO: Replace with calculation based on st_xxx functions.
-    size_t frame_size = conn_config.calculated_payload_size;
-    // DEBUG
+    size_t frame_size = conn_config.buf_parts.total_size();
 
     Local *conn;
 

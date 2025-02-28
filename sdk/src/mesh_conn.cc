@@ -104,137 +104,147 @@ int ConnectionJsonConfig::parse_json(const char *str)
 
         if (!j.contains("payload")) {
             payload_type = MESH_PAYLOAD_TYPE_BLOB;
-            return 0;
-        }
+        } else {
+            auto jpayload = j["payload"];
 
-        auto jpayload = j["payload"];
+            if (jpayload.contains("video"))
+                payload_type = MESH_PAYLOAD_TYPE_VIDEO;
 
-        if (jpayload.contains("video"))
-            payload_type = MESH_PAYLOAD_TYPE_VIDEO;
-
-        if (jpayload.contains("audio")) {
-            if (payload_type != MESH_PAYLOAD_TYPE_UNINITIALIZED) {
-                log::error("payload.audio config err: multiple payload types");
-                return -MESH_ERR_CONN_CONFIG_INVAL;
+            if (jpayload.contains("audio")) {
+                if (payload_type != MESH_PAYLOAD_TYPE_UNINITIALIZED) {
+                    log::error("payload.audio config err: multiple payload types");
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }
+                payload_type = MESH_PAYLOAD_TYPE_AUDIO;
             }
-            payload_type = MESH_PAYLOAD_TYPE_AUDIO;
-        }
 
-        if (jpayload.contains("blob")) {
-            if (payload_type != MESH_PAYLOAD_TYPE_UNINITIALIZED) {
-                log::error("payload.blob config err: multiple payload types");
-                return -MESH_ERR_CONN_CONFIG_INVAL;
+            if (jpayload.contains("blob")) {
+                if (payload_type != MESH_PAYLOAD_TYPE_UNINITIALIZED) {
+                    log::error("payload.blob config err: multiple payload types");
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }
+                payload_type = MESH_PAYLOAD_TYPE_BLOB;
             }
-            payload_type = MESH_PAYLOAD_TYPE_BLOB;
-        }
 
-        if (payload_type == MESH_PAYLOAD_TYPE_UNINITIALIZED) {
-            log::error("payload config type not specified");
-            return -MESH_ERR_CONN_CONFIG_INVAL;
-        }
-
-        if (payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
-            auto video = jpayload["video"];
-            payload.video.width = video.value("width", 640);
-            payload.video.height = video.value("height", 640);
-            payload.video.fps = video.value("fps", 60.0);
-
-            std::string str = video.value("pixelFormat", "yuv422p10le");
-            if (!str.compare("yuv422p10le")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
-            } else if (!str.compare("v210")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
-            } else if (!str.compare("yuv422p10rfc4175")) {
-                payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
-            } else {
-                log::error("video: wrong pixel format: %s", str.c_str());
-                return -MESH_ERR_CONN_CONFIG_INVAL;
-            }
-        } else if (payload_type == MESH_PAYLOAD_TYPE_AUDIO) {
-            auto audio = jpayload["audio"];
-            payload.audio.channels = audio.value("channels", 2);
-
-            std::string str = audio.value("format", "pcm_s24be");
-            if (!str.compare("pcm_s24be")) {
-                payload.audio.format = MESH_AUDIO_FORMAT_PCM_S24BE;
-            } else if (!str.compare("pcm_s16be")) {
-                payload.audio.format = MESH_AUDIO_FORMAT_PCM_S16BE;
-            } else if (!str.compare("pcm_s8")) {
-                payload.audio.format = MESH_AUDIO_FORMAT_PCM_S8;
-            } else {
-                log::error("audio: wrong format: %s", str.c_str());
+            if (payload_type == MESH_PAYLOAD_TYPE_UNINITIALIZED) {
+                log::error("payload config type not specified");
                 return -MESH_ERR_CONN_CONFIG_INVAL;
             }
 
-            int sample_rate = audio.value("sampleRate", 48000);
-            switch (sample_rate) {
-            case 44100:
-                payload.audio.sample_rate = MESH_AUDIO_SAMPLE_RATE_44100;
-                break;
-            case 48000:
-                payload.audio.sample_rate = MESH_AUDIO_SAMPLE_RATE_48000;
-                break;
-            case 96000:
-                payload.audio.sample_rate = MESH_AUDIO_SAMPLE_RATE_96000;
-                break;
-            default:
-                log::error("audio: wrong sample rate: %d", sample_rate);
-                return -MESH_ERR_CONN_CONFIG_INVAL;
-            }
+            if (payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
+                auto video = jpayload["video"];
+                payload.video.width = video.value("width", 640);
+                payload.video.height = video.value("height", 640);
+                payload.video.fps = video.value("fps", 60.0);
 
-            str = audio.value("packetTime", "1ms");
-            if (!str.compare("1ms")) {
-            } else if (!str.compare("1ms")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_1MS;
-            } else if (!str.compare("125us")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_125US;
-            } else if (!str.compare("250us")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_250US;
-            } else if (!str.compare("333us")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_333US;
-            } else if (!str.compare("4ms")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_4MS;
-            } else if (!str.compare("80us")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_80US;
-            } else if (!str.compare("1.09ms")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_1_09MS;
-            } else if (!str.compare("0.14ms")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_0_14MS;
-            } else if (!str.compare("0.09ms")) {
-                payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_1_09MS;
-            } else {
-                log::error("audio: wrong packet time: %s", str.c_str());
-                return -MESH_ERR_CONN_CONFIG_INVAL;
-            }
+                std::string str = video.value("pixelFormat", "yuv422p10le");
+                if (!str.compare("yuv422p10le")) {
+                    payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
+                } else if (!str.compare("v210")) {
+                    payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
+                } else if (!str.compare("yuv422p10rfc4175")) {
+                    payload.video.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
+                } else {
+                    log::error("video: wrong pixel format: %s", str.c_str());
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }
+            } else if (payload_type == MESH_PAYLOAD_TYPE_AUDIO) {
+                auto audio = jpayload["audio"];
+                payload.audio.channels = audio.value("channels", 2);
 
-            bool compatible = false;
-            switch (payload.audio.sample_rate) {
-            case MESH_AUDIO_SAMPLE_RATE_48000:
-            case MESH_AUDIO_SAMPLE_RATE_96000:
-                switch (payload.audio.packet_time) {
-                case MESH_AUDIO_PACKET_TIME_1MS:
-                case MESH_AUDIO_PACKET_TIME_125US:
-                case MESH_AUDIO_PACKET_TIME_250US:
-                case MESH_AUDIO_PACKET_TIME_333US:
-                case MESH_AUDIO_PACKET_TIME_4MS:
-                case MESH_AUDIO_PACKET_TIME_80US:
-                    compatible = true;
+                std::string str = audio.value("format", "pcm_s24be");
+                if (!str.compare("pcm_s24be")) {
+                    payload.audio.format = MESH_AUDIO_FORMAT_PCM_S24BE;
+                } else if (!str.compare("pcm_s16be")) {
+                    payload.audio.format = MESH_AUDIO_FORMAT_PCM_S16BE;
+                } else if (!str.compare("pcm_s8")) {
+                    payload.audio.format = MESH_AUDIO_FORMAT_PCM_S8;
+                } else {
+                    log::error("audio: wrong format: %s", str.c_str());
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }
+
+                int sample_rate = audio.value("sampleRate", 48000);
+                switch (sample_rate) {
+                case 44100:
+                    payload.audio.sample_rate = MESH_AUDIO_SAMPLE_RATE_44100;
+                    break;
+                case 48000:
+                    payload.audio.sample_rate = MESH_AUDIO_SAMPLE_RATE_48000;
+                    break;
+                case 96000:
+                    payload.audio.sample_rate = MESH_AUDIO_SAMPLE_RATE_96000;
+                    break;
+                default:
+                    log::error("audio: wrong sample rate: %d", sample_rate);
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }
+
+                str = audio.value("packetTime", "1ms");
+                if (!str.compare("1ms")) {
+                } else if (!str.compare("1ms")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_1MS;
+                } else if (!str.compare("125us")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_125US;
+                } else if (!str.compare("250us")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_250US;
+                } else if (!str.compare("333us")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_333US;
+                } else if (!str.compare("4ms")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_4MS;
+                } else if (!str.compare("80us")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_80US;
+                } else if (!str.compare("1.09ms")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_1_09MS;
+                } else if (!str.compare("0.14ms")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_0_14MS;
+                } else if (!str.compare("0.09ms")) {
+                    payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_1_09MS;
+                } else {
+                    log::error("audio: wrong packet time: %s", str.c_str());
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }
+
+                bool compatible = false;
+                switch (payload.audio.sample_rate) {
+                case MESH_AUDIO_SAMPLE_RATE_48000:
+                case MESH_AUDIO_SAMPLE_RATE_96000:
+                    switch (payload.audio.packet_time) {
+                    case MESH_AUDIO_PACKET_TIME_1MS:
+                    case MESH_AUDIO_PACKET_TIME_125US:
+                    case MESH_AUDIO_PACKET_TIME_250US:
+                    case MESH_AUDIO_PACKET_TIME_333US:
+                    case MESH_AUDIO_PACKET_TIME_4MS:
+                    case MESH_AUDIO_PACKET_TIME_80US:
+                        compatible = true;
+                        break;
+                    }
+                    break;
+                case MESH_AUDIO_SAMPLE_RATE_44100:
+                    switch (payload.audio.packet_time) {
+                    case MESH_AUDIO_PACKET_TIME_1_09MS:
+                    case MESH_AUDIO_PACKET_TIME_0_14MS:
+                    case MESH_AUDIO_PACKET_TIME_0_09MS:
+                        compatible = true;
+                        break;
+                    }
                     break;
                 }
-                break;
-            case MESH_AUDIO_SAMPLE_RATE_44100:
-                switch (payload.audio.packet_time) {
-                case MESH_AUDIO_PACKET_TIME_1_09MS:
-                case MESH_AUDIO_PACKET_TIME_0_14MS:
-                case MESH_AUDIO_PACKET_TIME_0_09MS:
-                    compatible = true;
-                    break;
+                if (!compatible) {
+                    log::error("audio: sample rate incompatible with packet time");
+                    return -MESH_ERR_CONN_CONFIG_INCOMPAT;
                 }
-                break;
             }
-            if (!compatible) {
-                log::error("audio: sample rate incompatible with packet time");
+        }
+
+        if (payload_type == MESH_PAYLOAD_TYPE_BLOB) {
+            if (conn_type != MESH_CONN_TYPE_GROUP) {
+                log::error("blob: conn type must be multipoint group");
                 return -MESH_ERR_CONN_CONFIG_INCOMPAT;
+            }
+            if (!max_payload_size) {
+                log::error("blob: non-zero max payload size must be specified");
+                return -MESH_ERR_CONN_CONFIG_INVAL;
             }
         }
 
@@ -381,9 +391,31 @@ int ConnectionJsonConfig::calc_payload_size()
         return calc_video_buf_size();
     case MESH_PAYLOAD_TYPE_AUDIO:
         return calc_audio_buf_size();
+    case MESH_PAYLOAD_TYPE_BLOB:
+        calculated_payload_size = max_payload_size;
+        return 0;
     }
 
     return -MESH_ERR_CONN_CONFIG_INVAL;
+}
+
+int ConnectionJsonConfig::configure_buf_partitions()
+{
+    buf_parts.sysdata.offset = 0;
+    buf_parts.sysdata.size = (sizeof(BufferSysData) + 7) & ~7;
+
+    buf_parts.payload.offset = buf_parts.sysdata.size;
+    buf_parts.payload.size = (calculated_payload_size + 7) & ~7;
+
+    buf_parts.metadata.offset = buf_parts.payload.offset + buf_parts.payload.size;
+    buf_parts.metadata.size = (max_metadata_size + 7) & ~7;
+
+    log::debug("BUF PARTS sysdata %u %u, payload %u %u, meta %u %u",
+               buf_parts.sysdata.offset, buf_parts.sysdata.size,
+               buf_parts.payload.offset, buf_parts.payload.size,
+               buf_parts.metadata.offset, buf_parts.metadata.size);
+
+    return 0;
 }
 
 int ConnectionJsonConfig::assign_to_mcm_conn_param(mcm_conn_param& param) const
@@ -856,7 +888,11 @@ int ConnectionContext::apply_json_config(const char *config) {
 
     log::debug("JSON conn config: %s", config);
 
-    return cfg_json.calc_payload_size();
+    err = cfg_json.calc_payload_size();
+    if (err)
+        return err;
+
+    return cfg_json.configure_buf_partitions();
 }
 
 int ConnectionContext::establish_json()
