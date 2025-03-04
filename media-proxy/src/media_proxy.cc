@@ -124,13 +124,13 @@ int main(int argc, char* argv[])
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "hg:t:d:i:r:p:", longopts, 0);
-        if (opt == -1) {
+        opt = getopt_long(argc, argv, "h?t:a:d:i:r:p:", longopts, 0);
+        if (opt == -1)
             break;
-        }
 
         switch (opt) {
         case 'h':
+        case '?':
             help_flag = 1;
             break;
         case 't':
@@ -150,11 +150,6 @@ int main(int argc, char* argv[])
             break;
         case 'p':
             rdma_ports = optarg;
-            break;
-        case '?':
-            usage(stderr, argv[0]);
-            return 1;
-        default:
             break;
         }
     }
@@ -235,7 +230,7 @@ int main(int argc, char* argv[])
     // Stop Local connection manager
     log::info("Shutting down Local conn manager");
     auto tctx = context::WithTimeout(context::Background(),
-                                      std::chrono::milliseconds(3000));
+                                     std::chrono::milliseconds(3000));
     connection::local_manager.shutdown(ctx);
 
     metricsCollectorThread.join();
