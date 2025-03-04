@@ -8,11 +8,13 @@
 #include "mcm_common.h"
 #include <bsd/string.h>
 #include <stdatomic.h>
+#include <signal.h>
 #include "libavutil/pixdesc.h"
 
 static pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 static MeshClient *client;
 static int refcnt;
+static atomic_bool shutdown_requested = ATOMIC_VAR_INIT(false);
 
 void mcm_replace_back_quotes(char *str) {
     while (*str) {
@@ -20,6 +22,18 @@ void mcm_replace_back_quotes(char *str) {
             *str = '"';
         str++;
     }
+}
+
+static void mcm_handle_signal(int signal) {
+    atomic_store(&shutdown_requested, true);
+}
+
+/**
+ * Check if a termination signal has been received from OS.
+ */
+bool mcm_shutdown_requested()
+{
+    return atomic_load(&shutdown_requested);
 }
 
 /**
@@ -49,10 +63,13 @@ int mcm_get_client(MeshClient **mc)
         mcm_replace_back_quotes(json_config);
 
         err = mesh_create_client_json(&client, json_config);
-        if (err)
+        if (err) {
             client = NULL;
-        else
+        } else {
             refcnt = 1;
+            signal(SIGINT, mcm_handle_signal);
+            signal(SIGTERM, mcm_handle_signal);
+        }
     } else {
         refcnt++;
     }

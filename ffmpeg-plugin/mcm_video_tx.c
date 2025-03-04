@@ -98,6 +98,9 @@ static int mcm_video_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         return AVERROR(EIO);
     }
 
+    if (mcm_shutdown_requested())
+        return AVERROR_EOF;
+
     memcpy(buf->data, pkt->data,
            pkt->size <= buf->data_len ? pkt->size : buf->data_len);
 
