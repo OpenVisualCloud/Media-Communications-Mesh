@@ -194,13 +194,13 @@ int ProxyAPIClient::SendCommandReply(CommandReply& request)
 
     ClientContext context;
     context.set_deadline(std::chrono::system_clock::now() +
-                        std::chrono::seconds(5));
+                         std::chrono::seconds(5));
 
     Status status = stub_->SendCommandReply(&context, request, &reply);
 
     if (!status.ok()) {
         log::error("SendCommandReply RPC failed: %s",
-                    status.error_message().c_str());
+                   status.error_message().c_str());
         return -1;
     }
 
@@ -234,8 +234,8 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
         case CommandRequest::kDebug:
             {
                 log::debug("Received Debug command: %s",
-                            command_request.debug().in_text().c_str())
-                            ("req_id", command_request.req_id());
+                           command_request.debug().in_text().c_str())
+                          ("req_id", command_request.req_id());
 
 
                 // Create and populate the CommandReply message
@@ -254,16 +254,16 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                 multipoint::Config config;
 
                 log::info("[AGENT] ApplyConfig")
-                            ("groups", req.groups_size())
-                            ("bridges", req.bridges_size());
+                         ("groups", req.groups_size())
+                         ("bridges", req.bridges_size());
 
                 for (const auto& group : req.groups()) {
                     multipoint::GroupConfig group_config;
 
                     log::info("* Group")
-                                ("group_id", group.group_id())
-                                ("conns", group.conn_ids_size())
-                                ("bridges", group.bridge_ids_size());
+                             ("group_id", group.group_id())
+                             ("conns", group.conn_ids_size())
+                             ("bridges", group.bridge_ids_size());
 
                     for (const auto& conn_id : group.conn_ids()) {
                         // log::debug("-- Conn")("conn_id", conn_id);
@@ -279,9 +279,9 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
                 for (const auto& bridge : req.bridges()) {
                     log::info("* Bridge")
-                                ("bridge_id", bridge.bridge_id())
-                                ("type", bridge.type())
-                                ("kind", bridge.kind());
+                             ("bridge_id", bridge.bridge_id())
+                             ("type", bridge.type())
+                             ("kind", bridge.kind());
 
                     connection::Kind kind;
                     if (!bridge.kind().compare("tx")) {
@@ -356,13 +356,15 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                     }
                 }
 
-                multipoint::group_manager.apply_config(ctx, config);
-                // TODO: Do we need to check and return the result here?
-
                 ApplyConfigReply* reply = new ApplyConfigReply();
                 result_request.set_allocated_apply_config(reply);
 
                 SendCommandReply(result_request);
+
+                // Apply config after the ApplyConfig command confirmation
+                // has been sent to avoid mutual nested locking.
+                multipoint::group_manager.apply_config(ctx, config);
+                // TODO: Do we need to check and return the result here?
             }
             break;
 
@@ -372,7 +374,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
         default:
             log::error("Unknown proxy command")
-                        ("req_id", command_request.req_id());
+                      ("req_id", command_request.req_id());
             break;
         }
 
