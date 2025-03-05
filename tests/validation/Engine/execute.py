@@ -16,6 +16,7 @@ from pytest_check import check
 
 from .const import LOG_FOLDER
 from .stash import add_result_log, set_result_note
+from .utils import parse_logs
 
 
 class RaisingThread(threading.Thread):
@@ -93,6 +94,13 @@ def readproc(process: subprocess.Popen):
         if process.stdout is not None:
             for line in iter(process.stdout.readline, ""):
                 line = ansi_esc.sub('', line) # Remove ANSI escape color codes
+                response = parse_logs(line, os.environ['MCM_EXPECTED_TEST_TYPE']) # Check for keywords
+                if response != "":
+                    logging.debug(f"FOUND TYPE: {response}")
+                    if os.environ['MCM_CURRENT_TEST_TYPE'] == "":
+                        os.environ['MCM_CURRENT_TEST_TYPE'] = response
+                    else:
+                        os.environ['MCM_CURRENT_TEST_TYPE'] += f",{response}"
                 output.append(line)
                 file.write(line)
     return "".join(output)
@@ -104,8 +112,8 @@ def call(command: str, cwd: str, timeout: int = 60, sigint: bool = False, env: d
 
 
 def calls(
-    commands: List[str], cwd: str = None, timeout: int = 60, sigint: bool = False, env: dict = None
-) -> List[AsyncProcess]:
+        commands: List[str], cwd: str = None, timeout: int = 60,
+        sigint: bool = False, env: dict = None) -> List[AsyncProcess]:
     ret = []
     for command in commands:
         process = subprocess.Popen(
@@ -153,7 +161,7 @@ def waitall(aps=List[AsyncProcess]):
     return
 
 
-def run(command: str, cwd: str = None, testcmd: bool = False, timeout: int = 60) -> subprocess.CompletedProcess:
+def run(command: str, cwd: str = None, testcmd: bool = False, timeout: int = 60, env: dict = None) -> subprocess.CompletedProcess:
     """Run single command and store logs."""
     if testcmd:
         logging.testcmd(command)
@@ -169,6 +177,7 @@ def run(command: str, cwd: str = None, testcmd: bool = False, timeout: int = 60)
             shell=True,
             text=True,
             cwd=cwd,
+            env=env,
         )
     except subprocess.TimeoutExpired:
         logging.debug("Timeout expired")
