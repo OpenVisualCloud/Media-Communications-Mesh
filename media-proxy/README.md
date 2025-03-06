@@ -71,7 +71,7 @@ Since Media Proxy depends on the MTL library, so you need to [setup MTL](https:/
 
 ```bash
 cd Media-Communications-Mesh/media-proxy
-docker build -t mcm/media-proxy .
+docker build --target media-proxy -t mcm/media-proxy .
 ```
 
 2. Run the Docker Container
@@ -126,6 +126,21 @@ kubectl get daemonsets.apps -n mcm
 ```
 
 If all commands are executed successfully, you will see the Media Proxy deployed as a K8s DaemonSet to the worker node (labeled with "mcm.intel.com/role=worker").
+
+## Docker for mcm/mesh-agent
+
+1. Build Docker Image
+
+```bash
+cd Media-Communications-Mesh/media-proxy
+docker build --target mesh-agent -t mcm/mesh-agent .
+```
+
+2. Run the Docker Container
+
+```bash
+docker run --privileged -p 8100:8100 -p 50051:50051 mcm/mesh-agent:latest
+```
 
 ## Known Issues
 - There is a bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) do not work as expected. It is preferred to install the `docker-ce` package, following an [instruction from Docker Docs](https://docs.docker.com/engine/install/ubuntu/).
