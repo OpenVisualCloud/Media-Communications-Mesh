@@ -28,7 +28,7 @@ logic:
             registry-update-or-add-multipoint-group-link-connection:
             all-multipoint-groups-apply-proxy-star-interconnect:
       true:
-        if(group_compatible(group_id, conn_config)):
+        if(group_compatible(group_id, conn_kind, conn_config)):
           true:
             registry-add-connection:
               success:
