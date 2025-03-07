@@ -26,7 +26,7 @@ const (
 
 type Request struct {
 	Operation Operation
-	Id        string   // for OpReadOne, OpUpdateOne, OpDeleteOne
+	Id        string   // for OpReadOne, OpAddOne, OpUpdateOne, OpDeleteOne
 	Ids       []string // for OpReadMany
 	Data      interface{}
 	Flags     uint32

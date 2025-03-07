@@ -44,9 +44,12 @@ protected:
 
 private:
     std::unique_ptr<ProxyAPI::Stub> stub_;
-    std::string proxy_id;
+    std::string _proxy_id;
+    std::mutex _proxy_id_mx;
     std::jthread th;
 
+    void SetProxyId(const std::string& id);
+    std::string GetProxyId();
 };
 
 extern std::unique_ptr<ProxyAPIClient> proxyApiClient;

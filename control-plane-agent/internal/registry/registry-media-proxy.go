@@ -185,6 +185,20 @@ func (r *mediaProxyRegistry) HandleUpdateOne(req Request, item interface{}) (int
 	return proxy, nil
 }
 
+func (r *mediaProxyRegistry) Update_SetActive(ctx context.Context, id string, value bool) error {
+	req := NewRequest(OpUpdateOne)
+	req.Id = id
+	req.Data = func(proxy *model.MediaProxy) error {
+		proxy.Active = value
+		return nil
+	}
+	_, err := r.ExecRequest(ctx, req)
+	if err != nil {
+		return fmt.Errorf("media proxy registry update set active (%v) exec req err: %w", value, err)
+	}
+	return nil
+}
+
 func (r *mediaProxyRegistry) Update_LinkConn(ctx context.Context, id string, connId string) error {
 	req := NewRequest(OpUpdateOne)
 	req.Id = id
