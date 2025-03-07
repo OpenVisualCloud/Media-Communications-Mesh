@@ -27,6 +27,8 @@ func (a *Action_If) ValidateModifier(modifier string) error {
 		"group_id":         "",
 		"group_exists":     func(id string) bool { return true },
 		"group_compatible": func(id string, kind string, cfg *model.SDKConnectionConfig) bool { return true },
+		"proxy_id":         "",
+		"proxy_active":     func(id string) bool { return true },
 	}))
 	return err
 }
@@ -76,6 +78,19 @@ func (a *Action_If) Perform(ctx context.Context, modifier string, param event.Pa
 				}
 				// logrus.Errorf("Conn incompatible with the multipoint group: %v", err)
 				ctx = context.WithValue(ctx, event.ParamName("err_incompatible"), err)
+			}
+		}
+		return false
+	}
+	//---------------------------------------------------------------------------------------------
+	proxyId, _ := param.GetString("proxy_id")
+	env["proxy_id"] = proxyId
+	//---------------------------------------------------------------------------------------------
+	env["proxy_active"] = func(id string) bool {
+		if len(id) > 0 {
+			proxy, err := registry.MediaProxyRegistry.Get(ctx, id, false)
+			if err == nil {
+				return proxy.Active
 			}
 		}
 		return false

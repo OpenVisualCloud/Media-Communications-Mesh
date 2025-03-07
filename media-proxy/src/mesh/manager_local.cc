@@ -72,13 +72,16 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     else
         conn = new(std::nothrow) LocalTx;
 
-    if (!conn)
+    if (!conn) {
+        registry_sdk.remove(id);
         return -ENOMEM;
+    }
 
     conn->set_config(conn_config);
 
     auto res = conn->configure_memif(ctx, &memif_ops, frame_size);
     if (res != Result::success) {
+        registry_sdk.remove(id);
         delete conn;
         return -1;
     }
@@ -95,12 +98,14 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind,
                                                  conn_config, err_str);
     if (err) {
+        registry_sdk.remove(id);
         delete conn;
         return -1;
     }
 
     res = conn->establish(ctx);
     if (res != Result::success) {
+        registry_sdk.remove(id);
         delete conn;
         return -1;
     }
@@ -140,7 +145,8 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     return 0;
 }
 
-int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string& id)
+int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string& id,
+                                        bool do_unregister)
 {
     auto conn = registry_sdk.get(id);
     if (!conn)
@@ -152,9 +158,11 @@ int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string
         lock();
         thread::Defer d([this]{ unlock(); });
 
-        int err = proxyApiClient->UnregisterConnection(conn->id);
-        if (err) {
-            // TODO: Handle the error.
+        if (do_unregister) {
+            int err = proxyApiClient->UnregisterConnection(conn->id);
+            if (err) {
+                // TODO: Handle the error.
+            }
         }
 
         if (conn->link()) {
@@ -177,6 +185,42 @@ Connection * LocalManager::get_connection(context::Context& ctx,
                                           const std::string& id)
 {
     return registry.get(id);
+}
+
+int LocalManager::reregister_all_connections(context::Context& ctx)
+{
+    auto ids = registry_sdk.get_all_ids();
+
+    Config conn_config;
+
+    log::debug("Re-register all conns");
+    for (std::string id : ids) {
+        auto conn = registry_sdk.get(id);
+        if (!conn)
+            continue;
+
+        log::debug("Re-register conn")
+                  ("conn_id", conn->id);
+
+        std::string kind = conn->config.kind == sdk::CONN_KIND_TRANSMITTER ? "rx" : "tx";
+
+        std::string err_unused;
+        std::string existing_conn_id = conn->id;
+
+        int err = proxyApiClient->RegisterConnection(existing_conn_id, kind,
+                                                     conn->config, err_unused);
+        if (err) {
+            log::error("Error re-registering local conn (%d)", err)
+                      ("conn_id", conn->id);
+
+            err = delete_connection_sdk(ctx, id, false);
+            if (err)
+                log::error("Re-register: error deleting local conn (%d)", err)
+                          ("conn_id", conn->id);
+        }
+    }
+
+    return 0;
 }
 
 void LocalManager::shutdown(context::Context& ctx)

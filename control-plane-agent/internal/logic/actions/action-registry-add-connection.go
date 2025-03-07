@@ -36,6 +36,10 @@ func (a *Action_RegistryAddConnection) Perform(ctx context.Context, modifier str
 	if err != nil {
 		logrus.Errorf("registry add conn sdk cfg err: %v", err)
 	}
+	connId, err := param.GetString("conn_id")
+	if err != nil {
+		logrus.Errorf("registry add conn conn id err: %v", err)
+	}
 
 	// _, _, err = mesh.ParseGroupURN(groupURN)
 	// if err != nil {
@@ -52,6 +56,7 @@ func (a *Action_RegistryAddConnection) Perform(ctx context.Context, modifier str
 
 	id, err := registry.ConnRegistry.Add(ctx,
 		model.Connection{
+			Id:      connId, // Normally, this should be empty. If Media Proxy lost connection to Agent, this is the id assigned by Agent at previous registration.
 			ProxyId: proxyId,
 			Config:  config,
 			Status: &model.ConnectionStatus{

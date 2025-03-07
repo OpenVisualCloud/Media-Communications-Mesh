@@ -685,8 +685,27 @@ func TestProxyAPI_SendMetrics(t *testing.T) {
 		},
 	}
 
+	registry.MediaProxyRegistry.Init(registry.MediaProxyRegistryConfig{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := registry.MediaProxyRegistry.Run(ctx)
+		require.NoError(t, err)
+	}()
+
+	proxyId, err := registry.MediaProxyRegistry.Add(ctx, model.MediaProxy{})
+	require.NoError(t, err)
+
 	for _, v := range cases {
 		api := API{}
+
+		v.req.ProxyId = proxyId
 
 		_, err := api.SendMetrics(context.Background(), v.req)
 		require.NoError(t, err)
@@ -702,4 +721,7 @@ func TestProxyAPI_SendMetrics(t *testing.T) {
 			}
 		}
 	}
+
+	cancel()
+	wg.Wait()
 }

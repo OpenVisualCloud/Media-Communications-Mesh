@@ -22,6 +22,8 @@ type MediaProxy struct {
 	Bridges          []Bridge          `json:"bridges"` // array of bridges populated only in JSON
 	RDMAPortsAllowed PortMask          `json:"-"`
 
+	Active bool
+
 	queue                    chan CommandRequest
 	cancelCommandRequestFunc func(reqId string) // this is registered by Proxy API at proxy creation
 

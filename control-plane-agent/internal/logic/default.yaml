@@ -10,7 +10,7 @@ logic:
   on-register-proxy:
     registry-add-proxy:
 
-  on-register-proxy-ok:
+  on-activate-proxy:
     proxy-apply-config:
 
   on-register-connection:
@@ -36,7 +36,9 @@ logic:
                 all-multipoint-groups-apply-proxy-star-interconnect:
 
   on-register-connection-ok:
-    all-proxies-apply-config:
+    if(proxy_active(proxy_id)):
+      true:
+        all-proxies-apply-config:
 
   on-unregister-connection:
     registry-delete-connection:

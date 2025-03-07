@@ -209,7 +209,9 @@ int main(int argc, char* argv[])
     std::signal(SIGTERM, signal_handler);
 
     // Start ProxyAPI client
-    RunProxyAPIClient(ctx);
+    auto err = RunProxyAPIClient(ctx);
+    if (err)
+        ctx.cancel();
 
     // Start metrics collector
     std::thread metricsCollectorThread([&]() {
