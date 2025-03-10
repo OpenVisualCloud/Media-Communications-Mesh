@@ -130,6 +130,9 @@ static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     if (err == -MESH_ERR_CONN_CLOSED)
         return AVERROR_EOF;
 
+    if (mcm_shutdown_requested())
+        return AVERROR_EOF;
+
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
                mesh_err2str(err), err);

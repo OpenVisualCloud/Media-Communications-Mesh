@@ -121,6 +121,9 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
             }
         }
 
+        if (mcm_shutdown_requested())
+            return AVERROR_EOF;
+
         max_len = s->unsent_buf->conn->buf_size;
         len = FFMIN(max_len, size + s->unsent_len);
 

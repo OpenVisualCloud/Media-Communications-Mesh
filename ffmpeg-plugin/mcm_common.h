@@ -32,6 +32,7 @@ int mcm_parse_audio_sample_rate(AVFormatContext* avctx, int *sample_rate,
                                 int value);
 int mcm_parse_audio_packet_time(AVFormatContext* avctx, int *ptime, char *str);
 void mcm_replace_back_quotes(char *str);
+bool mcm_shutdown_requested(void);
 
 extern const char mcm_json_config_multipoint_group_video_format[];
 extern const char mcm_json_config_st2110_video_format[];

@@ -22,6 +22,8 @@ const (
 	OnRegisterMediaProxy Type = iota
 	OnRegisterMediaProxyOk
 
+	OnActivateMediaProxy
+
 	OnUnregisterMediaProxy
 	OnUnregisterMediaProxyOk
 
@@ -43,6 +45,8 @@ func GetEventDefinitions() map[string]Type {
 
 		"on-register-proxy":    OnRegisterMediaProxy,   // on request to register Media Proxy
 		"on-register-proxy-ok": OnRegisterMediaProxyOk, // on request to register Media Proxy succeeded
+
+		"on-activate-proxy": OnActivateMediaProxy, // on request to activate Media Proxy
 
 		"on-unregister-proxy":    OnUnregisterMediaProxy,   // on request to unregister Media Proxy
 		"on-unregister-proxy-ok": OnUnregisterMediaProxyOk, // on request to unregister Media Proxy succeeded

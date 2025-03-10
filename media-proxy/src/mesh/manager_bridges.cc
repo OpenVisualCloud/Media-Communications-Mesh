@@ -44,7 +44,8 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
               ("h", cfg.conn_config.payload.video.height)
               ("fps", cfg.conn_config.payload.video.fps)
               ("pixfmt", cfg.conn_config.payload.video.pixel_format)
-              ("calc_buf_size", cfg.conn_config.calculated_payload_size)
+              ("calc_payload_size", cfg.conn_config.calculated_payload_size)
+              ("buf_total_size", cfg.conn_config.buf_parts.total_size())
               ("transport", cfg.st2110.transport);
 
     if (!cfg.type.compare("st2110")) {
@@ -85,12 +86,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 cfg_st2110.remote_port = cfg.st2110.port;
 
+                egress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = egress_bridge->configure(ctx,
                                                     config::proxy.st2110.dev_port_bdf,
                                                     cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-20 Egress bridge: %s",
-                            result2str(res));
+                               result2str(res));
                     delete egress_bridge;
                     return -1;
                 }
@@ -104,12 +106,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 cfg_st2110.local_port = cfg.st2110.port;
 
+                ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = ingress_bridge->configure(ctx,
-                                                    config::proxy.st2110.dev_port_bdf,
-                                                    cfg_st2110, cfg_video);
+                                                     config::proxy.st2110.dev_port_bdf,
+                                                     cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-20 Ingress bridge: %s",
-                            result2str(res));
+                               result2str(res));
                     delete ingress_bridge;
                     return -1;
                 }
@@ -126,12 +129,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 cfg_st2110.remote_port = cfg.st2110.port;
 
+                egress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = egress_bridge->configure(ctx,
                                                     config::proxy.st2110.dev_port_bdf,
                                                     cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-22 Egress bridge: %s",
-                            result2str(res));
+                               result2str(res));
                     delete egress_bridge;
                     return -1;
                 }
@@ -145,12 +149,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 cfg_st2110.local_port = cfg.st2110.port;
 
+                ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = ingress_bridge->configure(ctx,
-                                                    config::proxy.st2110.dev_port_bdf,
-                                                    cfg_st2110, cfg_video);
+                                                     config::proxy.st2110.dev_port_bdf,
+                                                     cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-22 Ingress bridge: %s",
-                            result2str(res));
+                               result2str(res));
                     delete ingress_bridge;
                     return -1;
                 }
@@ -167,12 +172,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 cfg_st2110.remote_port = cfg.st2110.port;
 
+                egress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = egress_bridge->configure(ctx,
                                                     config::proxy.st2110.dev_port_bdf,
                                                     cfg_st2110, cfg_audio);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-30 Egress bridge: %s",
-                            result2str(res));
+                               result2str(res));
                     delete egress_bridge;
                     return -1;
                 }
@@ -186,12 +192,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 cfg_st2110.local_port = cfg.st2110.port;
 
+                ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = ingress_bridge->configure(ctx,
-                                                    config::proxy.st2110.dev_port_bdf,
-                                                    cfg_st2110, cfg_audio);
+                                                     config::proxy.st2110.dev_port_bdf,
+                                                     cfg_st2110, cfg_audio);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-30 Ingress bridge: %s",
-                            result2str(res));
+                               result2str(res));
                     delete ingress_bridge;
                     return -1;
                 }
@@ -211,7 +218,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
         strlcpy(req.remote_addr.ip, cfg.rdma.remote_ip.c_str(),
                 sizeof(req.remote_addr.ip));
 
-        req.payload_args.rdma_args.transfer_size = cfg.conn_config.calculated_payload_size;
+        req.payload_args.rdma_args.transfer_size = cfg.conn_config.buf_parts.total_size();
         req.payload_args.rdma_args.queue_size = 16;
 
         // Create Egress RDMA Bridge
@@ -225,6 +232,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
             snprintf(req.remote_addr.port, sizeof(req.remote_addr.port),
                      "%u", cfg.rdma.port);
 
+            egress_bridge->config.copy_buf_parts_from(cfg.conn_config);
             auto res = egress_bridge->configure(ctx, req, dev_handle);
             if (res != Result::success) {
                 log::error("Error configuring RDMA Egress bridge: %s",
@@ -245,6 +253,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
             snprintf(req.local_addr.port, sizeof(req.local_addr.port),
                      "%u", cfg.rdma.port);
 
+            ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
             auto res = ingress_bridge->configure(ctx, req, dev_handle);
             if (res != Result::success) {
                 log::error("Error configuring RDMA Ingress bridge: %s",

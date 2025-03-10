@@ -249,6 +249,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "123",
 				Kind:    "tx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_MultipointGroup{
 						MultipointGroup: &sdk.ConfigMultipointGroup{
 							Urn: "abc",
@@ -272,6 +277,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "234",
 				Kind:    "rx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_MultipointGroup{
 						MultipointGroup: &sdk.ConfigMultipointGroup{
 							Urn: "ABC",
@@ -295,6 +305,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "345",
 				Kind:    "tx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_St2110{
 						St2110: &sdk.ConfigST2110{
 							RemoteIpAddr: "192.168.96.10",
@@ -319,6 +334,11 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 				ProxyId: "456",
 				Kind:    "rx",
 				Config: &sdk.ConnectionConfig{
+					BufParts: &sdk.BufferPartitions{
+						Payload:  &sdk.BufferPartition{},
+						Metadata: &sdk.BufferPartition{},
+						Sysdata:  &sdk.BufferPartition{},
+					},
 					Conn: &sdk.ConnectionConfig_St2110{
 						St2110: &sdk.ConfigST2110{
 							RemoteIpAddr: "192.168.97.10",
@@ -665,8 +685,27 @@ func TestProxyAPI_SendMetrics(t *testing.T) {
 		},
 	}
 
+	registry.MediaProxyRegistry.Init(registry.MediaProxyRegistryConfig{})
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := registry.MediaProxyRegistry.Run(ctx)
+		require.NoError(t, err)
+	}()
+
+	proxyId, err := registry.MediaProxyRegistry.Add(ctx, model.MediaProxy{})
+	require.NoError(t, err)
+
 	for _, v := range cases {
 		api := API{}
+
+		v.req.ProxyId = proxyId
 
 		_, err := api.SendMetrics(context.Background(), v.req)
 		require.NoError(t, err)
@@ -682,4 +721,7 @@ func TestProxyAPI_SendMetrics(t *testing.T) {
 			}
 		}
 	}
+
+	cancel()
+	wg.Wait()
 }

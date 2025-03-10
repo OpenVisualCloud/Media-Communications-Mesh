@@ -99,7 +99,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 		model.SDKConnectionConfig
 
 		SourceProxyId string
-		DestProxyIds  []string
+		DestProxyIds  map[string]interface{}
 	}
 	groupStarConfigs := make(map[string]groupStarConfig)
 
@@ -147,11 +147,11 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 		}
 
 		// Looking for destination points in the group
-		destProxyIds := []string{}
+		destProxyIds := map[string]interface{}{}
 		for _, connId := range group.ConnIds {
 			conn := connsMap[connId]
 			if conn.Config.Kind == "tx" && conn.ProxyId != sourceProxyId {
-				destProxyIds = append(destProxyIds, conn.ProxyId)
+				destProxyIds[conn.ProxyId] = struct{}{}
 			}
 		}
 		if len(destProxyIds) == 0 {
@@ -189,7 +189,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			continue
 		}
 
-		for _, destProxyId := range group.DestProxyIds {
+		for destProxyId := range group.DestProxyIds {
 			destProxy, ok := proxiesMap[destProxyId]
 			if !ok {
 				logrus.Errorf("Star interconnect: dest proxy not found, id: '%s'", destProxyId)

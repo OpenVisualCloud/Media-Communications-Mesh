@@ -225,6 +225,14 @@ TEST(st2110_rx, state_change) {
     ASSERT_EQ(conn_rx->kind(), connection::Kind::receiver);
     ASSERT_EQ(conn_rx->state(), connection::State::not_configured);
 
+    conn_rx->config.buf_parts.sysdata.offset = 0;
+    conn_rx->config.buf_parts.sysdata.size = sizeof(connection::BufferSysData);
+    conn_rx->config.buf_parts.payload.offset = conn_rx->config.buf_parts.sysdata.size;
+    conn_rx->config.buf_parts.payload.size = 10000;
+    conn_rx->config.buf_parts.metadata.offset = conn_rx->config.buf_parts.payload.offset +
+                                                conn_rx->config.buf_parts.payload.size;
+    conn_rx->config.buf_parts.metadata.size = 0;
+
     // Change state: Not Configured -> Configured
     connection::Result res = conn_rx->configure(ctx);
     ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
@@ -339,7 +347,29 @@ TEST(st2110_tx, send_data) {
     emulated_tx->set_link(ctx, conn_tx);
 
     for (int i = 0; i < 5; i++) {
-        res = emulated_tx->transmit_wrapper(ctx, (void *)DUMMY_DATA2, sizeof(DUMMY_DATA2));
+        struct {
+            connection::BufferSysData sysdata;
+            char payload[sizeof(DUMMY_DATA2)];
+            char metadata;
+        } buf = {
+            .sysdata = {
+                .timestamp_ms = 0,
+                .seq = 0,
+                .payload_len = sizeof(DUMMY_DATA2),
+                .metadata_len = 0,
+            },
+            .payload = DUMMY_DATA2,
+        };
+        conn_tx->config.buf_parts.sysdata.offset = 0;
+        conn_tx->config.buf_parts.sysdata.size = (sizeof(connection::BufferSysData) + 7) & ~7;
+        conn_tx->config.buf_parts.payload.offset = conn_tx->config.buf_parts.sysdata.size;
+        conn_tx->config.buf_parts.payload.size = (sizeof(DUMMY_DATA2) + 7) & ~7;
+        conn_tx->config.buf_parts.metadata.offset = conn_tx->config.buf_parts.payload.offset +
+                                                    conn_tx->config.buf_parts.payload.size;
+        conn_tx->config.buf_parts.metadata.size = 0;
+
+        // res = emulated_tx->transmit_wrapper(ctx, (void *)DUMMY_DATA2, sizeof(DUMMY_DATA2));
+        res = emulated_tx->transmit_wrapper(ctx, (void *)&buf, sizeof(buf));
         ASSERT_EQ(res, connection::Result::success) << connection::result2str(res);
         ASSERT_EQ(conn_tx->state(), connection::State::active);
         ASSERT_GT(conn_tx->received_packets_dummy2, 0);

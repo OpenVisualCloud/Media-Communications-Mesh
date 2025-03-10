@@ -79,7 +79,8 @@ void Connection::set_config(const Config& cfg)
               ("buf_queue_cap", config.buf_queue_capacity)
               ("max_payload_size", config.max_payload_size)
               ("max_metadata_size", config.max_metadata_size)
-              ("calc_payload_size", config.calculated_payload_size);
+              ("calc_payload_size", config.calculated_payload_size)
+              ("buf_total_size", config.buf_parts.total_size());
 
     switch (config.conn_type) {
     case CONN_TYPE_GROUP:
@@ -440,6 +441,7 @@ const char * result2str(Result res)
     case Result::error_general_failure:            return "general failure";
     case Result::error_context_cancelled:          return "context cancelled";
     case Result::error_conn_config_invalid:        return "invalid conn config";
+    case Result::error_buf_config_invalid:         return "invalid buf config";
     case Result::error_payload_config_invalid:     return "invalid payload config";
 
     case Result::error_already_initialized:        return "already initialized";
@@ -550,6 +552,27 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
     max_metadata_size       = config.max_metadata_size();
     calculated_payload_size = config.calculated_payload_size();
 
+    if (!config.has_buf_parts())
+        return Result::error_buf_config_invalid;
+
+    auto partitions = config.buf_parts();
+    if (!partitions.has_payload() ||
+        !partitions.has_metadata() ||
+        !partitions.has_sysdata())
+        return Result::error_buf_config_invalid;
+
+    auto partition_payload = partitions.payload();
+    buf_parts.payload.offset = partition_payload.offset();
+    buf_parts.payload.size = partition_payload.size();
+
+    auto partition_metadata = partitions.metadata();
+    buf_parts.metadata.offset = partition_metadata.offset();
+    buf_parts.metadata.size = partition_metadata.size();
+
+    auto partition_sysdata = partitions.sysdata();
+    buf_parts.sysdata.offset = partition_sysdata.offset();
+    buf_parts.sysdata.size = partition_sysdata.size();
+
     if (config.has_multipoint_group()) {
         conn_type = ConnectionType::CONN_TYPE_GROUP;
         const sdk::ConfigMultipointGroup& group = config.multipoint_group();
@@ -585,6 +608,8 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
         payload.audio.sample_rate = audio.sample_rate();
         payload.audio.format      = audio.format();
         payload.audio.packet_time = audio.packet_time();
+    } else if (config.has_blob()) {
+        payload_type = PayloadType::PAYLOAD_TYPE_BLOB;
     } else {
         return Result::error_payload_config_invalid;
     }
@@ -600,6 +625,20 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
     config.set_max_payload_size(max_payload_size);
     config.set_max_metadata_size(max_metadata_size);
     config.set_calculated_payload_size(calculated_payload_size);
+
+    auto partitions = config.mutable_buf_parts();
+
+    auto partition_payload = partitions->mutable_payload();
+    partition_payload->set_offset(buf_parts.payload.offset);
+    partition_payload->set_size(buf_parts.payload.size);
+
+    auto partition_metadata = partitions->mutable_metadata();
+    partition_metadata->set_offset(buf_parts.metadata.offset);
+    partition_metadata->set_size(buf_parts.metadata.size);
+
+    auto partition_sysdata = partitions->mutable_sysdata();
+    partition_sysdata->set_offset(buf_parts.sysdata.offset);
+    partition_sysdata->set_size(buf_parts.sysdata.size);
 
     if (conn_type == ConnectionType::CONN_TYPE_GROUP) {
         auto group = new sdk::ConfigMultipointGroup();
@@ -634,7 +673,15 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
         audio->set_format(payload.audio.format);
         audio->set_packet_time(payload.audio.packet_time);
         config.set_allocated_audio(audio);
+    } else if (payload_type == PayloadType::PAYLOAD_TYPE_BLOB) {
+        auto blob = new sdk::ConfigBlob();
+        config.set_allocated_blob(blob);
     }
+}
+
+void Config::copy_buf_parts_from(const Config& config)
+{
+    std::memcpy(&buf_parts, &config.buf_parts, sizeof(BufferPartitions));
 }
 
 } // namespace mesh::connection
