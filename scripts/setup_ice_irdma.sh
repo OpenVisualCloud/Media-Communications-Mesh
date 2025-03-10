@@ -18,7 +18,6 @@ function install_os_dependencies()
             cmake \
             cython3 \
             debhelper \
-            dh-systemd \
             dh-python \
             dpkg-dev \
             libnl-3-dev \
