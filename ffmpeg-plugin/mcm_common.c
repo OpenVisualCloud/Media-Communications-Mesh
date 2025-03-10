@@ -184,7 +184,7 @@ int mcm_parse_conn_param(AVFormatContext* avctx, MeshConnection *conn,
         err = mesh_apply_connection_config_memif(conn, &cfg);
         if (err)
             return err;
-    } else if (!strcmp(payload_type, "rdma")) {
+    } else if (!strcmp(protocol_type, "rdma")) {
         MeshConfig_RDMA cfg;
 
         if (kind == MESH_CONN_KIND_SENDER) {
