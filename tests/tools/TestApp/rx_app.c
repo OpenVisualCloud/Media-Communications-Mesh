@@ -54,33 +54,28 @@ int main(int argc, char *argv[]) {
     err = mesh_create_rx_connection(client, &connection, conn_cfg);
     if (err) {
         LOG("[RX] Failed to create connection: %s (%d)", mesh_err2str(err), err);
-        mesh_delete_client(&client);
         goto safe_exit;
     }
     LOG("[RX] Waiting for frames...");
     read_data_in_loop(connection, out_filename);
-    LOG("[RX] Shuting down connection and client");
-    mesh_delete_connection(&connection);
-    mesh_delete_client(&client);
-    LOG("[RX] Shutdown completed exiting");
 
 safe_exit:
-    free(client_cfg);
-    free(conn_cfg);
-    return err;
+    handle_sigint(err);
 }
 
 void handle_sigint(int sig) {
     LOG("[RX] SIGINT interrupt, dropping connection to media-proxy...");
     if (connection) {
+        LOG("[RX] Shuting down connection");
         mesh_delete_connection(&connection);
     }
     if (client) {
+        LOG("[RX] Shuting down client");
         mesh_delete_client(&client);
     }
     free(client_cfg);
     free(conn_cfg);
-    exit(EXIT_FAILURE);
+    exit(sig);
 }
 
 void setup_signal_handler() {

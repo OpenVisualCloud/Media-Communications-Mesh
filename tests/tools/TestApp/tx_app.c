@@ -57,35 +57,30 @@ int main(int argc, char **argv) {
     err = mesh_create_tx_connection(client, &connection, conn_cfg);
     if (err) {
         LOG("[TX] Failed to create connection: %s (%d)", mesh_err2str(err), err);
-        mesh_delete_client(&client);
         goto safe_exit;
     }
 
-    /* Open file and send its contents */
-
-    err = mcm_send_video_frames(connection, video_file);
-    LOG("[TX] Shuting down connection and client");
-    mesh_delete_connection(&connection);
-    mesh_delete_client(&client);
-    LOG("[TX] Shutdown completed. Exiting");
-
+    /* Open file and send its contents in loop*/
+    while(1){
+        err = mcm_send_video_frames(connection, video_file);
+    }
 safe_exit:
-    free(client_cfg);
-    free(conn_cfg);
-    return err;
+    handle_sigint(err);
 }
 
 void handle_sigint(int sig) {
     LOG("[TX] SIGINT interrupt, dropping connection to media-proxy...");
     if (connection) {
+        LOG("[TX] Shuting down connection");
         mesh_delete_connection(&connection);
     }
     if (client) {
+        LOG("[TX] Shuting down client");
         mesh_delete_client(&client);
     }
     free(client_cfg);
     free(conn_cfg);
-    exit(EXIT_FAILURE);
+    exit(sig);
 }
 
 void setup_signal_handler() {
