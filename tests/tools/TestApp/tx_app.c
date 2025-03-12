@@ -8,6 +8,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <signal.h>
 
 #include "Inc/input.h"
 #include "Inc/mcm.h"
@@ -15,8 +16,15 @@
 
 char *client_cfg;
 char *conn_cfg;
+MeshConnection *connection = NULL;
+MeshClient *client = NULL;
+struct sigaction sa;
+
+void handle_sigint(int sig);
+void setup_signal_handler();
 
 int main(int argc, char **argv) {
+    setup_signal_handler();
     if (!is_root()) {
         fprintf(stderr, "This program must be run as root. Exiting.\n");
         exit(EXIT_FAILURE);
@@ -31,10 +39,8 @@ int main(int argc, char **argv) {
     char *conn_cfg_file = argv[2];
     char *video_file = argv[3];
 
-    MeshConnection *connection = NULL;
-    MeshClient *client = NULL;
-
     LOG("[TX] Launching TX app");
+    
     LOG("[TX] Reading client configuration...");
     client_cfg = parse_json_to_string(client_cfg_file);
     LOG("[TX] Reading connection configuration...");
@@ -68,3 +74,24 @@ safe_exit:
     free(conn_cfg);
     return err;
 }
+
+void handle_sigint(int sig) {
+    LOG("[TX] SIGINT interrupt, dropping connection to media-proxy...");
+    if (connection) {
+        mesh_delete_connection(&connection);
+    }
+    if (client) {
+        mesh_delete_client(&client);
+    }
+    free(client_cfg);
+    free(conn_cfg);
+    exit(EXIT_SUCCESS);
+}
+
+void setup_signal_handler() {
+    sa.sa_handler = handle_sigint;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGINT, &sa, NULL);
+}
+
