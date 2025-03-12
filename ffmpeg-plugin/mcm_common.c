@@ -49,14 +49,14 @@ int mcm_get_client(MeshClient **mc)
         return err;
 
     if (!client) {
-        static char json_config[150];
+        static char json_config[250];
 
         static const char json_config_format[] =
             "{"
-            "`apiVersion`: `v1`,"
-            "`apiConnectionString`: `Server=; Port=`,"
-            "`apiDefaultTimeoutMicroseconds`: 100000,"
-            "`maxMediaConnections`: 32"
+                "`apiVersion`: `v1`,"
+                "`apiConnectionString`: `Server=; Port=`,"
+                "`apiDefaultTimeoutMicroseconds`: 100000,"
+                "`maxMediaConnections`: 32"
             "}";
 
         snprintf(json_config, sizeof(json_config), json_config_format);

@@ -39,7 +39,7 @@ typedef struct McmAudioDemuxerContext {
 static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id)
 {
     McmAudioDemuxerContext *s = avctx->priv_data;
-    char json_config[250];
+    char json_config[1024];
     AVStream *st;
     int err, n;
 

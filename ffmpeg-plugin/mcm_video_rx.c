@@ -42,7 +42,7 @@ typedef struct McmVideoDemuxerContext {
 static int mcm_video_read_header(AVFormatContext* avctx)
 {
     McmVideoDemuxerContext *s = avctx->priv_data;
-    char json_config[250];
+    char json_config[1024];
     AVStream *st;
     int err, n;
 

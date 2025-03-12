@@ -37,7 +37,7 @@ typedef struct McmVideoMuxerContext {
 static int mcm_video_write_header(AVFormatContext* avctx)
 {
     McmVideoMuxerContext *s = avctx->priv_data;
-    char json_config[250];
+    char json_config[1024];
     int err, n;
 
     err = mcm_get_client(&s->mc);

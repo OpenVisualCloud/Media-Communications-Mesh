@@ -38,7 +38,7 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
 {
     AVCodecParameters* codecpar = avctx->streams[0]->codecpar;
     McmAudioMuxerContext *s = avctx->priv_data;
-    char json_config[250];
+    char json_config[1024];
     int err, n;
 
     /* check channels argument */
