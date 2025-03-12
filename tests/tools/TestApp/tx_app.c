@@ -85,7 +85,7 @@ void handle_sigint(int sig) {
     }
     free(client_cfg);
     free(conn_cfg);
-    exit(EXIT_SUCCESS);
+    exit(EXIT_FAILURE);
 }
 
 void setup_signal_handler() {
