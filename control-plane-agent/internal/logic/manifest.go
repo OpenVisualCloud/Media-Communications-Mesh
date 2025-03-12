@@ -8,6 +8,7 @@ package logic
 
 import (
 	"bytes"
+	"control-plane-agent/internal/config"
 	_ "embed"
 	"encoding/json"
 	"fmt"
@@ -176,7 +177,9 @@ func (lc *logicController) ParseManifest(text string) error {
 
 	lc.manifest = manifest
 
-	lc.PrintManifestJson()
+	if config.VerboseOutput {
+		lc.PrintManifestJson()
+	}
 
 	return nil
 }

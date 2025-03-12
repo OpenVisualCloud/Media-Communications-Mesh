@@ -36,6 +36,32 @@ add_subdirectory(${SDK_DIR})
 add_subdirectory(${MP_DIR})
 add_subdirectory(${AGENT_DIR})
 
+# Get current version: Git tag and hash
+execute_process(
+  COMMAND git describe --tags --always
+  OUTPUT_VARIABLE GIT_TAG
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND git rev-parse --short HEAD
+  OUTPUT_VARIABLE GIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Generate a version header file
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/mcm-version.h.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/mcm-version.h
+  @ONLY
+)
+
+# Generate a version.go file
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/mcm-version.go.in
+  ${AGENT_DIR}/internal/mcm-version.go
+  @ONLY
+)
+
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
 option(BUILD_UNIT_TESTS "Build and enable unit tests" ON)
 if (BUILD_UNIT_TESTS)
@@ -51,5 +77,5 @@ if (BUILD_UNIT_TESTS)
   add_subdirectory(${SDK_TESTS_DIR})
   target_link_libraries(media_proxy_lib PUBLIC gtest gmock gtest_main)
 else()
-    target_link_libraries(media_proxy_lib PUBLIC)
+  target_link_libraries(media_proxy_lib PUBLIC)
 endif()

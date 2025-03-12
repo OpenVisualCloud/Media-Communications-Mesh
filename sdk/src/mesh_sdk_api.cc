@@ -13,6 +13,7 @@
 #include <grpcpp/grpcpp.h>
 #include "sdk.grpc.pb.h"
 #include "mesh_logger.h"
+#include "../../mcm-version.h"
 
 using grpc::Channel;
 // using grpc::ClientContext;
@@ -249,7 +250,8 @@ void * mesh_grpc_create_client()
 
 void * mesh_grpc_create_client_json(const std::string& endpoint) {
 
-    log::info("SDK endpoint: %s", endpoint.c_str());
+    log::info("Media Communications Mesh SDK version %s #%s", VERSION_TAG, VERSION_HASH)
+             ("endpoint", endpoint);
 
     auto client = new(std::nothrow)
         SDKAPIClient(grpc::CreateChannel(endpoint,
