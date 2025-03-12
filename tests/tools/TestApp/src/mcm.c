@@ -26,6 +26,8 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
 
     unsigned int frame_num = 0;
     size_t read_size = 1;
+    float one_sec = 1000000; /* microseconds (usec) */
+    float requested_fps = 25.0; /* FIXME: Read requested fps value */
     while (1) {
 
         /* Ask the mesh to allocate a shared memory buffer for user data */
@@ -47,9 +49,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
             goto close_file;
         }
 
-        /* Temporary implementation for pacing */
-        /* TODO: Implement pacing calculation */
-        usleep(40000);
+        usleep(one_sec/requested_fps);
     }
     LOG("[TX] data sent successfully");
 close_file:
