@@ -36,7 +36,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     float requested_fps = 25.0; /* FIXME: Read requested fps value */
     float frame_sleep_time = one_sec/requested_fps;
     LOG("[TX] Requested fps: %.2f | Frame sleep time: %.2f", requested_fps, frame_sleep_time);
-
+    int sleep_us = (uint32_t)(SECOND_IN_US/video_cfg.fps);
     while (1) {
 
         /* Ask the mesh to allocate a shared memory buffer for user data */
@@ -57,7 +57,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
-        usleep((uint32_t)(SECOND_IN_US/video_cfg.fps));
+        usleep(sleep_us);
     }
     LOG("[TX] data sent successfully");
 close_file:
