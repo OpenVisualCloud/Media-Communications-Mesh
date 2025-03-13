@@ -57,7 +57,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
-        usleep(SECOND_IN_US/video_cfg.fps);
+        usleep((uint32_t)(SECOND_IN_US/video_cfg.fps));
     }
     LOG("[TX] data sent successfully");
 close_file:
