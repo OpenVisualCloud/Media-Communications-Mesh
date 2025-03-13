@@ -2,6 +2,7 @@ package mesh
 
 import (
 	"context"
+	"errors"
 
 	"github.com/sirupsen/logrus"
 
@@ -100,8 +101,12 @@ func ApplyProxyConfig(ctx context.Context, mp *model.MediaProxy, groups []model.
 		// // DEBUG
 	}
 
-	return mp.SendApplyConfigCommand(ctx, &pb.ApplyConfigRequest{
+	err := mp.SendApplyConfigCommand(ctx, &pb.ApplyConfigRequest{
 		Groups:  pbGroups,
 		Bridges: pbBridges,
 	})
+	if errors.Is(err, model.ErrProxyNotReady) {
+		return nil
+	}
+	return err
 }

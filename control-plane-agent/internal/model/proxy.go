@@ -7,6 +7,7 @@ import (
 	"time"
 
 	pb "control-plane-agent/api/proxy/proto/mediaproxy"
+	"control-plane-agent/internal/utils"
 
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
@@ -27,8 +28,10 @@ type MediaProxy struct {
 	queue                    chan CommandRequest
 	cancelCommandRequestFunc func(reqId string) // this is registered by Proxy API at proxy creation
 
-	queueCtx context.Context // this is used to stop processing command queue when proxy is about to be deleted
-	cancel   context.CancelFunc
+	queueCtx       context.Context // this is used to stop processing command queue when proxy is about to be deleted
+	cancelQueueCtx context.CancelFunc
+
+	ReadyCh *utils.ReadinessChannel
 }
 
 type ST2110ProxyConfig struct {
@@ -68,13 +71,17 @@ type CommandReply struct {
 func (mp *MediaProxy) Init(cancelCommandRequestFunc func(reqId string)) {
 	mp.queue = make(chan CommandRequest, 1000) // TODO: capacity to be configured
 	mp.cancelCommandRequestFunc = cancelCommandRequestFunc
+
 	ctx, cancel := context.WithCancel(context.Background())
 	mp.queueCtx = ctx
-	mp.cancel = cancel
+	mp.cancelQueueCtx = cancel
+
+	mp.ReadyCh = utils.NewReadinessChannel()
+	go mp.ReadyCh.Run(ctx)
 }
 
 func (mp *MediaProxy) Deinit() {
-	mp.cancel()
+	mp.cancelQueueCtx()
 }
 
 func (mp *MediaProxy) newCommandRequest() CommandRequest {
@@ -99,6 +106,8 @@ func (mp *MediaProxy) GetNextCommandRequest(ctx context.Context) (CommandRequest
 	}
 }
 
+var ErrProxyNotReady = errors.New("proxy command stream not ready")
+
 func (mp *MediaProxy) sendCommandSync(ctx context.Context, req CommandRequest) (reply CommandReply) {
 	defer func() {
 		if reply.Err != nil && mp.cancelCommandRequestFunc != nil {
@@ -109,6 +118,9 @@ func (mp *MediaProxy) sendCommandSync(ctx context.Context, req CommandRequest) (
 	select {
 	case <-ctx.Done():
 		reply = CommandReply{Err: ctx.Err()}
+		return
+	case <-mp.ReadyCh.NotReady():
+		reply = CommandReply{Err: ErrProxyNotReady}
 		return
 	case <-mp.queueCtx.Done():
 		reply = CommandReply{Err: errors.New("send cmd: proxy cmd queue ctx cancelled")}
@@ -122,6 +134,9 @@ func (mp *MediaProxy) sendCommandSync(ctx context.Context, req CommandRequest) (
 	select {
 	case <-cctx.Done():
 		reply = CommandReply{Err: cctx.Err()}
+	case <-mp.ReadyCh.NotReady():
+		reply = CommandReply{Err: ErrProxyNotReady}
+		return
 	case <-mp.queueCtx.Done():
 		reply = CommandReply{Err: errors.New("send cmd: proxy wait reply cmd queue ctx cancelled")}
 	case reply = <-req.Reply:

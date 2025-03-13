@@ -432,7 +432,10 @@ int ProxyAPIClient::Run(context::Context& ctx)
                     log::info("Media Proxy registered")
                              ("proxy_id", GetProxyId());
 
-                    connection::local_manager.reregister_all_connections(ctx);
+                    // connection::local_manager.reregister_all_connections(ctx);
+                    
+                    // Close all existing connections
+                    connection::local_manager.shutdown(ctx);
                 }
 
                 auto err = StartCommandQueue(ctx);
