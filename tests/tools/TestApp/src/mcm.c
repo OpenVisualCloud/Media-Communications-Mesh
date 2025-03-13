@@ -32,10 +32,6 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     /* execute cpp class code  here */
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    float one_sec = 1000000.0; /* in microseconds (usec) */
-    float requested_fps = 25.0; /* FIXME: Read requested fps value */
-    float frame_sleep_time = one_sec/requested_fps;
-    LOG("[TX] Requested fps: %.2f | Frame sleep time: %.2f", requested_fps, frame_sleep_time);
     int sleep_us = (uint32_t)(SECOND_IN_US/video_cfg.fps);
     while (1) {
 
