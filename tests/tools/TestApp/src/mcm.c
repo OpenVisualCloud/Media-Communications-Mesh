@@ -18,6 +18,8 @@ void buffer_to_file(FILE *file, MeshBuffer *buf);
 
 int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     MeshConfig_Video video_cfg = get_video_params(connection);
+    LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
+    LOG("[TX] Video pixel format: %d", video_cfg.pixel_format);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
