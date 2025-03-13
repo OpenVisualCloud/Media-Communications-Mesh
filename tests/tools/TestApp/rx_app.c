@@ -18,11 +18,19 @@ MeshConnection *connection = NULL;
 MeshClient *client = NULL;
 struct sigaction sa;
 
-void handle_sigint(int sig);
-void setup_signal_handler();
+#define SHUTDOWN_REQUESTED 1
+struct sigaction sa_int;
+struct sigaction sa_term;
+int shutdown = 0;
+
+void sig_handler(int sig);
+void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
 
 int main(int argc, char *argv[]) {
-    setup_signal_handler();
+    struct sigaction sa_int;
+    struct sigaction sa_term;
+    setup_signal_handler(&sa_int, sig_handler, SIGINT);
+    setup_signal_handler(&sa_term, sig_handler, SIGTERM);
     if (!is_root()) {
         fprintf(stderr, "This program must be run as root. Exiting.\n");
         exit(EXIT_FAILURE);
@@ -60,10 +68,6 @@ int main(int argc, char *argv[]) {
     read_data_in_loop(connection, out_filename);
 
 safe_exit:
-    handle_sigint(err);
-}
-
-void handle_sigint(int sig) {
     LOG("[RX] SIGINT interrupt, dropping connection to media-proxy...");
     if (connection) {
         LOG("[RX] Shuting down connection");
@@ -75,12 +79,15 @@ void handle_sigint(int sig) {
     }
     free(client_cfg);
     free(conn_cfg);
-    exit(sig);
+    return err;
 }
 
-void setup_signal_handler() {
-    sa.sa_handler = handle_sigint;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);
+void sig_handler(int sig) {
+    shutdown = SHUTDOWN_REQUESTED;
+}
+
+void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig) {
+    sa->sa_handler = handler;
+    sigemptyset(&(sa->sa_mask));
+    sa->sa_flags = 0;
 }

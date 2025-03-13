@@ -14,17 +14,25 @@
 #include "Inc/mcm.h"
 #include "Inc/misc.h"
 
+#define SHUTDOWN_REQUESTED 1
+
+
 char *client_cfg;
 char *conn_cfg;
 MeshConnection *connection = NULL;
 MeshClient *client = NULL;
-struct sigaction sa;
+struct sigaction sa_int;
+struct sigaction sa_term;
+int shutdown = 0;
 
-void handle_sigint(int sig);
-void setup_signal_handler();
+void sig_handler(int sig);
+void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
 
 int main(int argc, char **argv) {
-    setup_signal_handler();
+    struct sigaction sa_int;
+    struct sigaction sa_term;
+    setup_signal_handler(&sa_int, sig_handler, SIGINT);
+    setup_signal_handler(&sa_term, sig_handler, SIGTERM);
     if (!is_root()) {
         fprintf(stderr, "This program must be run as root. Exiting.\n");
         exit(EXIT_FAILURE);
@@ -63,30 +71,28 @@ int main(int argc, char **argv) {
     /* Open file and send its contents in loop*/
     while(1){
         err = mcm_send_video_frames(connection, video_file);
+        if ( shutdown == SHUTDOWN_REQUESTED ) {
+            break;
+        }
     }
 safe_exit:
-    handle_sigint(err);
-}
-
-void handle_sigint(int sig) {
-    LOG("[TX] SIGINT interrupt, dropping connection to media-proxy...");
-    if (connection) {
-        LOG("[TX] Shuting down connection");
-        mesh_delete_connection(&connection);
-    }
-    if (client) {
-        LOG("[TX] Shuting down client");
-        mesh_delete_client(&client);
-    }
+    LOG("[TX] shut down request, dropping connection to media-proxy...");
+    LOG("[TX] Shuting down connection");
+    mesh_delete_connection(&connection);
+    LOG("[TX] Shuting down client");
+    mesh_delete_client(&client);
     free(client_cfg);
     free(conn_cfg);
-    exit(sig);
+    return err;
 }
 
-void setup_signal_handler() {
-    sa.sa_handler = handle_sigint;
-    sigemptyset(&sa.sa_mask);
-    sa.sa_flags = 0;
-    sigaction(SIGINT, &sa, NULL);
+void sig_handler(int sig) {
+        shutdown = SHUTDOWN_REQUESTED;
+}
+
+void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig) {
+    sa->sa_handler = handler;
+    sigemptyset(&(sa->sa_mask));
+    sa->sa_flags = 0;
 }
 
