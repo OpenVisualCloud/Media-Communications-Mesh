@@ -10,11 +10,14 @@
 #include "mcm.h"
 #include "mesh_dp.h"
 #include "misc.h"
+#include "json_context.h"
 
+#define SECOND_IN_US (double)1000000.0
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
 int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
+    MeshConfig_Video video_cfg = get_video_params(connection);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
@@ -23,7 +26,8 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         err = 1;
         return err;
     }
-
+    
+    /* execute cpp class code  here */
     unsigned int frame_num = 0;
     size_t read_size = 1;
     float one_sec = 1000000.0; /* in microseconds (usec) */
@@ -51,8 +55,13 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
+<<<<<<< HEAD
 
         usleep(frame_sleep_time);
+=======
+        
+        usleep(SECOND_IN_US/video_cfg.fps);
+>>>>>>> b58911c (add cpp wrrapper to extract cpp class video atributes)
     }
     LOG("[TX] data sent successfully");
 close_file:
@@ -110,3 +119,4 @@ void buffer_to_file(FILE *file, MeshBuffer *buf) {
 }
 
 int is_root() { return geteuid() == 0; }
+
