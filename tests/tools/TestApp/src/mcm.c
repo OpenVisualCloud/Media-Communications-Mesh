@@ -16,7 +16,7 @@
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
+int mcm_send_video_frames(MeshConnection *connection, const char *filename, int (*graceful_shutdown)(void)) {
     MeshConfig_Video video_cfg = get_video_params(connection);
     LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
     LOG("[TX] Video pixel format: %d", video_cfg.pixel_format);
@@ -52,6 +52,11 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         if (err) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
+        }
+        if (graceful_shutdown && graceful_shutdown() != 0 ) {
+            LOG("[TX] Graceful shutdown requested");
+            goto close_file;
+
         }
         usleep(sleep_us);
     }
