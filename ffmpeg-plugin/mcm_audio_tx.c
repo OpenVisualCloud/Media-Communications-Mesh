@@ -17,6 +17,7 @@ typedef struct McmAudioMuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    int conn_delay;
     char *conn_type;
     char *urn;
     char *ip_addr;
@@ -64,13 +65,13 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
 
     if (!strcmp(s->conn_type, "multipoint-group")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_multipoint_group_audio_format, s->urn,
-                     s->channels, s->sample_rate,
+                     mcm_json_config_multipoint_group_audio_format, s->conn_delay,
+                     s->urn, s->channels, s->sample_rate,
                      avcodec_get_name(codecpar->codec_id), s->ptime);
                      
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_st2110_audio_format,
+                     mcm_json_config_st2110_audio_format, s->conn_delay,
                      s->ip_addr, s->port,
                      s->channels, s->sample_rate,
                      avcodec_get_name(codecpar->codec_id), s->ptime);
@@ -187,6 +188,7 @@ static int mcm_audio_write_trailer(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmAudioMuxerContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption mcm_audio_tx_options[] = {
+    { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, ENC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = ENC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = ENC },
     { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.2"}, .flags = ENC },
