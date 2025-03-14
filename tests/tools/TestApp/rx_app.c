@@ -25,6 +25,7 @@ int shutdown = 0;
 
 void sig_handler(int sig);
 void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
+int is_shutdown_requested();
 
 int main(int argc, char *argv[]) {
     struct sigaction sa_int;
@@ -65,7 +66,7 @@ int main(int argc, char *argv[]) {
         goto safe_exit;
     }
     LOG("[RX] Waiting for frames...");
-    read_data_in_loop(connection, out_filename);
+    read_data_in_loop(connection, out_filename, is_shutdown_requested);
 
 safe_exit:
     LOG("[RX] SIGINT interrupt, dropping connection to media-proxy...");
@@ -80,6 +81,9 @@ safe_exit:
     free(client_cfg);
     free(conn_cfg);
     return err;
+}
+int is_shutdown_requested() {
+    return shutdown;
 }
 
 void sig_handler(int sig) {

@@ -66,7 +66,7 @@ close_file:
     return err;
 }
 
-void read_data_in_loop(MeshConnection *connection, const char *filename) {
+void read_data_in_loop(MeshConnection *connection, const char *filename, int (*graceful_shutdown)(void)) {
     int timeout = MESH_TIMEOUT_INFINITE;
     int frame = 0;
     int err = 0;
@@ -100,6 +100,10 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
             break;
         }
         LOG("[RX] Frame: %d", ++frame);
+        if (graceful_shutdown && graceful_shutdown() != 0 ) {
+            LOG("[RX] Graceful shutdown requested");
+            break;
+        }
     }
     fclose(out);
     LOG("[RX] Done reading the data");

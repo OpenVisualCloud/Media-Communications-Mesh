@@ -77,9 +77,13 @@ int main(int argc, char **argv) {
 safe_exit:
     LOG("[TX] shut down request, dropping connection to media-proxy...");
     LOG("[TX] Shuting down connection");
-    mesh_delete_connection(&connection);
+    if (connection) {
+        mesh_delete_connection(&connection);
+    }
     LOG("[TX] Shuting down client");
-    mesh_delete_client(&client);
+    if (client) {
+        mesh_delete_client(&client);
+    }
     free(client_cfg);
     free(conn_cfg);
     return err;
