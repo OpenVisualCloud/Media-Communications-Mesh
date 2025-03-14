@@ -5,7 +5,9 @@
 import hashlib
 import logging
 import re
+import time
 from math import floor
+from pathlib import Path
 
 
 def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
@@ -59,32 +61,6 @@ def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percent
     return out_index == len(out_chunk_sums)
 
 
-def check_integrity_big_file(src_chunk_sums, out_chunk_sums, allowed_bad: int = 10) -> bool:
-    frame_start = 0
-    shift = 0
-    # find first correct frame
-    while allowed_bad > frame_start:
-        if out_chunk_sums[frame_start] in src_chunk_sums:
-            shift = src_chunk_sums.index(out_chunk_sums[frame_start])
-            break
-    else:
-        logging.error(f"Did not found correct frame in first {allowed_bad} frames of the captured video")
-        return False
-
-    for _ in range(shift):
-        src_chunk_sums.append(src_chunk_sums.pop(0))
-
-    bad_frames = 0
-    for ids, chunk_sum in enumerate(out_chunk_sums):
-        if chunk_sum != src_chunk_sums[ids % len(src_chunk_sums)]:
-            bad_frames += 1
-
-    if bad_frames:
-        logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
-        return False
-    return True
-
-
 def calculate_yuv_frame_size(width: int, height: int, file_format: str) -> int:
     match file_format:
         case "YUV422RFC4175PG2BE10" | "yuv422p10rfc4175":
@@ -97,28 +73,20 @@ def calculate_yuv_frame_size(width: int, height: int, file_format: str) -> int:
     return int(width * height * pixel_size)
 
 
-def check_integrity(src_url: str, out_url: str, frame_size: int, expected_frame_percentage: int = 80) -> bool:
+def check_integrity(src_url: str, out_name: str, frame_size: int, expected_frame_percentage: int = 80) -> bool:
     src_chunk_sums = calculate_chunk_hashes(src_url, frame_size)
-    out_chunk_sums = calculate_chunk_hashes(out_url, frame_size)
+    out_chunk_sums = calculate_chunk_hashes(out_name, frame_size)
     return check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage)
 
 
 # TODO: Get rid of the need of backwards compatibility
-def check_st20p_integrity(src_url: str, out_url: str, frame_size: int, expected_frame_percentage: int = 80) -> bool:
-    return check_integrity(src_url, out_url, frame_size, expected_frame_percentage)
+def check_st20p_integrity(src_url: str, out_name: str, frame_size: int, expected_frame_percentage: int = 80) -> bool:
+    return check_integrity(src_url, out_name, frame_size, expected_frame_percentage)
 
 
 # TODO: Get rid of the need of backwards compatibility
-def check_st30p_integrity(src_url: str, out_url: str, frame_size: int, expected_frame_percentage: int = 80) -> bool:
-    return check_integrity(src_url, out_url, frame_size, expected_frame_percentage)
-
-
-def check_st20p_integrity_big(src_url: str, out_url: str, resolution: str, file_format: str) -> bool:
-    width, height = map(int, resolution.split("x"))
-    frame_size = calculate_yuv_frame_size(width, height, file_format)
-    src_chunk_sums = calculate_chunk_hashes(src_url, frame_size)
-    out_chunk_sums = calculate_chunk_hashes(out_url, frame_size)
-    return check_integrity_big_file(src_chunk_sums, out_chunk_sums)
+def check_st30p_integrity(src_url: str, out_name: str, frame_size: int, expected_frame_percentage: int = 80) -> bool:
+    return check_integrity(src_url, out_name, frame_size, expected_frame_percentage)
 
 
 def calculate_st30p_framebuff_size(
@@ -201,16 +169,127 @@ def calculate_st30p_framebuff_size(
     return packet_per_frame * packet_size
 
 
+class StreamIntegritor:
+
+    def __init__(self, src_url: str, out_name: str, resolution: str, file_format: str, out_path: str = "/mnt/ramdisk",
+                 segment_duration: int = 3):
+        logging.info(
+            f"Verify integrity for src {src_url} out file names: {out_name}\nresolution: {resolution}, file_format: {file_format}")
+        logging.info(f"Output path {out_path}, segment duration: {segment_duration}")
+        width, height = map(int, resolution.split("x"))
+        self.frame_size = calculate_yuv_frame_size(width, height, file_format)
+        self.src_chunk_sums = calculate_chunk_hashes(src_url, self.frame_size)
+        self.src_url = src_url
+        self.out_name = out_name
+        self.out_path = out_path
+        self.shift = 0
+        self.segment_duration = segment_duration
+        self.out_frame_no = 0
+        self.bad_frames_total = 0
+
+    def get_first_frame(self, out_url, allowed_bad: int = 10):
+        logging.info("Calculate md5 of frames from first file and find first frame then shift src chunk list.")
+        out_chunk_sums = calculate_chunk_hashes(out_url, self.frame_size)
+        frame_start = 0
+        # find first correct frame
+        while allowed_bad > frame_start:
+            if out_chunk_sums[frame_start] in self.src_chunk_sums:
+                self.shift = self.src_chunk_sums.index(out_chunk_sums[frame_start])
+                break
+            frame_start += 1
+        else:
+            logging.error(f"Did not found correct frame in first {allowed_bad} frames of the captured video")
+            return False
+
+        for _ in range(self.shift):
+            self.src_chunk_sums.append(self.src_chunk_sums.pop(0))
+        logging.info(f"Src chunk list shifted by {self.shift}")
+        logging.debug("List of src chunks: ")
+        logging.debug(self.src_chunk_sums)
+        return out_chunk_sums
+
+    def get_out_file(self):
+        start = 0
+        while self.segment_duration * 2 > start:
+            out_files = list(Path(self.out_path).glob(self.out_name + "*.yuv"))
+            if len(out_files) > 1:
+                return out_files[0]
+            start += 1
+            time.sleep(1)
+        try:
+            return out_files[0]
+        except IndexError:
+            logging.info(f"No more output files found in {self.out_path}")
+            return None
+
+    def check_st20p_integrity(self) -> bool:
+        out_url = self.get_out_file()
+        logging.info(f"Checking first file: {out_url}")
+        out_chunk_sums = self.get_first_frame(out_url)
+        self.check_integrity_file(out_chunk_sums, out_url)
+        out_url.unlink()
+        while True:
+            out_url = self.get_out_file()
+            if out_url:
+                logging.info(f"Checking file: {out_url}")
+                out_chunk_sums = calculate_chunk_hashes(out_url, self.frame_size)
+                if self.check_integrity_file(out_chunk_sums, out_url):
+                    logging.info(f"{out_url} PASS with no error, removing file.")
+                out_url.unlink()
+            else:
+                logging.info(f"Totally found {self.bad_frames_total} bad frames.")
+                break
+
+    def check_integrity_file(self, out_chunk_sums, out_url) -> bool:
+        bad_frames = 0
+        for ids, chunk_sum in enumerate(out_chunk_sums):
+            if chunk_sum != self.src_chunk_sums[ids % len(self.src_chunk_sums)]:
+                logging.error(f"Received bad frame number {ids} in {out_url}.")
+                if chunk_sum in self.src_chunk_sums:
+                    logging.error(
+                        f"Chunk: {chunk_sum} received in position: {ids}, expected in {self.src_chunk_sums.index(chunk_sum)}")
+                else:
+                    logging.error(f"Chunk: {chunk_sum} with ID: {ids} not found in src chunks checksums!")
+                bad_frames += 1
+        if bad_frames:
+            self.bad_frames_total += bad_frames
+            logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
+            return False
+        return True
+
+
 if __name__ == "__main__":
     help = """
         Check Integrity of big files with source one. Only check_st20p_integrity_big method supported so far.
-        usage example: >$ python integrity.py path_to_src_file path_to_out_file reslution file_format
-        >$ python integrity.py /mnt/media/HDR_1920x1080.yuv /mnt/ramdisk/1920x1080_rx_out.yuv 1920x1080 yuv422p10le
+        usage example: >$ python integrity.py path_to_src_file out_filename reslution file_format
+        output_filename is prefix of output file in segment using ffmpeg:
+        ffmpeg -f mcm -conn_type st2110 -ip_addr 239.168.85.20 -port 20000 -frame_rate 60 -video_size 1920x1080
+            -pixel_format yuv422p10le -i - -f rawvideo -f segment -segment_time 3 /mnt/ramdisk/1920x1080_rx_out_%03d.yuv
+        in this case output_filename is: 1920x1080_rx_out
+        >$ python integrity.py /mnt/media/HDR_1920x1080.yuv 1920x1080_rx_out 1920x1080 yuv422p10le
+        additional parameters:
+        output_path: default - /mnt/ramdisk
+        segment_duration: default - 3 seconds
     """
     import sys
+
     try:
-        _, src, out, res, fmt = sys.argv
+        src = sys.argv[1]
+        out = sys.argv[2]
+        res = sys.argv[3]
+        fmt = sys.argv[4]
     except IndexError:
         print(help)
+        exit()
 
-    print(check_st20p_integrity_big(src, out, res, fmt))
+    try:
+        out_path = sys.argv[5]
+        segment_duration = sys.argv[6]
+    except IndexError:
+        out_path = "/mnt/ramdisk"
+        segment_duration = 3
+
+    logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG,
+                        handlers=[logging.FileHandler("integrity.log"), logging.StreamHandler()])
+
+    StreamIntegritor(src, out, res, fmt, out_path, segment_duration).check_st20p_integrity()
