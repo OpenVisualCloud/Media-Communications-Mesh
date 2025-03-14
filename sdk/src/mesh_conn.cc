@@ -40,6 +40,8 @@ int ConnectionJsonConfig::parse_json(const char *str)
         max_payload_size = j.value("maxPayloadSize", 0);
         max_metadata_size = j.value("maxMetadataSize", 0);
 
+        tx_conn_creation_delay = j.value("connCreationDelayMilliseconds", 0);
+
         if (!j.contains("connection")) {
             log::error("connection config not specified");
             return -MESH_ERR_CONN_CONFIG_INVAL;

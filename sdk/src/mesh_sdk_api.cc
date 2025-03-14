@@ -9,6 +9,8 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
+#include <chrono>
 
 #include <grpcpp/grpcpp.h>
 #include "sdk.grpc.pb.h"
@@ -373,6 +375,15 @@ void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionJsonConfig
         delete conn;
         log::error("gRPC: failed to create memif interface");
         return NULL;
+    }
+
+    // Workaround to allow Mesh Agent and Media Proxies to apply necessary
+    // configuration after registering the connection. The delay should
+    // be sufficient for all Media Proxies to complete creating multipoint
+    // groups and bridges before the user app starts sending data. This WA
+    // should prevent first frame losses in 95 percent cases.
+    if (cfg.kind == MESH_CONN_KIND_SENDER && cfg.tx_conn_creation_delay > 0) {
+        std::this_thread::sleep_for(std::chrono::milliseconds(cfg.tx_conn_creation_delay));
     }
 
     return conn;

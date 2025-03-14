@@ -56,6 +56,8 @@ public:
 
     BufferPartitions buf_parts;
 
+    uint16_t tx_conn_creation_delay;
+
     // Connection type (Multipoint Group, SMPTE ST2110-XX, RDMA).
     // Any value of the MESH_CONN_TYPE_* constants.
     int conn_type = MESH_CONN_TYPE_UNINITIALIZED;
