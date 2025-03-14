@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include "mcm.h"
 #include "mesh_dp.h"
 #include "misc.h"
@@ -33,7 +34,12 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, int 
     unsigned int frame_num = 0;
     size_t read_size = 1;
     int sleep_us = (uint32_t)(SECOND_IN_US/video_cfg.fps);
+    struct timespec ts_begin = {}, ts_end = {};
+    struct timespec ts_frame_begin = {}, ts_frame_end = {};
+    __useconds_t elapsed = 0;
     while (1) {
+        clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
+        LOG("[TX] Sending frame: %d", ++frame_num);
 
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
@@ -47,7 +53,6 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, int 
         }
 
         /* Send the buffer */
-        LOG("[TX] Sending frame: %d", ++frame_num);
         err = mesh_put_buffer(&buf);
         if (err) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
@@ -56,9 +61,16 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, int 
         if (graceful_shutdown && graceful_shutdown() != 0 ) {
             LOG("[TX] Graceful shutdown requested");
             goto close_file;
-
         }
-        usleep(sleep_us);
+        clock_gettime(CLOCK_REALTIME, &ts_frame_end);
+        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        if (sleep_us - elapsed >= 0) {
+            usleep(sleep_us - elapsed);
+            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+        }
+        else {
+            LOG("[TX] Cannot keep the pace with %d fps!", video_cfg.fps);
+        }
     }
     LOG("[TX] data sent successfully");
 close_file:
