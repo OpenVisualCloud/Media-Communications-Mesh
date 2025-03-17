@@ -60,6 +60,36 @@ def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percent
     # only return true if no more frames left in out frames list, else fail
     return out_index == len(out_chunk_sums)
 
+def check_integrity_big_file(src_chunk_sums, out_chunk_sums, allowed_bad: int = 10) -> bool:
+    logging.debug("Starting integrity check for big file.")
+    logging.debug(f"Source chunk sums: {len(src_chunk_sums)} chunks")
+    logging.debug(f"Output chunk sums: {len(out_chunk_sums)} chunks")
+    logging.debug(f"Allowed bad frames: {allowed_bad}")
+
+    for frame_start in range(len(out_chunk_sums)):
+        if out_chunk_sums[frame_start] in src_chunk_sums:
+            shift = src_chunk_sums.index(out_chunk_sums[frame_start])
+            logging.debug(f"Found first correct frame at position {frame_start} with shift {shift}.")
+            break
+    else:
+        logging.error("Did not find any correct frame in the output.")
+        return False
+
+    logging.debug(f"Shifting source chunks by {shift} positions.")
+    src_chunk_sums = src_chunk_sums[shift:] + src_chunk_sums[:shift]
+
+    bad_frames = 0
+    for ids, chunk_sum in enumerate(out_chunk_sums):
+        if chunk_sum != src_chunk_sums[ids % len(src_chunk_sums)]:
+            bad_frames += 1
+            logging.debug(f"Bad frame detected at position {ids}.")
+
+    if bad_frames:
+        logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
+        return False
+
+    logging.debug("Integrity check passed with no bad frames.")
+    return True
 
 def calculate_yuv_frame_size(width: int, height: int, file_format: str) -> int:
     match file_format:
@@ -89,6 +119,12 @@ def check_st30p_integrity(src_url: str, out_name: str, frame_size: int, expected
     return check_integrity(src_url, out_name, frame_size, expected_frame_percentage)
 
 
+def check_st30p_integrity_big(src_url: str, out_url: str, fmt: str, ptime: str, sampling: str, channel: str) -> bool:
+    frame_size = calculate_st30p_framebuff_size(fmt, ptime, sampling, channel)
+    src_chunk_sums = calculate_chunk_hashes(src_url, frame_size)
+    out_chunk_sums = calculate_chunk_hashes(out_url, frame_size)
+    return check_integrity_big_file(src_chunk_sums, out_chunk_sums)
+
 def calculate_st30p_framebuff_size(
         format: str, ptime: str, sampling: str, channel: str
 ) -> int:
@@ -101,6 +137,10 @@ def calculate_st30p_framebuff_size(
             sample_size = 3
 
     match sampling:
+        case "41.1kHz":
+            match ptime:
+                case "1.09":
+                    sample_num = 45
         case "48kHz":
             match ptime:
                 case "1":
@@ -156,6 +196,8 @@ def calculate_st30p_framebuff_size(
             packet_time = 1_000_000 * 0.25
         case "0.33":
             packet_time = 1_000_000 * 1 / 3
+        case "1.09":
+            packet_time = 1_000_000 * 1.09
         case "4":
             packet_time = 1_000_000 * 4
 
@@ -211,8 +253,8 @@ class StreamIntegritor:
     def get_out_file(self):
         start = 0
         while self.segment_duration * 2 > start:
-            out_files = list(Path(self.out_path).glob(self.out_name + "*.yuv"))
-            if len(out_files) > 1:
+            out_files = list(Path(self.out_path).glob(f"{self.out_name}*.yuv"))
+            if len(out_files) > 0:
                 return out_files[0]
             start += 1
             time.sleep(1)
@@ -260,36 +302,54 @@ class StreamIntegritor:
 
 if __name__ == "__main__":
     help = """
-        Check Integrity of big files with source one. Only check_st20p_integrity_big method supported so far.
-        usage example: >$ python integrity.py path_to_src_file out_filename reslution file_format
+        Check Integrity of big files with source one. Supports check_st20p_integrity_big and check_st30p_integrity_big methods.
+        
+        usage example for ST20P: >$ python integrity.py stream path_to_src_file out_filename resolution file_format
         output_filename is prefix of output file in segment using ffmpeg:
         ffmpeg -f mcm -conn_type st2110 -ip_addr 239.168.85.20 -port 20000 -frame_rate 60 -video_size 1920x1080
             -pixel_format yuv422p10le -i - -f rawvideo -f segment -segment_time 3 /mnt/ramdisk/1920x1080_rx_out_%03d.yuv
         in this case output_filename is: 1920x1080_rx_out
-        >$ python integrity.py /mnt/media/HDR_1920x1080.yuv 1920x1080_rx_out 1920x1080 yuv422p10le
+        >$ python integrity.py stream /mnt/media/HDR_1920x1080.yuv 1920x1080_rx_out 1920x1080 yuv422p10le
         additional parameters:
         output_path: default - /mnt/ramdisk
         segment_duration: default - 3 seconds
+
+        usage example for ST30P: >$ python integrity.py file path_to_src_file path_to_out_file format ptime sampling channel
+        >$ python integrity.py file /mnt/media/audio_src.pcm /mnt/ramdisk/audio_out.pcm PCM8 1.09 41.1kHz M
     """
     import sys
-
-    try:
-        src = sys.argv[1]
-        out = sys.argv[2]
-        res = sys.argv[3]
-        fmt = sys.argv[4]
-    except IndexError:
-        print(help)
-        exit()
-
-    try:
-        out_path = sys.argv[5]
-        segment_duration = sys.argv[6]
-    except IndexError:
-        out_path = "/mnt/ramdisk"
-        segment_duration = 3
+    import logging
 
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG,
                         handlers=[logging.FileHandler("integrity.log"), logging.StreamHandler()])
 
-    StreamIntegritor(src, out, res, fmt, out_path, segment_duration).check_st20p_integrity()
+    try:
+        if len(sys.argv) < 2:
+            print(help)
+            exit()
+
+        mode = sys.argv[1].lower()
+
+        if mode == "stream":
+            if len(sys.argv) == 6:
+                _, _, src, out, res, fmt = sys.argv
+                out_path = "/mnt/ramdisk"
+                segment_duration = 3
+                StreamIntegritor(src, out, res, fmt, out_path, segment_duration).check_st20p_integrity()
+            elif len(sys.argv) == 7:
+                _, _, src, out, res, fmt, out_path = sys.argv
+                segment_duration = 3
+                StreamIntegritor(src, out, res, fmt, out_path, segment_duration).check_st20p_integrity()
+            else:
+                print(help)
+        elif mode == "file":
+            if len(sys.argv) == 8:
+                _, _, src, out, fmt, ptime, sampling, channel = sys.argv
+                print(check_st30p_integrity_big(src, out, fmt, ptime, sampling, channel))
+            else:
+                print(help)
+        else:
+            print(help)
+    except IndexError:
+        print(help)
+        exit()
