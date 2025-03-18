@@ -233,13 +233,13 @@ Puts the buffer to the media connection with a timeout.
 
 ## mesh_buffer_set_payload_len()
 ```c
-int mesh_buffer_set_payload_len(MeshBuffer **buf,
+int mesh_buffer_set_payload_len(MeshBuffer *buf,
                                 size_t len)
 ```
 Sets the payload length in the buffer provided by the media connection.
 
 ### Parameters
-* `[IN]` `buf` – Address of a pointer to a mesh buffer structure.
+* `[IN]` `buf` – Pointer to a mesh buffer structure.
 * `[IN]` `len` – Payload length.
 
 ### Returns
@@ -248,13 +248,13 @@ Sets the payload length in the buffer provided by the media connection.
 
 ## mesh_buffer_set_metadata_len()
 ```c
-int mesh_buffer_set_metadata_len(MeshBuffer **buf,
+int mesh_buffer_set_metadata_len(MeshBuffer *buf,
                                  size_t len)
 ```
 Sets the metadata length in the buffer provided by the media connection.
 
 ### Parameters
-* `[IN]` `buf` – Address of a pointer to a mesh buffer structure.
+* `[IN]` `buf` – Pointer to a mesh buffer structure.
 * `[IN]` `len` – Metadata length.
 
 ### Returns

@@ -107,7 +107,7 @@ public:
         auto& mgr = connection::local_manager;
         int err = mgr.delete_connection_sdk(ctx, conn_id);
         if (err)
-            log::error("delete_local_conn err (%d)", err);
+            ; // log::error("delete_local_conn err (%d)", err);
         else
             log::info("[SDK] Connection deleted")("id", req->conn_id())
                                                  ("client_id", req->client_id());

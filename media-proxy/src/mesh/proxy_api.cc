@@ -342,6 +342,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                             bridge_config.st2110.remote_ip = req.remote_ip();
                             bridge_config.st2110.port = req.port();
                             bridge_config.st2110.transport = req.transport();
+                            bridge_config.st2110.payload_type = req.payload_type();
 
                             config.bridges[bridge_id] = std::move(bridge_config);
                         }
@@ -432,7 +433,10 @@ int ProxyAPIClient::Run(context::Context& ctx)
                     log::info("Media Proxy registered")
                              ("proxy_id", GetProxyId());
 
-                    connection::local_manager.reregister_all_connections(ctx);
+                    // connection::local_manager.reregister_all_connections(ctx);
+                    
+                    // Close all existing connections
+                    connection::local_manager.shutdown(ctx);
                 }
 
                 auto err = StartCommandQueue(ctx);

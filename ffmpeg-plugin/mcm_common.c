@@ -49,14 +49,14 @@ int mcm_get_client(MeshClient **mc)
         return err;
 
     if (!client) {
-        static char json_config[150];
+        static char json_config[250];
 
         static const char json_config_format[] =
             "{"
-            "`apiVersion`: `v1`,"
-            "`apiConnectionString`: `Server=; Port=`,"
-            "`apiDefaultTimeoutMicroseconds`: 100000,"
-            "`maxMediaConnections`: 32"
+                "`apiVersion`: `v1`,"
+                "`apiConnectionString`: `Server=; Port=`,"
+                "`apiDefaultTimeoutMicroseconds`: 100000,"
+                "`maxMediaConnections`: 32"
             "}";
 
         snprintf(json_config, sizeof(json_config), json_config_format);
@@ -109,6 +109,7 @@ int mcm_put_client(MeshClient **mc)
 
 const char mcm_json_config_multipoint_group_video_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`multipointGroup`: {"
           "`urn`: `%s`"
@@ -126,11 +127,13 @@ const char mcm_json_config_multipoint_group_video_format[] =
 
 const char mcm_json_config_st2110_video_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`st2110`: {"
           "`remoteIpAddr`: `%s`,"
           "`remotePort`: %d,"
           "`transport`: `%s`,"
+          "`payloadType`: %d,"
           "`transportPixelFormat`: `%s`"
         "}"
       "},"
@@ -146,6 +149,7 @@ const char mcm_json_config_st2110_video_format[] =
 
 const char mcm_json_config_multipoint_group_audio_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`multipointGroup`: {"
           "`urn`: `%s`"
@@ -163,11 +167,13 @@ const char mcm_json_config_multipoint_group_audio_format[] =
 
 const char mcm_json_config_st2110_audio_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`st2110`: {"
           "`remoteIpAddr`: `%s`,"
           "`remotePort`: %d,"
-          "`transport`: `st2110-30`"
+          "`transport`: `st2110-30`,"
+          "`payloadType`: %d"
         "}"
       "},"
       "`payload`: {"

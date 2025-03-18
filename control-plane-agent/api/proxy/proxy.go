@@ -97,14 +97,14 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 // UnregisterMediaProxy
 func (a *API) UnregisterMediaProxy(ctx context.Context, in *pb.UnregisterMediaProxyRequest) (*pb.UnregisterMediaProxyReply, error) {
 	if in == nil {
-		return nil, errors.New("proxy unregister request")
+		return nil, errors.New("proxy unregister request nil")
 	}
 
 	reply := event.PostEventSync(ctx, event.OnUnregisterMediaProxy, map[string]interface{}{
 		"proxy_id": in.ProxyId,
 	})
 	if reply.Err != nil {
-		logrus.Errorf("Proxy unregister req err: %v", reply.Err)
+		logrus.Errorf("Proxy unregister req post event sync err: %v", reply.Err)
 	}
 
 	event.PostEventAsync(reply.Ctx, event.OnUnregisterMediaProxyOk, nil)
@@ -214,6 +214,9 @@ func (a *API) StartCommandQueue(in *pb.StartCommandQueueRequest, stream pb.Proxy
 		"proxy_id": proxyId,
 	})
 
+	proxy.ReadyCh.Set(true)
+	defer proxy.ReadyCh.Set(false)
+
 	// Running a command queue for the given Media Proxy
 	for {
 		req, err := proxy.GetNextCommandRequest(stream.Context())
@@ -221,6 +224,7 @@ func (a *API) StartCommandQueue(in *pb.StartCommandQueueRequest, stream pb.Proxy
 			// Commented this out to avoid closing the command stream after network glitches.
 			// TODO: Check and revert back if needed.
 			// proxy.Deinit()
+
 			return err
 		}
 

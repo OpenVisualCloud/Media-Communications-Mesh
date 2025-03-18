@@ -98,6 +98,7 @@ message BridgeST2110 {
   string remote_ip              = 1;
   uint32 port                   = 2;
   sdk.ST2110Transport transport = 3;
+  uint32 payload_type           = 4;
 }
 
 message BridgeRDMA {

@@ -46,7 +46,8 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
               ("pixfmt", cfg.conn_config.payload.video.pixel_format)
               ("calc_payload_size", cfg.conn_config.calculated_payload_size)
               ("buf_total_size", cfg.conn_config.buf_parts.total_size())
-              ("transport", cfg.st2110.transport);
+              ("transport", cfg.st2110.transport)
+              ("payload_type", (uint32_t)cfg.st2110.payload_type);
 
     if (!cfg.type.compare("st2110")) {
         MeshConfig_ST2110 cfg_st2110 = {
@@ -60,6 +61,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
                 sizeof(cfg_st2110.remote_ip_addr));
 
         cfg_st2110.transport = cfg.st2110.transport;
+        cfg_st2110.payload_type = cfg.st2110.payload_type;
 
         MeshConfig_Video cfg_video = {
             .width        = cfg.conn_config.payload.video.width,

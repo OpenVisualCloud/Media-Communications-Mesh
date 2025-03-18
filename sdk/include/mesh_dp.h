@@ -59,15 +59,23 @@ typedef struct MeshConnection {
      */
     MeshClient * const client;
     /**
-     * Buffer size, or frame size, configured for the connection.
-     * This value is the maximum length of data the buffer may contain.
+     * Payload size, or frame size, configured for the connection.
+     * This value is the maximum length of payload the buffer may contain.
      * It is calculated once before the connection is created and cannot be
      * altered thereafter. The calculation is based on the payload type and
      * payload parameters.
      * For video payload, this value is the video frame size.
      * For audio payload, this value is the audio packet size.
      */
-    const size_t buf_size;
+    union {
+        const size_t buf_size; /* deprecated */
+        const size_t payload_size;
+    };
+    /**
+     * Metadata size, configured for the connection.
+     * This value is the maximum length of metadata the buffer may contain.
+     */
+    const size_t metadata_size;
 
 } MeshConnection;
 
@@ -124,6 +132,11 @@ typedef struct MeshConfig_ST2110 {
 #define MESH_CONN_TRANSPORT_ST2110_22 1 ///< SMPTE ST2110-22 Constant Bit-Rate Compressed Video transport
 #define MESH_CONN_TRANSPORT_ST2110_30 2 ///< SMPTE ST2110-30 Audio transport
 
+    /**
+     * SMPTE 2110-xx payload type.
+     * Typically, should be in the range between 96-127.
+     */
+    uint8_t payload_type;
     /**
      * SMPTE ST2110-20 rfc4175 compliant transport format.
      * Required only for ST2110-20 transport.
@@ -241,20 +254,20 @@ typedef struct{
      * Pointer to shared memory area storing data
      */
     union {
-        void *const data; /*deprecated*/
-        void *const payload_ptr;
+        void * const data; /* deprecated */
+        void * const payload_ptr;
     };
     /**
      * Actual length of data in the buffer
      */
     union {
-        const size_t data_len; /*deprecated*/
+        const size_t data_len; /* deprecated */
         const size_t payload_len;
     };
     /**
      * Pointer to shared memory area storing metadata
      */
-    void *const metadata_ptr;
+    void * const metadata_ptr;
     /**
      * Actual lenght of metadata in the buffer
      */
@@ -485,21 +498,21 @@ int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms);
 /**
  * @brief Set payload length of a mesh buffer.
  *
- * @param [in,out] buf Address of a pointer to a mesh buffer structure.
+ * @param [in] buf Pointer to a mesh buffer structure.
  *
  * @return 0 on success; an error code otherwise.
  */
-int mesh_buffer_set_payload_len(MeshBuffer **buf,
+int mesh_buffer_set_payload_len(MeshBuffer *buf,
                                 size_t len);
 
 /**
  * @brief Set metadata length of a mesh buffer.
  *
- * @param [in,out] buf Address of a pointer to a mesh buffer structure.
+ * @param [in] buf Pointer to a mesh buffer structure.
  *
  * @return 0 on success; an error code otherwise.
  */
-int mesh_buffer_set_metadata_len(MeshBuffer **buf,
+int mesh_buffer_set_metadata_len(MeshBuffer *buf,
                                  size_t len);
 
 /**

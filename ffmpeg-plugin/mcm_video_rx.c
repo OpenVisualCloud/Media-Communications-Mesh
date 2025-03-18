@@ -20,11 +20,13 @@ typedef struct McmVideoDemuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    int conn_delay;
     char *conn_type;
     char *urn;
     char *ip_addr;
     int port;
     char *transport;
+    int payload_type;
     char *transport_pixel_format;
     char *socket_name;
     int interface_id;
@@ -42,7 +44,7 @@ typedef struct McmVideoDemuxerContext {
 static int mcm_video_read_header(AVFormatContext* avctx)
 {
     McmVideoDemuxerContext *s = avctx->priv_data;
-    char json_config[250];
+    char json_config[1024];
     AVStream *st;
     int err, n;
 
@@ -55,13 +57,14 @@ static int mcm_video_read_header(AVFormatContext* avctx)
 
     if (!strcmp(s->conn_type, "multipoint-group")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_multipoint_group_video_format, s->urn,
-                     s->width, s->height, av_q2d(s->frame_rate),
+                     mcm_json_config_multipoint_group_video_format, s->conn_delay,
+                     s->urn, s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_st2110_video_format,
-                     s->ip_addr, s->port, s->transport, s->transport_pixel_format,
+                     mcm_json_config_st2110_video_format, s->conn_delay,
+                     s->ip_addr, s->port, s->transport, s->payload_type,
+                     s->transport_pixel_format,
                      s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else {
@@ -115,7 +118,7 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     McmVideoDemuxerContext *s = avctx->priv_data;
     MeshBuffer *buf;
     int timeout = s->first_frame ? MESH_TIMEOUT_INFINITE : 1000;
-    int err, ret;
+    int err, ret, len;
 
     s->first_frame = false;
 
@@ -132,10 +135,12 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         return AVERROR(EIO);
     }
 
-    if ((ret = av_new_packet(pkt, s->conn->buf_size)) < 0)
+    len = buf->payload_len;
+
+    if ((ret = av_new_packet(pkt, len)) < 0)
         return ret;
 
-    memcpy(pkt->data, buf->data, FFMIN(s->conn->buf_size, buf->data_len));
+    memcpy(pkt->data, buf->data, len);
 
     pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
@@ -146,7 +151,7 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         return AVERROR(EIO);
     }
 
-    return s->conn->buf_size;
+    return len;
 }
 
 static int mcm_video_read_close(AVFormatContext* avctx)
@@ -169,11 +174,13 @@ static int mcm_video_read_close(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmVideoDemuxerContext, x)
 #define DEC (AV_OPT_FLAG_DECODING_PARAM)
 static const AVOption mcm_video_rx_options[] = {
+    { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = DEC },
     { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
     { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, DEC },
     { "transport", "set ST2110 transport type", OFFSET(transport), AV_OPT_TYPE_STRING, {.str = "st2110-20"}, .flags = DEC },
+    { "payload_type", "set ST2110 payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.i64 = 112}, 0, 127, DEC },
     { "transport_pixel_format", "set st2110-20 transport pixel format", OFFSET(transport_pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv422p10rfc4175"}, .flags = DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
     { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },

@@ -17,6 +17,7 @@
 #include "proxy_api.h"
 #include "metrics_collector.h"
 #include "proxy_config.h"
+#include "mcm-version.h"
 
 #include <execinfo.h>
 #include <dlfcn.h>
@@ -160,7 +161,7 @@ int main(int argc, char* argv[])
     }
 
     log::setFormatter(std::make_unique<log::StandardFormatter>());
-    log::info("Media Proxy started");
+    log::info("Media Proxy started, version %s #%s", VERSION_TAG, VERSION_HASH);
 
     if (getenv("KAHAWAI_CFG_PATH") == NULL) {
         log::debug("Set MTL configure file path to %s", IMTL_CONFIG_PATH);
