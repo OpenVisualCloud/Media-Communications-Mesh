@@ -133,6 +133,11 @@ typedef struct MeshConfig_ST2110 {
 #define MESH_CONN_TRANSPORT_ST2110_30 2 ///< SMPTE ST2110-30 Audio transport
 
     /**
+     * SMPTE 2110-xx payload type.
+     * Typically, should be in the range between 96-127.
+     */
+    uint8_t payload_type;
+    /**
      * SMPTE ST2110-20 rfc4175 compliant transport format.
      * Required only for ST2110-20 transport.
      * Any value of the MESH_CONN_ST2110_20_TRANSPORT_FMT_* constants.

@@ -26,6 +26,7 @@ typedef struct McmVideoDemuxerContext {
     char *ip_addr;
     int port;
     char *transport;
+    int payload_type;
     char *transport_pixel_format;
     char *socket_name;
     int interface_id;
@@ -62,7 +63,8 @@ static int mcm_video_read_header(AVFormatContext* avctx)
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_video_format, s->conn_delay,
-                     s->ip_addr, s->port, s->transport, s->transport_pixel_format,
+                     s->ip_addr, s->port, s->transport, s->payload_type,
+                     s->transport_pixel_format,
                      s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else {
@@ -178,6 +180,7 @@ static const AVOption mcm_video_rx_options[] = {
     { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
     { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, DEC },
     { "transport", "set ST2110 transport type", OFFSET(transport), AV_OPT_TYPE_STRING, {.str = "st2110-20"}, .flags = DEC },
+    { "payload_type", "set ST2110 payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.i64 = 112}, 0, 127, DEC },
     { "transport_pixel_format", "set st2110-20 transport pixel format", OFFSET(transport_pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv422p10rfc4175"}, .flags = DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
     { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },

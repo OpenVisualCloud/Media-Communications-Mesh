@@ -78,7 +78,7 @@ public:
             int transport;
 
             std::string pacing;
-            uint32_t payload_type;
+            uint8_t payload_type;
             std::string transportPixelFormat;
         } st2110;
 

@@ -342,6 +342,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                             bridge_config.st2110.remote_ip = req.remote_ip();
                             bridge_config.st2110.port = req.port();
                             bridge_config.st2110.transport = req.transport();
+                            bridge_config.st2110.payload_type = req.payload_type();
 
                             config.bridges[bridge_id] = std::move(bridge_config);
                         }

@@ -24,6 +24,7 @@ public:
         std::string remote_ip;
         uint16_t port;
         sdk::ST2110Transport transport;
+        uint8_t payload_type;
     } st2110;
 
     struct {

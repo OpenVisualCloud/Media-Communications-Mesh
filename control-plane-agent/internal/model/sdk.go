@@ -30,7 +30,7 @@ type SDKConfigST2110 struct {
 	Transport    sdk.ST2110Transport `json:"-"`
 	TransportStr string              `json:"transport"`
 	Pacing       string              `json:"pacing"`
-	PayloadType  uint32              `json:"payloadType"`
+	PayloadType  uint8               `json:"payloadType"`
 }
 
 type SDKConfigRDMA struct {
@@ -165,7 +165,7 @@ func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
 			RemotePort:   uint16(conn.St2110.RemotePort),
 			Transport:    conn.St2110.Transport,
 			Pacing:       conn.St2110.Pacing,
-			PayloadType:  conn.St2110.PayloadType,
+			PayloadType:  uint8(conn.St2110.PayloadType),
 		}
 	case *sdk.ConnectionConfig_Rdma:
 		s.Conn.RDMA = &SDKConfigRDMA{
@@ -236,7 +236,7 @@ func (s *SDKConnectionConfig) AssignToPb(cfg *sdk.ConnectionConfig) {
 				RemotePort:   uint32(s.Conn.ST2110.RemotePort),
 				Transport:    s.Conn.ST2110.Transport,
 				Pacing:       s.Conn.ST2110.Pacing,
-				PayloadType:  s.Conn.ST2110.PayloadType,
+				PayloadType:  uint32(s.Conn.ST2110.PayloadType),
 			},
 		}
 	case s.Conn.RDMA != nil:
@@ -302,6 +302,9 @@ func (s *SDKConnectionConfig) CheckPayloadCompatibility(c *SDKConnectionConfig) 
 		}
 		if s.Conn.ST2110.Transport != c.Conn.ST2110.Transport {
 			return fmt.Errorf("incompatible st2110 transport: %v vs. %v", s.Conn.ST2110.Transport, c.Conn.ST2110.Transport)
+		}
+		if s.Conn.ST2110.PayloadType != c.Conn.ST2110.PayloadType {
+			return fmt.Errorf("incompatible st2110 payload type: %v vs. %v", s.Conn.ST2110.PayloadType, c.Conn.ST2110.PayloadType)
 		}
 	}
 

@@ -23,7 +23,7 @@ type MediaProxy struct {
 	Bridges          []Bridge          `json:"bridges"` // array of bridges populated only in JSON
 	RDMAPortsAllowed PortMask          `json:"-"`
 
-	Active bool
+	Active bool `json:"-"`
 
 	queue                    chan CommandRequest
 	cancelCommandRequestFunc func(reqId string) // this is registered by Proxy API at proxy creation
@@ -31,7 +31,7 @@ type MediaProxy struct {
 	queueCtx       context.Context // this is used to stop processing command queue when proxy is about to be deleted
 	cancelQueueCtx context.CancelFunc
 
-	ReadyCh *utils.ReadinessChannel
+	ReadyCh *utils.ReadinessChannel `json:"-"`
 }
 
 type ST2110ProxyConfig struct {
