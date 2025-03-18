@@ -6,9 +6,22 @@ import argparse
 # Global variable for line width
 LINEWIDTH = 0.5
 
-def read_pcm(file_path, sample_rate=44100, dtype=np.int16, num_channels=1):
+def read_pcm(file_path, sample_rate=44100, pcm_format=16, num_channels=1):
     with open(file_path, 'rb') as f:
-        pcm_data = np.frombuffer(f.read(), dtype=dtype)
+        if pcm_format == 8:
+            pcm_data = np.frombuffer(f.read(), dtype=np.uint8) - 128  # Center around zero
+        elif pcm_format == 16:
+            pcm_data = np.frombuffer(f.read(), dtype=np.int16)
+        elif pcm_format == 24:
+            raw_data = np.frombuffer(f.read(), dtype=np.uint8)
+            pcm_data = raw_data.reshape(-1, 3)
+            pcm_data = np.left_shift(pcm_data[:, 0].astype(np.int32), 16) | \
+                       np.left_shift(pcm_data[:, 1].astype(np.int32), 8) | \
+                       pcm_data[:, 2].astype(np.int32)
+            pcm_data = pcm_data - (pcm_data & 0x800000) * 2  # Sign extension
+        else:
+            raise ValueError("Unsupported PCM format. Use 8, 16, or 24.")
+    
     # Reshape the data to separate channels if there are multiple channels
     if num_channels > 1:
         pcm_data = pcm_data.reshape(-1, num_channels)
@@ -111,7 +124,13 @@ def plot_waveforms(file_path1, file_path2, pcm_data1, pcm_data2, sample_rate, ou
     plt.close()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Plot waveforms from PCM files.")
+    parser = argparse.ArgumentParser(
+        description="Plot waveforms from PCM files.",
+        epilog="""
+        Example usage:
+        python3 graph.py /path/to/file1.pcm /path/to/file2.pcm --sample_rate 44100 --output_file output.png --num_channels1 1 --num_channels2 1 --downsample_factor 10 --time_window 0 0.03 --pcm_format 16
+        """
+    )
     parser.add_argument('file_path1', type=str, help='Path to the first PCM file.')
     parser.add_argument('file_path2', type=str, help='Path to the second PCM file.')
     parser.add_argument('--sample_rate', type=int, default=48000, help='Sample rate of the PCM files.')
@@ -120,11 +139,12 @@ if __name__ == "__main__":
     parser.add_argument('--num_channels2', type=int, default=2, help='Number of channels in the second PCM file.')
     parser.add_argument('--downsample_factor', type=int, default=10, help='Factor by which to downsample the data.')
     parser.add_argument('--time_window', type=float, nargs=2, default=(0, 0.03), help='Time window to plot (start, end) in seconds.')
+    parser.add_argument('--pcm_format', type=int, choices=[8, 16, 24], default=16, help='PCM format (8, 16, or 24 bits).')
 
     args = parser.parse_args()
 
-    pcm_data1 = read_pcm(args.file_path1, args.sample_rate, num_channels=args.num_channels1)
-    pcm_data2 = read_pcm(args.file_path2, args.sample_rate, num_channels=args.num_channels2)
+    pcm_data1 = read_pcm(args.file_path1, args.sample_rate, pcm_format=args.pcm_format, num_channels=args.num_channels1)
+    pcm_data2 = read_pcm(args.file_path2, args.sample_rate, pcm_format=args.pcm_format, num_channels=args.num_channels2)
     plot_waveforms(args.file_path1, args.file_path2, pcm_data1, pcm_data2, args.sample_rate, args.output_file, downsample_factor=args.downsample_factor, time_window=args.time_window, num_channels1=args.num_channels1, num_channels2=args.num_channels2)
 
     print(f"Waveform saved to {args.output_file}")
