@@ -27,7 +27,7 @@ def read_pcm(file_path, sample_rate=44100, pcm_format=16, num_channels=1):
         pcm_data = pcm_data.reshape(-1, num_channels)
     return pcm_data
 
-def plot_waveforms(file_path1, file_path2, pcm_data1, pcm_data2, sample_rate, output_file, downsample_factor=10, time_window=None, num_channels1=1, num_channels2=1):
+def plot_waveforms(file_path1, file_path2, pcm_data1, pcm_data2, sample_rate, output_file, downsample_factor=10, start_time=None, end_time=None, num_channels1=1, num_channels2=1):
     # Downsample the data
     pcm_data1 = pcm_data1[::downsample_factor]
     pcm_data2 = pcm_data2[::downsample_factor]
@@ -38,10 +38,10 @@ def plot_waveforms(file_path1, file_path2, pcm_data1, pcm_data2, sample_rate, ou
     pcm_data1 = pcm_data1[:min_length]
     pcm_data2 = pcm_data2[:min_length]
 
-    # If a time window is specified, plot only that subset
-    if time_window:
-        start_sample = int(time_window[0] * sample_rate)
-        end_sample = int(time_window[1] * sample_rate)
+    # If start_time or end_time is specified, plot only that subset
+    if start_time is not None or end_time is not None:
+        start_sample = int(start_time * sample_rate) if start_time is not None else 0
+        end_sample = int(end_time * sample_rate) if end_time is not None else len(pcm_data1)
         pcm_data1 = pcm_data1[start_sample:end_sample]
         pcm_data2 = pcm_data2[start_sample:end_sample]
 
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         description="Plot waveforms from PCM files.",
         epilog="""
         Example usage:
-        python3 graph.py /path/to/file1.pcm /path/to/file2.pcm --sample_rate 44100 --output_file output.png --num_channels1 1 --num_channels2 1 --downsample_factor 10 --time_window 0 0.03 --pcm_format 16
+        python3 graph.py /path/to/file1.pcm /path/to/file2.pcm --sample_rate 44100 --output_file output.png --num_channels1 1 --num_channels2 1 --downsample_factor 10 --start_time 0 --end_time 0.03 --pcm_format 16
         """
     )
     parser.add_argument('file_path1', type=str, help='Path to the first PCM file.')
@@ -138,13 +138,14 @@ if __name__ == "__main__":
     parser.add_argument('--num_channels1', type=int, default=2, help='Number of channels in the first PCM file.')
     parser.add_argument('--num_channels2', type=int, default=2, help='Number of channels in the second PCM file.')
     parser.add_argument('--downsample_factor', type=int, default=10, help='Factor by which to downsample the data.')
-    parser.add_argument('--time_window', type=float, nargs=2, default=(0, 0.03), help='Time window to plot (start, end) in seconds.')
+    parser.add_argument('--start_time', type=float, help='Start time in seconds for the plot.')
+    parser.add_argument('--end_time', type=float, help='End time in seconds for the plot.')
     parser.add_argument('--pcm_format', type=int, choices=[8, 16, 24], default=16, help='PCM format (8, 16, or 24 bits).')
 
     args = parser.parse_args()
 
     pcm_data1 = read_pcm(args.file_path1, args.sample_rate, pcm_format=args.pcm_format, num_channels=args.num_channels1)
     pcm_data2 = read_pcm(args.file_path2, args.sample_rate, pcm_format=args.pcm_format, num_channels=args.num_channels2)
-    plot_waveforms(args.file_path1, args.file_path2, pcm_data1, pcm_data2, args.sample_rate, args.output_file, downsample_factor=args.downsample_factor, time_window=args.time_window, num_channels1=args.num_channels1, num_channels2=args.num_channels2)
+    plot_waveforms(args.file_path1, args.file_path2, pcm_data1, pcm_data2, args.sample_rate, args.output_file, downsample_factor=args.downsample_factor, start_time=args.start_time, end_time=args.end_time, num_channels1=args.num_channels1, num_channels2=args.num_channels2)
 
     print(f"Waveform saved to {args.output_file}")
