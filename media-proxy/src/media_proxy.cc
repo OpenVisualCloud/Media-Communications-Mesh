@@ -17,7 +17,7 @@
 #include "proxy_api.h"
 #include "metrics_collector.h"
 #include "proxy_config.h"
-#include "../../mcm-version.h"
+#include "mcm-version.h"
 
 #include <execinfo.h>
 #include <dlfcn.h>

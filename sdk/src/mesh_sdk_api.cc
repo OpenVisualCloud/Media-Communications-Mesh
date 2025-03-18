@@ -15,7 +15,7 @@
 #include <grpcpp/grpcpp.h>
 #include "sdk.grpc.pb.h"
 #include "mesh_logger.h"
-#include "../../mcm-version.h"
+#include "mcm-version.h"
 
 using grpc::Channel;
 // using grpc::ClientContext;
