@@ -310,28 +310,22 @@ int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms)
     return 0;
 }
 
-int mesh_buffer_set_payload_len(MeshBuffer **buf, size_t len)
+int mesh_buffer_set_payload_len(MeshBuffer *buf, size_t len)
 {
     if (!buf)
         return -MESH_ERR_BAD_BUF_PTR;
 
-    BufferContext *buf_ctx = (BufferContext *)(*buf);
-
-    if (!buf_ctx)
-        return -MESH_ERR_BAD_BUF_PTR;
+    BufferContext *buf_ctx = (BufferContext *)buf;
 
     return buf_ctx->setPayloadLen(len);
 }
 
-int mesh_buffer_set_metadata_len(MeshBuffer **buf, size_t len)
+int mesh_buffer_set_metadata_len(MeshBuffer *buf, size_t len)
 {
     if (!buf)
         return -MESH_ERR_BAD_BUF_PTR;
 
-    BufferContext *buf_ctx = (BufferContext *)(*buf);
-
-    if (!buf_ctx)
-        return -MESH_ERR_BAD_BUF_PTR;
+    BufferContext *buf_ctx = (BufferContext *)buf;
 
     return buf_ctx->setMetadataLen(len);
 }

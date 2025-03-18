@@ -918,7 +918,11 @@ int ConnectionContext::establish_json()
     if (!handle)
         return -MESH_ERR_CONN_FAILED;
 
-    *(size_t *)&__public.buf_size = handle->frame_size;
+    *(size_t *)&__public.payload_size = cfg_json.buf_parts.payload.size;
+    *(size_t *)&__public.metadata_size = cfg_json.buf_parts.metadata.size;
+
+    if (cfg_json.buf_parts.total_size() != handle->frame_size)
+        return -MESH_ERR_CONN_FAILED;
 
     return 0;
 }

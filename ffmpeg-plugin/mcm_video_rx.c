@@ -116,7 +116,7 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     McmVideoDemuxerContext *s = avctx->priv_data;
     MeshBuffer *buf;
     int timeout = s->first_frame ? MESH_TIMEOUT_INFINITE : 1000;
-    int err, ret;
+    int err, ret, len;
 
     s->first_frame = false;
 
@@ -133,10 +133,12 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         return AVERROR(EIO);
     }
 
-    if ((ret = av_new_packet(pkt, s->conn->buf_size)) < 0)
+    len = buf->payload_len;
+
+    if ((ret = av_new_packet(pkt, len)) < 0)
         return ret;
 
-    memcpy(pkt->data, buf->data, FFMIN(s->conn->buf_size, buf->data_len));
+    memcpy(pkt->data, buf->data, len);
 
     pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
@@ -147,7 +149,7 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         return AVERROR(EIO);
     }
 
-    return s->conn->buf_size;
+    return len;
 }
 
 static int mcm_video_read_close(AVFormatContext* avctx)
