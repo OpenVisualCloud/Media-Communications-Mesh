@@ -17,6 +17,11 @@
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
+
+// send_data(file, connection)
+// mcm_send_video_frames(connection, filename)
+// mcm_send_audio_frames(connection, filename)
+
 int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     MeshConfig_Video video_cfg = get_video_params(connection);
     LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);

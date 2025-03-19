@@ -9,6 +9,8 @@
  #include "mesh_dp.h"
 
  MeshConfig_Video get_video_params(MeshConnection *conn);
+ int get_payload_type(MeshConnection *conn);
+ MeshConfig_Audio get_audio_params(MeshConnection *conn);
  
  #endif /* _JSON_CONTEXT_ */
  
