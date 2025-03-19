@@ -8,5 +8,6 @@
 #define _MISC_H_
 
 void LOG(const char *format, ...);
+extern int shutdown_flag;
 
 #endif /* _MISC_H_ */

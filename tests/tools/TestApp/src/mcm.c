@@ -17,7 +17,7 @@
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-int mcm_send_video_frames(MeshConnection *connection, const char *filename, int (*graceful_shutdown)(void)) {
+int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     MeshConfig_Video video_cfg = get_video_params(connection);
     LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
     LOG("[TX] Video pixel format: %d", video_cfg.pixel_format);
@@ -58,7 +58,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, int 
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
-        if (graceful_shutdown && graceful_shutdown() != 0 ) {
+        if (shutdown_flag  != 0 ) {
             LOG("[TX] Graceful shutdown requested");
             goto close_file;
         }
@@ -78,7 +78,7 @@ close_file:
     return err;
 }
 
-void read_data_in_loop(MeshConnection *connection, const char *filename, int (*graceful_shutdown)(void)) {
+void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int timeout = MESH_TIMEOUT_INFINITE;
     int frame = 0;
     int err = 0;
@@ -112,7 +112,7 @@ void read_data_in_loop(MeshConnection *connection, const char *filename, int (*g
             break;
         }
         LOG("[RX] Frame: %d", ++frame);
-        if (graceful_shutdown && graceful_shutdown() != 0 ) {
+        if (shutdown_flag != 0) {
             LOG("[RX] Graceful shutdown requested");
             break;
         }

@@ -27,7 +27,6 @@ int shutdown = 0;
 
 void sig_handler(int sig);
 void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
-int is_shutdown_requested();
 
 int main(int argc, char **argv) {
     setup_signal_handler(&sa_int, sig_handler, SIGINT);
@@ -69,7 +68,7 @@ int main(int argc, char **argv) {
 
     /* Open file and send its contents in loop*/
     while(1){
-        err = mcm_send_video_frames(connection, video_file, is_shutdown_requested);
+        err = mcm_send_video_frames(connection, video_file);
         if ( shutdown == SHUTDOWN_REQUESTED ) {
             goto safe_exit;
         }
@@ -88,12 +87,9 @@ safe_exit:
     free(conn_cfg);
     return err;
 }
-int is_shutdown_requested() {
-    return shutdown;
-}
 
 void sig_handler(int sig) {
-        shutdown = SHUTDOWN_REQUESTED;
+    shutdown_flag = SHUTDOWN_REQUESTED;
 }
 
 void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig) {

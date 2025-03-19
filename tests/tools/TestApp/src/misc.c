@@ -10,6 +10,8 @@
 #include <stdarg.h>
 #include <time.h>
 
+int shutdown_flag = 0;
+
 void LOG(const char *format, ...) {
     time_t rawtime;
     struct tm *timeinfo;
