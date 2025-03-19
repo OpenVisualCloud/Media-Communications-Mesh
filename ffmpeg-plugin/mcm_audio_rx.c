@@ -20,10 +20,12 @@ typedef struct McmAudioDemuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    int conn_delay;
     char *conn_type;
     char *urn;
     char *ip_addr;
     int port;
+    int payload_type;
     char *socket_name;
     int interface_id;
 
@@ -39,7 +41,7 @@ typedef struct McmAudioDemuxerContext {
 static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id)
 {
     McmAudioDemuxerContext *s = avctx->priv_data;
-    char json_config[250];
+    char json_config[1024];
     AVStream *st;
     int err, n;
 
@@ -52,14 +54,14 @@ static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id
 
     if (!strcmp(s->conn_type, "multipoint-group")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_multipoint_group_audio_format, s->urn,
-                     s->channels, s->sample_rate,
+                     mcm_json_config_multipoint_group_audio_format, s->conn_delay,
+                     s->urn, s->channels, s->sample_rate,
                      avcodec_get_name(codec_id), s->ptime);
                      
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_st2110_audio_format,
-                     s->ip_addr, s->port,
+                     mcm_json_config_st2110_audio_format, s->conn_delay,
+                     s->ip_addr, s->port, s->payload_type,
                      s->channels, s->sample_rate,
                      avcodec_get_name(codec_id), s->ptime);
     } else {
@@ -130,6 +132,9 @@ static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     if (err == -MESH_ERR_CONN_CLOSED)
         return AVERROR_EOF;
 
+    if (mcm_shutdown_requested())
+        return AVERROR_EOF;
+
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
                mesh_err2str(err), err);
@@ -175,10 +180,12 @@ static int mcm_audio_read_close(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmAudioDemuxerContext, x)
 #define DEC (AV_OPT_FLAG_DECODING_PARAM)
 static const AVOption mcm_audio_rx_options[] = {
+    { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = DEC },
     { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
     { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, DEC },
+    { "payload_type", "set ST2110 payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.i64 = 111}, 0, 127, DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
     { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },
     { "channels", "number of audio channels", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, DEC },

@@ -37,7 +37,7 @@ Result ST2110_20Rx::configure(context::Context& ctx, const std::string& dev_port
         return set_result(Result::error_bad_argument);
     }
 
-    ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST20;
+    ops.port.payload_type = cfg_st2110.payload_type;
     ops.width = cfg_video.width;
     ops.height = cfg_video.height;
     ops.fps = st_frame_rate_to_st_fps(cfg_video.fps);

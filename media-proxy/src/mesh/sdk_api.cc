@@ -58,13 +58,12 @@ public:
         auto res = conn_config.assign_from_pb(req->config());
         if (res != connection::Result::success) {
             log::error("SDK: parse err: %s", connection::result2str(res));
-            return Status(StatusCode::INVALID_ARGUMENT,
-                            connection::result2str(res));
+            return Status(StatusCode::INVALID_ARGUMENT, connection::result2str(res));
         }
 
         int sz = req->mcm_conn_param().size();
         if (sz != sizeof(mcm_conn_param)) {
-            log::error("Param size (%d) not equal to mcm_conn_param (%ld)",
+            log::debug("Param size (%d) not equal to mcm_conn_param (%ld)",
                        sz, sizeof(mcm_conn_param));
             // return Status(StatusCode::INVALID_ARGUMENT,
             //               "Wrong size of mcm_conn_param");
@@ -108,7 +107,7 @@ public:
         auto& mgr = connection::local_manager;
         int err = mgr.delete_connection_sdk(ctx, conn_id);
         if (err)
-            log::error("delete_local_conn err (%d)", err);
+            ; // log::error("delete_local_conn err (%d)", err);
         else
             log::info("[SDK] Connection deleted")("id", req->conn_id())
                                                  ("client_id", req->client_id());

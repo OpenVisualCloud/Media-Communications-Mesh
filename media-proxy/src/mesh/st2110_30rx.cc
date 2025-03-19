@@ -37,7 +37,7 @@ Result ST2110_30Rx::configure(context::Context& ctx, const std::string& dev_port
         return set_result(Result::error_bad_argument);
     }
 
-    ops.port.payload_type = ST_APP_PAYLOAD_TYPE_ST30;
+    ops.port.payload_type = cfg_st2110.payload_type;
 
     if (mesh_audio_format_to_st_format(cfg_audio.format, ops.fmt)) {
         set_state(ctx, State::not_configured);

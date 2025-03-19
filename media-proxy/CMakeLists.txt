@@ -33,6 +33,25 @@ set(MTL_LIB mtl)
 set(MEMIF_LIB memif)
 set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
 
+# Get current version: Git tag and hash
+execute_process(
+  COMMAND git describe --tags --always
+  OUTPUT_VARIABLE GIT_TAG
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND git rev-parse --short HEAD
+  OUTPUT_VARIABLE GIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Generate a version header file
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/mesh/mcm-version.h.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/include/mesh/mcm-version.h
+  @ONLY
+)
+
 # Find Protobuf and gRPC
 find_package(Protobuf CONFIG REQUIRED)
 message(STATUS "Using protobuf ${Protobuf_VERSION}")

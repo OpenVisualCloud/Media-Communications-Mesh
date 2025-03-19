@@ -38,6 +38,25 @@ set(SOURCE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/cmd/mesh-agent")
 set(MAIN_GO_FILE "${SOURCE_DIR}/mesh-agent.go")
 set(CMAKE_INSTALL_PATH ${CMAKE_INSTALL_PREFIX}/bin)
 
+# Get current version: Git tag and hash
+execute_process(
+  COMMAND git describe --tags --always
+  OUTPUT_VARIABLE GIT_TAG
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND git rev-parse --short HEAD
+  OUTPUT_VARIABLE GIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Generate a version.go file
+configure_file(
+  ${CMAKE_CURRENT_SOURCE_DIR}/internal/mcm-version.go.in
+  ${CMAKE_CURRENT_SOURCE_DIR}/internal/mcm-version.go
+  @ONLY
+)
+
 # Define the proto files and the output directories for generated code
 set(PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../protos/mediaproxy.proto")
 set(GENERATED_DIR_MEDIAPROXY "${CMAKE_CURRENT_SOURCE_DIR}/api/proxy/proto/mediaproxy")

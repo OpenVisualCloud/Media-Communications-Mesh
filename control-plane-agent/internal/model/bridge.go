@@ -22,9 +22,10 @@ type Bridge struct {
 }
 
 type BridgeST2110Config struct {
-	RemoteIP  string              `json:"remoteIp"`
-	Port      uint16              `json:"port"`
-	Transport sdk.ST2110Transport `json:"-"`
+	RemoteIP    string              `json:"remoteIp"`
+	Port        uint16              `json:"port"`
+	Transport   sdk.ST2110Transport `json:"-"`
+	PayloadType uint8               `json:"payloadType"`
 }
 
 type BridgeRDMAConfig struct {

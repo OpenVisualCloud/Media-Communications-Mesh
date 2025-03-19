@@ -37,44 +37,48 @@ func TestEventsTriggerAction(t *testing.T) {
 			outParam: "2",
 		},
 		{
-			evt:      event.OnUnregisterMediaProxy,
+			evt:      event.OnActivateMediaProxy,
 			outParam: "3",
 		},
 		{
-			evt:      event.OnUnregisterMediaProxyOk,
+			evt:      event.OnUnregisterMediaProxy,
 			outParam: "4",
 		},
 		{
-			evt:      event.OnRegisterConnection,
+			evt:      event.OnUnregisterMediaProxyOk,
 			outParam: "5",
 		},
 		{
-			evt:      event.OnRegisterConnectionOk,
+			evt:      event.OnRegisterConnection,
 			outParam: "6",
 		},
 		{
-			evt:      event.OnUnregisterConnection,
+			evt:      event.OnRegisterConnectionOk,
 			outParam: "7",
 		},
 		{
-			evt:      event.OnUnregisterConnectionOk,
+			evt:      event.OnUnregisterConnection,
 			outParam: "8",
 		},
 		{
-			evt:      event.OnMultipointGroupAdded,
+			evt:      event.OnUnregisterConnectionOk,
 			outParam: "9",
 		},
 		{
-			evt:      event.OnMultipointGroupUpdated,
+			evt:      event.OnMultipointGroupAdded,
 			outParam: "10",
 		},
 		{
-			evt:      event.OnMultipointGroupDeleted,
+			evt:      event.OnMultipointGroupUpdated,
 			outParam: "11",
 		},
 		{
-			evt:      event.OnProxyDisconnected,
+			evt:      event.OnMultipointGroupDeleted,
 			outParam: "12",
+		},
+		{
+			evt:      event.OnProxyDisconnected,
+			outParam: "13",
 		},
 	}
 
@@ -86,35 +90,38 @@ logic:
   on-register-proxy-ok:
     action(2):
 
-  on-unregister-proxy:
+  on-activate-proxy:
     action(3):
 
-  on-unregister-proxy-ok:
+  on-unregister-proxy:
     action(4):
 
-  on-register-connection:
+  on-unregister-proxy-ok:
     action(5):
 
-  on-register-connection-ok:
+  on-register-connection:
     action(6):
 
-  on-unregister-connection:
+  on-register-connection-ok:
     action(7):
 
-  on-unregister-connection-ok:
+  on-unregister-connection:
     action(8):
 
-  on-multipoint-group-added:
+  on-unregister-connection-ok:
     action(9):
 
-  on-multipoint-group-updated:
+  on-multipoint-group-added:
     action(10):
 
-  on-multipoint-group-deleted:
+  on-multipoint-group-updated:
     action(11):
 
-  on-proxy-disconnected:
+  on-multipoint-group-deleted:
     action(12):
+
+  on-proxy-disconnected:
+    action(13):
 `
 
 	err := logic.LogicController.Init()

@@ -189,24 +189,30 @@ FROM media-proxy as mtl-manager
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh Mtl Manager"
 LABEL org.opencontainers.image.description="Media Communications Mesh Mtl Manager application. Ubuntu 22.04 Docker Container Release Image"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="25.03"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
 USER mtl
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/local/bin/MtlManager"]
-HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "MtlManager" || exit 1
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "MtlManager" | wc -l) != 2 )); then exit 1; fi
 
 FROM media-proxy as mesh-agent
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh Mesh Agent"
 LABEL org.opencontainers.image.description="Media Communications Mesh Mesh Agent application. Ubuntu 22.04 Docker Container Release Image"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="25.03"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
+USER mcm
+WORKDIR /opt/mcm/
+
+EXPOSE 8100/tcp 50051/tcp
+
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/local/bin/mesh-agent"]
-HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "mesh-agent" || exit 1
+
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "mesh-agent" | wc -l) != 2 )); then exit 1; fi

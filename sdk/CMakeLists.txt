@@ -46,6 +46,25 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 add_subdirectory(${MEMIF_DIR})
 
+# Get current version: Git tag and hash
+execute_process(
+  COMMAND git describe --tags --always
+  OUTPUT_VARIABLE GIT_TAG
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND git rev-parse --short HEAD
+  OUTPUT_VARIABLE GIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Generate a version header file
+configure_file(
+  ${MCMDP_INCLUDE_DIR}/mcm-version.h.in
+  ${MCMDP_INCLUDE_DIR}/mcm-version.h
+  @ONLY
+)
+
 include(compile_options)
 
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)

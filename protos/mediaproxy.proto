@@ -57,6 +57,10 @@ message RegisterConnectionRequest {
   string proxy_id             = 1;
   string kind                 = 2;
   sdk.ConnectionConfig config = 3;
+  
+  // Normally, this field is empty. If connection to Agent was lost,
+  // this is the id assigned by Agent at previous registration.
+  string conn_id              = 4;
 }
 
 message RegisterConnectionReply {
@@ -94,6 +98,7 @@ message BridgeST2110 {
   string remote_ip              = 1;
   uint32 port                   = 2;
   sdk.ST2110Transport transport = 3;
+  uint32 payload_type           = 4;
 }
 
 message BridgeRDMA {
@@ -165,7 +170,8 @@ message Metric {
 }
 
 message SendMetricsRequest {
-  repeated Metric metrics = 1;
+  string proxy_id = 1;
+  repeated Metric metrics = 2;
 }
 
 message SendMetricsReply {

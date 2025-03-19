@@ -7,14 +7,20 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <time.h>
 #include "mcm.h"
 #include "mesh_dp.h"
 #include "misc.h"
+#include "json_context.h"
 
+#define SECOND_IN_US (double)1000000.0
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
+int mcm_send_video_frames(MeshConnection *connection, const char *filename, int (*graceful_shutdown)(void)) {
+    MeshConfig_Video video_cfg = get_video_params(connection);
+    LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
+    LOG("[TX] Video pixel format: %d", video_cfg.pixel_format);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
@@ -23,10 +29,17 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         err = 1;
         return err;
     }
-
+    
+    /* execute cpp class code  here */
     unsigned int frame_num = 0;
     size_t read_size = 1;
+    int sleep_us = (uint32_t)(SECOND_IN_US/video_cfg.fps);
+    struct timespec ts_begin = {}, ts_end = {};
+    struct timespec ts_frame_begin = {}, ts_frame_end = {};
+    __useconds_t elapsed = 0;
     while (1) {
+        clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
+        LOG("[TX] Sending frame: %d", ++frame_num);
 
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
@@ -40,16 +53,24 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         }
 
         /* Send the buffer */
-        LOG("[TX] Sending frame: %d", ++frame_num);
         err = mesh_put_buffer(&buf);
         if (err) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
-
-        /* Temporary implementation for pacing */
-        /* TODO: Implement pacing calculation */
-        usleep(40000);
+        if (graceful_shutdown && graceful_shutdown() != 0 ) {
+            LOG("[TX] Graceful shutdown requested");
+            goto close_file;
+        }
+        clock_gettime(CLOCK_REALTIME, &ts_frame_end);
+        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        if (sleep_us - elapsed >= 0) {
+            usleep(sleep_us - elapsed);
+            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+        }
+        else {
+            LOG("[TX] Cannot keep the pace with %d fps!", video_cfg.fps);
+        }
     }
     LOG("[TX] data sent successfully");
 close_file:
@@ -57,7 +78,7 @@ close_file:
     return err;
 }
 
-void read_data_in_loop(MeshConnection *connection, const char *filename) {
+void read_data_in_loop(MeshConnection *connection, const char *filename, int (*graceful_shutdown)(void)) {
     int timeout = MESH_TIMEOUT_INFINITE;
     int frame = 0;
     int err = 0;
@@ -91,6 +112,10 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
             break;
         }
         LOG("[RX] Frame: %d", ++frame);
+        if (graceful_shutdown && graceful_shutdown() != 0 ) {
+            LOG("[RX] Graceful shutdown requested");
+            break;
+        }
     }
     fclose(out);
     LOG("[RX] Done reading the data");
@@ -107,3 +132,4 @@ void buffer_to_file(FILE *file, MeshBuffer *buf) {
 }
 
 int is_root() { return geteuid() == 0; }
+

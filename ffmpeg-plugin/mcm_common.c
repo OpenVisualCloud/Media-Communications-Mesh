@@ -8,11 +8,13 @@
 #include "mcm_common.h"
 #include <bsd/string.h>
 #include <stdatomic.h>
+#include <signal.h>
 #include "libavutil/pixdesc.h"
 
 static pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 static MeshClient *client;
 static int refcnt;
+static atomic_bool shutdown_requested = ATOMIC_VAR_INIT(false);
 
 void mcm_replace_back_quotes(char *str) {
     while (*str) {
@@ -20,6 +22,18 @@ void mcm_replace_back_quotes(char *str) {
             *str = '"';
         str++;
     }
+}
+
+static void mcm_handle_signal(int signal) {
+    atomic_store(&shutdown_requested, true);
+}
+
+/**
+ * Check if a termination signal has been received from OS.
+ */
+bool mcm_shutdown_requested()
+{
+    return atomic_load(&shutdown_requested);
 }
 
 /**
@@ -35,24 +49,27 @@ int mcm_get_client(MeshClient **mc)
         return err;
 
     if (!client) {
-        static char json_config[150];
+        static char json_config[250];
 
         static const char json_config_format[] =
             "{"
-            "`apiVersion`: `v1`,"
-            "`apiConnectionString`: `Server=; Port=`,"
-            "`apiDefaultTimeoutMicroseconds`: 100000,"
-            "`maxMediaConnections`: 32"
+                "`apiVersion`: `v1`,"
+                "`apiConnectionString`: `Server=; Port=`,"
+                "`apiDefaultTimeoutMicroseconds`: 100000,"
+                "`maxMediaConnections`: 32"
             "}";
 
         snprintf(json_config, sizeof(json_config), json_config_format);
         mcm_replace_back_quotes(json_config);
 
         err = mesh_create_client_json(&client, json_config);
-        if (err)
+        if (err) {
             client = NULL;
-        else
+        } else {
             refcnt = 1;
+            signal(SIGINT, mcm_handle_signal);
+            signal(SIGTERM, mcm_handle_signal);
+        }
     } else {
         refcnt++;
     }
@@ -92,6 +109,7 @@ int mcm_put_client(MeshClient **mc)
 
 const char mcm_json_config_multipoint_group_video_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`multipointGroup`: {"
           "`urn`: `%s`"
@@ -109,11 +127,13 @@ const char mcm_json_config_multipoint_group_video_format[] =
 
 const char mcm_json_config_st2110_video_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`st2110`: {"
           "`remoteIpAddr`: `%s`,"
           "`remotePort`: %d,"
           "`transport`: `%s`,"
+          "`payloadType`: %d,"
           "`transportPixelFormat`: `%s`"
         "}"
       "},"
@@ -129,6 +149,7 @@ const char mcm_json_config_st2110_video_format[] =
 
 const char mcm_json_config_multipoint_group_audio_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`multipointGroup`: {"
           "`urn`: `%s`"
@@ -146,11 +167,13 @@ const char mcm_json_config_multipoint_group_audio_format[] =
 
 const char mcm_json_config_st2110_audio_format[] =
     "{"
+      "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`st2110`: {"
           "`remoteIpAddr`: `%s`,"
           "`remotePort`: %d,"
-          "`transport`: `st2110-30`"
+          "`transport`: `st2110-30`,"
+          "`payloadType`: %d"
         "}"
       "},"
       "`payload`: {"
