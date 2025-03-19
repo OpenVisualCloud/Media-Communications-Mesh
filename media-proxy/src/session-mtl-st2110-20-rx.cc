@@ -175,6 +175,7 @@ RxSt20MtlSession::RxSt20MtlSession(mtl_handle dev_handle, const mcm_conn_param &
 
     ops.priv = this; // app handle register to lib
     ops.notify_frame_available = frame_available_callback_wrapper;
+    ops.flags |= ST20P_RX_FLAG_FORCE_NUMA;
 
 #if defined(MTL_ZERO_COPY)
     ops.flags |= ST20P_RX_FLAG_EXT_FRAME;
