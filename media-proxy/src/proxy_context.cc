@@ -105,6 +105,17 @@ uint32_t ProxyContext::incrementMSessionCount(bool postIncrement=true)
 
 void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_init_params* st_param)
 {
+    if (getenv("MEDIA_PROXY_MAIN_LCORE") != NULL) {
+        try {
+            st_param->main_lcore = std::stoul(std::string(getenv("MEDIA_PROXY_MAIN_LCORE")));
+        } catch (const std::invalid_argument& e) {
+            ERROR("Conversion failed, Env MEDIA_PROXY_MAIN_LCORE must be an integer");
+            st_param->main_lcore = 0;
+        } catch (const std::out_of_range& e) {
+            ERROR("Conversion failed, Env MEDIA_PROXY_MAIN_LCORE is out of range");
+            st_param->main_lcore = 0;
+        }
+    }
     strlcpy(st_param->port[MTL_PORT_P], getDevicePort().c_str(), MTL_PORT_MAX_LEN);
     inet_pton(AF_INET, getDataPlaneAddress().c_str(), st_param->sip_addr[MTL_PORT_P]);
     st_param->pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param->port[MTL_PORT_P]);
@@ -112,6 +123,7 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
     st_param->flags = MTL_FLAG_BIND_NUMA;
     st_param->flags |= MTL_FLAG_TX_VIDEO_MIGRATE;
     st_param->flags |= MTL_FLAG_RX_VIDEO_MIGRATE;
+    st_param->flags |= MTL_FLAG_RX_SEPARATE_VIDEO_LCORE;
     st_param->flags |= request->payload_mtl_flags_mask;
     st_param->pacing = (st21_tx_pacing_way) request->payload_mtl_pacing;
     st_param->log_level = MTL_LOG_LEVEL_DEBUG;
@@ -125,7 +137,8 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
       st_param->rx_queues_cnt[MTL_PORT_P] = 128;
       st_param->tx_queues_cnt[MTL_PORT_P] = 128;
     }
-    st_param->lcores = NULL;
+    st_param->lcores = getenv("MEDIA_PROXY_LCORES");
+    st_param->main_lcore = 10;
     st_param->memzone_max = 9000;
 
     INFO("ProxyContext: ParseStInitParam(const mcm_conn_param* request, struct mtl_init_params* st_param)");
