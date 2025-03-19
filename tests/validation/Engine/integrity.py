@@ -13,11 +13,13 @@ from pathlib import Path
 def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
     chunk_sums = []
     with open(file_url, "rb") as f:
+        chunk_index = 0  # Initialize a counter for the chunk index
         while chunk := f.read(chunk_size):
             if len(chunk) != chunk_size:
-                logging.debug(f"CHUNK SIZE MISMATCH {len(chunk)} != {chunk_size}")
+                logging.debug(f"CHUNK SIZE MISMATCH at index {chunk_index}: {len(chunk)} != {chunk_size}")
             chunk_sum = hashlib.md5(chunk).hexdigest()
             chunk_sums.append(chunk_sum)
+            chunk_index += 1  # Increment the chunk index
     return chunk_sums
 
 
@@ -66,25 +68,28 @@ def check_integrity_big_file(src_chunk_sums, out_chunk_sums, allowed_bad: int = 
     logging.debug(f"Output chunk sums: {len(out_chunk_sums)} chunks")
     logging.debug(f"Allowed bad frames: {allowed_bad}")
 
-    for frame_start in range(len(out_chunk_sums)):
+    # Find the first correct frame within the allowed_bad range
+    for frame_start in range(min(allowed_bad, len(out_chunk_sums))):
         if out_chunk_sums[frame_start] in src_chunk_sums:
             shift = src_chunk_sums.index(out_chunk_sums[frame_start])
             logging.debug(f"Found first correct frame at position {frame_start} with shift {shift}.")
             break
     else:
-        logging.error("Did not find any correct frame in the output.")
+        logging.error(f"Did not find any correct frame in the first {allowed_bad} frames of the output.")
         return False
 
-    logging.debug(f"Shifting source chunks by {shift} positions.")
+    # Shift the source chunk list
     src_chunk_sums = src_chunk_sums[shift:] + src_chunk_sums[:shift]
+    logging.debug(f"Shifting source chunks by {shift} positions.")
 
+    # Check the integrity of the remaining frames
     bad_frames = 0
     for ids, chunk_sum in enumerate(out_chunk_sums):
         if chunk_sum != src_chunk_sums[ids % len(src_chunk_sums)]:
             bad_frames += 1
             logging.debug(f"Bad frame detected at position {ids}.")
 
-    if bad_frames:
+    if bad_frames > allowed_bad:
         logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
         return False
 
