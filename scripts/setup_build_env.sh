@@ -151,6 +151,22 @@ function install_yum_package_dependencies()
     return 0 || return 1
 }
 
+function apply_dpdk_patches()
+{
+    mapfile -t PATCH_LIST < <(find "${MTL_DIR}/patches/dpdk/${DPDK_VER}" -path "${MTL_DIR}/patches/dpdk/${DPDK_VER}/windows" -prune -o -name '*.patch' -print | sort)
+    for pt in "${PATCH_LIST[@]}"; do
+        log_info "Apply patch ${pt}"
+        patch -d "${DPDK_DIR}" -p1 -i <(cat "${pt}")
+        error="$?"
+        if [[ "${error}" == "0" ]]; then
+            log_success "Ok. ${pt}"
+        else
+            log_error "Error (${error}): Failed to apply ${pt}"
+            exit 1
+        fi
+    done
+}
+
 # Download and unpack dependencies from source code.
 function get_download_unpack_dependencies()
 {
@@ -164,9 +180,7 @@ function get_download_unpack_dependencies()
     git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
     git_download_strip_unpack "dpdk/dpdk" "refs/tags/v${DPDK_VER}" "${DPDK_DIR}"
     git_download_strip_unpack "OpenVisualCloud/SVT-JPEG-XS" "${JPEGXS_VER}" "${JPEGXS_DIR}"
-    patch -d "${DPDK_DIR}" -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
-    patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/hdr_split/"*.patch || true
-    patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/tsn/"*.patch || true
+    apply_dpdk_patches
 }
 
 # Download and install rpm repo for nasm

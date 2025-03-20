@@ -157,7 +157,7 @@ then
     set -exEo pipefail
     install_os_dependencies && \
     get_and_patch_intel_drivers && \
-    build_install_and_config_intel_drivers && \
+    build_install_and_config_intel_drivers
     build_install_and_config_irdma_drivers && \
     config_intel_rdma_driver
     return_code="$?"
