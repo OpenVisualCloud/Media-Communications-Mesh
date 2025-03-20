@@ -65,7 +65,6 @@ int main(int argc, char **argv) {
         }
     }
 safe_exit:
-    LOG("[TX] shut down request, dropping connection to media-proxy...");
     LOG("[TX] Shuting down connection");
     if (connection) {
         mesh_delete_connection(&connection);

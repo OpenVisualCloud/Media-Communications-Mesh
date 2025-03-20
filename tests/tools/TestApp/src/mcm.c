@@ -14,7 +14,7 @@
 #include "json_context.h"
 
 #define SECOND_IN_US (double)1000000.0
-#define BLOB_DELAY_IN_US (uint32_t)1000 //1ms
+#define BLOB_DELAY_IN_US (__useconds_t)1000 //1ms
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
@@ -90,12 +90,12 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
     */
     int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
     char* format_convert_table_str[] = {"pcms8", "pcms16be", "pcms24be"};
-    int sample_rate_convert_table[] = {48000, 96000, 44100};
+    int sample_rate_convert_table_hz[] = {48000, 96000, 44100};
     MeshConfig_Audio audio_cfg = get_audio_params(connection);
-    LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %.2f", audio_cfg.channels, 
-        sample_rate_convert_table[audio_cfg.sample_rate], 
+    LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %d", audio_cfg.channels, 
+        sample_rate_convert_table_hz[audio_cfg.sample_rate], 
         packet_time_convert_table_us[audio_cfg.packet_time]);
-    LOG("[TX] Audio format: %d", format_convert_table_str[audio_cfg.format]);
+    LOG("[TX] Audio format: %s", format_convert_table_str[audio_cfg.format]);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
@@ -106,13 +106,12 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
     }
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    int sleep_us = packet_time_convert_table_us[audio_cfg.packet_time];
+    __useconds_t sleep_us = (__useconds_t)packet_time_convert_table_us[audio_cfg.packet_time];
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
     __useconds_t elapsed = 0;
     while (1) {
         clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
-        LOG("[TX] Sending packet: %d", ++frame_num);
 
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
@@ -136,6 +135,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
         if (err) {
             LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
         }
+        LOG("[TX] Sending packet: %d", ++frame_num);
         err = mesh_put_buffer(&buf);
         if (err) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
@@ -147,12 +147,12 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
         }
         clock_gettime(CLOCK_REALTIME, &ts_frame_end);
         elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
-        if (sleep_us - elapsed >= 0) {
+        if (sleep_us > elapsed) {
             usleep(sleep_us - elapsed);
             LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
         }
         else {
-            LOG("[TX] Cannot keep the pace with %d time!", audio_cfg.packet_time);
+            LOG("[TX] Cannot keep the pace with %d time, skipping frame!", audio_cfg.packet_time);
         }
     }
     LOG("[TX] data sent successfully");
@@ -175,14 +175,11 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
     /* execute cpp class code  here */
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    int sleep_us = BLOB_DELAY_IN_US;
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
     __useconds_t elapsed = 0;
     while (1) {
         clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
-        LOG("[TX] Sending packet: %d", ++frame_num);
-
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
         if (err) {
@@ -195,6 +192,7 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
             mesh_put_buffer(&buf);
             goto close_file;
         }
+        
         if (read_size > buf->payload_len) {
             LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
             mesh_buffer_set_payload_len(buf, 0);
@@ -202,9 +200,10 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
             goto close_file;
         }
         err = mesh_buffer_set_payload_len(buf, read_size);
-        if (err ) {
+        if (err) {
             LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
         }
+        LOG("[TX] Sending packet: %d", ++frame_num);
         err = mesh_put_buffer(&buf);
         if (err) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
@@ -216,12 +215,13 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
         }
         clock_gettime(CLOCK_REALTIME, &ts_frame_end);
         elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
-        if (sleep_us - elapsed >= 0) {
-            usleep(sleep_us - elapsed);
-            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+        if (BLOB_DELAY_IN_US > elapsed) {
+            usleep(BLOB_DELAY_IN_US - elapsed);
+            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, BLOB_DELAY_IN_US - elapsed);
         }
         else {
-            LOG("[TX] Cannot keep the pace with %d time!", BLOB_DELAY_IN_US);
+            LOG("[TX] Cannot keep the pace with %d time, dropping packet!", BLOB_DELAY_IN_US);
+
         }
     }
     LOG("[TX] data sent successfully");

@@ -58,7 +58,7 @@ int main(int argc, char *argv[]) {
     read_data_in_loop(connection, out_filename);
 
 safe_exit:
-    LOG("[RX] SIGINT interrupt, dropping connection to media-proxy...");
+    LOG("[RX] dropping connection to media-proxy...");
     if (connection) {
         LOG("[RX] Shuting down connection");
         mesh_delete_connection(&connection);
