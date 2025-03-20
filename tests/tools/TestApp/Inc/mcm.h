@@ -11,6 +11,7 @@
 #include <stdio.h>
 #include "mesh_dp.h"
 
+
 int mcm_init_client(MeshConnection **connection, MeshClient *client, const char *cfg);
 int mcm_create_tx_connection(MeshConnection *connection, MeshClient *client, const char *cfg);
 int mcm_create_rx_connection(MeshConnection *connection, MeshClient *client, const char *cfg);
