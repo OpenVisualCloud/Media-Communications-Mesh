@@ -4,33 +4,23 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#include <stdio.h>
-#include <unistd.h>
-#include <stdlib.h>
-#include "Inc/input.h"
-#include "Inc/mcm.h"
-#include "Inc/misc.h"
-#include <signal.h>
+ #include <stdio.h>
+ #include <string.h>
+ #include <stdlib.h>
+ #include <unistd.h>
+ #include <signal.h>
+ 
+ #include "Inc/input.h"
+ #include "Inc/mcm.h"
+ #include "Inc/misc.h"
 
 char *client_cfg;
 char *conn_cfg;
 MeshConnection *connection = NULL;
 MeshClient *client = NULL;
-struct sigaction sa;
-
-#define SHUTDOWN_REQUESTED 1
-struct sigaction sa_int;
-struct sigaction sa_term;
-int shutdown = 0;
-
-void sig_handler(int sig);
-void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
 
 int main(int argc, char *argv[]) {
-    struct sigaction sa_int;
-    struct sigaction sa_term;
-    setup_signal_handler(&sa_int, sig_handler, SIGINT);
-    setup_signal_handler(&sa_term, sig_handler, SIGTERM);
+    setup_sig_int();
     if (!is_root()) {
         fprintf(stderr, "This program must be run as root. Exiting.\n");
         exit(EXIT_FAILURE);
@@ -80,15 +70,4 @@ safe_exit:
     free(client_cfg);
     free(conn_cfg);
     return err;
-}
-
-void sig_handler(int sig) {
-    shutdown_flag = SHUTDOWN_REQUESTED;
-}
-
-void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig) {
-    sa->sa_handler = handler;
-    sigemptyset(&(sa->sa_mask));
-    sa->sa_flags = 0;
-    sigaction(sig, sa, NULL);
 }

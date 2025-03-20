@@ -14,23 +14,14 @@
 #include "Inc/mcm.h"
 #include "Inc/misc.h"
 
-#define SHUTDOWN_REQUESTED 1
-
 
 char *client_cfg;
 char *conn_cfg;
 MeshConnection *connection = NULL;
 MeshClient *client = NULL;
-struct sigaction sa_int;
-struct sigaction sa_term;
-int shutdown = 0;
-
-void sig_handler(int sig);
-void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
 
 int main(int argc, char **argv) {
-    setup_signal_handler(&sa_int, sig_handler, SIGINT);
-    setup_signal_handler(&sa_term, sig_handler, SIGTERM);
+    setup_sig_int();
     if (!is_root()) {
         fprintf(stderr, "This program must be run as root. Exiting.\n");
         exit(EXIT_FAILURE);
@@ -69,7 +60,7 @@ int main(int argc, char **argv) {
     /* Open file and send its contents in loop*/
     while(1){
         err = mcm_send_video_frames(connection, video_file);
-        if ( shutdown == SHUTDOWN_REQUESTED ) {
+        if ( shutdown_flag == SHUTDOWN_REQUESTED ) {
             goto safe_exit;
         }
     }
@@ -87,15 +78,3 @@ safe_exit:
     free(conn_cfg);
     return err;
 }
-
-void sig_handler(int sig) {
-    shutdown_flag = SHUTDOWN_REQUESTED;
-}
-
-void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig) {
-    sa->sa_handler = handler;
-    sigemptyset(&(sa->sa_mask));
-    sa->sa_flags = 0;
-    sigaction(sig, sa, NULL);
-}
-

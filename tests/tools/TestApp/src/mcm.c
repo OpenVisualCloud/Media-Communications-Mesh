@@ -18,10 +18,6 @@
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
 
-// send_data(file, connection)
-// mcm_send_video_frames(connection, filename)
-// mcm_send_audio_frames(connection, filename)
-
 int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
     MeshConfig_Video video_cfg = get_video_params(connection);
     LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
@@ -56,7 +52,8 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         if (read_size == 0) {
             goto close_file;
         }
-
+        /* mesh buffer set payload API func* f(read_size) (1-payload_len)/
+        /* int mesh_buffer_set_payload_len */
         /* Send the buffer */
         err = mesh_put_buffer(&buf);
         if (err) {
@@ -82,6 +79,145 @@ close_file:
     fclose(file);
     return err;
 }
+
+int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
+    MeshConfig_Audio audio_cfg = get_audio_params(connection);
+    LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %.2f", audio_cfg.channels, audio_cfg.sample_rate, audio_cfg.packet_time);
+    LOG("[TX] Audio format: %d", audio_cfg.format);
+    int err = 0;
+    MeshBuffer *buf;
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        LOG("[TX] Failed to serialize audio: file is null");
+        err = 1;
+        return err;
+    }
+    
+    /* execute cpp class code  here */
+    unsigned int frame_num = 0;
+    size_t read_size = 1;
+    int sleep_us = (uint32_t)(SECOND_IN_US/audio_cfg.packet_time);
+    struct timespec ts_begin = {}, ts_end = {};
+    struct timespec ts_frame_begin = {}, ts_frame_end = {};
+    __useconds_t elapsed = 0;
+    while (1) {
+        clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
+        LOG("[TX] Sending packet: %d", ++frame_num);
+
+        /* Ask the mesh to allocate a shared memory buffer for user data */
+        err = mesh_get_buffer(connection, &buf);
+        if (err) {
+            LOG("[TX] Failed to get buffer: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
+        if (read_size == 0) {
+            goto close_file;
+        }
+        if (read_size > buf->payload_len) {
+            LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        err = mesh_buffer_set_payload_len(buf, read_size);
+        if (err ) {
+            LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        /* int mesh_buffer_set_payload_len */
+        /* Send the buffer */
+        err = mesh_put_buffer(&buf);
+        if (err) {
+            LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        if (shutdown_flag  != 0 ) {
+            LOG("[TX] Graceful shutdown requested");
+            goto close_file;
+        }
+        clock_gettime(CLOCK_REALTIME, &ts_frame_end);
+        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        if (sleep_us - elapsed >= 0) {
+            usleep(sleep_us - elapsed);
+            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+        }
+        else {
+            LOG("[TX] Cannot keep the pace with %d time!", audio_cfg.packet_time);
+        }
+    }
+    LOG("[TX] data sent successfully");
+close_file:
+    fclose(file);
+    return err;
+}
+
+int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
+    LOG("[TX] sending blob packets");
+    int err = 0;
+    // MeshBuffer *buf;
+    // FILE *file = fopen(filename, "rb");
+    // if (file == NULL) {
+    //     LOG("[TX] Failed to serialize audio: file is null");
+    //     err = 1;
+    //     return err;
+    // }
+    
+    // /* execute cpp class code  here */
+    // unsigned int frame_num = 0;
+    // size_t read_size = 1;
+    // int sleep_us = (uint32_t)(SECOND_IN_US/audio_cfg.packet_time);
+    // struct timespec ts_begin = {}, ts_end = {};
+    // struct timespec ts_frame_begin = {}, ts_frame_end = {};
+    // __useconds_t elapsed = 0;
+    // while (1) {
+    //     clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
+    //     LOG("[TX] Sending packet: %d", ++frame_num);
+
+    //     /* Ask the mesh to allocate a shared memory buffer for user data */
+    //     err = mesh_get_buffer(connection, &buf);
+    //     if (err) {
+    //         LOG("[TX] Failed to get buffer: %s (%d)", mesh_err2str(err), err);
+    //         goto close_file;
+    //     }
+    //     read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
+    //     if (read_size == 0) {
+    //         goto close_file;
+    //     }
+    //     if (read_size > buf->payload_len) {
+    //         LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
+    //         goto close_file;
+    //     }
+    //     err = mesh_buffer_set_payload_len(buf, read_size);
+    //     if (err ) {
+    //         LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+    //         goto close_file;
+    //     }
+    //     /* int mesh_buffer_set_payload_len */
+    //     /* Send the buffer */
+    //     err = mesh_put_buffer(&buf);
+    //     if (err) {
+    //         LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
+    //         goto close_file;
+    //     }
+    //     if (shutdown_flag  != 0 ) {
+    //         LOG("[TX] Graceful shutdown requested");
+    //         goto close_file;
+    //     }
+    //     clock_gettime(CLOCK_REALTIME, &ts_frame_end);
+    //     elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+    //     if (sleep_us - elapsed >= 0) {
+    //         usleep(sleep_us - elapsed);
+    //         LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+    //     }
+    //     else {
+    //         LOG("[TX] Cannot keep the pace with %d time!", audio_cfg.packet_time);
+    //     }
+    // }
+    // LOG("[TX] data sent successfully");
+//close_file:
+   // fclose(file);
+    return err;
+}
+
 
 void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int timeout = MESH_TIMEOUT_INFINITE;
@@ -126,6 +262,7 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
     LOG("[RX] Done reading the data");
 }
 
+/* common for video, audio, blob*/
 void buffer_to_file(FILE *file, MeshBuffer *buf) {
     if (file == NULL) {
         LOG("[RX] Failed to open file for writing");
@@ -137,4 +274,3 @@ void buffer_to_file(FILE *file, MeshBuffer *buf) {
 }
 
 int is_root() { return geteuid() == 0; }
-

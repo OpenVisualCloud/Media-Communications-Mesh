@@ -23,10 +23,13 @@ set(SRC src/input.c src/mcm.c src/misc.c src/json_context.cc)
 include_directories(${INC})
 
 # Add the executable
-add_executable(TxApp tx_app.c ${SRC})
-add_executable(RxApp rx_app.c ${SRC})
+add_executable(TxVideoApp tx_video_app.c ${SRC})
+add_executable(RxVideoApp rx_video_app.c ${SRC})
+add_executable(TxAudioApp tx_audio_app.c ${SRC})
+add_executable(RxAudioApp rx_audio_app.c ${SRC})
 
 
-target_link_libraries(TxApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)
-target_link_libraries(RxApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)
-
+target_link_libraries(TxVideoApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)
+target_link_libraries(RxVideoApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)
+target_link_libraries(TxAudioApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)
+target_link_libraries(RxAudioApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp)

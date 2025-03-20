@@ -9,8 +9,15 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <time.h>
+#include <signal.h>
 
 int shutdown_flag = 0;
+
+struct sigaction sa_int;
+struct sigaction sa_term;
+
+void sig_handler(int sig);
+void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
 
 void LOG(const char *format, ...) {
     time_t rawtime;
@@ -32,4 +39,24 @@ void LOG(const char *format, ...) {
     va_end(args);
 
     printf("\n");
+}
+
+
+void setup_sig_int(){
+    static struct sigaction sa_int;
+    static struct sigaction sa_term;
+    setup_signal_handler(&sa_int, sig_handler, SIGINT);
+    setup_signal_handler(&sa_term, sig_handler, SIGTERM);
+}
+
+
+void sig_handler(int sig) {
+    shutdown_flag = SHUTDOWN_REQUESTED;
+}
+
+void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig) {
+    sa->sa_handler = handler;
+    sigemptyset(&(sa->sa_mask));
+    sa->sa_flags = 0;
+    sigaction(sig, sa, NULL);
 }
