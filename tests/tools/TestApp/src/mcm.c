@@ -14,6 +14,7 @@
 #include "json_context.h"
 
 #define SECOND_IN_US (double)1000000.0
+#define BLOB_DELAY_IN_US (uint32_t)1000000
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
@@ -153,68 +154,68 @@ close_file:
 int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
     LOG("[TX] sending blob packets");
     int err = 0;
-    // MeshBuffer *buf;
-    // FILE *file = fopen(filename, "rb");
-    // if (file == NULL) {
-    //     LOG("[TX] Failed to serialize audio: file is null");
-    //     err = 1;
-    //     return err;
-    // }
+    MeshBuffer *buf;
+    FILE *file = fopen(filename, "rb");
+    if (file == NULL) {
+        LOG("[TX] Failed to serialize audio: file is null");
+        err = 1;
+        return err;
+    }
     
-    // /* execute cpp class code  here */
-    // unsigned int frame_num = 0;
-    // size_t read_size = 1;
-    // int sleep_us = (uint32_t)(SECOND_IN_US/audio_cfg.packet_time);
-    // struct timespec ts_begin = {}, ts_end = {};
-    // struct timespec ts_frame_begin = {}, ts_frame_end = {};
-    // __useconds_t elapsed = 0;
-    // while (1) {
-    //     clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
-    //     LOG("[TX] Sending packet: %d", ++frame_num);
+    /* execute cpp class code  here */
+    unsigned int frame_num = 0;
+    size_t read_size = 1;
+    int sleep_us = BLOB_DELAY_IN_US;
+    struct timespec ts_begin = {}, ts_end = {};
+    struct timespec ts_frame_begin = {}, ts_frame_end = {};
+    __useconds_t elapsed = 0;
+    while (1) {
+        clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
+        LOG("[TX] Sending packet: %d", ++frame_num);
 
-    //     /* Ask the mesh to allocate a shared memory buffer for user data */
-    //     err = mesh_get_buffer(connection, &buf);
-    //     if (err) {
-    //         LOG("[TX] Failed to get buffer: %s (%d)", mesh_err2str(err), err);
-    //         goto close_file;
-    //     }
-    //     read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
-    //     if (read_size == 0) {
-    //         goto close_file;
-    //     }
-    //     if (read_size > buf->payload_len) {
-    //         LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
-    //         goto close_file;
-    //     }
-    //     err = mesh_buffer_set_payload_len(buf, read_size);
-    //     if (err ) {
-    //         LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
-    //         goto close_file;
-    //     }
-    //     /* int mesh_buffer_set_payload_len */
-    //     /* Send the buffer */
-    //     err = mesh_put_buffer(&buf);
-    //     if (err) {
-    //         LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
-    //         goto close_file;
-    //     }
-    //     if (shutdown_flag  != 0 ) {
-    //         LOG("[TX] Graceful shutdown requested");
-    //         goto close_file;
-    //     }
-    //     clock_gettime(CLOCK_REALTIME, &ts_frame_end);
-    //     elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
-    //     if (sleep_us - elapsed >= 0) {
-    //         usleep(sleep_us - elapsed);
-    //         LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
-    //     }
-    //     else {
-    //         LOG("[TX] Cannot keep the pace with %d time!", audio_cfg.packet_time);
-    //     }
-    // }
-    // LOG("[TX] data sent successfully");
-//close_file:
-   // fclose(file);
+        /* Ask the mesh to allocate a shared memory buffer for user data */
+        err = mesh_get_buffer(connection, &buf);
+        if (err) {
+            LOG("[TX] Failed to get buffer: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
+        if (read_size == 0) {
+            goto close_file;
+        }
+        if (read_size > buf->payload_len) {
+            LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        err = mesh_buffer_set_payload_len(buf, read_size);
+        if (err ) {
+            LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        /* int mesh_buffer_set_payload_len */
+        /* Send the buffer */
+        err = mesh_put_buffer(&buf);
+        if (err) {
+            LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
+            goto close_file;
+        }
+        if (shutdown_flag  != 0 ) {
+            LOG("[TX] Graceful shutdown requested");
+            goto close_file;
+        }
+        clock_gettime(CLOCK_REALTIME, &ts_frame_end);
+        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        if (sleep_us - elapsed >= 0) {
+            usleep(sleep_us - elapsed);
+            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+        }
+        else {
+            LOG("[TX] Cannot keep the pace with %d time!", BLOB_DELAY_IN_US);
+        }
+    }
+    LOG("[TX] data sent successfully");
+close_file:
+   fclose(file);
     return err;
 }
 
@@ -229,9 +230,7 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
 
         /* Set loop's  error*/
         err = 0;
-        if (frame) {
-            timeout = 1000;
-        }
+        timeout = (frame) ? 1000 : MESH_TIMEOUT_INFINITE;
 
         /* Receive a buffer from the mesh */
         err = mesh_get_buffer_timeout(connection, &buf, timeout);
