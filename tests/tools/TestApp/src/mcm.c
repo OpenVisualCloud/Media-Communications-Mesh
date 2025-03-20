@@ -51,6 +51,8 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         }
         read_size = fread(buf->payload_ptr, 1, buf->payload_len, file);
         if (read_size == 0) {
+            mesh_buffer_set_payload_len(buf, 0);
+            mesh_put_buffer(&buf);
             goto close_file;
         }
         /* mesh buffer set payload API func* f(read_size) (1-payload_len)/
@@ -86,14 +88,14 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
         packet_time, format, sample_rate match tables,
         order as in Media-Communications-Mesh/sdk/include/mesh_dp.hL231
     */
-    // int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
-    // char format_convert_table_str[] = {"pcms8", "pcms16be", "pcms24be"};
-    // int sample_rate_convert_table[] = {48000, 96000, 44100};
+    int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
+    char* format_convert_table_str[] = {"pcms8", "pcms16be", "pcms24be"};
+    int sample_rate_convert_table[] = {48000, 96000, 44100};
     MeshConfig_Audio audio_cfg = get_audio_params(connection);
-    // LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %.2f", audio_cfg.channels, 
-    //     sample_rate_convert_table[audio_cfg.sample_rate], 
-    //     packet_time_convert_table_us[audio_cfg.packet_time]);
-    // LOG("[TX] Audio format: %d", format_convert_table_str[audio_cfg.format]);
+    LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %.2f", audio_cfg.channels, 
+        sample_rate_convert_table[audio_cfg.sample_rate], 
+        packet_time_convert_table_us[audio_cfg.packet_time]);
+    LOG("[TX] Audio format: %d", format_convert_table_str[audio_cfg.format]);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
@@ -102,11 +104,9 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
         err = 1;
         return err;
     }
-    
-    /* execute cpp class code  here */
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    int sleep_us = 1000;
+    int sleep_us = packet_time_convert_table_us[audio_cfg.packet_time];
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
     __useconds_t elapsed = 0;
