@@ -67,6 +67,8 @@ RUN git clone --branch main https://${GITHUB_CREDENTIALS}github.com/OpenVisualCl
     git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS "${JPEGXS_DIR}" && \
     git -C ${JPEGXS_DIR} checkout ${JPEGXS_VER} && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
+RUN patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/hdr_split/"*.patch || true
+RUN patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/tsn/"*.patch || true
 
 # Build the xdp-tools project
 WORKDIR ${XDP_DIR}
@@ -162,8 +164,8 @@ RUN apt-get update --fix-missing && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \
-    groupadd -g 1001 imtl && \
-    useradd -m -s /bin/bash -G vfio,imtl -u 1002 mcm && \
+    groupadd -g 2001 mtl && \
+    useradd -m -s /bin/bash -G vfio,mtl -u 2002 mcm && \
     usermod -aG sudo mcm
 
 COPY --chown=mcm --from=builder /install /
@@ -180,11 +182,23 @@ EXPOSE 8001/tcp 8002/tcp
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/local/bin/media_proxy"]
-
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "media_proxy" || exit 1
 
+FROM media-proxy as mtl-manager
 
-FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as mesh-agent
+LABEL maintainer="milosz.linkiewicz@intel.com"
+LABEL org.opencontainers.image.title="Media Communications Mesh Mtl Manager"
+LABEL org.opencontainers.image.description="Media Communications Mesh Mtl Manager application. Ubuntu 22.04 Docker Container Release Image"
+LABEL org.opencontainers.image.version="25.03"
+LABEL org.opencontainers.image.vendor="Intel Corporation"
+LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
+
+USER mtl
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/MtlManager"]
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "MtlManager" | wc -l) != 2 )); then exit 1; fi
+
+FROM media-proxy as mesh-agent
 
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh Mesh Agent"
@@ -193,40 +207,11 @@ LABEL org.opencontainers.image.version="25.03"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
-ARG MCM_DIR="/opt/mcm"
-ARG GRPC_DIR="/opt/grpc"
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/Warsaw
-
-ENV KAHAWAI_CFG_PATH="/usr/local/etc/jpegxs.json"
-ENV LD_LIBRARY_PATH="/usr/local/lib:/usr/local/lib/x86_64-linux-gnu"
-
-SHELL ["/bin/bash", "-exc"]
-RUN apt-get update --fix-missing && \
-    apt-get full-upgrade -y && \
-    apt-get install -y --no-install-recommends \
-       ca-certificates libbsd0 libnuma1 libjson-c5 libpcap0.8 libsdl2-2.0-0 libsdl2-ttf-2.0-0 \
-       libssl3 zlib1g libelf1 libcap-ng0 libatomic1 librdmacm1 systemtap sudo \
-       librte-net-mlx4-22 librte-net-mlx5-22 libfdt1 ethtool && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    groupadd -g 2110 vfio && \
-    groupadd -g 1001 imtl && \
-    useradd -m -s /bin/bash -G vfio,imtl -u 1002 mcm && \
-    usermod -aG sudo mcm
-
-COPY --chown=mcm --from=builder /install /
-
-RUN ldconfig && \
-    apt-get purge -y '.*sound.*' '.*systemtap.*' '.*libdrm.*' '.*vorbis.*' '.*wayland.*' '.*x11.*' '.*python.*' '.*readline.*' '.*avahi.*' '^libx[a-w,y-z].*' make media-types libopus0 \
-        libexpat1 libflac8 libfreetype6 libsndfile1 libgbm1 libglib2.0-0 libgraphite2-3 libharfbuzz0b libogg0 libpulse0 libmpdec3 libnspr4 libpng16-16 \
-        xkb-data distro-info-data libdw1 libbrotli1 libdecor-0-0 libxxf86vm1 libapparmor1 libasyncns0 libnss3 libsqlite3-0 lsb-release
 USER mcm
 WORKDIR /opt/mcm/
 
 EXPOSE 8100/tcp 50051/tcp
 
-CMD ["-h"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/local/bin/mesh-agent"]
 
