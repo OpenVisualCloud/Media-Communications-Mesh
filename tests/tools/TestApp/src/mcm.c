@@ -14,7 +14,7 @@
 #include "json_context.h"
 
 #define SECOND_IN_US (double)1000000.0
-#define BLOB_DELAY_IN_US (uint32_t)1000000
+#define BLOB_DELAY_IN_US (uint32_t)1000 //1ms
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
