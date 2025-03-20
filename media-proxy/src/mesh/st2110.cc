@@ -130,7 +130,7 @@ void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
     if (getenv("KAHAWAI_CFG_PATH") == NULL) {
         setenv("KAHAWAI_CFG_PATH", "/usr/local/etc/imtl.json", 0);
     }
-    if (getenv("MEDIA_PROXY_MAIN_LCORE") != NULL) {
+    if (getenv("MCM_MEDIA_PROXY_MAIN_LCORE") != NULL) {
         try {
             st_param.main_lcore = std::stoul(std::string(getenv("MEDIA_PROXY_MAIN_LCORE")));
         } catch (const std::invalid_argument& e) {
