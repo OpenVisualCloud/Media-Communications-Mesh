@@ -58,14 +58,11 @@
      }
  
      /* Open file and send its contents in loop*/
-     while(1){
-         err = mcm_send_blob_packets(connection, video_file);
-         if ( shutdown_flag == SHUTDOWN_REQUESTED ) {
-             goto safe_exit;
-         }
-     }
+    err = mcm_send_blob_packets(connection, video_file);
+    if ( shutdown_flag == SHUTDOWN_REQUESTED ) {
+        goto safe_exit;
+    }
  safe_exit:
-     LOG("[TX] shut down request, dropping connection to media-proxy...");
      LOG("[TX] Shuting down connection");
      if (connection) {
          mesh_delete_connection(&connection);

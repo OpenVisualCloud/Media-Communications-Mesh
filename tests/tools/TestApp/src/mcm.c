@@ -88,7 +88,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
         packet_time, format, sample_rate match tables,
         order as in Media-Communications-Mesh/sdk/include/mesh_dp.hL231
     */
-    int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
+    unsigned int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
     char* format_convert_table_str[] = {"pcms8", "pcms16be", "pcms24be"};
     int sample_rate_convert_table_hz[] = {48000, 96000, 44100};
     MeshConfig_Audio audio_cfg = get_audio_params(connection);
@@ -106,7 +106,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
     }
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    __useconds_t sleep_us = (__useconds_t)packet_time_convert_table_us[audio_cfg.packet_time];
+    __useconds_t sleep_us = 1000;
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
     __useconds_t elapsed = 0;
@@ -152,7 +152,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
             LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
         }
         else {
-            LOG("[TX] Cannot keep the pace with %d time, skipping frame!", audio_cfg.packet_time);
+            LOG("[TX] Cannot keep the pace with %d time!", packet_time_convert_table_us[audio_cfg.packet_time]);
         }
     }
     LOG("[TX] data sent successfully");
