@@ -138,7 +138,6 @@ void ProxyContext::ParseStInitParam(const mcm_conn_param* request, struct mtl_in
       st_param->tx_queues_cnt[MTL_PORT_P] = 128;
     }
     st_param->lcores = getenv("MEDIA_PROXY_LCORES");
-    st_param->main_lcore = 10;
     st_param->memzone_max = 9000;
 
     INFO("ProxyContext: ParseStInitParam(const mcm_conn_param* request, struct mtl_init_params* st_param)");
