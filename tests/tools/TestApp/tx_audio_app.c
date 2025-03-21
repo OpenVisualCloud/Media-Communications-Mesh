@@ -61,7 +61,7 @@
      while(1){
          err = mcm_send_audio_packets(connection, video_file);
          if ( shutdown_flag == SHUTDOWN_REQUESTED ) {
-             goto safe_exit;
+             break;
          }
      }
  safe_exit:

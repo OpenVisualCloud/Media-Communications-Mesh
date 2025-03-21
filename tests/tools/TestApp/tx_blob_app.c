@@ -59,8 +59,8 @@
  
      /* Open file and send its contents in loop*/
     err = mcm_send_blob_packets(connection, video_file);
-    if ( shutdown_flag == SHUTDOWN_REQUESTED ) {
-        goto safe_exit;
+    if (err) {
+        LOG("[TX] Failed to send blob: %s (%d)", mesh_err2str(err), err);
     }
  safe_exit:
      LOG("[TX] Shuting down connection");
