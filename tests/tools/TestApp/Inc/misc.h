@@ -11,6 +11,6 @@
 
 void LOG(const char *format, ...);
 void setup_sig_int();
-extern int shutdown_flag;
+extern volatile int shutdown_flag;
 
 #endif /* _MISC_H_ */
