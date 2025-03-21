@@ -64,7 +64,7 @@ safe_exit:
         mesh_delete_connection(&connection);
     }
     if (client) {
-        LOG("[RX] Shuting down client");
+        LOG("[RX] Shutting down client");
         mesh_delete_client(&client);
     }
     free(client_cfg);
