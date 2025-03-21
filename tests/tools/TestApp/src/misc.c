@@ -11,7 +11,7 @@
 #include <time.h>
 #include <signal.h>
 
-int shutdown_flag = 0;
+volatile int shutdown_flag = 0;
 
 void sig_handler(int sig);
 void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
