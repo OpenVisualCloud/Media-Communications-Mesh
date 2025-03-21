@@ -166,7 +166,7 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
-        LOG("[TX] Failed to serialize audio: file is null");
+        LOG("[TX] Sending blob packets. Failed to open file %s: %s", filename, strerror(errno));
         err = 1;
         return err;
     }
