@@ -12,6 +12,7 @@
 #include "mesh_dp.h"
 #include "misc.h"
 #include "json_context.h"
+#include <errno.h>
 
 #define SECOND_IN_US (double)1000000.0
 #define BLOB_DELAY_IN_US (__useconds_t)1000 //1ms
@@ -53,11 +54,11 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
         if (read_size == 0) {
             mesh_buffer_set_payload_len(buf, 0);
             mesh_put_buffer(&buf);
+            if (err) {
+                LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+            }
             goto close_file;
         }
-        /* mesh buffer set payload API func* f(read_size) (1-payload_len)/
-        /* int mesh_buffer_set_payload_len */
-        /* Send the buffer */
         err = mesh_put_buffer(&buf);
         if (err) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
@@ -122,12 +123,18 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
         if (read_size == 0) {
             mesh_buffer_set_payload_len(buf, 0);
             mesh_put_buffer(&buf);
+            if (err) {
+                LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+            }
             goto close_file;
         }
         if (read_size > buf->payload_len) {
             LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
             mesh_buffer_set_payload_len(buf, 0);
             mesh_put_buffer(&buf);
+            if (err) {
+                LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+            }
             goto close_file;
         }
         err = mesh_buffer_set_payload_len(buf, read_size);
@@ -189,6 +196,9 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
         if (read_size == 0) {
             mesh_buffer_set_payload_len(buf, 0);
             mesh_put_buffer(&buf);
+            if (err) {
+                LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+            }
             goto close_file;
         }
         
@@ -196,6 +206,9 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
             LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
             mesh_buffer_set_payload_len(buf, 0);
             mesh_put_buffer(&buf);
+            if (err) {
+                LOG("[TX] Failed to set buffer_len: %s (%d)", mesh_err2str(err), err);
+            }
             goto close_file;
         }
         err = mesh_buffer_set_payload_len(buf, read_size);
