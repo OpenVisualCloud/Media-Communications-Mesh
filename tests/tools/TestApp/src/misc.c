@@ -13,9 +13,6 @@
 
 int shutdown_flag = 0;
 
-struct sigaction sa_int;
-struct sigaction sa_term;
-
 void sig_handler(int sig);
 void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
 

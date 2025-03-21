@@ -88,11 +88,12 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
         packet_time, format, sample_rate match tables,
         order as in Media-Communications-Mesh/sdk/include/mesh_dp.hL231
     */
-    char* format_convert_table_str[] = {"pcms8", "pcms16be", "pcms24be"};
+    int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
+    const char* format_convert_table_str[] = {"pcms8", "pcms16be", "pcms24be"};
     int sample_rate_convert_table_hz[] = {48000, 96000, 44100};
     MeshConfig_Audio audio_cfg = get_audio_params(connection);
     LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %d", audio_cfg.channels, 
-        sample_rate_convert_table_hz[audio_cfg.sample_rate], audio_cfg.packet_time);
+        sample_rate_convert_table_hz[audio_cfg.sample_rate], packet_time_convert_table_us[audio_cfg.packet_time]);
     LOG("[TX] Audio format: %s", format_convert_table_str[audio_cfg.format]);
     int err = 0;
     MeshBuffer *buf;
