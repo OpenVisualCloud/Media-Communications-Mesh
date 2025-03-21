@@ -3,7 +3,11 @@
 
 namespace mesh {
   extern "C" {
-
+    /*TODO: temporary solution, replace with custom json parsing.
+      those are internal structures that can be changed any time
+      so to avoid breaking changes, we need to provide a way to get
+      those values from the josn directly  
+    */
     MeshConfig_Video get_video_params(MeshConnection *conn){
       ConnectionContext *conn_ctx = (ConnectionContext *)conn;
       return (MeshConfig_Video){
