@@ -60,6 +60,10 @@ int main(int argc, char **argv) {
     /* Open file and send its contents in loop*/
     while(1){
         err = mcm_send_video_frames(connection, video_file);
+        if(err){
+            LOG("[TX] Failed to send audio packets: %s (%d)", mesh_err2str(err), err);
+            break;
+         }
         if ( shutdown_flag == SHUTDOWN_REQUESTED ) {
             break;
         }
