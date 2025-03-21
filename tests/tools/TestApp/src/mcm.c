@@ -106,7 +106,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
     }
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    __useconds_t sleep_us = audio_cfg.packet_time;
+    __useconds_t sleep_us = format_convert_table_str[audio_cfg.format];
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
     __useconds_t elapsed = 0;
