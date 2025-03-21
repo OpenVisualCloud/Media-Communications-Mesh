@@ -60,7 +60,7 @@ int main(int argc, char *argv[]) {
 safe_exit:
     LOG("[RX] dropping connection to media-proxy...");
     if (connection) {
-        LOG("[RX] Shuting down connection");
+        LOG("[RX] Shutting down connection");
         mesh_delete_connection(&connection);
     }
     if (client) {
