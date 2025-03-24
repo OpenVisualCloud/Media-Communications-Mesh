@@ -20,6 +20,7 @@ typedef struct McmVideoDemuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    int buf_queue_cap;
     int conn_delay;
     char *conn_type;
     char *urn;
@@ -57,12 +58,14 @@ static int mcm_video_read_header(AVFormatContext* avctx)
 
     if (!strcmp(s->conn_type, "multipoint-group")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_multipoint_group_video_format, s->conn_delay,
+                     mcm_json_config_multipoint_group_video_format,
+                     s->buf_queue_cap, s->conn_delay,
                      s->urn, s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_st2110_video_format, s->conn_delay,
+                     mcm_json_config_st2110_video_format,
+                     s->buf_queue_cap, s->conn_delay,
                      s->ip_addr, s->port, s->transport, s->payload_type,
                      s->transport_pixel_format,
                      s->width, s->height, av_q2d(s->frame_rate),
@@ -123,22 +126,26 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     s->first_frame = false;
 
     err = mesh_get_buffer_timeout(s->conn, &buf, timeout);
-    if (err == -MESH_ERR_CONN_CLOSED)
-        return AVERROR_EOF;
-
-    if (mcm_shutdown_requested())
-        return AVERROR_EOF;
-
+    if (err == -MESH_ERR_CONN_CLOSED) {
+        ret = AVERROR_EOF;
+        goto error_close_conn;
+    }
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
                mesh_err2str(err), err);
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error_close_conn;
+    }
+
+    if (mcm_shutdown_requested()) {
+        ret = AVERROR_EOF;
+        goto error_put_buf;
     }
 
     len = buf->payload_len;
 
     if ((ret = av_new_packet(pkt, len)) < 0)
-        return ret;
+        goto error_put_buf;
 
     memcpy(pkt->data, buf->data, len);
 
@@ -148,10 +155,22 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
                mesh_err2str(err), err);
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error_close_conn;
     }
 
     return len;
+
+error_put_buf:
+    mesh_put_buffer(&buf);
+
+error_close_conn:
+    err = mesh_delete_connection(&s->conn);
+    if (err)
+        av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
+            mesh_err2str(err), err);
+
+    return ret;
 }
 
 static int mcm_video_read_close(AVFormatContext* avctx)
@@ -159,10 +178,12 @@ static int mcm_video_read_close(AVFormatContext* avctx)
     McmVideoDemuxerContext* s = avctx->priv_data;
     int err;
 
-    err = mesh_delete_connection(&s->conn);
-    if (err)
-        av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
-               mesh_err2str(err), err);
+    if (s->conn) {
+        err = mesh_delete_connection(&s->conn);
+        if (err)
+            av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
+                mesh_err2str(err), err);
+    }
 
     err = mcm_put_client(&s->mc);
     if (err)
@@ -174,6 +195,7 @@ static int mcm_video_read_close(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmVideoDemuxerContext, x)
 #define DEC (AV_OPT_FLAG_DECODING_PARAM)
 static const AVOption mcm_video_rx_options[] = {
+    { "buf_queue_cap", "set buffer queue capacity", OFFSET(buf_queue_cap), AV_OPT_TYPE_INT, {.i64 = 8}, 1, 255, DEC },
     { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = DEC },

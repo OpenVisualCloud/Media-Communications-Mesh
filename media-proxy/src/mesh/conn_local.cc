@@ -12,7 +12,7 @@
 namespace mesh::connection {
 
 Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
-                              size_t frame_size)
+                              size_t frame_size, uint8_t log2_ring_size)
 {
     this->frame_size = frame_size;
 
@@ -39,7 +39,11 @@ Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
     ready = false;
     memif_conn_args.interface_id = ops->interface_id;
     memif_conn_args.buffer_size = (uint32_t)frame_size;
-    memif_conn_args.log2_ring_size = 4;
+
+    const uint8_t MEMIF_DEFAULT_LOG2_RING_SIZE = 4;
+    memif_conn_args.log2_ring_size = log2_ring_size ? log2_ring_size :
+                                     MEMIF_DEFAULT_LOG2_RING_SIZE;
+
     snprintf((char*)memif_conn_args.interface_name,
              sizeof(memif_conn_args.interface_name), "%s", ops->interface_name);
     memif_conn_args.is_master = 1;
