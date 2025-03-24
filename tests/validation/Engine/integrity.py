@@ -91,39 +91,76 @@ def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percent
         # only return true if no more frames left in out frames list, else fail
         return out_index == len(out_chunk_sums)
 
-def check_integrity_big_file(src_chunk_sums, out_chunk_sums, allowed_bad: int = 10) -> bool:
+def check_integrity_big_file(src_chunk_sums, out_chunk_sums, allowed_bad: int = 10, looped: bool = False) -> bool:
     logging.debug("Starting integrity check for big file.")
     logging.debug(f"Source chunk sums: {len(src_chunk_sums)} chunks")
     logging.debug(f"Output chunk sums: {len(out_chunk_sums)} chunks")
     logging.debug(f"Allowed bad frames: {allowed_bad}")
+    logging.debug(f"Looped: {looped}")
 
-    # Find the first correct frame within the allowed_bad range
-    for frame_start in range(min(allowed_bad, len(out_chunk_sums))):
-        if out_chunk_sums[frame_start] in src_chunk_sums:
-            shift = src_chunk_sums.index(out_chunk_sums[frame_start])
-            logging.debug(f"Found first correct frame at position {frame_start} with shift {shift}.")
-            break
+    identical_chunks = 0
+    min_identical_percentage = 80  # Minimum percentage of identical chunks required
+
+    if looped:
+        logging.debug("Handling looped data integrity check.")
+        repeat_count = len(out_chunk_sums) // len(src_chunk_sums)
+        remainder = len(out_chunk_sums) % len(src_chunk_sums)
+
+        for i in range(repeat_count):
+            for j in range(len(src_chunk_sums)):
+                if out_chunk_sums[i * len(src_chunk_sums) + j] == src_chunk_sums[j]:
+                    identical_chunks += 1
+                else:
+                    logging.error(f"Mismatch at repeat {i}, index {j}")
+                    break  # Exit the loop on mismatch
+
+        for j in range(remainder):
+            if out_chunk_sums[repeat_count * len(src_chunk_sums) + j] == src_chunk_sums[j]:
+                identical_chunks += 1
+            else:
+                logging.error(f"Mismatch at remainder index {j}")
+                break  # Exit the loop on mismatch
+
+        logging.debug("Integrity check passed with repeated data.")
     else:
-        logging.error(f"Did not find any correct frame in the first {allowed_bad} frames of the output.")
+        for frame_start in range(min(allowed_bad, len(out_chunk_sums))):
+            if out_chunk_sums[frame_start] in src_chunk_sums:
+                shift = src_chunk_sums.index(out_chunk_sums[frame_start])
+                logging.debug(f"Found first correct frame at position {frame_start} with shift {shift}.")
+                break
+        else:
+            logging.error(f"Did not find any correct frame in the first {allowed_bad} frames of the output.")
+            return False
+
+        src_chunk_sums = src_chunk_sums[shift:] + src_chunk_sums[:shift]
+        logging.debug(f"Shifting source chunks by {shift} positions.")
+
+        bad_frames = 0
+        for ids, chunk_sum in enumerate(out_chunk_sums):
+            if chunk_sum == src_chunk_sums[ids % len(src_chunk_sums)]:
+                identical_chunks += 1
+            else:
+                bad_frames += 1
+                logging.debug(f"Bad frame detected at position {ids}.")
+
+        if bad_frames > allowed_bad:
+            logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
+            return False
+
+        logging.debug("Integrity check passed with no bad frames.")
+
+    # Calculate and log the percentage of identical chunks
+    total_chunks = len(out_chunk_sums)
+    identical_percentage = (identical_chunks / total_chunks) * 100
+    logging.info(f"Identical chunks: {identical_chunks}/{total_chunks} ({identical_percentage:.2f}%)")
+
+    # Return based on the minimum identical percentage threshold
+    if identical_percentage >= min_identical_percentage:
+        logging.info(f"Integrity check passed with {identical_percentage:.2f}% identical chunks.")
+        return True
+    else:
+        logging.error(f"Integrity check failed. Only {identical_percentage:.2f}% identical chunks.")
         return False
-
-    # Shift the source chunk list
-    src_chunk_sums = src_chunk_sums[shift:] + src_chunk_sums[:shift]
-    logging.debug(f"Shifting source chunks by {shift} positions.")
-
-    # Check the integrity of the remaining frames
-    bad_frames = 0
-    for ids, chunk_sum in enumerate(out_chunk_sums):
-        if chunk_sum != src_chunk_sums[ids % len(src_chunk_sums)]:
-            bad_frames += 1
-            logging.debug(f"Bad frame detected at position {ids}.")
-
-    if bad_frames > allowed_bad:
-        logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
-        return False
-
-    logging.debug("Integrity check passed with no bad frames.")
-    return True
 
 def calculate_yuv_frame_size(width: int, height: int, file_format: str) -> int:
     match file_format:
@@ -153,11 +190,11 @@ def check_st30p_integrity(src_url: str, out_name: str, frame_size: int, expected
     return check_integrity(src_url, out_name, frame_size, expected_frame_percentage)
 
 
-def check_st30p_integrity_big(src_url: str, out_url: str, fmt: str, ptime: str, sampling: str, channel: str) -> bool:
+def check_st30p_integrity_big(src_url: str, out_url: str, fmt: str, ptime: str, sampling: str, channel: str, looped: bool = False) -> bool:
     frame_size = calculate_st30p_framebuff_size(fmt, ptime, sampling, channel)
     src_chunk_sums = calculate_chunk_hashes(src_url, frame_size)
     out_chunk_sums = calculate_chunk_hashes(out_url, frame_size)
-    return check_integrity_big_file(src_chunk_sums, out_chunk_sums)
+    return check_integrity_big_file(src_chunk_sums, out_chunk_sums, looped=looped)
 
 def calculate_st30p_framebuff_size(
         format: str, ptime: str, sampling: str, channel: str
@@ -403,16 +440,18 @@ if __name__ == "__main__":
         - segment_duration: Default is 3 seconds
 
         For ST30P (audio stream):
-        >$ python integrity.py file path_to_src_file path_to_out_file format ptime sampling channel
+        >$ python integrity.py file path_to_src_file path_to_out_file format ptime sampling channel [looped]
         - path_to_src_file: Path to the source audio file.
         - path_to_out_file: Path to the output audio file.
         - format: Audio format (e.g., PCM8, PCM16, PCM24).
         - ptime: Packet time (e.g., 1, 0.12, 0.25).
         - sampling: Sampling rate (e.g., 41.1kHz, 48kHz, 96kHz).
         - channel: Channel configuration (e.g., M, DM, ST).
+        - looped: Optional argument to specify if the data is looped ('true' or 'false').
 
         Example:
         >$ python integrity.py file /mnt/media/audio_src.pcm /mnt/ramdisk/audio_out.pcm PCM8 1.09 41.1kHz M
+        >$ python integrity.py file /mnt/media/audio_src.pcm /mnt/ramdisk/audio_out.pcm PCM8 1.09 41.1kHz M true
 
         Note: For looped data, add 'true' or 'false' as the last argument to specify if the data is looped.
     """
@@ -458,7 +497,11 @@ if __name__ == "__main__":
         elif mode == "file":
             if len(sys.argv) == 8:
                 _, _, src, out, fmt, ptime, sampling, channel = sys.argv
-                print(check_st30p_integrity_big(src, out, fmt, ptime, sampling, channel))
+                print(check_st30p_integrity_big(src, out, fmt, ptime, sampling, channel, looped=False))
+            elif len(sys.argv) == 9:
+                _, _, src, out, fmt, ptime, sampling, channel, looped = sys.argv
+                looped = looped.lower() == 'true'
+                print(check_st30p_integrity_big(src, out, fmt, ptime, sampling, channel, looped))
             else:
                 print(help)
         else:
