@@ -37,9 +37,9 @@ int main(int argc, char *argv[]) {
 
     LOG("[RX] Launching RX App");
     LOG("[RX] Reading client configuration...");
-    client_cfg = parse_json_to_string(client_cfg_file);
+    client_cfg = input_parse_json_to_string(client_cfg_file);
     LOG("[RX] Reading connection configuration...");
-    conn_cfg = parse_json_to_string(conn_cfg_file);
+    conn_cfg = input_parse_json_to_string(conn_cfg_file);
 
     /* Initialize mcm client */
     int err = mesh_create_client_json(&client, client_cfg);

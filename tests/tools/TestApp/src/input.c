@@ -5,11 +5,18 @@
  */
 
 #include <stdio.h>
+#include <ctype.h>
 #include <stdlib.h>
 #include <getopt.h>
 #include <string.h>
 #include "input.h"
 #include <jansson.h>
+
+#define S_TO_US_RATIO (int)1000000
+#define MS_TO_US_RATIO (int)1000
+int input_loop = 0;
+
+__useconds_t parse_time_string_to_us(const char *input);
 
 char *input_parse_json_to_string(const char *file_name) {
     FILE *input_fp = fopen(file_name, "rb");
@@ -93,7 +100,7 @@ video_params get_video_params(const char *json_string){
       json_decref(video_value);
       goto exit;
   }
-  params.pixel_format = json_string_value(video_value);
+  params.pixel_format = (char*)json_string_value(video_value);
 
   video_value = json_object_get(video,"width");
   if (!video_value) {
@@ -158,6 +165,81 @@ audio_params get_audio_params(const char *json_string) {
     }
     params.channels = (int)json_number_value(audio_value);
 
+    audio_value = json_object_get(audio, "format");
+    if (!audio_value) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(audio_value);
+        goto exit;
+    }
+    params.format= (char*)json_string_value(audio_value);
+
+    audio_value = json_object_get(audio, "packetTime");
+    if (!audio_value) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(audio_value);
+        goto exit;
+    }
+    params.packet_time= parse_time_string_to_us((char*)json_string_value(audio_value));
+
 exit:
     return params;
+}
+
+__useconds_t parse_time_string_to_us(const char *input) {
+    // Check for null input
+    if (input == NULL) {
+        fprintf(stderr, "Error: Input is NULL\n");
+        return -1;
+    }
+
+    // Find the position of the first non-digit character
+    int i = 0;
+    while (isdigit(input[i])) {
+        i++;
+    }
+
+    // If no digits were found, return an error
+    if (i == 0) {
+        fprintf(stderr, "Error: No number found in input\n");
+        return -1;
+    }
+
+    // Extract the number part
+    char number_part[i + 1];
+    strncpy(number_part, input, i);
+    number_part[i] = '\0';
+
+    // Convert the number part to an integer
+    int number = atoi(number_part);
+
+    // Extract the suffix part
+    const char *suffix = input + i;
+
+    // Convert based on the suffix
+    if (strcmp(suffix, "s") == 0) {
+        return number * S_TO_US_RATIO; // seconds to microseconds
+    } else if (strcmp(suffix, "ms") == 0) {
+        return number * MS_TO_US_RATIO; // milliseconds to microseconds
+    } else if (strcmp(suffix, "us") == 0) {
+        return number; // microseconds
+    } else {
+        fprintf(stderr, "Error: Invalid suffix '%s'\n", suffix);
+        return -1;
+    }
+}
+
+void parse_cli_commands(int argc, char *argv[]) {
+    for (int i = 1; i < argc; i++) {
+        if (strncmp(argv[i], "-l", 2) == 0) {
+            // Check if the parameter is "-l<number>" or "-li<number>"
+            if (argv[i][2] == 'i') {
+                input_loop = -1; 
+            } else {
+                // Extract the number following "-l"
+                char *number_str = argv[i] + 2; // Skip "-l"
+                int number = atoi(number_str);
+                input_loop = number; // Set loop to the number
+            }
+        }
+    }
 }

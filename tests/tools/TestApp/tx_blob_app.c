@@ -21,6 +21,7 @@
  MeshClient *client = NULL;
  
  int main(int argc, char **argv) {
+     parse_cli_commands(argc, argv);
      setup_sig_int();
      if (!is_root()) {
          fprintf(stderr, "This program must be run as root. Exiting.\n");
@@ -39,9 +40,9 @@
      LOG("[TX] Launching TX app");
      
      LOG("[TX] Reading client configuration...");
-     client_cfg = parse_json_to_string(client_cfg_file);
+     client_cfg = input_parse_json_to_string(client_cfg_file);
      LOG("[TX] Reading connection configuration...");
-     conn_cfg = parse_json_to_string(conn_cfg_file);
+     conn_cfg = input_parse_json_to_string(conn_cfg_file);
  
      /* Initialize mcm client */
      int err = mesh_create_client_json(&client, client_cfg);
@@ -56,11 +57,28 @@
          LOG("[TX] Failed to create connection: %s (%d)", mesh_err2str(err), err);
          goto safe_exit;
      }
- 
-     /* Open file and send its contents in loop*/
-    err = mcm_send_blob_packets(connection, video_file);
-    if (err) {
-        LOG("[TX] Failed to send blob: %s (%d)", mesh_err2str(err), err);
+     if (input_loop == -1) {
+        while(1){
+                /* Open file and send its contents in loop*/
+                err = mcm_send_blob_packets(connection, video_file);
+                if (err) {
+                    LOG("[TX] Failed to send blob: %s (%d)", mesh_err2str(err), err);
+                }
+            }
+    } else if (input_loop >0) {
+        for (int i = 0; i < input_loop; i++){
+            /* Open file and send its contents in loop*/
+            err = mcm_send_blob_packets(connection, video_file);
+            if (err) {
+                LOG("[TX] Failed to send blob: %s (%d)", mesh_err2str(err), err);
+            }
+        }
+     } else {
+        /* Open file and send its contents in loop*/
+        err = mcm_send_blob_packets(connection, video_file);
+        if (err) {
+            LOG("[TX] Failed to send blob: %s (%d)", mesh_err2str(err), err);
+        }
     }
  safe_exit:
      LOG("[TX] Shuting down connection");

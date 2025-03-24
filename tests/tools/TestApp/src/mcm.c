@@ -7,12 +7,13 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <errno.h>
 #include <time.h>
 #include "mcm.h"
 #include "mesh_dp.h"
 #include "misc.h"
-#include "json_context.h"
-#include <errno.h>
+#include "input.h"
+
 
 #define SECOND_IN_US (double)1000000.0
 #define BLOB_DELAY_IN_US (__useconds_t)1000 //1ms
@@ -20,8 +21,8 @@
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
 
-int mcm_send_video_frames(MeshConnection *connection, const char *filename) {
-    MeshConfig_Video video_cfg = get_video_params(connection);
+int mcm_send_video_frames(MeshConnection *connection, const char *filename, const char *json_conn_config) {
+    video_params video_cfg = get_video_params(json_conn_config);
     LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
     LOG("[TX] Video pixel format: %d", video_cfg.pixel_format);
     int err = 0;
@@ -84,18 +85,16 @@ close_file:
     return err;
 }
 
-int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
+int mcm_send_audio_packets(MeshConnection *connection, const char *filename, const char *json_conn_config) {
     /* 
         packet_time, format, sample_rate match tables,
         order as in Media-Communications-Mesh/sdk/include/mesh_dp.hL231
     */
     int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
-    const char* format_convert_table_str[] = {"pcms8", "pcms16be", "pcms24be"};
-    int sample_rate_convert_table_hz[] = {48000, 96000, 44100};
-    MeshConfig_Audio audio_cfg = get_audio_params(connection);
+    audio_params audio_cfg = get_audio_params(json_conn_config);
     LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %d", audio_cfg.channels, 
-        sample_rate_convert_table_hz[audio_cfg.sample_rate], packet_time_convert_table_us[audio_cfg.packet_time]);
-    LOG("[TX] Audio format: %s", format_convert_table_str[audio_cfg.format]);
+        audio_cfg, audio_cfg.packet_time);
+    LOG("[TX] Audio format: %s", audio_cfg.format);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
@@ -106,7 +105,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename) {
     }
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    __useconds_t sleep_us = packet_time_convert_table_us[audio_cfg.packet_time];
+    __useconds_t sleep_us = audio_cfg.packet_time;
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
     __useconds_t elapsed = 0;
