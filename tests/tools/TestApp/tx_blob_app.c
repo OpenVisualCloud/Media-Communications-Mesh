@@ -58,6 +58,7 @@
          goto safe_exit;
      }
      if (input_loop == -1) {
+        LOG("[TX] sending video frames inf times");
         while(1){
                 /* Open file and send its contents in loop*/
                 err = mcm_send_blob_packets(connection, video_file);
@@ -66,6 +67,7 @@
                 }
             }
     } else if (input_loop >0) {
+        LOG("[TX] sending video frames %d times", input_loop);
         for (int i = 0; i < input_loop; i++){
             /* Open file and send its contents in loop*/
             err = mcm_send_blob_packets(connection, video_file);
@@ -74,6 +76,7 @@
             }
         }
      } else {
+        LOG("[TX] sending video frames 1 time");
         /* Open file and send its contents in loop*/
         err = mcm_send_blob_packets(connection, video_file);
         if (err) {

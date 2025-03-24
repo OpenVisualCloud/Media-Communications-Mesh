@@ -60,6 +60,7 @@
  
      /* Open file and send its contents in loop*/
      if (input_loop == -1) {
+        LOG("[TX] sending video frames inf times");
         while(1){
              err = mcm_send_audio_packets(connection, video_file, conn_cfg);
             if(err){
@@ -71,6 +72,7 @@
             }
         }
     } else if (input_loop > 0) {
+        LOG("[TX] sending video frames %d times", input_loop);
         for (int i = 0; i < input_loop; i++) {
             err = mcm_send_audio_packets(connection, video_file, conn_cfg);
             if(err){
@@ -82,6 +84,7 @@
             }
         }
       } else {
+        LOG("[TX] sending video frames 1 time");
         err = mcm_send_audio_packets(connection, video_file, conn_cfg);
         if(err){
             LOG("[TX] Failed to send audio packets: %s (%d)", mesh_err2str(err), err);

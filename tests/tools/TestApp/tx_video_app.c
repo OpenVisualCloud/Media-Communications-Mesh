@@ -60,6 +60,7 @@ int main(int argc, char **argv) {
 
     /* Open file and send its contents in loop*/
     if (input_loop == -1) {
+        LOG("[TX] sending video frames inf times");
         while(1){
             err = mcm_send_video_frames(connection, video_file, conn_cfg);
             if(err){
@@ -71,6 +72,7 @@ int main(int argc, char **argv) {
             }
         }
     } else if (input_loop > 0) {
+        LOG("[TX] sending video frames %d times", input_loop);
         for (int i = 0; i < input_loop; i++){
             err = mcm_send_video_frames(connection, video_file, conn_cfg);
             if (err) {
@@ -82,6 +84,7 @@ int main(int argc, char **argv) {
             }
         }
     } else {
+        LOG("[TX] sending video frames 1 time");
         err = mcm_send_video_frames(connection, video_file, conn_cfg);
         if (err) {
             LOG("[TX] Failed to send video frames: %s (%d)", mesh_err2str(err), err);

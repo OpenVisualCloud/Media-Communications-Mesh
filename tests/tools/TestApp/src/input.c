@@ -61,64 +61,64 @@ char *input_parse_json_to_string(const char *file_name) {
 
 video_params get_video_params(const char *json_string){
 
-  json_t *root;
-  json_error_t error;
-  json_t* video_value;
+    json_t *root;
+    json_error_t error;
+    json_t* video_value;
 
-    video_params params ={};
+        video_params params ={};
 
-  root = json_loads(json_string, 0, &error);
-  if (!root) {
-      fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
-      json_decref(root);
-      goto exit;
-  }
+    root = json_loads(json_string, 0, &error);
+    if (!root) {
+        fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
+        json_decref(root);
+        goto exit;
+    }
 
-  json_t* payload = json_object_get(root,"payload");
-  if (!payload) {
-    fprintf(stderr, "error: key not found\n");
-    json_decref(payload);
-    goto exit;
-  }
-  json_t* video = json_object_get(payload,"video");
-  if (!video) {
-      fprintf(stderr, "error: key not found\n");
-      json_decref(video);
-      goto exit;
-  }
-  video_value = json_object_get(video,"fps");
-  if (!video_value) {
-      fprintf(stderr, "error: key not found\n");
-      json_decref(video_value);
-      goto exit;
-  }
-  params.fps = (int)json_number_value(video_value);
+    json_t* payload = json_object_get(root,"payload");
+    if (!payload) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(payload);
+        goto exit;
+    }
+    json_t* video = json_object_get(payload,"video");
+    if (!video) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(video);
+        goto exit;
+    }
+    video_value = json_object_get(video,"fps");
+    if (!video_value) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(video_value);
+        goto exit;
+    }
+    params.fps = (int)json_number_value(video_value);
 
-  video_value = json_object_get(video,"pixelFormat");
-  if (!video_value) {
-      fprintf(stderr, "error: key not found\n");
-      json_decref(video_value);
-      goto exit;
-  }
-  params.pixel_format = (char*)json_string_value(video_value);
+    video_value = json_object_get(video,"pixelFormat");
+    if (!video_value) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(video_value);
+        goto exit;
+    }
+    params.pixel_format = (char*)json_string_value(video_value);
 
-  video_value = json_object_get(video,"width");
-  if (!video_value) {
-      fprintf(stderr, "error: key not found\n");
-      json_decref(video_value);
-      goto exit;
-  }
-    params.width = (int)json_number_value(video_value);
+    video_value = json_object_get(video,"width");
+    if (!video_value) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(video_value);
+        goto exit;
+    }
+        params.width = (int)json_number_value(video_value);
 
-  video_value = json_object_get(video,"height");
-  if (!video_value) {
-      fprintf(stderr, "error: key not found\n");
-      json_decref(video_value);
-      goto exit;
-  }
-  params.height = (int)json_number_value(video_value);
-exit:
-    return params;
+    video_value = json_object_get(video,"height");
+    if (!video_value) {
+        fprintf(stderr, "error: key not found\n");
+        json_decref(video_value);
+        goto exit;
+    }
+    params.height = (int)json_number_value(video_value);
+    exit:
+        return params;
 }
 
 audio_params get_audio_params(const char *json_string) {
