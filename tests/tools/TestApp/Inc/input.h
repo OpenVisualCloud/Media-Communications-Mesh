@@ -17,9 +17,9 @@ typedef struct video_params{
 
 typedef struct audio_params{
   int channels;
-  int sample_rate;
+  long int sample_rate;
   char* format;
-  __useconds_t packet_time;
+  long int packet_time;
 }audio_params;
 
 

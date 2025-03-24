@@ -16,7 +16,7 @@
 #define MS_TO_US_RATIO (int)1000
 int input_loop = 0;
 
-__useconds_t parse_time_string_to_us(const char *input);
+long int parse_time_string_to_us(const char *input);
 
 char *input_parse_json_to_string(const char *file_name) {
     FILE *input_fp = fopen(file_name, "rb");
@@ -155,7 +155,7 @@ audio_params get_audio_params(const char *json_string) {
         json_decref(audio_value);
         goto exit;
     }
-    params.sample_rate = (int)json_number_value(audio_value);
+    params.sample_rate = (long int)json_number_value(audio_value);
 
     audio_value = json_object_get(audio, "channels");
     if (!audio_value) {
@@ -163,7 +163,7 @@ audio_params get_audio_params(const char *json_string) {
         json_decref(audio_value);
         goto exit;
     }
-    params.channels = (int)json_number_value(audio_value);
+    params.channels = json_number_value(audio_value);
 
     audio_value = json_object_get(audio, "format");
     if (!audio_value) {
@@ -179,13 +179,13 @@ audio_params get_audio_params(const char *json_string) {
         json_decref(audio_value);
         goto exit;
     }
-    params.packet_time= parse_time_string_to_us((char*)json_string_value(audio_value));
+    params.packet_time= parse_time_string_to_us(json_string_value(audio_value));
 
 exit:
     return params;
 }
 
-__useconds_t parse_time_string_to_us(const char *input) {
+long int parse_time_string_to_us(const char *input) {
     // Check for null input
     if (input == NULL) {
         fprintf(stderr, "Error: Input is NULL\n");
@@ -205,7 +205,7 @@ __useconds_t parse_time_string_to_us(const char *input) {
     }
 
     // Extract the number part
-    char number_part[i + 1];
+    char number_part[i];
     strncpy(number_part, input, i);
     number_part[i] = '\0';
 

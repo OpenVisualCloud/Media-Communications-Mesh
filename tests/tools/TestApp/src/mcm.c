@@ -92,7 +92,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename, con
     */
     int packet_time_convert_table_us[] = {1000, 125, 250, 333, 4000, 80, 1009, 140, 90};
     audio_params audio_cfg = get_audio_params(json_conn_config);
-    LOG("[TX] Audio configuration: channels: %d sample_rate: %d packet_time: %d", audio_cfg.channels, 
+    LOG("[TX] Audio configuration: channels: %d sample_rate: %li packet_time: %li", audio_cfg.channels, 
         audio_cfg, audio_cfg.packet_time);
     LOG("[TX] Audio format: %s", audio_cfg.format);
     int err = 0;
