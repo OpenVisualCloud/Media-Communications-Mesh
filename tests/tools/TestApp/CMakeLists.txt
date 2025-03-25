@@ -3,8 +3,6 @@ cmake_minimum_required(VERSION 3.10)
 # Set the project name and version
 project(TestApps VERSION 1.0)
 
-#setup jansson json parser library
-
 # Find the threading library
 find_package(Threads REQUIRED)
 # Find the BSD library
@@ -21,11 +19,7 @@ message(STATUS "************* root project dir: ${GIT_REPO_ROOT} *************")
 set(INC ${GIT_REPO_ROOT}/sdk/include Inc)
 set(SRC src/input.c src/mcm.c src/misc.c)
 
-# Add custom patch to default include path
-
 include_directories(${INC})
-
-# Add the path to the jansson library
 
 # Add the executable
 add_executable(TxVideoApp tx_video_app.c ${SRC})

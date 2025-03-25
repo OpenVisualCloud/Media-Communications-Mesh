@@ -18,7 +18,7 @@ int input_loop = 0;
 
 long int parse_time_string_to_us(const char *input);
 
-char *input_parse_json_to_string(const char *file_name) {
+char *input_parse_file_to_string(const char *file_name) {
     FILE *input_fp = fopen(file_name, "rb");
     if (input_fp == NULL) {
         perror("Failed to open a file");
@@ -117,8 +117,8 @@ video_params get_video_params(const char *json_string){
         goto exit;
     }
     params.height = (int)json_number_value(video_value);
-    exit:
-        return params;
+exit:
+    return params;
 }
 
 audio_params get_audio_params(const char *json_string) {

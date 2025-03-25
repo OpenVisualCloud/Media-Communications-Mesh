@@ -15,9 +15,7 @@ make
 make check
 sudo make install
 
-cd ..
+cd ../..
 
 sudo rm -rf jansson-${VERSION}
 rm -rf jansson-${VERSION}.tar.gz
-
-
