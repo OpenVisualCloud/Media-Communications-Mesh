@@ -58,18 +58,18 @@ char *input_parse_file_to_string(const char *file_name) {
     return buffer;
 }
 
-video_params get_video_params(const char *json_string) {
+int get_video_params(const char *json_string, video_params *params) {
 
     json_t *root;
     json_error_t error;
     json_t *video_value;
-
-    video_params params = {};
+    int err = 0;
 
     root = json_loads(json_string, 0, &error);
     if (!root) {
         fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
         json_decref(root);
+        err = 1;
         goto exit;
     }
 
@@ -77,26 +77,30 @@ video_params get_video_params(const char *json_string) {
     if (!payload) {
         fprintf(stderr, "error: key not found\n");
         json_decref(payload);
+        err = 1;
         goto exit;
     }
     json_t *video = json_object_get(payload, "video");
     if (!video) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video);
+        err = 1;
         goto exit;
     }
     video_value = json_object_get(video, "fps");
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
+        err = 1;
         goto exit;
     }
-    params.fps = json_number_value(video_value);
+    params->fps = json_number_value(video_value);
 
     video_value = json_object_get(video, "pixelFormat");
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
+        err = 1;
         goto exit;
     }
     char* temp_pix_format = (char*)json_string_value(video_value);
@@ -118,32 +122,34 @@ video_params get_video_params(const char *json_string) {
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
+        err = 1;
         goto exit;
     }
-    params.width = (int)json_number_value(video_value);
+    params->width = (int)json_number_value(video_value);
 
     video_value = json_object_get(video, "height");
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
+        err = 1;
         goto exit;
     }
-    params.height = (int)json_number_value(video_value);
+    params->height = (int)json_number_value(video_value);
 exit:
-    return params;
+    return err;
 }
 
-audio_params get_audio_params(const char *json_string) {
+int get_audio_params(const char *json_string, audio_params *params) {
     json_t *root;
     json_error_t error;
     json_t *audio_value;
-
-    audio_params params = {};
+    int err = 0;
 
     root = json_loads(json_string, 0, &error);
     if (!root) {
         fprintf(stderr, "error: on line %d: %s\n", error.line, error.text);
         json_decref(root);
+        err = 1;
         goto exit;
     }
 
@@ -151,6 +157,7 @@ audio_params get_audio_params(const char *json_string) {
     if (!payload) {
         fprintf(stderr, "error: key not found\n");
         json_decref(payload);
+        err = 1;
         goto exit;
     }
 
@@ -158,6 +165,7 @@ audio_params get_audio_params(const char *json_string) {
     if (!audio) {
         fprintf(stderr, "error: key not found\n");
         json_decref(audio);
+        err = 1;
         goto exit;
     }
 
@@ -165,36 +173,40 @@ audio_params get_audio_params(const char *json_string) {
     if (!audio_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(audio_value);
+        err = 1;
         goto exit;
     }
-    params.sample_rate = (long int)json_number_value(audio_value);
+    params->sample_rate = (long int)json_number_value(audio_value);
 
     audio_value = json_object_get(audio, "channels");
     if (!audio_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(audio_value);
+        err = 1;
         goto exit;
     }
-    params.channels = json_number_value(audio_value);
+    params->channels = json_number_value(audio_value);
 
     audio_value = json_object_get(audio, "format");
     if (!audio_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(audio_value);
+        err = 1;
         goto exit;
     }
-    params.format = (char *)json_string_value(audio_value);
+    params->format = (char *)json_string_value(audio_value);
 
     audio_value = json_object_get(audio, "packetTime");
     if (!audio_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(audio_value);
+        err = 1;
         goto exit;
     }
-    params.packet_time = parse_time_string_to_us(json_string_value(audio_value));
+    params->packet_time = parse_time_string_to_us(json_string_value(audio_value));
 
 exit:
-    return params;
+    return err;
 }
 
 long int parse_time_string_to_us(const char *input) {

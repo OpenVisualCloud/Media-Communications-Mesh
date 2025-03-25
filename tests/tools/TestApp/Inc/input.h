@@ -23,8 +23,8 @@ typedef struct audio_params {
 } audio_params;
 
 char *input_parse_file_to_string(const char *file_name);
-video_params get_video_params(const char *json_string);
-audio_params get_audio_params(const char *json_string);
+int get_video_params(const char *json_string, video_params *params);
+int get_audio_params(const char *json_string, audio_params *params);
 void parse_cli_commands(int argc, char *argv[]);
 extern int input_loop;
 

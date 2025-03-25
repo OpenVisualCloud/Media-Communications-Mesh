@@ -21,10 +21,16 @@ void buffer_to_file(FILE *file, MeshBuffer *buf);
 
 int mcm_send_video_frames(MeshConnection *connection, const char *filename,
                           const char *json_conn_config) {
-    video_params video_cfg = get_video_params(json_conn_config);
+    video_params video_cfg;
+    int err = 0;
+    err = get_video_params(json_conn_config, &video_cfg);
+    if (err) {
+        LOG("[TX] Failed to get video params");
+        return err;
+    }
+
     LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height,
         video_cfg.fps);
-    int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
@@ -85,10 +91,15 @@ close_file:
 
 int mcm_send_audio_packets(MeshConnection *connection, const char *filename,
                            const char *json_conn_config) {
-    audio_params audio_cfg = get_audio_params(json_conn_config);
+    audio_params audio_cfg;
+    int err = 0;
+    err = get_audio_params(json_conn_config, &audio_cfg);
+    if (err) {
+        LOG("[TX] Failed to get audio params");
+        return err;
+    }
     LOG("[TX] Audio configuration: channels: %d sample_rate: %li packet_time: %li",
         audio_cfg.channels, audio_cfg.sample_rate, audio_cfg.packet_time);
-    int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
     if (file == NULL) {
