@@ -970,10 +970,11 @@ int ConnectionContext::shutdown()
                         }
 
                         err = buf_ctx->enqueue(500);
-                        if (err)
-                            break;
 
                         delete buf_ctx;
+
+                        if (err)
+                            break;
                     }
                 });
 
