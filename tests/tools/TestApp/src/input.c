@@ -11,7 +11,7 @@
 #include <string.h>
 #include <jansson.h>
 #include "input.h"
-#include "../Inc/mcm.h" /* pixel format number definitions */
+#include "mesh_dp.h"
 
 #define S_TO_US_RATIO (int)1000000
 #define MS_TO_US_RATIO (int)1000
@@ -105,11 +105,11 @@ int get_video_params(const char *json_string, video_params *params) {
     }
     char *temp_pix_format = (char *)json_string_value(video_value);
     if (strcmp(temp_pix_format, "yuv422p10le") == 0) {
-        params.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
+        params->pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
     } else if (strcmp(temp_pix_format, "v210") == 0) {
-        params.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
+        params->pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
     } else if (strcmp(temp_pix_format, "yuv422p10rfc4175") == 0) {
-        params.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
+        params->pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
     } else {
         fprintf(stderr, "error: invalid pixel format\n");
         goto exit;

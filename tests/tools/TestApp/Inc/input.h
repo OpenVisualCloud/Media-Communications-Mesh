@@ -12,7 +12,7 @@ typedef struct video_params {
     int width;
     int height;
     double fps;
-    char *pixel_format;
+    int pixel_format;
 } video_params;
 
 typedef struct audio_params {
