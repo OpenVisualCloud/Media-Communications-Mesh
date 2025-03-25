@@ -14,7 +14,6 @@
 #include "Inc/mcm.h"
 #include "Inc/misc.h"
 
-
 char *client_cfg;
 char *conn_cfg;
 MeshConnection *connection = NULL;
@@ -38,7 +37,7 @@ int main(int argc, char **argv) {
     char *video_file = argv[3];
 
     LOG("[TX] Launching TX app");
-    
+
     LOG("[TX] Reading client configuration...");
     client_cfg = input_parse_file_to_string(client_cfg_file);
     LOG("[TX] Reading connection configuration...");
@@ -61,19 +60,19 @@ int main(int argc, char **argv) {
     /* Open file and send its contents in loop*/
     if (input_loop == -1) {
         LOG("[TX] sending video frames inf times");
-        while(1){
+        while (1) {
             err = mcm_send_video_frames(connection, video_file, conn_cfg);
-            if(err){
+            if (err) {
                 LOG("[TX] Failed to send audio packets: %s (%d)", mesh_err2str(err), err);
                 break;
             }
-            if ( shutdown_flag == SHUTDOWN_REQUESTED ) {
+            if (shutdown_flag == SHUTDOWN_REQUESTED) {
                 break;
             }
         }
     } else if (input_loop > 0) {
         LOG("[TX] sending video frames %d times", input_loop);
-        for (int i = 0; i < input_loop; i++){
+        for (int i = 0; i < input_loop; i++) {
             err = mcm_send_video_frames(connection, video_file, conn_cfg);
             if (err) {
                 LOG("[TX] Failed to send video frames: %s (%d)", mesh_err2str(err), err);
@@ -90,7 +89,7 @@ int main(int argc, char **argv) {
             LOG("[TX] Failed to send video frames: %s (%d)", mesh_err2str(err), err);
         }
     }
-    
+
 safe_exit:
     LOG("[TX] Shuting down connection");
     if (connection) {

@@ -4,15 +4,15 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
- #include <stdio.h>
- #include <string.h>
- #include <stdlib.h>
- #include <unistd.h>
- #include <signal.h>
- 
- #include "Inc/input.h"
- #include "Inc/mcm.h"
- #include "Inc/misc.h"
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <signal.h>
+
+#include "Inc/input.h"
+#include "Inc/mcm.h"
+#include "Inc/misc.h"
 
 char *client_cfg;
 char *conn_cfg;

@@ -58,15 +58,13 @@ char *input_parse_file_to_string(const char *file_name) {
     return buffer;
 }
 
-
-
-video_params get_video_params(const char *json_string){
+video_params get_video_params(const char *json_string) {
 
     json_t *root;
     json_error_t error;
-    json_t* video_value;
+    json_t *video_value;
 
-        video_params params ={};
+    video_params params = {};
 
     root = json_loads(json_string, 0, &error);
     if (!root) {
@@ -75,19 +73,19 @@ video_params get_video_params(const char *json_string){
         goto exit;
     }
 
-    json_t* payload = json_object_get(root,"payload");
+    json_t *payload = json_object_get(root, "payload");
     if (!payload) {
         fprintf(stderr, "error: key not found\n");
         json_decref(payload);
         goto exit;
     }
-    json_t* video = json_object_get(payload,"video");
+    json_t *video = json_object_get(payload, "video");
     if (!video) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video);
         goto exit;
     }
-    video_value = json_object_get(video,"fps");
+    video_value = json_object_get(video, "fps");
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
@@ -95,7 +93,7 @@ video_params get_video_params(const char *json_string){
     }
     params.fps = json_number_value(video_value);
 
-    video_value = json_object_get(video,"pixelFormat");
+    video_value = json_object_get(video, "pixelFormat");
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
@@ -116,15 +114,15 @@ video_params get_video_params(const char *json_string){
         goto exit;
     }
 
-    video_value = json_object_get(video,"width");
+    video_value = json_object_get(video, "width");
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
         goto exit;
     }
-        params.width = (int)json_number_value(video_value);
+    params.width = (int)json_number_value(video_value);
 
-    video_value = json_object_get(video,"height");
+    video_value = json_object_get(video, "height");
     if (!video_value) {
         fprintf(stderr, "error: key not found\n");
         json_decref(video_value);
@@ -185,7 +183,7 @@ audio_params get_audio_params(const char *json_string) {
         json_decref(audio_value);
         goto exit;
     }
-    params.format= (char*)json_string_value(audio_value);
+    params.format = (char *)json_string_value(audio_value);
 
     audio_value = json_object_get(audio, "packetTime");
     if (!audio_value) {
@@ -193,7 +191,7 @@ audio_params get_audio_params(const char *json_string) {
         json_decref(audio_value);
         goto exit;
     }
-    params.packet_time= parse_time_string_to_us(json_string_value(audio_value));
+    params.packet_time = parse_time_string_to_us(json_string_value(audio_value));
 
 exit:
     return params;
@@ -247,7 +245,7 @@ void parse_cli_commands(int argc, char *argv[]) {
         if (strncmp(argv[i], "-l", 2) == 0) {
             // Check if the parameter is "-l<number>" or "-li<number>"
             if (argv[i][2] == 'i') {
-                input_loop = -1; 
+                input_loop = -1;
             } else {
                 // Extract the number following "-l"
                 char *number_str = argv[i] + 2; // Skip "-l"

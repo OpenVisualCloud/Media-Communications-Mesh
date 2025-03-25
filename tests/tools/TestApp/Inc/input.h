@@ -8,20 +8,19 @@
 #define _INPUT_H_
 
 #include <time.h>
-typedef struct video_params{
-  int width;
-  int height;
-  double fps;
-  int pixel_format;
-}video_params;
+typedef struct video_params {
+    int width;
+    int height;
+    double fps;
+    char *pixel_format;
+} video_params;
 
-typedef struct audio_params{
-  int channels;
-  long long sample_rate;
-  char* format;
-  long long packet_time;
-}audio_params;
-
+typedef struct audio_params {
+    int channels;
+    long long sample_rate;
+    char *format;
+    long long packet_time;
+} audio_params;
 
 char *input_parse_file_to_string(const char *file_name);
 video_params get_video_params(const char *json_string);

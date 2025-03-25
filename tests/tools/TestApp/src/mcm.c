@@ -14,17 +14,16 @@
 #include "misc.h"
 #include "input.h"
 
-
 #define SECOND_IN_US (double)1000000.0
-#define BLOB_DELAY_IN_US (__useconds_t)1000 //1ms
+#define BLOB_DELAY_IN_US (__useconds_t)1000 // 1ms
 /* PRIVATE */
 void buffer_to_file(FILE *file, MeshBuffer *buf);
 
-
-int mcm_send_video_frames(MeshConnection *connection, const char *filename, const char *json_conn_config) {
+int mcm_send_video_frames(MeshConnection *connection, const char *filename,
+                          const char *json_conn_config) {
     video_params video_cfg = get_video_params(json_conn_config);
-    LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
-    LOG("[TX] Video pixel format: %s", video_cfg.pixel_format);
+    LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height,
+        video_cfg.fps);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
@@ -33,11 +32,10 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, cons
         err = 1;
         return err;
     }
-    
-    /* execute cpp class code  here */
+
     unsigned int frame_num = 0;
     size_t read_size = 1;
-    int sleep_us = (uint32_t)(SECOND_IN_US/video_cfg.fps);
+    int sleep_us = (uint32_t)(SECOND_IN_US / video_cfg.fps);
     struct timespec ts_begin = {}, ts_end = {};
     struct timespec ts_frame_begin = {}, ts_frame_end = {};
     __useconds_t elapsed = 0;
@@ -65,17 +63,17 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, cons
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
-        if (shutdown_flag  != 0 ) {
+        if (shutdown_flag != 0) {
             LOG("[TX] Graceful shutdown requested");
             goto close_file;
         }
         clock_gettime(CLOCK_REALTIME, &ts_frame_end);
-        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) +
+                  (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec) / 1000;
         if (sleep_us - elapsed >= 0) {
             usleep(sleep_us - elapsed);
             LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
-        }
-        else {
+        } else {
             LOG("[TX] Cannot keep the pace with %d fps!", video_cfg.fps);
         }
     }
@@ -85,15 +83,11 @@ close_file:
     return err;
 }
 
-int mcm_send_audio_packets(MeshConnection *connection, const char *filename, const char *json_conn_config) {
-    /* 
-        packet_time, format, sample_rate match tables,
-        order as in Media-Communications-Mesh/sdk/include/mesh_dp.hL231
-    */
+int mcm_send_audio_packets(MeshConnection *connection, const char *filename,
+                           const char *json_conn_config) {
     audio_params audio_cfg = get_audio_params(json_conn_config);
-    LOG("[TX] Audio configuration: channels: %d sample_rate: %li packet_time: %li", audio_cfg.channels, 
-        audio_cfg.sample_rate, audio_cfg.packet_time);
-    LOG("[TX] Audio format: %s", audio_cfg.format);
+    LOG("[TX] Audio configuration: channels: %d sample_rate: %li packet_time: %li",
+        audio_cfg.channels, audio_cfg.sample_rate, audio_cfg.packet_time);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
@@ -145,17 +139,17 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename, con
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
-        if (shutdown_flag  != 0 ) {
+        if (shutdown_flag != 0) {
             LOG("[TX] Graceful shutdown requested");
             goto close_file;
         }
         clock_gettime(CLOCK_REALTIME, &ts_frame_end);
-        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) +
+                  (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec) / 1000;
         if (sleep_us > elapsed) {
             usleep(sleep_us - elapsed);
             LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
-        }
-        else {
+        } else {
             LOG("[TX] Cannot keep the pace with %d time!", sleep_us);
         }
     }
@@ -175,7 +169,7 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
         err = 1;
         return err;
     }
-    
+
     /* execute cpp class code  here */
     unsigned int frame_num = 0;
     size_t read_size = 1;
@@ -199,7 +193,7 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
             }
             goto close_file;
         }
-        
+
         if (read_size > buf->payload_len) {
             LOG("[TX] read_size is bigger than payload_len: %s (%d)", mesh_err2str(err), err);
             mesh_buffer_set_payload_len(buf, 0);
@@ -219,27 +213,25 @@ int mcm_send_blob_packets(MeshConnection *connection, const char *filename) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
             goto close_file;
         }
-        if (shutdown_flag  != 0 ) {
+        if (shutdown_flag != 0) {
             LOG("[TX] Graceful shutdown requested");
             goto close_file;
         }
         clock_gettime(CLOCK_REALTIME, &ts_frame_end);
-        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) + (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec)/1000;
+        elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) +
+                  (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec) / 1000;
         if (BLOB_DELAY_IN_US > elapsed) {
             usleep(BLOB_DELAY_IN_US - elapsed);
             LOG("[TX] Elapsed: %d; Slept: %d", elapsed, BLOB_DELAY_IN_US - elapsed);
-        }
-        else {
+        } else {
             LOG("[TX] Cannot keep the pace with %d time, dropping packet!", BLOB_DELAY_IN_US);
-
         }
     }
     LOG("[TX] data sent successfully");
 close_file:
-   fclose(file);
+    fclose(file);
     return err;
 }
-
 
 void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int timeout = MESH_TIMEOUT_INFINITE;
