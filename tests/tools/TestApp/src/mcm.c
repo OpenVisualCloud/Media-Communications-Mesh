@@ -43,7 +43,6 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, cons
     __useconds_t elapsed = 0;
     while (1) {
         clock_gettime(CLOCK_REALTIME, &ts_frame_begin);
-        LOG("[TX] Sending frame: %d", ++frame_num);
 
         /* Ask the mesh to allocate a shared memory buffer for user data */
         err = mesh_get_buffer(connection, &buf);
@@ -60,6 +59,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename, cons
             }
             goto close_file;
         }
+        LOG("[TX] Sending frame: %d", ++frame_num);
         err = mesh_put_buffer(&buf);
         if (err) {
             LOG("[TX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
