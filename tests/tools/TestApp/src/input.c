@@ -103,17 +103,14 @@ int get_video_params(const char *json_string, video_params *params) {
         err = 1;
         goto exit;
     }
-    char* temp_pix_format = (char*)json_string_value(video_value);
-    if (strcmp(temp_pix_format, "yuv422p10le") == 0){
+    char *temp_pix_format = (char *)json_string_value(video_value);
+    if (strcmp(temp_pix_format, "yuv422p10le") == 0) {
         params.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE;
-    }
-    else if (strcmp(temp_pix_format, "v210") == 0){
+    } else if (strcmp(temp_pix_format, "v210") == 0) {
         params.pixel_format = MESH_VIDEO_PIXEL_FORMAT_V210;
-    }
-    else if (strcmp(temp_pix_format, "yuv422p10rfc4175") == 0){
+    } else if (strcmp(temp_pix_format, "yuv422p10rfc4175") == 0) {
         params.pixel_format = MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10;
-    }
-    else {
+    } else {
         fprintf(stderr, "error: invalid pixel format\n");
         goto exit;
     }
