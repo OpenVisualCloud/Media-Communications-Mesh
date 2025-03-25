@@ -92,7 +92,7 @@ video_params get_video_params(const char *json_string){
         json_decref(video_value);
         goto exit;
     }
-    params.fps = (int)json_number_value(video_value);
+    params.fps = json_number_value(video_value);
 
     video_value = json_object_get(video,"pixelFormat");
     if (!video_value) {
