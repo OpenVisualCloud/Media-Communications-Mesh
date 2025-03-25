@@ -161,7 +161,7 @@ function apply_dpdk_patches()
         if [[ "${error}" == "0" ]]; then
             log_success "Ok. ${pt}"
         else
-            log_error "Error (${error}): Faild to apply ${pt}"
+            log_error "Error (${error}): Failed to apply ${pt}"
             exit 1
         fi
     done
