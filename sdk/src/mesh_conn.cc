@@ -11,6 +11,8 @@
 #include "mesh_sdk_api.h"
 #include "mesh_logger.h"
 #include "json.hpp"
+#include <thread>
+#include <stop_token>
 
 /**
  * Isolation interface for testability. Accessed from unit tests only.
@@ -935,23 +937,58 @@ int ConnectionContext::shutdown()
 
     if (mc_ctx->config.enable_grpc) {
         if (grpc_conn) {
-            /** In Sender mode, delay for 50ms to allow for completing
+            /** In Sender mode, delay for 50 ms to allow for completing
              * transmission of all buffers sitting in the memif queue
              * before destroying the connection.
              *
              * TODO: Replace the delay with polling of the actual memif
              * queue status.
              */
-            if (cfg.kind == MESH_CONN_KIND_SENDER)
+            if (cfg.kind == MESH_CONN_KIND_SENDER) {
                 usleep(50000);
+                mesh_internal_ops.grpc_destroy_conn(grpc_conn);
+            } else {
+                /**
+                 * In Receiver mode, start a thread to drain the queue continuously
+                 * while the DeleteConnection request is being processed in Media
+                 * Proxy and Mesh Agent. This prevents the following errors at
+                 * connection shutdown:
+                 *     Failed to alloc memif buffer: Ring buffer full.
+                 */
+                std::stop_source ss;
 
-            mesh_internal_ops.grpc_destroy_conn(grpc_conn);
+                std::jthread th([&] {
+                    while (!ss.stop_requested()) {
+                        BufferContext *buf_ctx = new(std::nothrow) BufferContext(this);
+                        if (!buf_ctx)
+                            break;
+                    
+                        int err = buf_ctx->dequeue(500);
+                        if (err) {
+                            delete buf_ctx;
+                            break;
+                        }
+
+                        err = buf_ctx->enqueue(500);
+
+                        delete buf_ctx;
+
+                        if (err)
+                            break;
+                    }
+                });
+
+                mesh_internal_ops.grpc_destroy_conn(grpc_conn);
+
+                ss.request_stop();
+            }
+
             grpc_conn = NULL;
             handle = NULL;
         }
     } else {
         if (handle) {
-            /** In Sender mode, delay for 50ms to allow for completing
+            /** In Sender mode, delay for 50 ms to allow for completing
              * transmission of all buffers sitting in the memif queue
              * before destroying the connection.
              *

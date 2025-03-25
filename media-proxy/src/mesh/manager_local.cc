@@ -12,6 +12,7 @@
 #include "logger.h"
 #include <mtl/st_pipeline_api.h>
 #include "proxy_api.h"
+#include <cmath>
 
 namespace mesh::connection {
 
@@ -79,7 +80,9 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
 
     conn->set_config(conn_config);
 
-    auto res = conn->configure_memif(ctx, &memif_ops, frame_size);
+    uint8_t log2_ring_size = conn_config.buf_queue_capacity ?
+                             std::log2(conn_config.buf_queue_capacity) : 0;
+    auto res = conn->configure_memif(ctx, &memif_ops, frame_size, log2_ring_size);
     if (res != Result::success) {
         registry_sdk.remove(id);
         delete conn;

@@ -25,7 +25,7 @@ Result Group::set_link(context::Context& ctx, Connection *new_link,
 {
     if (!new_link && requester) {
         // Remove the requester as the group input
-        if (requester == _link) {
+        if (requester == link()) {
             log::info("[GROUP] Remove input")("group_id", id)("id", requester->id);
             return Connection::set_link(ctx, nullptr);
         }
@@ -37,17 +37,16 @@ Result Group::set_link(context::Context& ctx, Connection *new_link,
 
             log::info("[GROUP] Delete output")("group_id", id)("id", requester->id);
 
-            // setting_link.store(true, std::memory_order_release);
-            // transmitting.wait(true, std::memory_order_acquire);
             {
-                const std::lock_guard<std::mutex> lk(link_mx);
+                const std::lock_guard<std::mutex> lk(outputs_mx);
 
                 outputs.erase(it);
-            }            
-            // setting_link.store(false, std::memory_order_release);
-            // setting_link.notify_one();
+            }
             break;
         }
+
+        set_hotpath_outputs(&outputs);
+
         return Result::success;
     }
 
@@ -71,15 +70,13 @@ Result Group::add_output(context::Context& ctx, Connection *output) {
 
     log::info("[GROUP] Add output")("group_id", id)("id", output->id);
 
-    // setting_link.store(true, std::memory_order_release);
-    // transmitting.wait(true, std::memory_order_acquire);
     {
-        const std::lock_guard<std::mutex> lk(link_mx);
+        const std::lock_guard<std::mutex> lk(outputs_mx);
 
         outputs.emplace_back(output);
     }    
-    // setting_link.store(false, std::memory_order_release);
-    // setting_link.notify_one();
+
+    set_hotpath_outputs(&outputs);
 
     return Result::success;
 }
@@ -92,13 +89,32 @@ Result Group::on_establish(context::Context& ctx)
     return Result::success;
 }
 
+std::list<Connection *> * Group::get_hotpath_outputs()
+{
+    return reinterpret_cast<std::list<Connection *> *>(outputs_ptr.load_next());
+}
+
+void Group::set_hotpath_outputs(const std::list<Connection *> *new_outputs)
+{
+    if (new_outputs)
+        new_outputs = new std::list<Connection *>(*new_outputs);
+
+    auto prev_outputs_ptr = reinterpret_cast<std::list<Connection *> *>(outputs_ptr.load());
+    
+    outputs_ptr.store_wait((uint64_t)new_outputs,
+                           std::chrono::milliseconds(100));
+    
+    if (prev_outputs_ptr)
+        delete prev_outputs_ptr;
+}
+
 Result Group::on_receive(context::Context& ctx, void *ptr,
                          uint32_t sz, uint32_t& sent)
 {
     if (state() != State::active)
         return set_result(Result::error_wrong_state);
 
-    if (!_link)
+    if (!link())
         return set_result(Result::error_no_link_assigned);
 
     metrics.inbound_bytes += sz;
@@ -107,33 +123,27 @@ Result Group::on_receive(context::Context& ctx, void *ptr,
     uint32_t total_sent = 0;
     uint32_t errors = 0;    
 
-    if (outputs.empty())
+    auto _outputs = get_hotpath_outputs();
+
+    if (!_outputs || _outputs->empty())
         return Result::error_no_link_assigned;
 
-    // thread::Sleep(ctx, std::chrono::milliseconds(2));
-
-    // transmitting.store(true, std::memory_order_release);
-    // setting_link.wait(true, std::memory_order_acquire);
-    {
-        const std::lock_guard<std::mutex> lk(link_mx);
-
-        for (Connection *output : outputs) {
-            if (!output) {
-                errors++;
-                continue;
-            }
-
-            uint32_t out_sent = 0;
-            res = output->do_receive(ctx, ptr, sz, out_sent);
-
-            total_sent += out_sent;
-
-            if (res != Result::success)
-                errors++;
+    for (Connection *output : *_outputs) {
+        if (!output) {
+            errors++;
+            continue;
         }
+
+        uint32_t out_sent = 0;
+        res = output->do_receive(ctx, ptr, sz, out_sent);
+
+        total_sent += out_sent;
+
+        if (res != Result::success)
+            errors++;
     }
-    // transmitting.store(false, std::memory_order_release);
-    // transmitting.notify_all();
+
+    get_hotpath_outputs();
 
     sent = sz;
     metrics.outbound_bytes += total_sent;
@@ -152,6 +162,7 @@ Result Group::on_shutdown(context::Context& ctx)
     set_link(ctx, nullptr);
 
     outputs.clear();
+    set_hotpath_outputs(nullptr);
 
     set_state(ctx, State::closed);
     set_status(ctx, Status::shutdown);
