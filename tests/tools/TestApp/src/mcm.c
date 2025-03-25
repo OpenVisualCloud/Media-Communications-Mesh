@@ -24,7 +24,7 @@ void buffer_to_file(FILE *file, MeshBuffer *buf);
 int mcm_send_video_frames(MeshConnection *connection, const char *filename, const char *json_conn_config) {
     video_params video_cfg = get_video_params(json_conn_config);
     LOG("[TX] Video configuration: %dx%d @ %.2f fps", video_cfg.width, video_cfg.height, video_cfg.fps);
-    LOG("[TX] Video pixel format: %d", video_cfg.pixel_format);
+    LOG("[TX] Video pixel format: %s", video_cfg.pixel_format);
     int err = 0;
     MeshBuffer *buf;
     FILE *file = fopen(filename, "rb");
