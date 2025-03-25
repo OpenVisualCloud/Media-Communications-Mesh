@@ -109,6 +109,7 @@ int mcm_put_client(MeshClient **mc)
 
 const char mcm_json_config_multipoint_group_video_format[] =
     "{"
+      "`bufferQueueCapacity`: %u,"
       "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`multipointGroup`: {"
@@ -127,6 +128,7 @@ const char mcm_json_config_multipoint_group_video_format[] =
 
 const char mcm_json_config_st2110_video_format[] =
     "{"
+      "`bufferQueueCapacity`: %u,"
       "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`st2110`: {"
@@ -149,6 +151,7 @@ const char mcm_json_config_st2110_video_format[] =
 
 const char mcm_json_config_multipoint_group_audio_format[] =
     "{"
+      "`bufferQueueCapacity`: %u,"
       "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`multipointGroup`: {"
@@ -167,6 +170,7 @@ const char mcm_json_config_multipoint_group_audio_format[] =
 
 const char mcm_json_config_st2110_audio_format[] =
     "{"
+      "`bufferQueueCapacity`: %u,"
       "`connCreationDelayMilliseconds`: %u,"
       "`connection`: {"
         "`st2110`: {"

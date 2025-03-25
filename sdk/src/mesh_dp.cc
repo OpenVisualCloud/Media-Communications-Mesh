@@ -301,13 +301,11 @@ int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms)
         return -MESH_ERR_BAD_BUF_PTR;
 
     int err = buf_ctx->enqueue(timeout_ms);
-    if (err)
-        return err;
 
     delete buf_ctx;
     *buf = NULL;
 
-    return 0;
+    return err;
 }
 
 int mesh_buffer_set_payload_len(MeshBuffer *buf, size_t len)

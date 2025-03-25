@@ -198,7 +198,7 @@ int ClientContext::create_conn_json(MeshConnection **conn, int kind)
     if (!conn_ctx)
         return -ENOMEM;
 
-    conn_ctx->cfg_json.kind = kind;
+    conn_ctx->cfg_json.kind = conn_ctx->cfg.kind = kind;
 
     try {
         conns.push_back(conn_ctx);

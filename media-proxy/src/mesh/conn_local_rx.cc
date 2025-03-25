@@ -27,7 +27,7 @@ int LocalRx::on_memif_receive(void *ptr, uint32_t sz)
 {
     if (!link() && !no_link_reported) {
         no_link_reported = true;
-        log::error("Local %s conn: no link", kind2str(_kind, true));
+        log::warn("Local %s conn: no link", kind2str(_kind, true));
     }
 
     auto res = transmit(context::Background(), ptr, sz);

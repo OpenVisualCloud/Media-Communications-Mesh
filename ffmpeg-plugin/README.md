@@ -33,17 +33,18 @@ Install dependencies and build Media Communications Mesh as described in the top
 
 The next arguments are supported to configure a connection to Media Communications Mesh
 
-| Argument        | Type    | Description                                                                     | Default              |
-| --------------- | :-----: | ------------------------------------------------------------------------------- | :------------------: |
-| `conn_delay`    | Integer | Connection creation delay in milliseconds, 0..10000                             | `0`                  |
-| `conn_type`     | String  | Connection type (`"multipoint-group"` or `"st2110"`)                            | `"multipoint-group"` |
-| `urn`           | String  | Multipoint group URN                                                            | `"192.168.97.1"`     |
-| `ip_addr`       | String  | SMPTE ST2110 remote IP address                                                  | `"192.168.96.1"`     |
-| `port`          | String  | SMPTE ST2110 remote port (Transmitter), or local port (Receiver)                | `9001`               |
-| `transport`     | String  | SMPTE ST2110 transport type (`"st2110-20"`, `"st2110-22"`, `"st2110-30"`, etc.) | `"st2110-20"`        |
-| `payload_type`  | Integer | SMPTE ST2110 payload type, typically between 96..127                            | `111` or `112`       |
-| `socket_name`   | String  | Memif socket name                                                               | -                    |
-| `interface_id`  | Integer | Memif interface id                                                              | `0`                  |
+| Argument        | Type    | Description                                                                     | Default                       |
+| --------------- | :-----: | ------------------------------------------------------------------------------- | :---------------------------: |
+| `conn_delay`    | Integer | Connection creation delay in milliseconds, 0..10000                             | `0`                           |
+| `conn_type`     | String  | Connection type (`"multipoint-group"` or `"st2110"`)                            | `"multipoint-group"`          |
+| `urn`           | String  | Multipoint group URN                                                            | `"192.168.97.1"`              |
+| `ip_addr`       | String  | SMPTE ST2110 remote IP address                                                  | `"192.168.96.1"`              |
+| `port`          | String  | SMPTE ST2110 remote port (Transmitter), or local port (Receiver)                | `9001`                        |
+| `transport`     | String  | SMPTE ST2110 transport type (`"st2110-20"`, `"st2110-22"`, `"st2110-30"`, etc.) | `"st2110-20"`                 |
+| `payload_type`  | Integer | SMPTE ST2110 payload type, typically between 96..127                            | Video: `112`<br/>Audio: `111` |
+| `socket_name`   | String  | Memif socket name                                                               | -                             |
+| `interface_id`  | Integer | Memif interface id                                                              | `0`                           |
+| `buf_queue_cap` | Integer | Buffer queue capacity, 1..128                                                   | Video: `8`<br/>Audio: `16`   |
 
 ## Video configuration
 

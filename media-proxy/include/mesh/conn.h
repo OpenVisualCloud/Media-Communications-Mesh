@@ -13,6 +13,7 @@
 #include "concurrency.h"
 #include "metrics.h"
 #include "sdk.grpc.pb.h"
+#include "sync.h"
 
 namespace mesh::connection {
 
@@ -240,11 +241,8 @@ protected:
     virtual void on_delete(context::Context& ctx) {}
 
     Kind _kind = Kind::undefined; // must be properly set in the derived class ctor
-    Connection *_link = nullptr;
-    // std::atomic<bool> setting_link = false; // held in set_link()
-    // std::atomic<bool> transmitting = false; // held in on_receive()
 
-    std::mutex link_mx;
+    sync::DataplaneAtomicUint64 dp_link;
 
     struct {
         std::atomic<uint64_t> inbound_bytes;
