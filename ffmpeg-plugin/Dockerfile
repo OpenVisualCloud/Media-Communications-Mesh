@@ -63,7 +63,7 @@ FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 LABEL maintainer="milosz.linkiewicz@intel.com,konstantin.ilichev@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh FFmpeg"
 LABEL org.opencontainers.image.description="Media Communications Mesh FFmpeg with MCM-Muxer and MCM-Demuxer plugins. Ubuntu 22.04 Docker Release Image."
-LABEL org.opencontainers.image.version="1.25.03"
+LABEL org.opencontainers.image.version="25.03.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
