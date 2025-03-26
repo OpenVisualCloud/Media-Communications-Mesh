@@ -90,9 +90,6 @@ function get_and_patch_intel_drivers()
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
-    IRDMA_REPO="$(get_irdma_driver_tgz)"
-    wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}" && \
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
     pushd "${ICE_DIR}" && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
@@ -118,8 +115,11 @@ function build_install_and_config_intel_drivers()
 
 function build_install_and_config_irdma_drivers()
 {
+    IRDMA_REPO="$(get_irdma_driver_tgz)"
+    wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
+    
     if pushd "${IRDMA_DIR}"; then
-
         "${IRDMA_DIR}/build_core.sh" -y || exit 2
         as_root "${IRDMA_DIR}/install_core.sh"  || exit 3
 
@@ -276,10 +276,9 @@ then
   set -exEo pipefail  
  
   if [[ "${1}" == "get-ice" || "${1}" == "all" ]]; then
-    install_os_dependencies
-    get_and_patch_intel_drivers &&
-    build_install_and_config_intel_drivers &&
-    build_install_and_config_irdma_drivers    
+    install_os_dependencies && \
+    get_and_patch_intel_drivers && \
+    build_install_and_config_intel_drivers
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
       log_success "Finished: Build and install and configuration of Intel drivers.";
@@ -288,12 +287,16 @@ then
     fi
   fi
   if [[ "${1}" == "get-irdma" || "${1}" == "all" ]]; then
-    config_intel_rdma_driver &&
+    build_install_and_config_irdma_drivers && \
+    config_intel_rdma_driver && \
     lib_install_fabrics
     return_code="$?"
-    [[ "${return_code}" == "0" ]] && { log_success "Finished: iRDMA driver configuration for Intel hardware backend."; exit 0; }
-    log_error "Intel iRDMA configuration failed."
-    exit "${return_code}"
+    if [[ "${return_code}" == "0" ]]; then
+      log_success "Finished: iRDMA driver configuration for Intel hardware backend."
+    else
+      log_error "Intel iRDMA configuration failed."
+      exit "${return_code}"
+    fi
   fi
   if [[ "$1" == "get-perftest" || "${1}" == "all" ]]; then
     install_perftest
