@@ -39,7 +39,12 @@ private:
 
 private:
     std::list<Connection *> outputs;
+    std::mutex outputs_mx;
 
+    sync::DataplaneAtomicUint64 outputs_ptr;
+
+    std::list<Connection *> * get_hotpath_outputs();
+    void set_hotpath_outputs(const std::list<Connection *> *new_outputs);
 };
 
 } // namespace mesh::multipoint

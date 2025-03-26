@@ -38,7 +38,7 @@ The Media Proxy requires Mesh Agent to be running and listening at `localhost:50
 
 If Media Proxy successfully launches up, it opens a port for listening to control requests from SDK via gRPC (default 8002).
 
-All supported parameters can get with the program "helper" function.
+All supported parameters for `media_proxy` can be printed by passing `-h` argument as follows:
 
 ```bash
 media_proxy -h
@@ -52,6 +52,14 @@ Usage: media_proxy [OPTION]
 -i, --st2110_ip=ip_address      IP address for SMPTE 2110 (default: 192.168.96.1)
 -r, --rdma_ip=ip_address        IP address for RDMA (default: 192.168.96.2)
 -p, --rdma_ports=ports_ranges   Local port ranges for incoming RDMA connections (default: 9100-9999)
+```
+
+Additionally, by having environment variables `MEDIA_PROXY_MAIN_LCORE`, `MEDIA_PROXY_LCORES` or `KAHAWAI_CFG_PATH` defined in your `shell` environment before the execution of `media_proxy` you can influence more low level behaviour as explained bellow. Setting the variables is optional and should be accompanied by OS pre-configuration:
+
+```
+MEDIA_PROXY_LCORES="1,5-9,64-69"..: list/range of lcores that will available to media_proxy stack for usage.
+MEDIA_PROXY_MAIN_LCORE="32".......: force lcore number passed to be used for handling DPDK/MTL main stack/loop.
+KAHAWAI_CFG_PATH="/etc/mtl.json"..: absolute path to the exact location of mtl.json file [refer MTL for help].
 ```
 
 ### Run Media Proxy using `native_af_xdp`
