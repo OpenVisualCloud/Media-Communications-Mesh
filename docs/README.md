@@ -76,11 +76,13 @@ The framework creates a secure, standards-based media data plane for inter-micro
         To use this option run the following commands:
 
         ```bash
-        sudo ./scripts/setup_ice_irdma.sh
-        ```
-        and then
-        ```bash
         sudo ./scripts/setup_build_env.sh
+        ```
+        
+        and then
+      
+        ```bash
+        sudo ./scripts/setup_ice_irdma.sh all
         ```
 
         Reboot the machine after the scripts are executed.
@@ -106,7 +108,7 @@ The framework creates a secure, standards-based media data plane for inter-micro
         - Install the irdma driver and libfabric:
 
             ```bash
-            ./scripts/setup_rdma_env.sh install
+            sudo ./scripts/setup_ice_irdma.sh get-irdma
             ```
             > More information about libfabric installation can be found in [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
 
