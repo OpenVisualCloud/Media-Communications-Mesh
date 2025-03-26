@@ -25,6 +25,9 @@ function print_usage()
     log_info "\t\t temporarily set MTU to 9000 for given interface."
     log_info "\trun-perftest <INTERFACE>"
     log_info "\t\t execute installed perftests."
+    log_info "" 
+    log_info "\tintel"
+    log_info "\t\t animation in bash"
 }
 
 function install_os_dependencies()
@@ -310,6 +313,8 @@ then
     check_mtu
   elif [[ "$1" == "run-perftest" ]]; then
     run_perftest "$@"
+  elif [[ "$1" == "intel" ]]; then
+    print_logo_anim
   else
     print_usage
   fi
