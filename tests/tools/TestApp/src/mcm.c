@@ -76,6 +76,7 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename,
         clock_gettime(CLOCK_REALTIME, &ts_frame_end);
         elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) +
                   (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec) / 1000;
+        printf("elapsed: %li; sleep_us: %li\n", elapsed, sleep_us - elapsed);
         if (sleep_us - elapsed >= 0) {
             usleep(sleep_us - elapsed);
             LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
