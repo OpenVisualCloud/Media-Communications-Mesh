@@ -130,6 +130,17 @@ void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
     if (getenv("KAHAWAI_CFG_PATH") == NULL) {
         setenv("KAHAWAI_CFG_PATH", "/usr/local/etc/imtl.json", 0);
     }
+    if (getenv("MEDIA_PROXY_MAIN_LCORE") != NULL) {
+        try {
+            st_param.main_lcore = std::stoul(std::string(getenv("MEDIA_PROXY_MAIN_LCORE")));
+        } catch (const std::invalid_argument& e) {
+            log::error("Conversion failed, Env MEDIA_PROXY_MAIN_LCORE must be an integer");
+            st_param.main_lcore = 0;
+        } catch (const std::out_of_range& e) {
+            log::error("Conversion failed, Env MEDIA_PROXY_MAIN_LCORE is out of range");
+            st_param.main_lcore = 0;
+        }
+    }
     strlcpy(st_param.port[MTL_PORT_P], dev_port.c_str(), MTL_PORT_MAX_LEN);
     inet_pton(AF_INET, ip_addr.c_str(), st_param.sip_addr[MTL_PORT_P]);
     st_param.pmd[MTL_PORT_P] = mtl_pmd_by_port_name(st_param.port[MTL_PORT_P]);
@@ -137,6 +148,7 @@ void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
     st_param.flags = MTL_FLAG_BIND_NUMA;
     st_param.flags |= MTL_FLAG_TX_VIDEO_MIGRATE;
     st_param.flags |= MTL_FLAG_RX_VIDEO_MIGRATE;
+    st_param.flags |= MTL_FLAG_RX_SEPARATE_VIDEO_LCORE;
     st_param.flags |= MTL_FLAG_RX_UDP_PORT_ONLY;
     st_param.pacing = ST21_TX_PACING_WAY_AUTO;
     st_param.log_level = log_level;
@@ -148,7 +160,7 @@ void get_mtl_dev_params(mtl_init_params& st_param, const std::string& dev_port,
     // setting rx_queues_cnt/tx_queues_cnt to max supported size
     st_param.rx_queues_cnt[MTL_PORT_P] = 16;
     st_param.tx_queues_cnt[MTL_PORT_P] = 16;
-    st_param.lcores = NULL;
+    st_param.lcores = getenv("MEDIA_PROXY_LCORES");
     st_param.memzone_max = 9000;
 }
 
