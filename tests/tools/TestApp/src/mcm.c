@@ -76,9 +76,9 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename,
         clock_gettime(CLOCK_REALTIME, &ts_frame_end);
         elapsed = 1000000 * (ts_frame_end.tv_sec - ts_frame_begin.tv_sec) +
                   (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec) / 1000;
-        if (sleep_us - elapsed >= 0) {
+        if (sleep_us > elapsed) {
             usleep(sleep_us - elapsed);
-            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+            LOG("[TX] Elapsed: %li; Slept: %li", elapsed, sleep_us - elapsed);
         } else {
             LOG("[TX] Cannot keep the pace with %d fps!", video_cfg.fps);
         }
@@ -159,7 +159,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename,
                   (ts_frame_end.tv_nsec - ts_frame_begin.tv_nsec) / 1000;
         if (sleep_us > elapsed) {
             usleep(sleep_us - elapsed);
-            LOG("[TX] Elapsed: %d; Slept: %d", elapsed, sleep_us - elapsed);
+            LOG("[TX] Elapsed: %li; Slept: %li", elapsed, sleep_us - elapsed);
         } else {
             LOG("[TX] Cannot keep the pace with %d time!", sleep_us);
         }
