@@ -142,7 +142,7 @@ FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as media-proxy
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh Media Proxy"
 LABEL org.opencontainers.image.description="Media Communications Mesh Media Proxy application. Ubuntu 22.04 Docker Container Release Image"
-LABEL org.opencontainers.image.version="1.25.03"
+LABEL org.opencontainers.image.version="25.03"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
@@ -189,7 +189,7 @@ FROM media-proxy as mtl-manager
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh Mtl Manager"
 LABEL org.opencontainers.image.description="Media Communications Mesh Mtl Manager application. Ubuntu 22.04 Docker Container Release Image"
-LABEL org.opencontainers.image.version="1.25.03"
+LABEL org.opencontainers.image.version="25.03"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
@@ -203,7 +203,7 @@ FROM media-proxy as mesh-agent
 LABEL maintainer="milosz.linkiewicz@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh Mesh Agent"
 LABEL org.opencontainers.image.description="Media Communications Mesh Mesh Agent application. Ubuntu 22.04 Docker Container Release Image"
-LABEL org.opencontainers.image.version="1.25.03"
+LABEL org.opencontainers.image.version="25.03"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
