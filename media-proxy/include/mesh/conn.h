@@ -242,7 +242,7 @@ protected:
 
     Kind _kind = Kind::undefined; // must be properly set in the derived class ctor
 
-    sync::DataplaneAtomicUint64 dp_link;
+    sync::DataplaneAtomicPtr dp_link;
 
     struct {
         std::atomic<uint64_t> inbound_bytes;

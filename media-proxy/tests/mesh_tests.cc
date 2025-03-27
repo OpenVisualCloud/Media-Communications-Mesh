@@ -7,36 +7,45 @@
 #include <gtest/gtest.h>
 #include "mesh/sync.h"
 
-TEST(mesh_test, DataplaneAtomicUint64) {
-    mesh::sync::DataplaneAtomicUint64 v;
-    ASSERT_EQ(v.load(), 0);
-    ASSERT_EQ(v.load_next(), 0);
+TEST(mesh_test, DataplaneAtomicPtr) {
+    mesh::sync::DataplaneAtomicPtr ptr;
+    ASSERT_EQ(ptr.load(), nullptr);
+    ASSERT_EQ(ptr.load_next_lock(), nullptr);
+    ptr.unlock();
 
-    v.store_wait(123, std::chrono::milliseconds(100));
-    ASSERT_EQ(v.load(), 123);
-    ASSERT_EQ(v.load_next(), 123);
+    ptr.store_wait((void *)0x400);
+    ASSERT_EQ(ptr.load(), (void *)0x400);
+    ASSERT_EQ(ptr.load_next_lock(), (void *)0x400);
+    ptr.unlock();
 
     // Simulate regular write access
     std::jthread th1([&]() {
         std::this_thread::sleep_for(std::chrono::milliseconds(100));
-        v.store_wait(567, std::chrono::milliseconds(5000));
+        ptr.store_wait((void *)0x500);
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+        ASSERT_EQ(ptr.load(), (void *)0x500);
     });
 
     // Simulate hotpath
     std::jthread th2([&]() {
-        ASSERT_EQ(v.load_next(), 123);
+        ASSERT_EQ(ptr.load_next_lock(), (void *)0x400);
         std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        ASSERT_EQ(v.load_next(), 567);
-        std::this_thread::sleep_for(std::chrono::milliseconds(200));
-        ASSERT_EQ(v.load_next(), 567);
+        ptr.unlock();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+
+        ASSERT_EQ(ptr.load_next_lock(), (void *)0x500);
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        ptr.unlock();
     });
 
-    // Simulate regular read access
-    ASSERT_EQ(v.load(), 123);
+    ASSERT_EQ(ptr.load(), (void *)0x400);
     std::this_thread::sleep_for(std::chrono::milliseconds(150));
-    ASSERT_EQ(v.load(), 123);
+    ASSERT_EQ(ptr.load(), (void *)0x400);
     std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    ASSERT_EQ(v.load(), 567);
-    std::this_thread::sleep_for(std::chrono::milliseconds(200));
-    ASSERT_EQ(v.load(), 567);
+    ASSERT_EQ(ptr.load(), (void *)0x500);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    ASSERT_EQ(ptr.load(), (void *)0x500);
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    ASSERT_EQ(ptr.load(), (void *)0x500);
 }

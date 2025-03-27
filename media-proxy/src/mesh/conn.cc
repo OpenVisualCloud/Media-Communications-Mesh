@@ -232,10 +232,15 @@ Result Connection::transmit(context::Context& ctx, void *ptr, uint32_t sz)
     if (state() != State::active)
         return set_result(Result::error_wrong_state);
 
-    auto _link = (Connection *)dp_link.load_next();
+    if (!ptr || !sz)
+        return set_result(Result::error_no_buffer);
 
-    if (!_link)
+    auto _link = (Connection *)dp_link.load_next_lock();
+
+    if (!_link) {
+        dp_link.unlock();
         return set_result(Result::error_no_link_assigned);
+    }
 
     metrics.inbound_bytes += sz;
 
@@ -244,7 +249,7 @@ Result Connection::transmit(context::Context& ctx, void *ptr, uint32_t sz)
 
     res = _link->do_receive(ctx, ptr, sz, sent);
 
-    dp_link.load_next();
+    dp_link.unlock();
 
     metrics.outbound_bytes += sent;
 
@@ -261,6 +266,9 @@ Result Connection::do_receive(context::Context& ctx, void *ptr, uint32_t sz,
 {
     // WARNING: This is the hot path of Data Plane.
     // Avoid any unnecessary operations that can increase latency.
+
+    if (!ptr || !sz)
+        return set_result(Result::error_no_buffer);
 
     metrics.inbound_bytes += sz;
 
@@ -305,7 +313,7 @@ Result Connection::set_link(context::Context& ctx, Connection *new_link,
     // TODO: generate an Event (conn_changing_link).
     // Use context to cancel sending the Event.
 
-    dp_link.store_wait((uint64_t)new_link, std::chrono::milliseconds(100));
+    dp_link.store_wait(new_link);
 
     // TODO: generate a post Event (conn_link_changed).
     // Use context to cancel sending the Event.

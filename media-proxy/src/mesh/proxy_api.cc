@@ -452,7 +452,6 @@ int ProxyAPIClient::Run(context::Context& ctx)
         return -1;
     }
 
-    log::debug("Proxy API client thread exited");
     return 0;
 }
 

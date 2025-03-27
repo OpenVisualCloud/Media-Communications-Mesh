@@ -13,41 +13,40 @@
 namespace mesh::sync {
 
 /**
- * DataplaneAtomicUint64
+ * DataplaneAtomicPtr
  * 
- * 64-bit unsigned integer custom atomic lock-free class designed to support
- * prioritized access levels:
- *   - Hotpath access    Method(s): load_next()
+ * Custom atomic lock-free class to store a void memory pointer designed to
+ * support prioritized access levels:
+ *   - Hotpath access    Method(s): load_next_lock(), unlock()
  *   - Regular access    Method(s): load(), store_wait()
  *
  * The hotpath access is the fastest possible lock-free approach to read
- * the 64-bit value. It is meant to be used in interrupts and callbacks
- * that happen when a new block of data appears on the network. The load_next()
- * method returns the 64-bit value. The hotpath access must be used in only
- * one thread. Multiple threads calling load_next() will lead to undetermined
- * behavior. The load_next() method should be called twice in the hotpath:
- * before processing and after processing.
+ * the memory pointer value. It is meant to be used in interrupts and callbacks
+ * that happen when a new block of data appears on the network. The critical
+ * section begins with an invokation of the load_next_lock() method that returns
+ * the pointer value and locks the write access. To exit the critical section,
+ * the unlock() method must be called, which unlocks the write access.
+ * 
+ * The hotpath access must be used in only one thread. Multiple threads calling
+ * load_next_lock() and/or lock() will lead to undetermined behavior. 
  * 
  * The regular access is a normal mutex-protected way to read and write the
- * 64-bit value. The store_wait() method is used to write a new value to the
- * class instance. It blocks for some time until the hotpath flow calls
- * load_next(), or a timeout occurs. The timeout interval should be chosen to be
- * at least twice longer than the longest hotpath processing duration.
- * The load() method returns the 64-bit value. Both methods can be called from
- * multiple threads.
+ * pointer value. The store_wait() method is used to write a new value to the
+ * class instance. It blocks infinitely until the hotpath unlocks the write
+ * access. The load() method returns the 64-bit value. Both methods can be
+ * called from multiple threads.
  * 
  * Example:
- * DataplaneAtomicUint64 is used as a storage of a class pointer
  * 
  * // Declaration
- * sync::DataplaneAtomicUint64 myclass_ptr;
+ * sync::DataplaneAtomicPtr myclass_ptr;
  * 
  * // Hotpath (single dedicated thread)
  * ...
- * auto ptr = (MyClass *)myclass_ptr.load_next();
+ * auto ptr = (MyClass *)myclass_ptr.load_next_lock();
  * if (ptr)
  *     ptr->do_something();
- * myclass_ptr.load_next();
+ * myclass_ptr.unlock();
  * ...
  * 
  * // Regular thread (one or many)
@@ -55,22 +54,23 @@ namespace mesh::sync {
  * auto ptr = (MyClass *)myclass_ptr.load();
  * if (ptr)
  *     ptr->do_something_else();
- * myclass_ptr.store_wait((uint64_t)new_ptr, std::chrono::milliseconds(100));
+ * myclass_ptr.store_wait((void *)new_ptr);
  * ...
  */
-class DataplaneAtomicUint64 {
-public:
-    uint64_t load();
-    void store_wait(uint64_t new_value, std::chrono::milliseconds timeout_ms);
+class DataplaneAtomicPtr {
+    public:
+        void * load();
+        void store_wait(void *new_ptr);
 
-    uint64_t load_next();
+        void * load_next_lock();
+        void unlock();
 
-private:
-    std::atomic<uint64_t> current = 0;
-    std::atomic<uint64_t> next = 0;
-    std::mutex mx;
-};
-
+    private:
+        std::atomic<uint64_t> current = 0;
+        std::atomic<uint64_t> next = 0;
+        std::mutex mx;
+    };
+    
 } // namespace mesh::sync
 
 #endif // SYNC_H
