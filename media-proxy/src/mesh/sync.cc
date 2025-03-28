@@ -8,39 +8,56 @@
 
 namespace mesh::sync {
 
-uint64_t DataplaneAtomicUint64::load()
+static const uint64_t STATE_UNLOCKED = 0;
+static const uint64_t STATE_LOCKED   = 2;
+static const uint64_t FLAG_NEW_VALUE = 1;
+
+void * DataplaneAtomicPtr::load()
 {
-    return current.load(std::memory_order_acquire);
+    return (void *)current.load(std::memory_order_acquire);
 }
 
-void DataplaneAtomicUint64::store_wait(uint64_t new_value,
-                                       std::chrono::milliseconds timeout_ms)
+void DataplaneAtomicPtr::store_wait(void *new_ptr)
 {
     std::lock_guard<std::mutex> lk(mx);
 
-    next.store(new_value, std::memory_order_release);
+    uint64_t new_value = (uint64_t)new_ptr;
 
-    auto ctx = context::WithTimeout(context::Background(),
-                                    std::chrono::milliseconds(timeout_ms));
+    auto prev = next.exchange(new_value | FLAG_NEW_VALUE, std::memory_order_acq_rel);
+    if (prev == STATE_LOCKED) {
+        for (;;) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
 
-    for (;;) {
-        thread::Sleep(ctx, std::chrono::milliseconds(5));
-
-        if (ctx.cancelled()) {
-            current.store(new_value, std::memory_order_release);
-            return;
+            if (current.load(std::memory_order_acquire) == new_value)
+                return;
         }
-
-        if (current.load(std::memory_order_acquire) == new_value)
-            return;
     }
+
+    current.store(new_value, std::memory_order_release);
+    return;
 }
 
-uint64_t DataplaneAtomicUint64::load_next()
+void * DataplaneAtomicPtr::load_next_lock()
 {
-    uint64_t next_value = next.load(std::memory_order_acquire);
-    current.store(next_value, std::memory_order_release);
-    return next_value;
+    uint64_t next_value = next.exchange(STATE_LOCKED, std::memory_order_acq_rel);
+    uint64_t current_value;
+
+    if (next_value & FLAG_NEW_VALUE) {
+        current_value = next_value & ~FLAG_NEW_VALUE;
+        current.store(current_value, std::memory_order_release);
+    } else {
+        current_value = current.load(std::memory_order_acquire);
+    }
+
+    return (void *)current_value;
+}
+
+void DataplaneAtomicPtr::unlock()
+{
+    uint64_t next_value = next.exchange(STATE_UNLOCKED, std::memory_order_acq_rel);
+
+    if (next_value & FLAG_NEW_VALUE)
+        current.store(next_value & ~FLAG_NEW_VALUE, std::memory_order_release);
 }
 
 } // namespace mesh::sync

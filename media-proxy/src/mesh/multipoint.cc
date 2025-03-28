@@ -89,20 +89,23 @@ Result Group::on_establish(context::Context& ctx)
     return Result::success;
 }
 
-std::list<Connection *> * Group::get_hotpath_outputs()
+std::list<Connection *> * Group::get_hotpath_outputs_lock()
 {
-    return reinterpret_cast<std::list<Connection *> *>(outputs_ptr.load_next());
+    return reinterpret_cast<std::list<Connection *> *>(outputs_ptr.load_next_lock());
 }
 
-void Group::set_hotpath_outputs(const std::list<Connection *> *new_outputs)
+void Group::hotpath_outputs_unlock() {
+    outputs_ptr.unlock();
+}
+
+void Group::set_hotpath_outputs(std::list<Connection *> *new_outputs)
 {
     if (new_outputs)
         new_outputs = new std::list<Connection *>(*new_outputs);
 
     auto prev_outputs_ptr = reinterpret_cast<std::list<Connection *> *>(outputs_ptr.load());
     
-    outputs_ptr.store_wait((uint64_t)new_outputs,
-                           std::chrono::milliseconds(100));
+    outputs_ptr.store_wait(new_outputs);
     
     if (prev_outputs_ptr)
         delete prev_outputs_ptr;
@@ -123,10 +126,12 @@ Result Group::on_receive(context::Context& ctx, void *ptr,
     uint32_t total_sent = 0;
     uint32_t errors = 0;    
 
-    auto _outputs = get_hotpath_outputs();
+    auto _outputs = get_hotpath_outputs_lock();
 
-    if (!_outputs || _outputs->empty())
+    if (!_outputs || _outputs->empty()) {
+        hotpath_outputs_unlock();
         return Result::error_no_link_assigned;
+    }
 
     for (Connection *output : *_outputs) {
         if (!output) {
@@ -143,7 +148,7 @@ Result Group::on_receive(context::Context& ctx, void *ptr,
             errors++;
     }
 
-    get_hotpath_outputs();
+    hotpath_outputs_unlock();
 
     sent = sz;
     metrics.outbound_bytes += total_sent;

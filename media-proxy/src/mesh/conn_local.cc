@@ -175,7 +175,8 @@ int Local::callback_on_interrupt(memif_conn_handle_t conn, void *private_ctx,
         return err;
     }
 
-    _this->on_memif_receive(shm_bufs.data, shm_bufs.len);
+    if (shm_bufs.data && shm_bufs.len)
+        _this->on_memif_receive(shm_bufs.data, shm_bufs.len);
 
     err = memif_refill_queue(_this->memif_conn, qid, buf_num, 0);
     if (err != MEMIF_ERR_SUCCESS) {
