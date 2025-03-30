@@ -10,6 +10,7 @@ import "conn-config.proto";
 
 service SDKAPI {
   rpc CreateConnection (CreateConnectionRequest) returns (CreateConnectionResponse);
+  rpc ActivateConnection (ActivateConnectionRequest) returns (ActivateConnectionResponse);
   rpc DeleteConnection (DeleteConnectionRequest) returns (DeleteConnectionResponse);
 }
 
@@ -23,6 +24,14 @@ message CreateConnectionResponse {
   string client_id       = 1;
   string conn_id         = 2;
   bytes memif_conn_param = 3;
+}
+
+message ActivateConnectionRequest {
+  string client_id = 1;
+  string conn_id   = 2;
+}
+
+message ActivateConnectionResponse {
 }
 
 message DeleteConnectionRequest {

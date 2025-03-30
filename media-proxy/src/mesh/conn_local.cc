@@ -104,7 +104,7 @@ Result Local::on_establish(context::Context& ctx)
         return set_result(Result::error_out_of_memory);
     }
 
-    set_state(ctx, State::active);
+    set_state(ctx, State::suspended);
     return set_result(Result::success);
 }
 
