@@ -148,6 +148,24 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     return 0;
 }
 
+int LocalManager::activate_connection_sdk(context::Context& ctx, const std::string& id)
+{
+    auto conn = registry_sdk.get(id);
+    if (!conn)
+        return -1;
+
+    log::debug("Activate local conn")("conn_id", conn->id)("id", id);
+
+    {
+        lock(); // TODO: Check if locking is needed for conn activation.
+        thread::Defer d([this]{ unlock(); });
+
+        conn->resume(ctx);
+    }
+
+    return 0;
+}
+
 int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string& id,
                                         bool do_unregister)
 {

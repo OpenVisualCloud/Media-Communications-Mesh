@@ -23,6 +23,8 @@ using grpc::Status;
 using sdk::SDKAPI;
 using sdk::CreateConnectionRequest;
 using sdk::CreateConnectionResponse;
+using sdk::ActivateConnectionRequest;
+using sdk::ActivateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
 using sdk::ConnectionConfig;
@@ -196,6 +198,27 @@ public:
             return 0;
         } else {
             log::error("CreateConnectionJson RPC failed: %s",
+                       status.error_message().c_str());
+            return -1;
+        }
+    }
+
+    int ActivateConnection(std::string& conn_id) {
+        ActivateConnectionRequest req;
+        req.set_client_id(client_id);
+        req.set_conn_id(conn_id);
+
+        ActivateConnectionResponse resp;
+        grpc::ClientContext context;
+        context.set_deadline(std::chrono::system_clock::now() +
+                             std::chrono::seconds(20));
+
+        Status status = stub_->ActivateConnection(&context, req, &resp);
+
+        if (status.ok()) {
+            return 0;
+        } else {
+            log::error("ActivateConnection RPC failed: %s",
                        status.error_message().c_str());
             return -1;
         }
@@ -376,6 +399,16 @@ void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionJsonConfig
         log::error("gRPC: failed to create memif interface");
         return NULL;
     }
+
+    err = cli->ActivateConnection(conn->conn_id);
+    if (err) {
+        log::error("Activate gRPC connection failed (%d)", err);
+        mesh_grpc_destroy_conn(conn);
+        return NULL;
+    }
+
+    log::info("gRPC: connection active")("id", conn->conn_id)
+                                        ("client_id", cli->client_id);
 
     // Workaround to allow Mesh Agent and Media Proxies to apply necessary
     // configuration after registering the connection. The delay should

@@ -26,6 +26,8 @@ using grpc::StatusCode;
 using sdk::SDKAPI;
 using sdk::CreateConnectionRequest;
 using sdk::CreateConnectionResponse;
+using sdk::ActivateConnectionRequest;
+using sdk::ActivateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
 using sdk::ConnectionConfig;
@@ -95,6 +97,23 @@ public:
 
         log::info("[SDK] Connection created")("id", resp->conn_id())
                                              ("client_id", resp->client_id());
+        return Status::OK;
+    }
+
+    Status ActivateConnection(ServerContext* sctx, const ActivateConnectionRequest* req,
+                              ActivateConnectionResponse* resp) override {
+
+        auto ctx = context::WithCancel(context::Background());
+        auto conn_id = req->conn_id();
+
+        auto& mgr = connection::local_manager;
+        int err = mgr.activate_connection_sdk(ctx, conn_id);
+        if (err)
+            ; // log::error("activate_local_conn err (%d)", err);
+        else
+            log::info("[SDK] Connection active")("id", req->conn_id())
+                                                ("client_id", req->client_id());
+
         return Status::OK;
     }
 
