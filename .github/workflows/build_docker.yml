@@ -1,4 +1,4 @@
-name: docker-cached-build
+name: build docker
 
 on:
   workflow_call:
