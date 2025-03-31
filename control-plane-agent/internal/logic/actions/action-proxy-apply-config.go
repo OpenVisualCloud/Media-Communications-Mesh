@@ -12,7 +12,6 @@ import (
 
 	"control-plane-agent/internal/event"
 	"control-plane-agent/internal/logic/mesh"
-	"control-plane-agent/internal/registry"
 
 	"github.com/sirupsen/logrus"
 )
@@ -29,20 +28,9 @@ func (a *Action_ProxyApplyConfig) Perform(ctx context.Context, modifier string, 
 		return ctx, false, fmt.Errorf("proxy apply config id err: %w", err)
 	}
 
-	proxy, err := registry.MediaProxyRegistry.Get(ctx, proxyId, false)
+	err = mesh.ApplyProxyConfigQueue.EnqueueProxyId(ctx, proxyId)
 	if err != nil {
-		return ctx, false, err
-	}
-
-	groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, false)
-	if err != nil {
-		logrus.Errorf("proxy apply cfg list groups err: %v", err)
-		return ctx, false, err
-	}
-
-	err = mesh.ApplyProxyConfig(ctx, &proxy, groups)
-	if err != nil {
-		logrus.Errorf("proxy apply config cmd err: %v", err)
+		logrus.Errorf("proxy apply config enqueue err: %v", err)
 	}
 
 	return ctx, true, nil

@@ -21,7 +21,6 @@ func (rc *ReadinessChannel) Set(newState bool) {
 
 func (rc *ReadinessChannel) Run(ctx context.Context) {
 	defer close(rc.notReadyCh)
-	defer close(rc.queue)
 	for {
 		if rc.ready {
 			select {
