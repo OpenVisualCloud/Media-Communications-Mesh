@@ -1,4 +1,4 @@
-name: standalone build
+name: build-standalone
 
 on:
   push:
