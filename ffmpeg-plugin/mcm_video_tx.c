@@ -107,8 +107,8 @@ static int mcm_video_write_packet(AVFormatContext* avctx, AVPacket* pkt)
     if (mcm_shutdown_requested())
         return AVERROR_EOF;
 
-    memcpy(buf->data, pkt->data,
-           pkt->size <= buf->data_len ? pkt->size : buf->data_len);
+    memcpy(buf->payload_ptr, pkt->data,
+           pkt->size <= buf->payload_len ? pkt->size : buf->payload_len);
 
     err = mesh_put_buffer(&buf);
     if (err) {

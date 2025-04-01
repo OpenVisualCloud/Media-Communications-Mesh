@@ -147,7 +147,7 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     if ((ret = av_new_packet(pkt, len)) < 0)
         goto error_put_buf;
 
-    memcpy(pkt->data, buf->data, len);
+    memcpy(pkt->data, buf->payload_ptr, len);
 
     pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 

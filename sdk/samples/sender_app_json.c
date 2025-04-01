@@ -64,9 +64,9 @@ int read_test_data(FILE *fp, MeshBuffer *buf, uint32_t frame_size) {
     int ret = 0;
 
     assert(fp != NULL && buf != NULL);
-    assert(buf->data_len >= frame_size);
+    assert(buf->payload_len >= frame_size);
 
-    if (fread(buf->data, frame_size, 1, fp) < 1) {
+    if (fread(buf->payload_ptr, frame_size, 1, fp) < 1) {
         ret = -1;
     }
     return ret;
@@ -74,7 +74,7 @@ int read_test_data(FILE *fp, MeshBuffer *buf, uint32_t frame_size) {
 
 int gen_test_data(MeshBuffer *buf, uint32_t frame_count) {
     /* operate on the buffer */
-    void *ptr = buf->data;
+    void *ptr = buf->payload_ptr;
 
     /* frame counter */
     *(uint32_t *)ptr = frame_count;
@@ -186,7 +186,7 @@ int main(int argc, char **argv) {
         fprintf(stderr, "Warning: Negative frame count provided, sending infinite\n");
     }
 
-    err = mesh_create_client_json(&client, json_config);
+    err = mesh_create_client(&client, json_config);
     if (err) {
         printf("Failed to create a mesh client: %s (%d)\n", mesh_err2str(err), err);
         goto fail;
@@ -198,7 +198,7 @@ int main(int argc, char **argv) {
         goto fail;
     }
 
-    uint32_t frame_size = conn->buf_size;
+    uint32_t frame_size = conn->payload_size;
 
     signal(SIGINT, intHandler);
 

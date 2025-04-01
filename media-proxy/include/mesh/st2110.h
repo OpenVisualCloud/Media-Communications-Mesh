@@ -16,6 +16,7 @@
 #include "conn.h"
 #include "mesh_dp.h"
 #include "logger.h"
+#include "mesh_dp_legacy.h"
 
 namespace mesh::connection {
 

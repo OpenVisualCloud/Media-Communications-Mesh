@@ -6,6 +6,7 @@
 #include "mesh_buf.h"
 #include "mesh_conn.h"
 #include "mesh_logger.h"
+#include "mesh_dp_legacy.h"
 
 namespace mesh {
 
@@ -25,24 +26,24 @@ int BufferContext::dequeue(int timeout_ms)
     if (!buf)
         return err ? err : -MESH_ERR_CONN_CLOSED;
 
-    if (buf->len != conn->cfg_json.buf_parts.total_size()) {
+    if (buf->len != conn->cfg.buf_parts.total_size()) {
         mesh_internal_ops.enqueue_buf(conn->handle, buf);
         return -MESH_ERR_BAD_BUF_LEN;
     }
 
     auto base_ptr = (char *)buf->data;
-    auto sysdata = (BufferSysData *)(base_ptr + conn->cfg_json.buf_parts.sysdata.offset);
-    auto payload_ptr = (void *)(base_ptr + conn->cfg_json.buf_parts.payload.offset);
-    auto metadata_ptr = (void *)(base_ptr + conn->cfg_json.buf_parts.metadata.offset);
+    auto sysdata = (BufferSysData *)(base_ptr + conn->cfg.buf_parts.sysdata.offset);
+    auto payload_ptr = (void *)(base_ptr + conn->cfg.buf_parts.payload.offset);
+    auto metadata_ptr = (void *)(base_ptr + conn->cfg.buf_parts.metadata.offset);
 
-    if (conn->cfg_json.kind == MESH_CONN_KIND_SENDER) {
-        sysdata->payload_len = conn->cfg_json.calculated_payload_size;
+    if (conn->cfg.kind == MESH_CONN_KIND_SENDER) {
+        sysdata->payload_len = conn->cfg.calculated_payload_size;
         sysdata->metadata_len = 0;
     } else {
-        if (sysdata->payload_len > conn->cfg_json.buf_parts.payload.size)
-            sysdata->payload_len = conn->cfg_json.buf_parts.payload.size;
-        if (sysdata->metadata_len > conn->cfg_json.buf_parts.metadata.size)
-            sysdata->metadata_len = conn->cfg_json.buf_parts.metadata.size;
+        if (sysdata->payload_len > conn->cfg.buf_parts.payload.size)
+            sysdata->payload_len = conn->cfg.buf_parts.payload.size;
+        if (sysdata->metadata_len > conn->cfg.buf_parts.metadata.size)
+            sysdata->metadata_len = conn->cfg.buf_parts.metadata.size;
     }
 
     *(void **)&__public.payload_ptr = payload_ptr;
@@ -59,9 +60,9 @@ int BufferContext::enqueue(int timeout_ms)
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
 
-    if (conn->cfg_json.kind == MESH_CONN_KIND_SENDER) {
+    if (conn->cfg.kind == MESH_CONN_KIND_SENDER) {
         auto base_ptr = (char *)buf->data;
-        auto sysdata = (BufferSysData *)(base_ptr + conn->cfg_json.buf_parts.sysdata.offset);
+        auto sysdata = (BufferSysData *)(base_ptr + conn->cfg.buf_parts.sysdata.offset);
 
         sysdata->payload_len = __public.payload_len;
         sysdata->metadata_len = __public.metadata_len;
@@ -82,7 +83,7 @@ int BufferContext::setPayloadLen(size_t size)
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
 
-    if (size > conn->cfg_json.buf_parts.payload.size)
+    if (size > conn->cfg.buf_parts.payload.size)
         return -MESH_ERR_BAD_BUF_LEN;
 
     *(size_t *)&__public.payload_len = size;
@@ -95,7 +96,7 @@ int BufferContext::setMetadataLen(size_t size)
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
 
-    if (size > conn->cfg_json.buf_parts.metadata.size)
+    if (size > conn->cfg.buf_parts.metadata.size)
         return -MESH_ERR_BAD_BUF_LEN;
 
     *(size_t *)&__public.metadata_len = size;
