@@ -42,7 +42,7 @@ int main(int argc, char *argv[]) {
     conn_cfg = input_parse_file_to_string(conn_cfg_file);
 
     /* Initialize mcm client */
-    int err = mesh_create_client_json(&client, client_cfg);
+    int err = mesh_create_client(&client, client_cfg);
     if (err) {
         LOG("[RX] Failed to create mesh client: %s (%d)", mesh_err2str(err), err);
         goto safe_exit;

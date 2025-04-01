@@ -202,7 +202,6 @@ typedef struct{
 * `metadata_len` – Actual length of metadata in the buffer.
 
 
-
 ## mesh_put_buffer()
 ```c
 int mesh_put_buffer(MeshBuffer **buf)
@@ -240,7 +239,7 @@ Sets the payload length in the buffer provided by the media connection.
 
 ### Parameters
 * `[IN]` `buf` – Pointer to a mesh buffer structure.
-* `[IN]` `len` – Payload length.
+* `[IN]` `len` – Payload length in bytes.
 
 ### Returns
 0 if successful. Otherwise, returns an error.
@@ -255,7 +254,7 @@ Sets the metadata length in the buffer provided by the media connection.
 
 ### Parameters
 * `[IN]` `buf` – Pointer to a mesh buffer structure.
-* `[IN]` `len` – Metadata length.
+* `[IN]` `len` – Metadata length in bytes.
 
 ### Returns
 0 if successful. Otherwise, returns an error.
@@ -263,7 +262,7 @@ Sets the metadata length in the buffer provided by the media connection.
 
 ## mesh_err2str()
 ```c
-const char *mesh_err2str(int err)
+const char * mesh_err2str(int err)
 ```
 Gets a text description of the error code.
 

@@ -143,7 +143,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    err = mesh_create_client_json(&client, json_config);
+    err = mesh_create_client(&client, json_config);
     if (err) {
         printf("Failed to create a mesh client: %s (%d)\n", mesh_err2str(err), err);
         goto fail;
@@ -158,7 +158,7 @@ int main(int argc, char **argv) {
     signal(SIGINT, intHandler);
 
     uint32_t frame_count = 0;
-    uint32_t frm_size = conn->buf_size;
+    uint32_t frm_size = conn->payload_size;
 
     const uint32_t stat_interval = 10;
     double fps = 0.0;
@@ -191,7 +191,7 @@ int main(int argc, char **argv) {
             break;
         }
 
-        printf("INFO: buf->len = %ld frame size = %u\n", buf->data_len, frm_size);
+        printf("INFO: buf->len = %ld frame size = %u\n", buf->payload_len, frm_size);
 
         clock_gettime(CLOCK_REALTIME, &ts_recv);
         if (first_frame) {
@@ -200,11 +200,11 @@ int main(int argc, char **argv) {
         }
 
         if (outputfile) {
-            fwrite(buf->data, buf->data_len, 1, outputfile);
+            fwrite(buf->payload_ptr, buf->payload_len, 1, outputfile);
         } else {
             // Following code are mainly for test purpose, it requires the sender side to
             // pre-set the first several bytes
-            ptr = buf->data;
+            ptr = buf->payload_ptr;
             if (*(uint32_t *)ptr != frame_count) {
                 printf("Wrong data content: expected %u, got %u\n", frame_count, *(uint32_t *)ptr);
                 /* catch up the sender frame count */
