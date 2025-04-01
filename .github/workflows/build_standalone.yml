@@ -99,8 +99,8 @@ jobs:
       with:
         name: mcm-build
         path: | 
-          '${{ env.PREFIX_DIR }}/usr/local/lib/libmcm*'
-          '${{ env.PREFIX_DIR }}/usr/local/bin/media_proxy'
-          '${{ env.PREFIX_DIR }}/usr/local/bin/mesh-agent'
-          '${{ env.BUILD_DIR }}/ffmpeg-6-1/*'
-          '${{ env.BUILD_DIR }}/ffmpeg-7-0/*'
+          ${{ env.BUILD_DIR }}/mcm/bin/media_proxy
+          ${{ env.BUILD_DIR }}/mcm/bin/mesh-agent
+          ${{ env.BUILD_DIR }}/mcm/lin/libmcm_dp.so.*
+          ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
+          ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
