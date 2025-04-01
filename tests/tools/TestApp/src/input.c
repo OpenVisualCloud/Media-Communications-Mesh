@@ -58,6 +58,10 @@ char *input_parse_file_to_string(const char *file_name) {
     return buffer;
 }
 
+#define MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE  0 ///< planar YUV 4:2:2, 10bit, "yuv422p10le"
+#define MESH_VIDEO_PIXEL_FORMAT_V210              1 ///< packed YUV 4:2:2, 10bit, "v210"
+#define MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10 2 ///< packed RFC4175 compliant YUV 4:2:2, 10bit, "yuv422p10rfc4175"
+
 int get_video_params(const char *json_string, video_params *params) {
 
     json_t *root;
