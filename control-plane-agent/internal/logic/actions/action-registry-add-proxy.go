@@ -28,6 +28,10 @@ func (a *Action_RegistryAddProxy) Perform(ctx context.Context, modifier string, 
 	if err != nil {
 		logrus.Errorf("registry add proxy sdk port err: %v", err)
 	}
+	controlplaneIpAddr, err := param.GetString("controlplane_ip_addr")
+	if err != nil {
+		logrus.Errorf("registry add proxy control plane ip addr err: %v", err)
+	}
 	st2110_DevPortBDF, err := param.GetString("st2110.dev_port_bdf")
 	if err != nil {
 		logrus.Errorf("registry add proxy st2110 dev port err: %v", err)
@@ -53,7 +57,8 @@ func (a *Action_RegistryAddProxy) Perform(ctx context.Context, modifier string, 
 
 	proxy := model.MediaProxy{
 		Config: &model.MediaProxyConfig{
-			SDKAPIPort: sdkAPIPort,
+			SDKAPIPort:       sdkAPIPort,
+			ControlplaneAddr: controlplaneIpAddr,
 			ST2110: model.ST2110ProxyConfig{
 				DataplaneIPAddr: st2110_DataplaneIPAddr,
 				DevPortBDF:      st2110_DevPortBDF,
