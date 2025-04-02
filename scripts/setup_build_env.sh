@@ -41,6 +41,7 @@ function install_package_dependencies()
 
 function install_ubuntu_package_dependencies()
 {
+    as_root "rm /usr/local/bin/cmake"
     APT_LINUX_HEADERS="linux-headers-${KERNEL_VERSION}"
     APT_LINUX_MOD_EXTRA="linux-modules-extra-${KERNEL_VERSION}"
     as_root "${PM}" update --fix-missing && \
