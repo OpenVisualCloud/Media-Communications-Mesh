@@ -102,7 +102,7 @@ function install_yum_package_dependencies()
         curl-minimal \
         ca-certificates \
         clang \
-        cmake=3.22.1-1ubuntu1 \
+        cmake=3.22.* \
         dracut \
         dtc \
         elfutils-libelf-devel \
