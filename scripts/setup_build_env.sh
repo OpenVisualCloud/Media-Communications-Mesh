@@ -73,7 +73,7 @@ function install_ubuntu_package_dependencies()
         llvm \
         m4 \
         meson \
-        nasm cmake=3.22.1-1ubuntu1 \
+        nasm cmake=3.22* \
         pkg-config \
         python3-dev \
         python3-pyelftools \
@@ -102,7 +102,7 @@ function install_yum_package_dependencies()
         curl-minimal \
         ca-certificates \
         clang \
-        cmake=3.22.* \
+        cmake=3.22.1-1ubuntu1 \
         dracut \
         dtc \
         elfutils-libelf-devel \
