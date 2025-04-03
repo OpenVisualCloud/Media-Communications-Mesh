@@ -3,7 +3,7 @@
 
 ### 1. New Features
 1.1	MCM Control Plane - Media Proxy side - Implemented various features and improvements for the Media Proxy side of the MCM Control Plane, including RDMA testing, API updates, and integration of multipoint groups. 
-* Updated dependencies and created directories for test scenarios. https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/CHANGELOG.md
+* Updated dependencies and created directories for test scenarios.
 * Implemented RDMA with TCP provider testing and integration. 
 * Updated FFmpeg plugin and SDK API to support JSON configuration. 
 * Developed unit tests and fixed high impact issues. 
