@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
    SPDX-License-Identifier: BSD-3-Clause
-   Copyright(©) 2024 Intel Corporation
+   Copyright(©) 2025 Intel Corporation
    Media Communications Mesh
 
 
@@ -13,66 +13,41 @@ Media Communications Mesh
 
 .. toctree::
    :maxdepth: 2
+   :caption: Contents
 
-   Introduction <docs/README>
+   User Manual <docs/README>
    License <LICENSE>
 
-Contents
----------
+.. toctree::
+   :maxdepth: 2
+   :caption: Software Components
+
+   Mesh Agent <docs/MeshAgent>
+   Media Proxy <docs/MediaProxy>
+   SDK <docs/SDK>
+   FFmpeg Plugin <docs/FFmpegPlugin>
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: SDK
 
-   docs/dp-sdk-api-ref
-   docs/memif-sharing
-   docs/setup-mcm-with-k8s
-   docs/RDMA-example
-   media-proxy/README
-
-FFmpeg-plugin
---------------
+   SDK Overview <docs/SDK>
+   SDK API Definition<docs/SDK_API_Definition>
+   Examples<docs/SDK_API_Examples>
 
 .. toctree::
    :maxdepth: 2
-   :caption: FFmpeg-plugin:
+   :caption: Setup and Run
 
-   Introduction <ffmpeg-plugin/README>
-   Rx Flow Diagrams<ffmpeg-plugin/RX_FLOW>
-   Tx Flow Diagrams<ffmpeg-plugin/TX_FLOW>
-
-SDK
-----
+   Setup Guide <docs/SetupGuide>
+   Runbook <docs/Runbook>
+   Performance Notes <docs/PerformanceNotes>
 
 .. toctree::
    :maxdepth: 2
-   :caption: SDK:
-
-   DataPlane SDK <sdk/README>
-   MemIF Introduction <sdk/3rdparty/libmemif/libmemif_doc>
-   MemIF Standalone Build <sdk/3rdparty/libmemif/docs/buildinstructions_doc>
-   MemIF Getting Started <sdk/3rdparty/libmemif/docs/gettingstarted_doc>
-   MemIF Examples <sdk/3rdparty/libmemif/examples/examples_doc>
-   Security <sdk/SECURITY>
-   License <sdk/LICENSE>
-
-Security
----------
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Security:
-
-   Security <SECURITY>
-   media-proxy/SECURITY
-
-Other
---------
-
-.. toctree::
-   :maxdepth: 2
-   :caption: Other:
+   :caption: Other
 
    Sphinx Build <docs/sphinx/build_docs>
    Contributing <CONTRIBUTING>
+   Security <SECURITY>
    Changelog <CHANGELOG>
