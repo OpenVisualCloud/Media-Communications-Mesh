@@ -7,7 +7,7 @@ SDK API establishes connections with Media Proxy to send and receive media strea
 
 * SMPTE ST 2110-20 Uncompressed Video
 * SMPTE ST 2110-22 Compressed Video (JPEG XS)
-* SMPTE ST 2110-30 Audio
+* SMPTE ST 2110-30 Uncompressed Audio (PCM)
 * RDMA, used for inter-node communication
 
 To build Media Proxy, follow the [Setup Guide](SetupGuide.md).
@@ -68,7 +68,7 @@ Apr 03 10:42:55.104 [INFO] [RECONCILE] Config is up to date
 ## Run using `native_af_xdp`
 
 To use Media Proxy with the native `af_xdp/ebpf` device, the device name should be
-provided with the `native_af_xdp:` prefix, e.g. `media-proxy --dev native_af_xdp:ens259f0np0`.
+provided with the `native_af_xdp:` prefix, e.g. `media-proxy -d native_af_xdp:ens259f0np0`.
 
 Notice that the device must have a pre-assigned IP address.
 The `-i` parameter is not applied in this mode.

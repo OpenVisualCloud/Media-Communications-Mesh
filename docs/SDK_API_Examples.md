@@ -8,7 +8,7 @@ int main(void)
     const char *client_config = R"(
       {
         "apiVersion": "v1",
-        "apiConnectionString": "Server=127.0.0.1; Port=8002",
+        "apiConnectionString": "Server=127.0.0.1; Port=8002"
       }
     )";
 
@@ -107,7 +107,7 @@ int main(void)
     const char *client_config = R"(
       {
         "apiVersion": "v1",
-        "apiConnectionString": "Server=127.0.0.1; Port=8002",
+        "apiConnectionString": "Server=127.0.0.1; Port=8002"
       }
     )";
 
@@ -131,7 +131,7 @@ int main(void)
             "fps": 60.0,
             "pixelFormat": "yuv422p10le"
           }
-        },
+        }
       }
     )";
 

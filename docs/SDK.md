@@ -1,6 +1,6 @@
 # SDK — Media Communications Mesh
 
-SDK is the Software Development Kit in the form of a library providing SDK API to access Mesh Communications Mesh.
+SDK is the Software Development Kit in the form of a library providing SDK API to access Media Communications Mesh.
    * Library file name: `libmcm_dp.so`
    * Header file to include: [`mesh_dp.h`](../sdk/include/mesh_dp.h)
 

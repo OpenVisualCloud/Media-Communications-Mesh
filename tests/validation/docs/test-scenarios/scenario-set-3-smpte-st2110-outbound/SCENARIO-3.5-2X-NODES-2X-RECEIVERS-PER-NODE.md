@@ -39,7 +39,7 @@ flowchart LR
 
 * Video – Uncompressed ST 2110-20
 * Video – Compressed ST 2110-22
-* Audio – ST 2110-30
+* Audio – Uncompressed ST 2110-30
 
 ### Notes
 

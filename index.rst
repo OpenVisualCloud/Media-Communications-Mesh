@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
    SPDX-License-Identifier: BSD-3-Clause
-   Copyright(©) 2025 Intel Corporation
+   Copyright(©) 2024-2025 Intel Corporation
    Media Communications Mesh
 
 

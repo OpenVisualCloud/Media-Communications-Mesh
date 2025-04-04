@@ -92,8 +92,9 @@ Creates a transmitter connection with the provided JSON configuration.
 }
 ```
 
-The following examples show optional parts of JSON configuration that can be used
-to setup various connection and payload options.
+The following examples show optional parts of the JSON configuration that can be used
+to setup various connection and payload options. The examples correspond to the main
+(`.`) level of the JSON document.
 
 ### Configure connection – Multipoint Group
 ```json

@@ -98,7 +98,7 @@ Refer to the [SDK API Definition](SDK_API_Definition.md) for the options of conf
 |-----------------|------------------------------------------------------------------------------------------------|-----------------------------|
 | `-video_size`   | Video frame size, `"640x480"`, `"hd720"`, etc. Default "1920x1080".                            | `-video_size 1920x1080`     |
 | `-pixel_format` | Video pixel format, `"yuv422p10le"`, `"v210"`, or `"yuv422p10rfc4175"`. Default "yuv422p10le". | `-pixel_format yuv422p10le` |
-| `-frame_rate`   | Video frame rate, 25, 50, 60, etc. Default 25.                                                 | `-frame_rate 60`            |
+| `-frame_rate`   | Video frame rate, 25, 50, 59.94, 60, etc. Default 25.                                          | `-frame_rate 60`            |
 
 ### Audio payload parameters
 

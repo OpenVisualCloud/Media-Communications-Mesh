@@ -2,8 +2,8 @@
 
 ## Prerequisites
 
-* Linux server – Intel Xeon processor recommended, e.g. Sapphire Rapids.
-* NIC – Network interface card compatible with DPDK, e.g. Intel Ethernet Controller E810-C.
+* Linux server – Intel® Xeon processor recommended, e.g. Sapphire Rapids.
+* NIC – Network interface card compatible with DPDK, e.g. Intel® Ethernet Controller E810-C.
 * Updated NIC drivers and firmware – Strong recommendation is to update them. For more information and the latest drivers, see [Support](#4-support).
 
 ## Build and install steps
@@ -33,7 +33,7 @@
 
         Reboot the host after the scripts are executed.
 
-    * **Option B** – The following method is universal and should work for the most Linux OS distributions.
+    * **Option B** – The following method is universal and should work for the most Linux distributions.
 
         * XDP-tools with eBPF – Follow the [Simple guide](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
         * MTL – Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md).

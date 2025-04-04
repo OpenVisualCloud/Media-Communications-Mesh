@@ -6,7 +6,7 @@ Typical Media Communications Mesh cluster consists of the below
 * **Control Node** – Single cluster control node running the following components
    * Mesh Agent – Single instance.
    * Various cluster management software.
-* **Worker Nodes** – Multiple nodes equipped with high performance DPDK supported NICs running the following software
+* **Worker Nodes** – Multiple nodes equipped with high performance DPDK-supported NICs running the following software
    * Media Proxy – Single instance.
    * User apps/microservices for media streaming.
 * **Multicast Network Switches** – High throughput network switches supporting multicast transmission.
@@ -83,7 +83,7 @@ The only instance of Mesh Agent is required to be running in the Mesh cluster to
     mesh-agent -p 50051
     ```
 
-    This starts the Mesh Agent with ProxyAPI listening on the port 50051 for incoming connections from Media Proxies.
+    This starts the Mesh Agent with Proxy API listening on the port 50051 for incoming connections from Media Proxies.
 
     See additional command line arguments in the [Mesh Agent](MeshAgent.md) documentation.
 
@@ -113,12 +113,12 @@ should be running on every Worker Node in the Mesh cluster.
          -p 9100-9199
     ```
 
+    * `-t 8002` – Local port number that SDK API will be listening on for incoming SDK connections.
+    * `-a 192.168.96.1:50051` – IP address and the port number of Mesh Agent.
     * `-d 0000:1f:01.0` – PCI device port for SMPTE ST 2110 media data streaming.
     * `-i 192.168.96.10` – Local IP address that will be assigned to VF at runtime by Media Proxy via DPDK.
     * `-r 192.168.97.10` – Local IP address of a host network device that will be used by Media Proxy for RDMA connections.
     * `-p 9100-9199` – Local port range for RDMA connections.
-    * `-t 8002` – Local port number that SDK API will be listening on for incoming SDK connections.
-    * `-a 192.168.96.1:50051` – IP address and the port number of Mesh Agent.
 
     See command line arguments in the [Media Proxy]() documentation.
 

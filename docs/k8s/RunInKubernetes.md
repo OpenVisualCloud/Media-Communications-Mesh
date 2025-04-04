@@ -1,4 +1,4 @@
-# Run in Kubernetes — Mesh Communications Mesh
+# Run in Kubernetes — Media Communications Mesh
 
 > ***This document is Work-in-Progress***
 
