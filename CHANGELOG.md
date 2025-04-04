@@ -8,18 +8,17 @@
 * Updated FFmpeg plugin and SDK API to support JSON configuration 
 * Developed unit tests and fixed high impact issues
 * Implemented business logic for multipoint groups and system metrics
+
 1.2	MCM Data Plane - Overhauled the existing architecture of the Media Communications Mesh project to meet customer expectations and deliver a production-ready solution. This included designing and implementing necessary modifications to enhance performance, reliability, scalability, and usability
 * Implemented new MCM SDK API and updated documentation
 * Fixed RDMA endpoint creation, laid foundation to using Verbs provider
 * Updated sample applications and integrated API changes 
+
 1.3	RDMA implementation - Enhanced the RDMA (Remote Direct Memory Access) over TCP provider implementation within the Media Communications Mesh project to achieve a target bandwidth of approximately 94 Gb/s on E810 NIC
 * Investigated optimizations for RDMA and created unit tests
 * Conducted performance testing and benchmarking
 * Developed documentation and best practices for deploying RDMA
 * In the next release RDMA will be using Verbs provider with RoCE
-
-### 2. Known Issues
-* The -transport switch is not recognized when using the FFmpeg plugin with audio. This issue requires a documentation update to clarify the usage of the -transport switch in audio configurations
 
 ## Release version: 24.09
 
