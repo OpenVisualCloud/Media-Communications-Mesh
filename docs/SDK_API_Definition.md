@@ -1,5 +1,7 @@
 # SDK API Definition — Media Communications Mesh
 
+Header file to include: [`mesh_dp.h`](../sdk/include/mesh_dp.h)
+
 ## mesh_create_client()
 ```c
 int mesh_create_client(MeshClient **client,
@@ -26,7 +28,7 @@ Creates a new mesh client with the provided JSON configuration.
 * `"maxMediaConnections"` – Maximum number of media connections, default 32.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_delete_client()
@@ -39,7 +41,7 @@ Deletes the mesh client and its resources.
 * `[IN/OUT]` `client` – Address of a pointer to a mesh client structure.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_create_tx_connection()
@@ -218,7 +220,7 @@ Allowed use cases of `"pixelFormat"` for `"multipointGroup"`
 | "v210"        | No             | N/A                                |
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## MeshConnection
@@ -250,7 +252,7 @@ Creates a receiver connection with the provided JSON configuration.
 * `[IN]` `config_json` – Pointer to a connection configuration structure.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_delete_connection()
@@ -263,7 +265,7 @@ Deletes the connection and its resources.
 * `[IN/OUT]` `conn` – Address of a pointer to the connection structure.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_get_buffer()
@@ -278,7 +280,7 @@ Gets a buffer from the media connection.
 * `[OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_get_buffer_timeout()
@@ -294,8 +296,13 @@ Gets a buffer from the media connection with a timeout.
 * `[OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 * `[IN]` `timeout_us` – Timeout interval in microseconds.
 
+### Timeout definition constants
+* `MESH_TIMEOUT_DEFAULT` – Applies the default timeout interval defined for the Mesh client.
+* `MESH_TIMEOUT_INFINITE` – No timeout, blocks until success or an error.
+* `MESH_TIMEOUT_ZERO` – Polling mode, returns immediately.
+
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## MeshBuffer
@@ -327,7 +334,7 @@ Puts the buffer to the media connection.
 * `[IN/OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_put_buffer_timeout()
@@ -342,7 +349,7 @@ Puts the buffer to the media connection with a timeout.
 * `[IN]` `timeout_us` – Timeout interval in microseconds.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_buffer_set_payload_len()
@@ -357,7 +364,7 @@ Sets the payload length in the buffer provided by the media connection.
 * `[IN]` `len` – Payload length in bytes.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_buffer_set_metadata_len()
@@ -372,7 +379,7 @@ Sets the metadata length in the buffer provided by the media connection.
 * `[IN]` `len` – Metadata length in bytes.
 
 ### Returns
-0 if successful. Otherwise, returns an error.
+0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 
 
 ## mesh_err2str()
@@ -386,6 +393,29 @@ Gets a text description of the error code.
 
 ### Returns
 NULL-terminated string describing the error code.
+
+
+## Return error codes
+
+API SDK functions may return the following error codes.
+
+NOTE: The codes a negative integer values.
+
+| Error code macro name            | Meaning                        |
+|----------------------------------|--------------------------------|
+| `-MESH_ERR_BAD_CLIENT_PTR`       | Bad client pointer             |
+| `-MESH_ERR_BAD_CONN_PTR`         | Bad connection pointer         |
+| `-MESH_ERR_BAD_CONFIG_PTR`       | Bad configuration pointer      |
+| `-MESH_ERR_BAD_BUF_PTR`          | Bad buffer pointer             |
+| `-MESH_ERR_BAD_BUF_LEN`          | Bad buffer length              |
+| `-MESH_ERR_CLIENT_CONFIG_INVAL`  | Invalid client config          |
+| `-MESH_ERR_MAX_CONN`             | Reached max connections number |
+| `-MESH_ERR_FOUND_ALLOCATED`      | Found allocated resources      |
+| `-MESH_ERR_CONN_FAILED`          | Connection creation failed     |
+| `-MESH_ERR_CONN_CONFIG_INVAL`    | Invalid connection config      |
+| `-MESH_ERR_CONN_CONFIG_INCOMPAT` | Incompatible connection config |
+| `-MESH_ERR_CONN_CLOSED`          | Connection is closed           |
+| `-MESH_ERR_TIMEOUT`              | Timeout occurred               |
 
 
 <!-- References -->
