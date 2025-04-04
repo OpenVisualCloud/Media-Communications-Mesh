@@ -27,6 +27,17 @@ Creates a new mesh client with the provided JSON configuration.
 * `"apiDefaultTimeoutMicroseconds"` – Default timeout interval for SDK API calls, default 1000000.
 * `"maxMediaConnections"` – Maximum number of media connections, default 32.
 
+### Environment variables
+
+* `MCM_MEDIA_PROXY_IP` – IP address of Media Proxy SDK API, default "127.0.0.1".
+* `MCM_MEDIA_PROXY_PORT` – Port number of Media Proxy SDK API, default 8002.
+
+### Note on configuring the Media Proxy address
+
+There are two options to configure the IP address and the port number of Media Proxy SDK API, ordered by priority:
+* Specify `"apiConnectionString"` in the JSON configuration string.
+* Set `MCM_MEDIA_PROXY_IP` and `MCM_MEDIA_PROXY_PORT`.
+
 ### Returns
 0 if successful. Otherwise, returns an [Error code](#return-error-codes).
 

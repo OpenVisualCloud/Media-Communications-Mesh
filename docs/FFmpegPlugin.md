@@ -61,16 +61,10 @@ FFmpeg with the plugin should be running in privileged mode.
       * [Multipoint Group connection parameters](#multipoint-group-connection-parameters--conn_type-multipoint-group)
       * [Audio payload parameters](#audio-payload-parameters)
 
+## Media Proxy SDK API address configuration
 
-## Environment variables
+Refer to the [SDK API Definition](SDK_API_Definition.md) for the options of configuring the Media Proxy SDK API address.
 
-| Name                     | Description                                                                    | Example                            |
-|--------------------------|--------------------------------------------------------------------------------|------------------------------------|
-| `MCM_MEDIA_PROXY_IP`     | IP address of Media Proxy SDK API, default "127.0.0.1".                        | `MCM_MEDIA_PROXY_IP=127.0.0.1`     |
-| `MCM_MEDIA_PROXY_PORT`   | Port number of Media Proxy SDK API, default 8002.                              | `MCM_MEDIA_PROXY_PORT=8002`        |
-| `MEDIA_PROXY_LCORES`     | List/range of lcores that will be available to Media Proxy.                    | `MEDIA_PROXY_LCORES="1,5-9,64-69"` |
-| `MEDIA_PROXY_MAIN_LCORE` | Specify the lcore number to be used for handling the MTL/DPDK main stack/loop. | `MEDIA_PROXY_MAIN_LCORE="32"`      |
-| `KAHAWAI_CFG_PATH`       | MTL configuration file path. Refer to the [MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/) documentation. | `KAHAWAI_CFG_PATH="/etc/mtl.json"` |
 
 ## Command line arguments
 

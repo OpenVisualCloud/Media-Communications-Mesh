@@ -28,6 +28,14 @@ Media Proxy should be running in privileged mode.
 | `-p` `--rdma_ports` | Local port ranges for incoming RDMA connections, default 9100-9999              | `-p 9100-9199,8500-8599` |
 | `-h` `--help`       | Print usage help                                                                | –                        |
 
+## Environment variables
+
+| Name                     | Description                                                                    | Example                            |
+|--------------------------|--------------------------------------------------------------------------------|------------------------------------|
+| `MEDIA_PROXY_LCORES`     | List/range of lcores that will be available to Media Proxy.                    | `MEDIA_PROXY_LCORES="1,5-9,64-69"` |
+| `MEDIA_PROXY_MAIN_LCORE` | Specify the lcore number to be used for handling the MTL/DPDK main stack/loop. | `MEDIA_PROXY_MAIN_LCORE="32"`      |
+| `KAHAWAI_CFG_PATH`       | MTL configuration file path. Refer to the [MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/) documentation. | `KAHAWAI_CFG_PATH="/etc/mtl.json"` |
+
 ## Run standalone
 Example command to run Media Proxy in the host OS
 
