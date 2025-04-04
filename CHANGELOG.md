@@ -18,6 +18,9 @@
 * Developed documentation and best practices for deploying RDMA
 * In the next release RDMA will be using Verbs provider with RoCE
 
+### 2. Known Issues
+* The -transport switch is not recognized when using the FFmpeg plugin with audio. This issue requires a documentation update to clarify the usage of the -transport switch in audio configurations
+
 ## Release version: 24.09
 
 ### 1. New Features
