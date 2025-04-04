@@ -7,7 +7,7 @@ and collects Media Proxy metrics.
 
 To build Mesh Agent, follow the [Setup Guide](SetupGuide.md).
 
-Executable file name: `mesh_agent`
+Executable file name: `mesh-agent`
 
 Privileged mode is **NOT** required.
 

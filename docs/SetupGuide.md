@@ -75,7 +75,7 @@
     * Media Proxy
        * Executable file name: `media_proxy`
     * Mesh Agent
-       * Executable file name: `mesh_agent`
+       * Executable file name: `mesh-agent`
 
 ## Build for Docker
 

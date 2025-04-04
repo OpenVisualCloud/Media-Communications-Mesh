@@ -34,7 +34,7 @@ Media Proxy should be running in privileged mode.
 |--------------------------|--------------------------------------------------------------------------------|------------------------------------|
 | `MEDIA_PROXY_LCORES`     | List/range of lcores that will be available to Media Proxy.                    | `MEDIA_PROXY_LCORES="1,5-9,64-69"` |
 | `MEDIA_PROXY_MAIN_LCORE` | Specify the lcore number to be used for handling the MTL/DPDK main stack/loop. | `MEDIA_PROXY_MAIN_LCORE="32"`      |
-| `KAHAWAI_CFG_PATH`       | MTL configuration file path. Refer to the [MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/) documentation. | `KAHAWAI_CFG_PATH="/etc/mtl.json"` |
+| `KAHAWAI_CFG_PATH`       | MTL configuration file path. Refer to the [MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/) documentation. | `KAHAWAI_CFG_PATH="/usr/local/etc/imtl.json"` |
 
 ## Run standalone
 Example command to run Media Proxy in the host OS

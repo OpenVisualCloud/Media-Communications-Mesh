@@ -13,26 +13,27 @@ See the following table for details.
 
 ## Known performance issues – How to resolve
 
-### *4K 60fps Video* – First frames drop when connecting a receiver to an ongoing stream
+### *4K 60fps Video* – Initial buffer alignment when connecting a receiver to an active stream
 
-4K 60fps video stream assumes that the traffic bandwidth is more than 20 Gbit/s.
-Every other second the receiver has to get 60 frames, or buffers. The default
-buffer queue capacity is 16, which is sufficient in most cases. However, when
-a receiver connects to Media Proxy, the Mesh Agent establishes the necessary topology
-in the Mesh to deliver the traffic to the receiver, and this process takes
-some time, up to 30-80 ms. First frames can be missed due to that fact.
+For a 4K 60fps video stream, which typically requires a bandwidth exceeding 20 Gbit/s,
+the system is designed to handle 60 frames, or buffers, per second. The default buffer
+queue capacity of 16 is suitable for most scenarios. However, when a receiver is connected,
+the Mesh Agent requires a brief interval, typically 30-80 ms, to configure the network
+topology for traffic delivery.
 
-To avoid that, adjust the following configuration options
+To ensure seamless startup without missing initial frames, consider configuring
+the following parameters
 * **Sender side** – Specify a **connection delay** of 100-300 ms.
 * **Receiver side** – Increase the buffer **queue capacity** to 32 or 64.
 
-### *4K 60fps Video* – First frames drop when a sender begins transmitting a stream to a multipoint group of one or many receivers
+### *4K 60fps Video* – Initial buffer alignment when a sender begins transmitting to a Multipoint Group
 
-Same recommendation here as above
+For streams being sent to a Multipoint Group, applying similar configuration settings
+can help ensure a smooth start for all receivers
 * **Sender side** – Specify a **connection delay** of 100-300 ms.
 * **Receiver side** – Increase the buffer **queue capacity** to 32 or 64.
 
-### *Audio* – Packets drop when receiving an ongoing stream
+### *Audio* – Packets drop when receiving an active stream
 
 Audio streams have smaller bandwidth than video but the packets come to receivers much
 faster, at least 1000 times per second depending on the packet time configuration.
@@ -40,13 +41,13 @@ faster, at least 1000 times per second depending on the packet time configuratio
 To resolve that, adjust the following configuration option
 * **Receiver side** – Increase the buffer **queue capacity** to 32, 64, or 128.
 
-### *Audio* – First packets drop when connecting a receiver to an ongoing stream
+### *Audio* – First packets drop when connecting a receiver to an active stream
 
 Set the following configuration options
 * **Sender side** – Specify a **connection delay** of 100-300 ms.
 * **Receiver side** – Increase the buffer **queue capacity** to 32, 64, or 128.
 
-### *Audio* – First packets drop when a sender begins transmitting a stream to a multipoint group of one or many receivers
+### *Audio* – First packets drop when a sender begins transmitting to a Multipoint Group
 
 Same recommendation here as above
 * **Sender side** – Specify a **connection delay** of 100-300 ms.

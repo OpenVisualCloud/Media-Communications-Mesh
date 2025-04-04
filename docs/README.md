@@ -307,7 +307,7 @@ See the [MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/) docum
    * Executable file name: `media_proxy`
    * For command line arguments, see the [Media Proxy](MediaProxy.md) documentation.
 * **Mesh Agent** – Control plane component responsible for establishing appropriate traffic topology in the Mesh according to user app requests. It handles the life cycle of connections and multipoint groups, configures egress and ingress bridges of SMPTE ST 2110 and RDMA types, and collects Media Proxy metrics.
-   * Executable file name: `mesh_agent`
+   * Executable file name: `mesh-agent`
    * For command line arguments, see the [MeshAgent](MeshAgent.md) documentation.
 
 ## Integration with popular media streaming software
