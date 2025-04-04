@@ -171,6 +171,9 @@ int main(void)
         /* Fill the buffer with user data */
         put_user_video_frames(buf->payload_ptr, buf->payload_len);
 
+        /* Put some time interval between the frames */
+        enforce_user_frame_send_interval();
+
         /* Send the buffer */
         err = mesh_put_buffer(&buf);
         if (err) {

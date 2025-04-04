@@ -275,6 +275,9 @@ int mesh_get_buffer(MeshConnection *conn,
 ```
 Gets a buffer from the media connection.
 
+The buffer must be returned back to the Mesh connection by calling `mesh_put_buffer()`
+or `mesh_put_buffer_timeout()`.
+
 ### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
 * `[OUT]` `buf` – Address of a pointer to a mesh buffer structure.
@@ -290,6 +293,9 @@ int mesh_get_buffer_timeout(MeshConnection *conn,
                             int timeout_us)
 ```
 Gets a buffer from the media connection with a timeout.
+
+The buffer must be returned back to the Mesh connection by calling `mesh_put_buffer()`
+or `mesh_put_buffer_timeout()`.
 
 ### Parameters
 * `[IN]` `conn` – Pointer to a connection structure.
@@ -330,6 +336,12 @@ int mesh_put_buffer(MeshBuffer **buf)
 ```
 Puts the buffer to the media connection.
 
+The buffer must be previously obtained from to the Mesh connection by calling
+`mesh_get_buffer()` or `mesh_get_buffer_timeout()`.
+
+In case of Tx connection, a call to this API function triggers transmittion
+of the buffer from SDK to Media Proxy and then to the receiver over the Mesh.
+
 ### Parameters
 * `[IN/OUT]` `buf` – Address of a pointer to a mesh buffer structure.
 
@@ -343,6 +355,12 @@ int mesh_put_buffer_timeout(MeshBuffer **buf,
                             int timeout_us)
 ```
 Puts the buffer to the media connection with a timeout.
+
+The buffer must be previously obtained from to the Mesh connection by calling
+`mesh_get_buffer()` or `mesh_get_buffer_timeout()`.
+
+In case of Tx connection, a call to this API function triggers transmittion
+of the buffer from SDK to Media Proxy and then to the receiver over the Mesh.
 
 ### Parameters
 * `[IN/OUT]` `buf` – Address of a pointer to a mesh buffer structure.
@@ -399,23 +417,23 @@ NULL-terminated string describing the error code.
 
 API SDK functions may return the following error codes.
 
-NOTE: The codes a negative integer values.
+NOTE: The codes are negative integer values.
 
-| Error code macro name            | Meaning                        |
-|----------------------------------|--------------------------------|
-| `-MESH_ERR_BAD_CLIENT_PTR`       | Bad client pointer             |
-| `-MESH_ERR_BAD_CONN_PTR`         | Bad connection pointer         |
-| `-MESH_ERR_BAD_CONFIG_PTR`       | Bad configuration pointer      |
-| `-MESH_ERR_BAD_BUF_PTR`          | Bad buffer pointer             |
-| `-MESH_ERR_BAD_BUF_LEN`          | Bad buffer length              |
-| `-MESH_ERR_CLIENT_CONFIG_INVAL`  | Invalid client config          |
-| `-MESH_ERR_MAX_CONN`             | Reached max connections number |
-| `-MESH_ERR_FOUND_ALLOCATED`      | Found allocated resources      |
-| `-MESH_ERR_CONN_FAILED`          | Connection creation failed     |
-| `-MESH_ERR_CONN_CONFIG_INVAL`    | Invalid connection config      |
-| `-MESH_ERR_CONN_CONFIG_INCOMPAT` | Incompatible connection config |
-| `-MESH_ERR_CONN_CLOSED`          | Connection is closed           |
-| `-MESH_ERR_TIMEOUT`              | Timeout occurred               |
+| Error code macro name            | Description                    | Meaning                            |
+|----------------------------------|--------------------------------|------------------------------------|
+| `-MESH_ERR_BAD_CLIENT_PTR`       | Bad client pointer             | The client pointer is NULL.        |
+| `-MESH_ERR_BAD_CONN_PTR`         | Bad connection pointer         | The connection pointer is NULL.    |
+| `-MESH_ERR_BAD_CONFIG_PTR`       | Bad configuration pointer      | The configuration pointer is NULL. |
+| `-MESH_ERR_BAD_BUF_PTR`          | Bad buffer pointer             | The buffer pointer is NULL.        |
+| `-MESH_ERR_BAD_BUF_LEN`          | Bad buffer length              | **Rx connection**: The buffer length is corrupted.<br>**Tx connection**: The buffer length is bigger than maximum. |
+| `-MESH_ERR_CLIENT_CONFIG_INVAL`  | Invalid client config          | JSON client configuration string is malformed. |
+| `-MESH_ERR_MAX_CONN`             | Reached max connections number | An attempt to create a connection failed due to reaching the maximum number of connections defined in `"maxMediaConnections"`. |
+| `-MESH_ERR_FOUND_ALLOCATED`      | Found allocated resources      | When deleting a client, some connections were found not closed. Delete all connections explicitly before deleting the client. |
+| `-MESH_ERR_CONN_FAILED`          | Connection creation failed     | An error occurred while creating a connection. |
+| `-MESH_ERR_CONN_CONFIG_INVAL`    | Invalid connection config      | JSON connection configuration string is malformed or one of parameters has an incorrect value. |
+| `-MESH_ERR_CONN_CONFIG_INCOMPAT` | Incompatible connection config | Incompatible parameters found in the JSON connection configuration string. |
+| `-MESH_ERR_CONN_CLOSED`          | Connection is closed           | When getting a buffer, the connection appeared to become closed. |
+| `-MESH_ERR_TIMEOUT`              | Timeout occurred               | Timeout occurred when performing an operation. |
 
 
 <!-- References -->
