@@ -17,6 +17,7 @@
 #include "proxy_api.h"
 #include "metrics_collector.h"
 #include "proxy_config.h"
+#include "mcm-version.h"
 
 #include <execinfo.h>
 #include <dlfcn.h>
@@ -124,13 +125,13 @@ int main(int argc, char* argv[])
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "hg:t:d:i:r:p:", longopts, 0);
-        if (opt == -1) {
+        opt = getopt_long(argc, argv, "h?t:a:d:i:r:p:", longopts, 0);
+        if (opt == -1)
             break;
-        }
 
         switch (opt) {
         case 'h':
+        case '?':
             help_flag = 1;
             break;
         case 't':
@@ -151,11 +152,6 @@ int main(int argc, char* argv[])
         case 'p':
             rdma_ports = optarg;
             break;
-        case '?':
-            usage(stderr, argv[0]);
-            return 1;
-        default:
-            break;
         }
     }
 
@@ -165,7 +161,7 @@ int main(int argc, char* argv[])
     }
 
     log::setFormatter(std::make_unique<log::StandardFormatter>());
-    log::info("Media Proxy started");
+    log::info("Media Proxy started, version %s #%s", VERSION_TAG, VERSION_HASH);
 
     if (getenv("KAHAWAI_CFG_PATH") == NULL) {
         log::debug("Set MTL configure file path to %s", IMTL_CONFIG_PATH);
@@ -214,7 +210,9 @@ int main(int argc, char* argv[])
     std::signal(SIGTERM, signal_handler);
 
     // Start ProxyAPI client
-    RunProxyAPIClient(ctx);
+    auto err = RunProxyAPIClient(ctx);
+    if (err)
+        ctx.cancel();
 
     // Start metrics collector
     std::thread metricsCollectorThread([&]() {
@@ -235,7 +233,7 @@ int main(int argc, char* argv[])
     // Stop Local connection manager
     log::info("Shutting down Local conn manager");
     auto tctx = context::WithTimeout(context::Background(),
-                                      std::chrono::milliseconds(3000));
+                                     std::chrono::milliseconds(3000));
     connection::local_manager.shutdown(ctx);
 
     metricsCollectorThread.join();

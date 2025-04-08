@@ -14,7 +14,11 @@
 int mcm_init_client(MeshConnection **connection, MeshClient *client, const char *cfg);
 int mcm_create_tx_connection(MeshConnection *connection, MeshClient *client, const char *cfg);
 int mcm_create_rx_connection(MeshConnection *connection, MeshClient *client, const char *cfg);
-int mcm_send_video_frames(MeshConnection *connection, const char *filename);
+int mcm_send_video_frames(MeshConnection *connection, const char *filename,
+                          const char *json_conn_config);
+int mcm_send_audio_packets(MeshConnection *connection, const char *filename,
+                           const char *json_conn_config);
+int mcm_send_blob_packets(MeshConnection *connection, const char *filename);
 void read_data_in_loop(MeshConnection *connection, const char *filename);
 int is_root();
 

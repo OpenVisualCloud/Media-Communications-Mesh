@@ -9,9 +9,11 @@
 
 #include <atomic>
 #include <cstddef>
+#include "buf.h"
 #include "concurrency.h"
 #include "metrics.h"
 #include "sdk.grpc.pb.h"
+#include "sync.h"
 
 namespace mesh::connection {
 
@@ -70,6 +72,7 @@ enum class Result {
     error_general_failure,
     error_context_cancelled,
     error_conn_config_invalid,
+    error_buf_config_invalid,
     error_payload_config_invalid,
 
     error_already_initialized,
@@ -117,6 +120,7 @@ class Config {
 public:
     Result assign_from_pb(const sdk::ConnectionConfig& config);
     void assign_to_pb(sdk::ConnectionConfig& config) const;
+    void copy_buf_parts_from(const Config& config);
 
     sdk::ConnectionKind kind;
 
@@ -125,6 +129,8 @@ public:
     uint32_t max_metadata_size;
 
     uint32_t calculated_payload_size;
+
+    BufferPartitions buf_parts;
 
     ConnectionType conn_type;
 
@@ -235,11 +241,8 @@ protected:
     virtual void on_delete(context::Context& ctx) {}
 
     Kind _kind = Kind::undefined; // must be properly set in the derived class ctor
-    Connection *_link = nullptr;
-    // std::atomic<bool> setting_link = false; // held in set_link()
-    // std::atomic<bool> transmitting = false; // held in on_receive()
 
-    std::mutex link_mx;
+    sync::DataplaneAtomicPtr dp_link;
 
     struct {
         std::atomic<uint64_t> inbound_bytes;

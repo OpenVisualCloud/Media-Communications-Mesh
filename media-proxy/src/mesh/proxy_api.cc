@@ -15,6 +15,7 @@
 #include "logger.h"
 #include "manager_multipoint.h"
 #include "proxy_config.h"
+#include "manager_local.h"
 
 namespace mesh {
 
@@ -63,12 +64,12 @@ int ProxyAPIClient::RegisterMediaProxy()
     RegisterMediaProxyReply reply;
     ClientContext context;
     context.set_deadline(std::chrono::system_clock::now() +
-                         std::chrono::seconds(5));
+                         std::chrono::seconds(15)); // Increased from 5 to 15 as a workaround for k8s
 
     Status status = stub_->RegisterMediaProxy(&context, request, &reply);
 
     if (status.ok()) {
-        proxy_id = reply.proxy_id();
+        SetProxyId(reply.proxy_id());
         return 0;
     } else {
         log::error("RegisterMediaProxy RPC failed: %s",
@@ -80,7 +81,7 @@ int ProxyAPIClient::RegisterMediaProxy()
 int ProxyAPIClient::UnregisterMediaProxy()
 {
     UnregisterMediaProxyRequest request;
-    request.set_proxy_id(proxy_id);
+    request.set_proxy_id(GetProxyId());
 
     UnregisterMediaProxyReply reply;
     ClientContext context;
@@ -103,8 +104,9 @@ int ProxyAPIClient::RegisterConnection(std::string& conn_id, const std::string& 
                                        std::string& err)
 {
     RegisterConnectionRequest request;
-    request.set_proxy_id(proxy_id);
+    request.set_proxy_id(GetProxyId());
     request.set_kind(kind);
+    request.set_conn_id(conn_id); // Normally should be empty.
 
     ConnectionConfig* cfg = request.mutable_config();
     config.assign_to_pb(*cfg);
@@ -131,7 +133,7 @@ int ProxyAPIClient::UnregisterConnection(const std::string& conn_id)
 {
     UnregisterConnectionRequest request;
     request.set_conn_id(conn_id);
-    request.set_proxy_id(proxy_id);
+    request.set_proxy_id(GetProxyId());
 
     UnregisterConnectionReply reply;
     ClientContext context;
@@ -151,7 +153,13 @@ int ProxyAPIClient::UnregisterConnection(const std::string& conn_id)
 
 int ProxyAPIClient::SendMetrics(const std::vector<telemetry::Metric>& metrics)
 {
+    auto proxy_id = GetProxyId();
+    if (proxy_id.empty())
+        return 0;
+
     SendMetricsRequest request;
+
+    request.set_proxy_id(proxy_id);
 
     for (const auto& metric : metrics) {
         Metric* out_metric = request.add_metrics();
@@ -181,6 +189,11 @@ int ProxyAPIClient::SendMetrics(const std::vector<telemetry::Metric>& metrics)
     Status status = stub_->SendMetrics(&context, request, &reply);
 
     if (!status.ok()) {
+        auto err = status.error_code();
+        if (err == grpc::StatusCode::UNAVAILABLE ||
+            err == grpc::StatusCode::NOT_FOUND)
+            return -1;
+
         log::error("Failed to send metrics: %s",
                    status.error_message().c_str());
         return -1;
@@ -194,13 +207,13 @@ int ProxyAPIClient::SendCommandReply(CommandReply& request)
 
     ClientContext context;
     context.set_deadline(std::chrono::system_clock::now() +
-                        std::chrono::seconds(5));
+                         std::chrono::seconds(5));
 
     Status status = stub_->SendCommandReply(&context, request, &reply);
 
     if (!status.ok()) {
         log::error("SendCommandReply RPC failed: %s",
-                    status.error_message().c_str());
+                   status.error_message().c_str());
         return -1;
     }
 
@@ -211,14 +224,18 @@ int ProxyAPIClient::SendCommandReply(CommandReply& request)
 int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 {
     StartCommandQueueRequest request;
-    request.set_proxy_id(proxy_id);
+    request.set_proxy_id(GetProxyId());
 
     ClientContext context;
 
+    auto cctx = context::WithCancel(ctx);
+
     std::jthread shutdown_thread([&]() {
-        ctx.done();
+        cctx.done();
         context.TryCancel();
     });
+
+    thread::Defer d([&]{ cctx.cancel(); });
 
     std::unique_ptr<ClientReader<CommandRequest>> reader(
         stub_->StartCommandQueue(&context, request));
@@ -227,15 +244,15 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
     while (reader->Read(&command_request)) {
         CommandReply result_request;
         result_request.set_req_id(command_request.req_id());
-        result_request.set_proxy_id(proxy_id);
+        result_request.set_proxy_id(GetProxyId());
 
         switch (command_request.command_case()) {
 
         case CommandRequest::kDebug:
             {
                 log::debug("Received Debug command: %s",
-                            command_request.debug().in_text().c_str())
-                            ("req_id", command_request.req_id());
+                           command_request.debug().in_text().c_str())
+                          ("req_id", command_request.req_id());
 
 
                 // Create and populate the CommandReply message
@@ -254,16 +271,16 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                 multipoint::Config config;
 
                 log::info("[AGENT] ApplyConfig")
-                            ("groups", req.groups_size())
-                            ("bridges", req.bridges_size());
+                         ("groups", req.groups_size())
+                         ("bridges", req.bridges_size());
 
                 for (const auto& group : req.groups()) {
                     multipoint::GroupConfig group_config;
 
                     log::info("* Group")
-                                ("group_id", group.group_id())
-                                ("conns", group.conn_ids_size())
-                                ("bridges", group.bridge_ids_size());
+                             ("group_id", group.group_id())
+                             ("conns", group.conn_ids_size())
+                             ("bridges", group.bridge_ids_size());
 
                     for (const auto& conn_id : group.conn_ids()) {
                         // log::debug("-- Conn")("conn_id", conn_id);
@@ -279,9 +296,9 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
                 for (const auto& bridge : req.bridges()) {
                     log::info("* Bridge")
-                                ("bridge_id", bridge.bridge_id())
-                                ("type", bridge.type())
-                                ("kind", bridge.kind());
+                             ("bridge_id", bridge.bridge_id())
+                             ("type", bridge.type())
+                             ("kind", bridge.kind());
 
                     connection::Kind kind;
                     if (!bridge.kind().compare("tx")) {
@@ -325,6 +342,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                             bridge_config.st2110.remote_ip = req.remote_ip();
                             bridge_config.st2110.port = req.port();
                             bridge_config.st2110.transport = req.transport();
+                            bridge_config.st2110.payload_type = req.payload_type();
 
                             config.bridges[bridge_id] = std::move(bridge_config);
                         }
@@ -356,13 +374,15 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                     }
                 }
 
-                multipoint::group_manager.apply_config(ctx, config);
-                // TODO: Do we need to check and return the result here?
-
                 ApplyConfigReply* reply = new ApplyConfigReply();
                 result_request.set_allocated_apply_config(reply);
 
                 SendCommandReply(result_request);
+
+                // Apply config after the ApplyConfig command confirmation
+                // has been sent to avoid mutual nested locking.
+                multipoint::group_manager.apply_config(ctx, config);
+                // TODO: Do we need to check and return the result here?
             }
             break;
 
@@ -372,28 +392,59 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
         default:
             log::error("Unknown proxy command")
-                        ("req_id", command_request.req_id());
+                      ("req_id", command_request.req_id());
             break;
         }
 
     }
 
     Status status = reader->Finish();
-    if (!status.ok() && status.error_code() != grpc::StatusCode::CANCELLED) {
-        log::error("StartCommandQueue RPC failed: %s",
-                   status.error_message().c_str());
-        return -1;
+    if (!status.ok()) {
+        switch (status.error_code()) {
+        case grpc::StatusCode::CANCELLED:
+            return 0;
+
+        case grpc::StatusCode::NOT_FOUND:
+            SetProxyId("");
+            log::info("Trigger Media Proxy registration");
+            return 0;
+
+        default:
+            log::error("StartCommandQueue RPC failed: %s",
+                       status.error_message().c_str());
+            return -1;
+        }
     }
+
     return 0;
 }
 
 int ProxyAPIClient::Run(context::Context& ctx)
 {
-    RegisterMediaProxy();
-
     try {
         th = std::jthread([&]() {
-            StartCommandQueue(ctx);
+            while (!ctx.cancelled()) {
+                if (GetProxyId().empty()) {
+                    auto err = RegisterMediaProxy();
+                    if (err) {
+                        thread::Sleep(ctx, std::chrono::milliseconds(2000));
+                        continue;
+                    }
+                    log::info("Media Proxy registered")
+                             ("proxy_id", GetProxyId());
+
+                    // connection::local_manager.reregister_all_connections(ctx);
+                    
+                    // Close all existing connections
+                    connection::local_manager.shutdown(ctx);
+                }
+
+                auto err = StartCommandQueue(ctx);
+                if (err) {
+                    thread::Sleep(ctx, std::chrono::milliseconds(2000));
+                    continue;
+                }
+            }
         });
     }
     catch (const std::system_error& e) {
@@ -409,6 +460,18 @@ void ProxyAPIClient::Shutdown()
     UnregisterMediaProxy();
 
     th.join();
+}
+
+void ProxyAPIClient::SetProxyId(const std::string& id)
+{
+    std::lock_guard<std::mutex> lk(_proxy_id_mx);
+    _proxy_id = id;
+}
+
+std::string ProxyAPIClient::GetProxyId()
+{
+    std::lock_guard<std::mutex> lk(_proxy_id_mx);
+    return _proxy_id;
 }
 
 int RunProxyAPIClient(context::Context& ctx)

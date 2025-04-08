@@ -2,6 +2,8 @@
 #include "mesh_client.h"
 #include "mesh_conn.h"
 #include "mesh_dp.h"
+#include "mesh_dp_legacy.h"
+
 using namespace mesh;
 
 TEST(mesh_json_sdk, parse_client_cfg) {
@@ -12,8 +14,8 @@ TEST(mesh_json_sdk, parse_client_cfg) {
         "maxMediaConnections": 32
       })";
 
-    ClientJsonConfig config;
-    int err = config.parse_json(str);
+    ClientConfig config;
+    int err = config.parse_from_json(str);
 
     ASSERT_EQ(err, 0);
     EXPECT_EQ(config.proxy_ip, "192.168.96.1");
@@ -32,8 +34,8 @@ TEST(mesh_json_sdk, parse_conn_cfg_multipoint_group) {
         }
       })";
 
-    ConnectionJsonConfig config;
-    int err = config.parse_json(str);
+    ConnectionConfig config;
+    int err = config.parse_from_json(str);
 
     ASSERT_EQ(err, 0);
     EXPECT_EQ(config.buf_queue_capacity, 16);
@@ -55,11 +57,14 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
             "payloadType": 110,
             "transportPixelFormat": "yuv422p10rfc4175"
           }
+        },
+        "payload": {
+          "video": {}
         }
       })";
 
-    ConnectionJsonConfig config;
-    int err = config.parse_json(str);
+    ConnectionConfig config;
+    int err = config.parse_from_json(str);
 
     ASSERT_EQ(err, 0);
     EXPECT_EQ(config.conn_type, MESH_CONN_TYPE_ST2110);
@@ -69,27 +74,68 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
     EXPECT_EQ(config.conn.st2110.pacing, "narrow");
     EXPECT_EQ(config.conn.st2110.payload_type, 110);
     EXPECT_EQ(config.conn.st2110.transportPixelFormat, "yuv422p10rfc4175");
-    EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+    EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_VIDEO);
 }
 
-TEST(mesh_json_sdk, parse_conn_cfg_rdma) {
-    const char *str = R"({
-        "connection": {
-          "rdma": {
-            "connectionMode": "UC",
-            "maxLatencyNanoseconds": 10000
-          }
-        }
-      })";
+// Temporarily commented out until there is a decision on RDMA config in JSON
+// ----
+// TEST(mesh_json_sdk, parse_conn_cfg_rdma) {
+//     const char *str = R"({
+//         "connection": {
+//           "rdma": {
+//             "connectionMode": "UC",
+//             "maxLatencyNanoseconds": 10000
+//           }
+//         }
+//       })";
 
-    ConnectionJsonConfig config;
-    int err = config.parse_json(str);
+//     ConnectionConfig config;
+//     int err = config.parse_from_json(str);
 
-    ASSERT_EQ(err, 0);
-    EXPECT_EQ(config.conn_type, MESH_CONN_TYPE_RDMA);
-    EXPECT_EQ(config.conn.rdma.connection_mode, "UC");
-    EXPECT_EQ(config.conn.rdma.max_latency_ns, 10000);
-    EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+//     ASSERT_EQ(err, 0);
+//     EXPECT_EQ(config.conn_type, MESH_CONN_TYPE_RDMA);
+//     EXPECT_EQ(config.conn.rdma.connection_mode, "UC");
+//     EXPECT_EQ(config.conn.rdma.max_latency_ns, 10000);
+//     EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+// }
+
+TEST(mesh_json_sdk, parse_conn_cfg_blob) {
+  const char *str = R"({
+      "maxPayloadSize": 921600,
+      "connection": {
+        "multipointGroup": {}
+      },
+      "payload": {
+        "blob": {}
+      }
+    })";
+
+  ConnectionConfig config;
+  int err = config.parse_from_json(str);
+
+  ASSERT_EQ(err, 0);
+  EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+  EXPECT_EQ(config.max_payload_size, 921600);
+}
+
+TEST(mesh_json_sdk, parse_conn_cfg_blob_calc) {
+  const char *str = R"({
+      "maxPayloadSize": 921600,
+      "connection": {
+        "multipointGroup": {}
+      },
+      "payload": {
+        "blob": {}
+      }
+    })";
+
+  ConnectionConfig config;
+  config.parse_from_json(str);
+  int err = config.calc_payload_size();
+
+  ASSERT_EQ(err, 0);
+  EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_BLOB);
+  EXPECT_EQ(config.calculated_payload_size, 921600);
 }
 
 TEST(mesh_json_sdk, parse_conn_cfg_video) {
@@ -107,8 +153,8 @@ TEST(mesh_json_sdk, parse_conn_cfg_video) {
         }
       })";
 
-    ConnectionJsonConfig config;
-    int err = config.parse_json(str);
+    ConnectionConfig config;
+    int err = config.parse_from_json(str);
 
     ASSERT_EQ(err, 0);
     EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_VIDEO);
@@ -132,8 +178,8 @@ TEST(mesh_json_sdk, parse_conn_cfg_video_calc) {
         }
       })";
 
-    ConnectionJsonConfig config;
-    config.parse_json(str);
+    ConnectionConfig config;
+    config.parse_from_json(str);
     int err = config.calc_payload_size();
 
     ASSERT_EQ(err, 0);
@@ -155,8 +201,8 @@ TEST(mesh_json_sdk, parse_conn_cfg_audio) {
         }
       })";
 
-    ConnectionJsonConfig config;
-    int err = config.parse_json(str);
+    ConnectionConfig config;
+    int err = config.parse_from_json(str);
 
     ASSERT_EQ(err, 0);
     EXPECT_EQ(config.payload_type, MESH_PAYLOAD_TYPE_AUDIO);
@@ -181,8 +227,8 @@ TEST(mesh_json_sdk, parse_conn_cfg_audio_calc) {
         }
       })";
 
-    ConnectionJsonConfig config;
-    config.parse_json(str);
+    ConnectionConfig config;
+    config.parse_from_json(str);
     int err = config.calc_payload_size();
 
     ASSERT_EQ(err, 0);

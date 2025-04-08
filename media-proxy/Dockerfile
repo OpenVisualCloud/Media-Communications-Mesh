@@ -67,6 +67,8 @@ RUN git clone --branch main https://${GITHUB_CREDENTIALS}github.com/OpenVisualCl
     git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS "${JPEGXS_DIR}" && \
     git -C ${JPEGXS_DIR} checkout ${JPEGXS_VER} && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
+RUN patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/hdr_split/"*.patch || true
+RUN patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/tsn/"*.patch || true
 
 # Build the xdp-tools project
 WORKDIR ${XDP_DIR}
@@ -135,12 +137,12 @@ RUN ./build.sh "${PREFIX_DIR}" && \
 
 ARG IMAGE_CACHE_REGISTRY
 ARG IMAGE_NAME
-FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
+FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} as media-proxy
 
-LABEL maintainer="milosz.linkiewicz@intel.com"
+LABEL maintainer="milosz.linkiewicz@intel.com,konstantin.ilichev@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh Media Proxy"
 LABEL org.opencontainers.image.description="Media Communications Mesh Media Proxy application. Ubuntu 22.04 Docker Container Release Image"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="25.03.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
@@ -162,8 +164,8 @@ RUN apt-get update --fix-missing && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     groupadd -g 2110 vfio && \
-    groupadd -g 1001 imtl && \
-    useradd -m -s /bin/bash -G vfio,imtl -u 1002 mcm && \
+    groupadd -g 2001 mtl && \
+    useradd -m -s /bin/bash -G vfio,mtl -u 2002 mcm && \
     usermod -aG sudo mcm
 
 COPY --chown=mcm --from=builder /install /
@@ -180,5 +182,37 @@ EXPOSE 8001/tcp 8002/tcp
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["/usr/local/bin/media_proxy"]
-
 HEALTHCHECK --interval=30s --timeout=5s CMD ps aux | grep "media_proxy" || exit 1
+
+FROM media-proxy as mtl-manager
+
+LABEL maintainer="milosz.linkiewicz@intel.com,konstantin.ilichev@intel.com"
+LABEL org.opencontainers.image.title="Media Communications Mesh Mtl Manager"
+LABEL org.opencontainers.image.description="Media Communications Mesh Mtl Manager application. Ubuntu 22.04 Docker Container Release Image"
+LABEL org.opencontainers.image.version="25.03.0"
+LABEL org.opencontainers.image.vendor="Intel Corporation"
+LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
+
+USER mtl
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/MtlManager"]
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "MtlManager" | wc -l) != 2 )); then exit 1; fi
+
+FROM media-proxy as mesh-agent
+
+LABEL maintainer="milosz.linkiewicz@intel.com,konstantin.ilichev@intel.com"
+LABEL org.opencontainers.image.title="Media Communications Mesh Mesh Agent"
+LABEL org.opencontainers.image.description="Media Communications Mesh Mesh Agent application. Ubuntu 22.04 Docker Container Release Image"
+LABEL org.opencontainers.image.version="25.03.0"
+LABEL org.opencontainers.image.vendor="Intel Corporation"
+LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
+
+USER mcm
+WORKDIR /opt/mcm/
+
+EXPOSE 8100/tcp 50051/tcp
+
+SHELL ["/bin/bash", "-c"]
+ENTRYPOINT ["/usr/local/bin/mesh-agent"]
+
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "mesh-agent" | wc -l) != 2 )); then exit 1; fi

@@ -79,7 +79,8 @@ void Connection::set_config(const Config& cfg)
               ("buf_queue_cap", config.buf_queue_capacity)
               ("max_payload_size", config.max_payload_size)
               ("max_metadata_size", config.max_metadata_size)
-              ("calc_payload_size", config.calculated_payload_size);
+              ("calc_payload_size", config.calculated_payload_size)
+              ("buf_total_size", config.buf_parts.total_size());
 
     switch (config.conn_type) {
     case CONN_TYPE_GROUP:
@@ -141,12 +142,10 @@ Result Connection::establish_async(context::Context& ctx)
 
         try {
             establish_th = std::jthread([this]() {
-                // log::debug("ON ESTABLISH THREAD START");
                 auto res = on_establish(establish_ctx);
                 if (res != Result::success)
                     log::error("Threaded on_establish() err: %s",
                                result2str(res));
-                // log::debug("ON ESTABLISH THREAD EXIT");
             });
         }
         catch (const std::system_error& e) {
@@ -203,20 +202,16 @@ Result Connection::shutdown_async(context::Context& ctx)
 
         try {
             shutdown_th = std::jthread([this, &ctx]() {
-                // log::debug("======= ON SHUTDOWN THREAD START");
 
                 establish_ctx.cancel();
-                if (establish_th.joinable()) {
-                    // log::debug("ON SHUTDOWN THREAD - waiting for establish thread to exit");
+                if (establish_th.joinable())
                     establish_th.join();
-                    // log::debug("ON SHUTDOWN THREAD - establish thread exited");
-                }
 
                 auto res = on_shutdown(ctx);
                 if (res != Result::success)
                     log::error("Threaded on_shutdown() err: %s",
                                result2str(res));
-                // log::debug("======= ON SHUTDOWN THREAD EXIT");
+
                 shutdown_th.detach();
                 delete this; // TODO: consider on making this safer
             });
@@ -237,25 +232,24 @@ Result Connection::transmit(context::Context& ctx, void *ptr, uint32_t sz)
     if (state() != State::active)
         return set_result(Result::error_wrong_state);
 
-    if (!_link)
+    if (!ptr || !sz)
+        return set_result(Result::error_no_buffer);
+
+    auto _link = (Connection *)dp_link.load_next_lock();
+
+    if (!_link) {
+        dp_link.unlock();
         return set_result(Result::error_no_link_assigned);
+    }
 
     metrics.inbound_bytes += sz;
 
     uint32_t sent = 0;
     Result res;
 
-    // transmitting.store(true, std::memory_order_release);
-    // setting_link.wait(true, std::memory_order_acquire);
-    {
-        const std::lock_guard<std::mutex> lk(link_mx);
+    res = _link->do_receive(ctx, ptr, sz, sent);
 
-        res = _link->do_receive(ctx, ptr, sz, sent);
-    }
-    // transmitting.store(false, std::memory_order_release);
-    // transmitting.notify_all();
-
-    // thread::Sleep(ctx, std::chrono::milliseconds(1));
+    dp_link.unlock();
 
     metrics.outbound_bytes += sent;
 
@@ -272,6 +266,9 @@ Result Connection::do_receive(context::Context& ctx, void *ptr, uint32_t sz,
 {
     // WARNING: This is the hot path of Data Plane.
     // Avoid any unnecessary operations that can increase latency.
+
+    if (!ptr || !sz)
+        return set_result(Result::error_no_buffer);
 
     metrics.inbound_bytes += sz;
 
@@ -310,31 +307,23 @@ Result Connection::set_link(context::Context& ctx, Connection *new_link,
     // WARNING: Changing a link will affect the hot path of Data Plane.
     // Avoid any unnecessary operations that can increase latency.
 
-    if (_link == new_link)
+    if (link() == new_link)
         return set_result(Result::success);
 
     // TODO: generate an Event (conn_changing_link).
     // Use context to cancel sending the Event.
 
-    // setting_link.store(true, std::memory_order_release);
-    // transmitting.wait(true, std::memory_order_acquire);
-    {
-        const std::lock_guard<std::mutex> lk(link_mx);
-
-        _link = new_link;
-    }
-    // setting_link.store(false, std::memory_order_release);
-    // setting_link.notify_one();
+    dp_link.store_wait(new_link);
 
     // TODO: generate a post Event (conn_link_changed).
     // Use context to cancel sending the Event.
 
-    return set_result(Result::success); // TODO: return error if needed
+    return set_result(Result::success);
 }
 
 Connection * Connection::link()
 {
-    return _link;
+    return (Connection *)dp_link.load();
 }
 
 Result Connection::set_result(Result res)
@@ -440,6 +429,7 @@ const char * result2str(Result res)
     case Result::error_general_failure:            return "general failure";
     case Result::error_context_cancelled:          return "context cancelled";
     case Result::error_conn_config_invalid:        return "invalid conn config";
+    case Result::error_buf_config_invalid:         return "invalid buf config";
     case Result::error_payload_config_invalid:     return "invalid payload config";
 
     case Result::error_already_initialized:        return "already initialized";
@@ -550,6 +540,27 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
     max_metadata_size       = config.max_metadata_size();
     calculated_payload_size = config.calculated_payload_size();
 
+    if (!config.has_buf_parts())
+        return Result::error_buf_config_invalid;
+
+    auto partitions = config.buf_parts();
+    if (!partitions.has_payload() ||
+        !partitions.has_metadata() ||
+        !partitions.has_sysdata())
+        return Result::error_buf_config_invalid;
+
+    auto partition_payload = partitions.payload();
+    buf_parts.payload.offset = partition_payload.offset();
+    buf_parts.payload.size = partition_payload.size();
+
+    auto partition_metadata = partitions.metadata();
+    buf_parts.metadata.offset = partition_metadata.offset();
+    buf_parts.metadata.size = partition_metadata.size();
+
+    auto partition_sysdata = partitions.sysdata();
+    buf_parts.sysdata.offset = partition_sysdata.offset();
+    buf_parts.sysdata.size = partition_sysdata.size();
+
     if (config.has_multipoint_group()) {
         conn_type = ConnectionType::CONN_TYPE_GROUP;
         const sdk::ConfigMultipointGroup& group = config.multipoint_group();
@@ -585,6 +596,8 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
         payload.audio.sample_rate = audio.sample_rate();
         payload.audio.format      = audio.format();
         payload.audio.packet_time = audio.packet_time();
+    } else if (config.has_blob()) {
+        payload_type = PayloadType::PAYLOAD_TYPE_BLOB;
     } else {
         return Result::error_payload_config_invalid;
     }
@@ -600,6 +613,20 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
     config.set_max_payload_size(max_payload_size);
     config.set_max_metadata_size(max_metadata_size);
     config.set_calculated_payload_size(calculated_payload_size);
+
+    auto partitions = config.mutable_buf_parts();
+
+    auto partition_payload = partitions->mutable_payload();
+    partition_payload->set_offset(buf_parts.payload.offset);
+    partition_payload->set_size(buf_parts.payload.size);
+
+    auto partition_metadata = partitions->mutable_metadata();
+    partition_metadata->set_offset(buf_parts.metadata.offset);
+    partition_metadata->set_size(buf_parts.metadata.size);
+
+    auto partition_sysdata = partitions->mutable_sysdata();
+    partition_sysdata->set_offset(buf_parts.sysdata.offset);
+    partition_sysdata->set_size(buf_parts.sysdata.size);
 
     if (conn_type == ConnectionType::CONN_TYPE_GROUP) {
         auto group = new sdk::ConfigMultipointGroup();
@@ -634,7 +661,15 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
         audio->set_format(payload.audio.format);
         audio->set_packet_time(payload.audio.packet_time);
         config.set_allocated_audio(audio);
+    } else if (payload_type == PayloadType::PAYLOAD_TYPE_BLOB) {
+        auto blob = new sdk::ConfigBlob();
+        config.set_allocated_blob(blob);
     }
+}
+
+void Config::copy_buf_parts_from(const Config& config)
+{
+    std::memcpy(&buf_parts, &config.buf_parts, sizeof(BufferPartitions));
 }
 
 } // namespace mesh::connection

@@ -45,8 +45,6 @@ class ST2110Tx : public ST2110<FRAME, HANDLE, OPS> {
     }
 
     Result on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_t& sent) override {
-        int copy_size = this->transfer_size > sz ? sz : this->transfer_size;
-
         FRAME *frame;
         for (;;) {
             if (ctx.cancelled() || this->_ctx.cancelled())
@@ -60,12 +58,23 @@ class ST2110Tx : public ST2110<FRAME, HANDLE, OPS> {
             this->wait_frame_available();
         }
 
+        auto buf_total_size = this->config.buf_parts.total_size();
+        if (sz > buf_total_size)
+            sz = buf_total_size;
+
+        auto base_ptr = (char *)ptr;
+        auto sysdata = (BufferSysData *)(base_ptr + this->config.buf_parts.sysdata.offset);
+        auto payload_ptr = (void *)(base_ptr + this->config.buf_parts.payload.offset);
+
+        int copy_size = sysdata->payload_len > this->transfer_size ?
+                        this->transfer_size : sysdata->payload_len;
+
         // Copy data from emulated transmitter to MTL empty buffer
-        mtl_memcpy(get_frame_data_ptr(frame), ptr, copy_size);
+        mtl_memcpy(get_frame_data_ptr(frame), payload_ptr, copy_size);
         // Return full buffer to MTL
         this->put_frame(this->mtl_session, frame);
 
-        sent = this->transfer_size;
+        sent = sz; // TODO: Probably replace with copy_size?
         return this->set_result(Result::success);
     };
 };

@@ -15,6 +15,9 @@ import (
 
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
+	"google.golang.org/grpc/status"
 
 	pb "control-plane-agent/api/proxy/proto/mediaproxy"
 	"control-plane-agent/internal/event"
@@ -61,8 +64,22 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 		return nil, errors.New("proxy register request")
 	}
 
+	var controlPlaneIpAddr string
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		if addr, ok := p.Addr.(*net.TCPAddr); ok {
+			clientIP := addr.IP
+			if clientIP.To4() != nil {
+				controlPlaneIpAddr = clientIP.To4().String()
+			} else {
+				controlPlaneIpAddr = clientIP.String()
+			}
+		}
+	}
+
 	params := map[string]interface{}{
-		"sdk_api_port": in.SdkApiPort,
+		"sdk_api_port":         in.SdkApiPort,
+		"controlplane_ip_addr": controlPlaneIpAddr,
 	}
 
 	if in.St2110Config != nil {
@@ -95,14 +112,14 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 // UnregisterMediaProxy
 func (a *API) UnregisterMediaProxy(ctx context.Context, in *pb.UnregisterMediaProxyRequest) (*pb.UnregisterMediaProxyReply, error) {
 	if in == nil {
-		return nil, errors.New("proxy unregister request")
+		return nil, errors.New("proxy unregister request nil")
 	}
 
 	reply := event.PostEventSync(ctx, event.OnUnregisterMediaProxy, map[string]interface{}{
 		"proxy_id": in.ProxyId,
 	})
 	if reply.Err != nil {
-		logrus.Errorf("Proxy unregister req err: %v", reply.Err)
+		logrus.Errorf("Proxy unregister req post event sync err: %v", reply.Err)
 	}
 
 	event.PostEventAsync(reply.Ctx, event.OnUnregisterMediaProxyOk, nil)
@@ -114,6 +131,15 @@ func (a *API) RegisterConnection(ctx context.Context, in *pb.RegisterConnectionR
 	if in == nil {
 		return nil, errors.New("nil register conn request")
 	}
+
+	// If conn_id is not empty, this request is sent by Media Proxy to recover after a connection loss.
+	// So, if the connection exists in the registry, reply with success and exit.
+	// Otherwise, return an error, which should force Media Proxy to delete the existing connection.
+	if len(in.ConnId) > 0 {
+		_, err := registry.ConnRegistry.Get(ctx, in.ConnId, false)
+		return &pb.RegisterConnectionReply{ConnId: in.ConnId}, err
+	}
+
 	if in.Config == nil {
 		return nil, errors.New("nil register conn config")
 	}
@@ -133,6 +159,7 @@ func (a *API) RegisterConnection(ctx context.Context, in *pb.RegisterConnectionR
 	reply := event.PostEventSync(ctx, event.OnRegisterConnection, map[string]interface{}{
 		"proxy_id":    in.ProxyId,
 		"kind":        in.Kind,
+		"conn_id":     in.ConnId, // Normally, this should be empty
 		"conn_config": config,
 		"conn_type":   config.ConnType(),
 		"group_id":    groupURN, // Here the group URN becomes Group ID
@@ -151,7 +178,9 @@ func (a *API) RegisterConnection(ctx context.Context, in *pb.RegisterConnectionR
 		return nil, errors.New("conn register request: registry reported no conn id")
 	}
 
-	event.PostEventAsync(reply.Ctx, event.OnRegisterConnectionOk, nil)
+	event.PostEventAsync(reply.Ctx, event.OnRegisterConnectionOk, map[string]interface{}{
+		"proxy_id": in.ProxyId,
+	})
 	return &pb.RegisterConnectionReply{ConnId: id}, nil
 }
 
@@ -188,15 +217,29 @@ func (a *API) StartCommandQueue(in *pb.StartCommandQueueRequest, stream pb.Proxy
 	proxyId := in.ProxyId
 	proxy, err := registry.MediaProxyRegistry.Get(stream.Context(), proxyId, false)
 	if err != nil {
-		logrus.Errorf("Start command queue failed, id: %v, %v", proxyId, err)
+		return status.Error(codes.NotFound, err.Error())
+	}
+
+	err = registry.MediaProxyRegistry.Update_SetActive(stream.Context(), proxyId, true)
+	if err != nil {
 		return err
 	}
+
+	event.PostEventAsync(stream.Context(), event.OnActivateMediaProxy, map[string]interface{}{
+		"proxy_id": proxyId,
+	})
+
+	proxy.ReadyCh.Set(true)
+	defer proxy.ReadyCh.Set(false)
 
 	// Running a command queue for the given Media Proxy
 	for {
 		req, err := proxy.GetNextCommandRequest(stream.Context())
 		if err != nil {
-			proxy.Deinit()
+			// Commented this out to avoid closing the command stream after network glitches.
+			// TODO: Check and revert back if needed.
+			// proxy.Deinit()
+
 			return err
 		}
 
@@ -249,6 +292,17 @@ func (a *API) SendCommandReply(ctx context.Context, in *pb.CommandReply) (*pb.Co
 }
 
 func (s *API) SendMetrics(ctx context.Context, req *pb.SendMetricsRequest) (*pb.SendMetricsReply, error) {
+	if req == nil {
+		return nil, errors.New("nil send metrics request")
+	}
+
+	proxyId := req.ProxyId
+
+	_, err := registry.MediaProxyRegistry.Get(ctx, proxyId, false)
+	if err != nil {
+		return nil, fmt.Errorf("send metrics req err: %v", err)
+	}
+
 	for _, v := range req.Metrics {
 		// logrus.Debugf("Received metric [%v] %v %v", time.UnixMilli(v.TimestampMs).Format("2006-01-02T15:04:05.000Z07:00"), v.ProviderId, v.Fields)
 		metric := telemetry.NewMetric(v.TimestampMs)

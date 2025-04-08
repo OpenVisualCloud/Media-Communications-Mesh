@@ -1,0 +1,4 @@
+package internal
+
+const VersionTag = "@GIT_TAG@"
+const VersionHash = "@GIT_HASH@"

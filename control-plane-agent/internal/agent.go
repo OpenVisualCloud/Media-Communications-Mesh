@@ -20,8 +20,10 @@ import (
 
 	controlplane "control-plane-agent/api/control-plane"
 	"control-plane-agent/api/proxy"
+	"control-plane-agent/internal/config"
 	"control-plane-agent/internal/event"
 	"control-plane-agent/internal/logic"
+	"control-plane-agent/internal/logic/mesh"
 	"control-plane-agent/internal/registry"
 )
 
@@ -47,9 +49,12 @@ func RunAgent() {
 
 	proxyAPIPort := flag.Uint("p", 50051, "Proxy API port number")
 	controlAPIPort := flag.Uint("c", 8100, "Control API port number")
+	verboseOutput := flag.Bool("v", false, "Verbose output")
 	flag.Parse()
 
-	logrus.Info("Mesh Control Plane Agent started")
+	config.VerboseOutput = *verboseOutput
+
+	logrus.Infof("Mesh Control Plane Agent started, version %v #%v", VersionTag, VersionHash)
 
 	controlPlaneAPI := controlplane.NewAPI(controlplane.Config{ListenPort: int(*controlAPIPort)})
 	proxyAPI := proxy.NewAPI(proxy.Config{ListenPort: int(*proxyAPIPort)})
@@ -86,6 +91,13 @@ func RunAgent() {
 	go func() {
 		defer wg.Done()
 		controlPlaneAPI.Run(ctx)
+		cancel()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		mesh.ApplyProxyConfigQueue.Run(ctx)
 		cancel()
 	}()
 

@@ -1,4 +1,4 @@
-name: build-baremetal-ubuntu
+name: build standalone
 
 on:
   push:
@@ -94,20 +94,13 @@ jobs:
         ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
         ./build-ffmpeg.sh "7.0"
 
-    - name: 'Scanner: Send to VirusTotal for analysis'
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      id: vt
-      uses: cssnr/virustotal-action@331c320c79202fdaa7a30f16163390f8d09c3f45 # v1.2.0
+    - name: 'upload media-proxy and mcm binaries'
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          vt_api_key: ${{ secrets.VT_API_KEY }}
-          file_globs: |
-            _build/mcm/lib/*.so*
-            _build/mcm/bin/*
-            _install/usr/local/sbin/*
-            _build/ffmpeg-6-1/ffmpeg
-            _build/ffmpeg-7-0/ffmpeg
-    - name: 'Scanner: Print scan results'
-      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-      id: vt-out
-      run: echo ${{ steps.vt.outputs.results }}
+        name: mcm-build
+        path: | 
+          ${{ env.BUILD_DIR }}/mcm/bin/media_proxy
+          ${{ env.BUILD_DIR }}/mcm/bin/mesh-agent
+          ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.*
+          ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
+          ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
