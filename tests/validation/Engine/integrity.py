@@ -2,8 +2,10 @@
 # Copyright(c) 2024-2025 Intel Corporation
 # Media Communications Mesh
 
+import argparse
 import hashlib
 import logging
+import multiprocessing
 import re
 import time
 from math import floor
@@ -23,7 +25,8 @@ def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
     return chunk_sums
 
 
-def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage: int = 80, looped: bool = False) -> bool:
+def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percentage: int = 80,
+                          looped: bool = False) -> bool:
     if looped:
         logging.debug(f"Source chunks: {len(src_chunk_sums)}, Output chunks: {len(out_chunk_sums)}")
 
@@ -91,76 +94,41 @@ def check_chunk_integrity(src_chunk_sums, out_chunk_sums, expected_frame_percent
         # only return true if no more frames left in out frames list, else fail
         return out_index == len(out_chunk_sums)
 
-def check_integrity_big_file(src_chunk_sums, out_chunk_sums, allowed_bad: int = 10, looped: bool = False) -> bool:
+
+def check_integrity_big_file(src_chunk_sums, out_chunk_sums, allowed_bad: int = 10) -> bool:
     logging.debug("Starting integrity check for big file.")
     logging.debug(f"Source chunk sums: {len(src_chunk_sums)} chunks")
     logging.debug(f"Output chunk sums: {len(out_chunk_sums)} chunks")
     logging.debug(f"Allowed bad frames: {allowed_bad}")
-    logging.debug(f"Looped: {looped}")
 
-    identical_chunks = 0
-    min_identical_percentage = 80  # Minimum percentage of identical chunks required
-
-    if looped:
-        logging.debug("Handling looped data integrity check.")
-        repeat_count = len(out_chunk_sums) // len(src_chunk_sums)
-        remainder = len(out_chunk_sums) % len(src_chunk_sums)
-
-        for i in range(repeat_count):
-            for j in range(len(src_chunk_sums)):
-                if out_chunk_sums[i * len(src_chunk_sums) + j] == src_chunk_sums[j]:
-                    identical_chunks += 1
-                else:
-                    logging.error(f"Mismatch at repeat {i}, index {j}")
-                    break  # Exit the loop on mismatch
-
-        for j in range(remainder):
-            if out_chunk_sums[repeat_count * len(src_chunk_sums) + j] == src_chunk_sums[j]:
-                identical_chunks += 1
-            else:
-                logging.error(f"Mismatch at remainder index {j}")
-                break  # Exit the loop on mismatch
-
-        logging.debug("Integrity check passed with repeated data.")
+    # Find the first correct frame within the allowed_bad range
+    for frame_start in range(min(allowed_bad, len(out_chunk_sums))):
+        if out_chunk_sums[frame_start] in src_chunk_sums:
+            shift = src_chunk_sums.index(out_chunk_sums[frame_start])
+            logging.debug(f"Found first correct frame at position {frame_start} with shift {shift}.")
+            break
     else:
-        for frame_start in range(min(allowed_bad, len(out_chunk_sums))):
-            if out_chunk_sums[frame_start] in src_chunk_sums:
-                shift = src_chunk_sums.index(out_chunk_sums[frame_start])
-                logging.debug(f"Found first correct frame at position {frame_start} with shift {shift}.")
-                break
-        else:
-            logging.error(f"Did not find any correct frame in the first {allowed_bad} frames of the output.")
-            return False
-
-        src_chunk_sums = src_chunk_sums[shift:] + src_chunk_sums[:shift]
-        logging.debug(f"Shifting source chunks by {shift} positions.")
-
-        bad_frames = 0
-        for ids, chunk_sum in enumerate(out_chunk_sums):
-            if chunk_sum == src_chunk_sums[ids % len(src_chunk_sums)]:
-                identical_chunks += 1
-            else:
-                bad_frames += 1
-                logging.debug(f"Bad frame detected at position {ids}.")
-
-        if bad_frames > allowed_bad:
-            logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
-            return False
-
-        logging.debug("Integrity check passed with no bad frames.")
-
-    # Calculate and log the percentage of identical chunks
-    total_chunks = len(out_chunk_sums)
-    identical_percentage = (identical_chunks / total_chunks) * 100
-    logging.info(f"Identical chunks: {identical_chunks}/{total_chunks} ({identical_percentage:.2f}%)")
-
-    # Return based on the minimum identical percentage threshold
-    if identical_percentage >= min_identical_percentage:
-        logging.info(f"Integrity check passed with {identical_percentage:.2f}% identical chunks.")
-        return True
-    else:
-        logging.error(f"Integrity check failed. Only {identical_percentage:.2f}% identical chunks.")
+        logging.error(f"Did not find any correct frame in the first {allowed_bad} frames of the output.")
         return False
+
+    # Shift the source chunk list
+    src_chunk_sums = src_chunk_sums[shift:] + src_chunk_sums[:shift]
+    logging.debug(f"Shifting source chunks by {shift} positions.")
+
+    # Check the integrity of the remaining frames
+    bad_frames = 0
+    for ids, chunk_sum in enumerate(out_chunk_sums):
+        if chunk_sum != src_chunk_sums[ids % len(src_chunk_sums)]:
+            bad_frames += 1
+            logging.debug(f"Bad frame detected at position {ids}.")
+
+    if bad_frames > allowed_bad:
+        logging.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
+        return False
+
+    logging.debug("Integrity check passed with no bad frames.")
+    return True
+
 
 def calculate_yuv_frame_size(width: int, height: int, file_format: str) -> int:
     match file_format:
@@ -190,11 +158,12 @@ def check_st30p_integrity(src_url: str, out_name: str, frame_size: int, expected
     return check_integrity(src_url, out_name, frame_size, expected_frame_percentage)
 
 
-def check_st30p_integrity_big(src_url: str, out_url: str, fmt: str, ptime: str, sampling: str, channel: str, looped: bool = False) -> bool:
+def check_st30p_integrity_big(src_url: str, out_url: str, fmt: str, ptime: str, sampling: str, channel: str) -> bool:
     frame_size = calculate_st30p_framebuff_size(fmt, ptime, sampling, channel)
     src_chunk_sums = calculate_chunk_hashes(src_url, frame_size)
     out_chunk_sums = calculate_chunk_hashes(out_url, frame_size)
-    return check_integrity_big_file(src_chunk_sums, out_chunk_sums, looped=looped)
+    return check_integrity_big_file(src_chunk_sums, out_chunk_sums)
+
 
 def calculate_st30p_framebuff_size(
         format: str, ptime: str, sampling: str, channel: str
@@ -284,8 +253,10 @@ def calculate_st30p_framebuff_size(
 
 class StreamIntegritor:
 
-    def __init__(self, src_url: str, out_name: str, resolution: str = None, file_format: str = None, out_path: str = "/mnt/ramdisk",
-                 segment_duration: int = 3):
+    def __init__(self, src_url: str, out_name: str, resolution: str = None, file_format: str = None,
+                 out_path: str = "/mnt/ramdisk",
+                 segment_duration: int = 3,
+                 one_file: bool = False):
         if resolution and file_format:
             logging.info(
                 f"Verify integrity for src {src_url} out file names: {out_name}\nresolution: {resolution}, file_format: {file_format}")
@@ -299,10 +270,11 @@ class StreamIntegritor:
             self.frame_size = None
             self.src_chunk_sums = None
         logging.info(f"Output path {out_path}, segment duration: {segment_duration}")
+        self.one_file = one_file
         self.src_url = src_url
         self.out_name = out_name
         self.out_path = out_path
-        self.shift = 0
+        self.shift = None
         self.segment_duration = segment_duration
         self.out_frame_no = 0
         self.bad_frames_total = 0
@@ -328,37 +300,103 @@ class StreamIntegritor:
         logging.debug(self.src_chunk_sums)
         return out_chunk_sums
 
-    def get_out_file(self):
-        start = 0
-        while self.segment_duration * 2 > start:
-            out_files = list(Path(self.out_path).glob(f"{self.out_name}*"))
-            if len(out_files) > 0:
-                return out_files[0]
-            start += 1
-            time.sleep(1)
-        try:
-            return out_files[0]
-        except IndexError:
-            logging.info(f"No more output files found in {self.out_path}")
-            return None
+    def get_out_file(self, request_queue, logger):
 
-    def check_st20p_integrity(self) -> bool:
-        out_url = self.get_out_file()
-        logging.info(f"Checking first file: {out_url}")
-        out_chunk_sums = self.get_first_frame(out_url)
-        self.check_integrity_file(out_chunk_sums, out_url)
-        out_url.unlink()
+        start = 0
+        waiting_for_files = True
+        list_processed = []
+
+        def not_in_list1(item):
+            return item not in list_processed
+        if self.one_file:
+            try:
+                gb = list(Path(self.out_path).glob(f"{self.out_name}*"))
+                request_queue.put(gb[0])
+                return
+            except IndexError:
+                logger.error(f"File {self.out_name} not found!")
+                raise
+
+        while (self.segment_duration * 2 > start) or waiting_for_files:
+            gb = list(Path(self.out_path).glob(f"{self.out_name}*"))
+            out_files = list(filter(not_in_list1, gb))
+            logger.info(f"out files: {out_files}")
+            if len(out_files) > 1:
+                logger.info(f"Puting file into queue {out_files[0]}")
+                request_queue.put(out_files[0])
+                list_processed.append(out_files[0])
+                waiting_for_files = False
+                start = 0
+            start += 0.5
+            time.sleep(0.5)
+        else:
+            try:
+                request_queue.put(out_files[0])
+            except IndexError:
+                logger.info(f"No more output files found in {self.out_path}")
+
+    def worker(self, wkr_id, request_queue, result_queue, shared, logger):
+        logger.info(f"Started worker {wkr_id}")
+        if wkr_id == 0:
+            logger.info(f"Trying to find shift in worker {wkr_id}")
+            while True:
+                first_file = request_queue.get()
+                if first_file:
+                    break
+                time.sleep(0.1)
+            logger.info(f"worker {wkr_id} Checking first file: {first_file}")
+            out_chunk_sums = self.get_first_frame(first_file)
+            shared["src_chksums"] = self.src_chunk_sums
+            shared["shift"] = self.shift
+            self.check_integrity_file(out_chunk_sums, first_file)
+            # first_file.unlink()
+            first_file = None
+        else:
+            while shared["shift"] is False:
+                time.sleep(0.1)  # wait until first worker find shift
+            else:
+                self.src_chunk_sums = shared["src_chksums"]
         while True:
-            out_url = self.get_out_file()
+            out_url = request_queue.get()
+            logger.info(f"worker {wkr_id} Checking  file: {out_url}")
             if out_url:
-                logging.info(f"Checking file: {out_url}")
+                if out_url == "Done":
+                    break
                 out_chunk_sums = calculate_chunk_hashes(out_url, self.frame_size)
                 if self.check_integrity_file(out_chunk_sums, out_url):
                     logging.info(f"{out_url} PASS with no error, removing file.")
                 out_url.unlink()
-            else:
-                logging.info(f"Totally found {self.bad_frames_total} bad frames.")
-                break
+        result_queue.put(self.bad_frames_total)
+
+    def start_workers(self, result_queue, request_queue, shared, logger, workers_number=5):
+        # Create and start a separate process for each task
+        processes = []
+        for number in range(workers_number):
+            p = multiprocessing.Process(target=self.worker, args=(number, request_queue, result_queue, shared, logger))
+            p.start()
+            processes.append(p)
+        return processes
+
+    def check_st20p_integrity(self) -> bool:
+        mgr = multiprocessing.Manager()
+        shared_data = mgr.dict()
+        shared_data["shift"] = False
+        result_queue = multiprocessing.Queue()
+        request_queue = multiprocessing.Queue()
+        work_cnt = 1 if self.one_file else 5
+        workers = self.start_workers(result_queue, request_queue, shared_data, logging, work_cnt)
+        output_worker = multiprocessing.Process(target=self.get_out_file, args=(request_queue, logging))
+        output_worker.start()
+        results = []
+        while output_worker.is_alive():
+            time.sleep(1)
+        output_worker.join()
+        for wk in workers:
+            request_queue.put("Done")
+        for wk in workers:
+            results.append(result_queue.get())
+            wk.join()
+        logging.info(f"Results of bad frames: {results}")
 
     def check_st30p_integrity(self, fmt, ptime, sampling, channel, looped=False) -> dict:
         out_url = self.get_out_file()
@@ -416,96 +454,54 @@ class StreamIntegritor:
         return True
 
 
-if __name__ == "__main__":
-    help = """
-        Check Integrity of big files with source one. Supports check_st20p_integrity_big and check_st30p_integrity_big methods.
-        
-        Usage examples:
-
-        For ST20P (video stream):
-        >$ python integrity.py stream path_to_src_file out_filename resolution file_format
-        - path_to_src_file: Path to the source video file.
-        - out_filename: Prefix of the output file in segment using ffmpeg.
-        - resolution: Resolution of the video (e.g., 1920x1080).
-        - file_format: Format of the video file (e.g., yuv422p10le).
-
-        Example:
-        ffmpeg -f mcm -conn_type st2110 -ip_addr 239.168.85.20 -port 20000 -frame_rate 60 -video_size 1920x1080
-            -pixel_format yuv422p10le -i - -f rawvideo -f segment -segment_time 3 /mnt/ramdisk/1920x1080_rx_out.yuv
-        In this case, the output_filename is: 1920x1080_rx_out
-        >$ python integrity.py stream /mnt/media/HDR_1920x1080.yuv 1920x1080_rx_out 1920x1080 yuv422p10le
-
-        Additional parameters:
-        - output_path: Default is /mnt/ramdisk
-        - segment_duration: Default is 3 seconds
-
-        For ST30P (audio stream):
-        >$ python integrity.py file path_to_src_file path_to_out_file format ptime sampling channel [looped]
-        - path_to_src_file: Path to the source audio file.
-        - path_to_out_file: Path to the output audio file.
-        - format: Audio format (e.g., PCM8, PCM16, PCM24).
-        - ptime: Packet time (e.g., 1, 0.12, 0.25).
-        - sampling: Sampling rate (e.g., 41.1kHz, 48kHz, 96kHz).
-        - channel: Channel configuration (e.g., M, DM, ST).
-        - looped: Optional argument to specify if the data is looped ('true' or 'false').
-
-        Example:
-        >$ python integrity.py file /mnt/media/audio_src.pcm /mnt/ramdisk/audio_out.pcm PCM8 1.09 41.1kHz M
-        >$ python integrity.py file /mnt/media/audio_src.pcm /mnt/ramdisk/audio_out.pcm PCM8 1.09 41.1kHz M true
-
-        Note: For looped data, add 'true' or 'false' as the last argument to specify if the data is looped.
-    """
-    import sys
-    import logging
-
+def main():
+    # Set up logging
     logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG,
                         handlers=[logging.FileHandler("integrity.log"), logging.StreamHandler()])
 
-    try:
-        if len(sys.argv) < 2:
-            print(help)
-            exit()
+    # Define the argument parser
+    parser = argparse.ArgumentParser(
+        description="Check Integrity of big files with source one. Supports check_st20p_integrity_big and check_st30p_integrity_big methods.")
 
-        mode = sys.argv[1].lower()
+    subparsers = parser.add_subparsers(dest='mode', help='Mode of operation: stream or file')
 
-        if mode == "stream":
-            if len(sys.argv) == 6:
-                _, _, src, out, res, fmt = sys.argv
-                out_path = "/mnt/ramdisk"
-                segment_duration = 3
-                StreamIntegritor(src, out, res, fmt, out_path, segment_duration).check_st20p_integrity()
-            elif len(sys.argv) == 7:
-                _, _, src, out, res, fmt, out_path = sys.argv
-                segment_duration = 3
-                StreamIntegritor(src, out, res, fmt, out_path, segment_duration).check_st20p_integrity()
-            elif len(sys.argv) == 8:
-                _, _, src, out, fmt, ptime, sampling, channel = sys.argv
-                out_path = "/mnt/ramdisk"
-                segment_duration = 3
-                StreamIntegritor(src, out, out_path=out_path, segment_duration=segment_duration).check_st30p_integrity(fmt, ptime, sampling, channel)
-            elif len(sys.argv) == 9:
-                _, _, src, out, fmt, ptime, sampling, channel, out_path = sys.argv
-                segment_duration = 3
-                StreamIntegritor(src, out, out_path=out_path, segment_duration=segment_duration).check_st30p_integrity(fmt, ptime, sampling, channel)
-            elif len(sys.argv) == 10:
-                _, _, src, out, fmt, ptime, sampling, channel, out_path, looped = sys.argv
-                segment_duration = 3
-                looped = looped.lower() == 'true'
-                StreamIntegritor(src, out, out_path=out_path, segment_duration=segment_duration).check_st30p_integrity(fmt, ptime, sampling, channel, looped)
-            else:
-                print(help)
-        elif mode == "file":
-            if len(sys.argv) == 8:
-                _, _, src, out, fmt, ptime, sampling, channel = sys.argv
-                print(check_st30p_integrity_big(src, out, fmt, ptime, sampling, channel, looped=False))
-            elif len(sys.argv) == 9:
-                _, _, src, out, fmt, ptime, sampling, channel, looped = sys.argv
-                looped = looped.lower() == 'true'
-                print(check_st30p_integrity_big(src, out, fmt, ptime, sampling, channel, looped))
-            else:
-                print(help)
-        else:
-            print(help)
-    except IndexError:
-        print(help)
-        exit()
+    # Stream mode parser
+    stream_parser = subparsers.add_parser('stream', help='Check integrity for video stream (ST20P)')
+    stream_parser.add_argument('src', type=str, help='Path to the source video file')
+    stream_parser.add_argument('out', type=str, help='Prefix of the output file in segment using ffmpeg')
+    stream_parser.add_argument('res', type=str, help='Resolution of the video (e.g., 1920x1080)')
+    stream_parser.add_argument('fmt', type=str, help='Format of the video file (e.g., yuv422p10le)')
+    stream_parser.add_argument('--output_path', type=str, default='/mnt/ramdisk',
+                               help='Output path (default: /mnt/ramdisk)')
+    stream_parser.add_argument('--segment_duration', type=int, default=3,
+                               help='Segment duration in seconds (default: 3)')
+    stream_parser.add_argument('--one_file', type=bool, default=False,
+                               help='If only 1 file to be checked')
+
+    # File mode parser
+    file_parser = subparsers.add_parser('audio', help='Check integrity for audio stream (ST30P)')
+    file_parser.add_argument('src', type=str, help='Path to the source audio file')
+    file_parser.add_argument('out', type=str, help='Path to the output audio file')
+    file_parser.add_argument('fmt', type=str, help='Audio format (e.g., PCM8, PCM16, PCM24)')
+    file_parser.add_argument('ptime', type=float, help='Packet time (e.g., 1, 0.12, 0.25)')
+    file_parser.add_argument('sampling', type=str, help='Sampling rate (e.g., 41.1kHz, 48kHz, 96kHz)')
+    file_parser.add_argument('channel', type=str, help='Channel configuration (e.g., M, DM, ST)')
+    file_parser.add_argument('--looped', type=bool, default=False,
+                             help='Specify if the data is looped (default: False)')
+
+    # Parse the arguments
+    args = parser.parse_args()
+
+    # Execute based on mode
+    if args.mode == 'stream':
+        StreamIntegritor(args.src, args.out, args.res, args.fmt, args.output_path,
+                         args.segment_duration, args.one_file).check_st20p_integrity()
+    elif args.mode == 'audio':
+        print(check_st30p_integrity_big(args.src, args.out, args.fmt, args.ptime, args.sampling, args.channel,
+                                        args.looped))
+    else:
+        parser.print_help()
+
+
+if __name__ == "__main__":
+    main()
