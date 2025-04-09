@@ -50,7 +50,6 @@ jobs:
           VALIDATE_MARKDOWN_PRETTIER: false
           VALIDATE_MARKDOWN: false
           VALIDATE_CHECKOV: false
-          VALIDATE_BASH_EXEC: false 
           VALIDATE_CSS_PRETTIER: false
           VALIDATE_ENV: false
           VALIDATE_GIT_COMMITLINT: false
@@ -71,5 +70,4 @@ jobs:
           VALIDATE_YAML: false
           VALIDATE_GO_MODULES: false
           VALIDATE_GO: false # linter does not use config files
-          VALIDATE_CLANG_FORMAT: false # TODO:  clang still see the same errors after running formatter on code base
           LINTER_RULES_PATH: .github/configs
