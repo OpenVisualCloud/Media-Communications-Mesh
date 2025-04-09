@@ -1,0 +1,54 @@
+# Source repository: https://github.com/actions/dependency-review-action
+
+name: Dependency Review
+on:
+  pull_request:
+  workflow_call:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: "Branch to run the scans on"
+        default: "main"
+        type: string
+      all_codebase:
+        description: "[true] Validate all codebase. [false] Validate changes/diff only"
+        default: "false"
+        type: string
+      fix_codebase:
+        description: "[true] Perform scan and issues fix. [false] Perform scan only."
+        default: "false"
+        type: string
+
+permissions:
+  contents: read
+env:
+  INPUT_BRANCH: "${{ inputs.branch || github.sha }}"
+  LINTER_RULES_PATH: ".github/configs/super-linter"
+  SAVE_SUPER_LINTER_SUMMARY: "true"
+  ENABLE_GITHUB_ACTIONS_STEP_SUMMARY: "true"
+  SUPER_LINTER_OUTPUT_DIRECTORY_NAME: "super-linter-output"
+  SUPER_LINTER_SUMMARY_FILE_NAME: "super-linter-summary.md"
+  VALIDATE_ALL_CODEBASE: "${{ inputs.all_codebase || 'false' }}"
+  PERFORM_CODEBASE_FIX: "${{ inputs.fix_codebase || 'false' }}"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  dependency-review:
+    name: "dependency-review: Workflow initializing"
+    runs-on: "ubuntu-22.04"
+    steps:
+      - name: "dependency-review: harden runner"
+        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+        with:
+          egress-policy: audit
+
+      - name: "dependency-review: checkout repository"
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+        with:
+          ref: "${{ env.INPUT_BRANCH }}"
+
+      - name: "dependency-review: perform dependency-review action"
+        uses: actions/dependency-review-action@72eb03d02c7872a771aacd928f3123ac62ad6d3a # v4.3.3
