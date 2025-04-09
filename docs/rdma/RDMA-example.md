@@ -5,7 +5,7 @@ This guide provides example commands that can be used to send a video file over 
 
 ## 1. Prerequisites
 
-1. You should have Media Communications Mesh built. Instruction can be found in [README](README.md#getting-started).
+1. You should have Media Communications Mesh built. Instruction can be found in the [Setup Guide](../SetupGuide.md).
 
 2. Libfabric should already be built and installed with RDMA-supporting providers.
 
@@ -22,7 +22,7 @@ This guide provides example commands that can be used to send a video file over 
         ```bash
         apt list rdma-core
         ```
-    In case something is missing, please return to [README](README.md#getting-started).
+    In case something is missing, please return to the [Setup Guide](../SetupGuide.md).
 
 3. Your RDMA-capable network interface has to have assigned IPv4 address.
 
