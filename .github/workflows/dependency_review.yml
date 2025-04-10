@@ -31,10 +31,6 @@ env:
   VALIDATE_ALL_CODEBASE: "${{ inputs.all_codebase || 'false' }}"
   PERFORM_CODEBASE_FIX: "${{ inputs.fix_codebase || 'false' }}"
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
-
 jobs:
   dependency-review:
     name: "dependency-review: Workflow initializing"
