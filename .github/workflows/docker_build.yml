@@ -1,4 +1,4 @@
-name: build-docker
+name: Docker Build
 
 on:
   pull_request:
@@ -17,14 +17,14 @@ concurrency:
 jobs:
   sdk-image-build:
     name: Build sdk Docker Image
-    uses: ./.github/workflows/build_docker.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "sdk/Dockerfile"
       docker_image_name: "sdk"
 
   ffmpeg-6-1-image-build:
     name: Build ffmpeg v6.1 Docker Image
-    uses: ./.github/workflows/build_docker.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "ffmpeg-plugin/Dockerfile"
       docker_image_name: "ffmpeg-6-1"
@@ -32,7 +32,7 @@ jobs:
 
   ffmpeg-7-0-image-build:
     name: Build ffmpeg v7.0 Docker Image
-    uses: ./.github/workflows/build_docker.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "ffmpeg-plugin/Dockerfile"
       docker_image_name: "ffmpeg-7-0"
@@ -40,7 +40,7 @@ jobs:
 
   media-proxy-image-build:
     name: Build Media-Proxy Docker Image
-    uses: ./.github/workflows/build_docker.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "media-proxy/Dockerfile"
       docker_image_name: "media-proxy"
