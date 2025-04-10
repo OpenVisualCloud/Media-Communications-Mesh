@@ -1,4 +1,4 @@
-name: build-docker-images
+name: Docker Build
 
 on:
   pull_request:
@@ -16,43 +16,31 @@ concurrency:
 
 jobs:
   sdk-image-build:
-    permissions:
-      security-events: write
-      contents: read
     name: Build sdk Docker Image
-    uses: ./.github/workflows/template-docker-cached-build.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "sdk/Dockerfile"
       docker_image_name: "sdk"
 
   ffmpeg-6-1-image-build:
-    permissions:
-      security-events: write
-      contents: read
     name: Build ffmpeg v6.1 Docker Image
-    uses: ./.github/workflows/template-docker-cached-build.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "ffmpeg-plugin/Dockerfile"
       docker_image_name: "ffmpeg-6-1"
       docker_build_args: "FFMPEG_VER=6.1"
 
   ffmpeg-7-0-image-build:
-    permissions:
-      security-events: write
-      contents: read
     name: Build ffmpeg v7.0 Docker Image
-    uses: ./.github/workflows/template-docker-cached-build.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "ffmpeg-plugin/Dockerfile"
       docker_image_name: "ffmpeg-7-0"
       docker_build_args: "FFMPEG_VER=7.0"
 
   media-proxy-image-build:
-    permissions:
-      security-events: write
-      contents: read
     name: Build Media-Proxy Docker Image
-    uses: ./.github/workflows/template-docker-cached-build.yml
+    uses: ./.github/workflows/build_docker_tpl.yml
     with:
       docker_file_path:  "media-proxy/Dockerfile"
       docker_image_name: "media-proxy"

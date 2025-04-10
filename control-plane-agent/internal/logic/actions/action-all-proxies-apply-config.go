@@ -28,16 +28,10 @@ func (a *Action_AllProxiesApplyConfig) Perform(ctx context.Context, modifier str
 		return ctx, false, err
 	}
 
-	groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, false)
-	if err != nil {
-		logrus.Errorf("all proxies apply cfg list groups err: %v", err)
-		return ctx, false, err
-	}
-
 	for i := range proxies {
-		err = mesh.ApplyProxyConfig(ctx, &proxies[i], groups)
+		err = mesh.ApplyProxyConfigQueue.EnqueueProxyId(ctx, proxies[i].Id)
 		if err != nil {
-			logrus.Errorf("all proxies apply cfg cmd err: %v, proxy id: %v", err, proxies[i].Id)
+			logrus.Errorf("all proxies apply cfg enqueue err: %v, proxy id: %v", err, proxies[i].Id)
 		}
 	}
 

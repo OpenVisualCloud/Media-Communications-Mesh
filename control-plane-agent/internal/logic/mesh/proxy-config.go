@@ -13,6 +13,49 @@ import (
 	"control-plane-agent/internal/utils"
 )
 
+type applyProxyConfigQueue struct {
+	proxyIdQueue chan string
+}
+
+var ApplyProxyConfigQueue applyProxyConfigQueue
+
+func (q *applyProxyConfigQueue) EnqueueProxyId(ctx context.Context, proxyId string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case q.proxyIdQueue <- proxyId:
+		return nil
+	}
+}
+
+func (q *applyProxyConfigQueue) Run(ctx context.Context) {
+	q.proxyIdQueue = make(chan string, 10000)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case proxyId := <-q.proxyIdQueue:
+			proxy, err := registry.MediaProxyRegistry.Get(ctx, proxyId, false)
+			if err != nil {
+				logrus.Errorf("apply proxy config queue run: proxy registry err: %v", err)
+				continue
+			}
+
+			groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, false)
+			if err != nil {
+				logrus.Errorf("apply proxy config queue run: group registry err: %v", err)
+				continue
+			}
+
+			err = ApplyProxyConfig(ctx, &proxy, groups)
+			if err != nil {
+				logrus.Errorf("apply proxy config queue run: send cmd err: %v", err)
+			}
+		}
+	}
+}
+
 func ApplyProxyConfig(ctx context.Context, mp *model.MediaProxy, groups []model.MultipointGroup) error {
 
 	pbGroups := []*pb.MultipointGroup{}

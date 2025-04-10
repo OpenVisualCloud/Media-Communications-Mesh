@@ -1,4 +1,4 @@
-name: scan-trivy-workflow
+name: Trivy
 on:
   push:
     branches: [ "main", "maint-*" ]

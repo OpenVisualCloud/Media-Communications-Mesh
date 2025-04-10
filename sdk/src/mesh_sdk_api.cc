@@ -16,9 +16,9 @@
 #include "sdk.grpc.pb.h"
 #include "mesh_logger.h"
 #include "mcm-version.h"
+#include "mesh_dp_legacy.h"
 
 using grpc::Channel;
-// using grpc::ClientContext;
 using grpc::Status;
 using sdk::SDKAPI;
 using sdk::CreateConnectionRequest;
@@ -27,7 +27,6 @@ using sdk::ActivateConnectionRequest;
 using sdk::ActivateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
-using sdk::ConnectionConfig;
 using sdk::BufferPartition;
 using sdk::BufferPartitions;
 using sdk::ConnectionKind;
@@ -90,7 +89,7 @@ public:
         }
     }
 
-    int CreateConnectionJson(std::string& conn_id, const ConnectionJsonConfig& cfg,
+    int CreateConnectionJson(std::string& conn_id, const ConnectionConfig& cfg,
                              memif_conn_param *memif_param) {
         if (!memif_param)
             return -1;
@@ -343,7 +342,7 @@ void * mesh_grpc_create_conn(void *client, mcm_conn_param *param)
     return conn;
 }
 
-void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionJsonConfig& cfg)
+void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cfg)
 {
     if (!client)
         return NULL;

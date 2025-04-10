@@ -1,4 +1,4 @@
-name: scan-coverity-baremetal
+name: Coverity Build
 
 on:
   schedule:

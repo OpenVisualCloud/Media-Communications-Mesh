@@ -133,12 +133,12 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         len = FFMIN(max_len, size + s->unsent_len);
 
         if (len < max_len) {
-            memcpy((char *)s->unsent_buf->data + s->unsent_len, data, size);
+            memcpy((char *)s->unsent_buf->payload_ptr + s->unsent_len, data, size);
             s->unsent_len += size;
             break;
         }
 
-        dest = s->unsent_buf->data;
+        dest = s->unsent_buf->payload_ptr;
 
         if (s->unsent_len) {
             dest += s->unsent_len;
@@ -168,8 +168,8 @@ static int mcm_audio_write_trailer(AVFormatContext* avctx)
 
     if (s->unsent_buf) {
         /* zero the unused rest of the buffer */
-        memset((char *)s->unsent_buf->data + s->unsent_len, 0,
-               s->unsent_buf->data_len - s->unsent_len);
+        memset((char *)s->unsent_buf->payload_ptr + s->unsent_len, 0,
+               s->unsent_buf->payload_len - s->unsent_len);
 
         /* The last packet is shorter than default, so setting its length */
         mesh_buffer_set_payload_len(s->unsent_buf, s->unsent_len);

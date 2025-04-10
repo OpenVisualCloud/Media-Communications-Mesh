@@ -371,8 +371,28 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         }
     } else {    /* RX */
         /* waiting for the buffer ready from rx_on_receive callback. */
-        if (memif_conn->buf_num <= 0) {
+        while (memif_conn->buf_num <= 0) {
+            struct timespec start, end;
+            clock_gettime(CLOCK_MONOTONIC, &start);
+
             err = memif_poll_event(memif_conn->sockfd, timeout);
+            if (err) {
+                if (error_code)
+                    *error_code = err;
+                return NULL;
+            }
+
+            if (timeout > 0) {
+                clock_gettime(CLOCK_MONOTONIC, &end);
+                long elapsed_msec = (end.tv_sec - start.tv_sec) * 1000 +
+                                    (end.tv_nsec - start.tv_nsec) / 1000000;
+
+                if (elapsed_msec >= timeout) {
+                    if (error_code)
+                        *error_code = 0;
+                    return NULL;
+                }
+            }
         }
 
         if (err != MEMIF_ERR_SUCCESS) {

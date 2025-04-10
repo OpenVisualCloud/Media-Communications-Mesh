@@ -13,7 +13,7 @@
 #include "mesh_buf.h"
 
 namespace mesh {
-class ConnectionJsonConfig;
+class ConnectionConfig;
 } // namespace mesh
 
 /**
@@ -29,17 +29,34 @@ struct mesh_internal_ops_t {
     void * (*grpc_create_client_json)(const std::string& endpoint);
     void (*grpc_destroy_client)(void *client);
     void * (*grpc_create_conn)(void *client, mcm_conn_param *param);
-    void * (*grpc_create_conn_json)(void *client, const mesh::ConnectionJsonConfig& cfg);
+    void * (*grpc_create_conn_json)(void *client, const mesh::ConnectionConfig& cfg);
     void (*grpc_destroy_conn)(void *conn);
 };
 
 extern struct mesh_internal_ops_t mesh_internal_ops;
 
+/**
+ * Mesh connection type constants.
+ */
+#define MESH_CONN_TYPE_UNINITIALIZED -1 ///< Connection type is uninitialized
+#define MESH_CONN_TYPE_MEMIF          0 ///< Single node direct connection via memif
+#define MESH_CONN_TYPE_GROUP          1 ///< Local connection to Multipoint Group
+#define MESH_CONN_TYPE_ST2110         2 ///< SMPTE ST2110-xx connection via Media Proxy
+#define MESH_CONN_TYPE_RDMA           3 ///< RDMA connection via Media Proxy
+
+/**
+ * Payload type constants.
+ */
+#define MESH_PAYLOAD_TYPE_UNINITIALIZED -1 ///< Payload type is uninitialized
+#define MESH_PAYLOAD_TYPE_BLOB           0 ///< Payload: blob arbitrary data
+#define MESH_PAYLOAD_TYPE_VIDEO          1 ///< Payload: video frames
+#define MESH_PAYLOAD_TYPE_AUDIO          2 ///< Payload: audio packets
+
 namespace mesh {
 
-class ConnectionJsonConfig {
+class ConnectionConfig {
 public:
-    int parse_json(const char *str);
+    int parse_from_json(const char *str);
     int calc_payload_size();
     int configure_buf_partitions();
     int assign_to_mcm_conn_param(mcm_conn_param& param) const;
@@ -134,23 +151,9 @@ public:
     explicit ConnectionContext(ClientContext *parent);
     ~ConnectionContext();
 
-    int apply_config_memif(MeshConfig_Memif *config);
-    int apply_config_st2110(MeshConfig_ST2110 *config);
-    int apply_config_rdma(MeshConfig_RDMA *config);
-
-    int apply_config_video(MeshConfig_Video *config);
-    int apply_config_audio(MeshConfig_Audio *config);
-
-    int parse_payload_config(mcm_conn_param *param);
-    int parse_conn_config(mcm_conn_param *param);
-
-    int establish(int kind);
-
     int apply_json_config(const char *config);
-    int establish_json();
-
+    int establish();
     int shutdown();
-
     int get_buffer_timeout(MeshBuffer **buf, int timeout_ms);
 
     /**
@@ -169,56 +172,9 @@ public:
      */
     mcm_conn_context *handle = nullptr;
 
-    /**
-     * Configuration structure
-     */
-    struct {
-        /**
-         * Connection kind (sender, receiver).
-         * Any value of the MESH_CONN_KIND_* constants.
-         */
-        int kind;
-
-        /**
-         * Connection type (memif, SMPTE ST2110-XX, RDMA).
-         * Any value of the MESH_CONN_TYPE_* constants.
-         */
-        int conn_type;
-#define MESH_CONN_TYPE_MEMIF  0 ///< Single node direct connection via memif
-#define MESH_CONN_TYPE_GROUP  1 ///< Local connection to Multipoint Group
-#define MESH_CONN_TYPE_ST2110 2 ///< SMPTE ST2110-xx connection via Media Proxy
-#define MESH_CONN_TYPE_RDMA   3 ///< RDMA connection via Media Proxy
-
-        /**
-         * Configuration structures of all connection types
-         */
-        union {
-            MeshConfig_Memif memif;
-            MeshConfig_ST2110 st2110;
-            MeshConfig_RDMA rdma;
-        } conn;
-
-        /**
-         * Payload type (video, audio).
-         * Any value of the MESH_PAYLOAD_TYPE_* constants.
-         */
-        int payload_type;
-#define MESH_PAYLOAD_TYPE_BLOB  0 ///< payload: blob arbitrary data
-#define MESH_PAYLOAD_TYPE_VIDEO 1 ///< payload: video frames
-#define MESH_PAYLOAD_TYPE_AUDIO 2 ///< payload: audio packets
-
-        /**
-         * Configuration structures of all payload types
-         */
-        union {
-            MeshConfig_Video video;
-            MeshConfig_Audio audio;
-        } payload;
-    } cfg = {};
-
     void *grpc_conn = nullptr;
 
-    ConnectionJsonConfig cfg_json;
+    ConnectionConfig cfg;
 };
 
 } // namespace mesh

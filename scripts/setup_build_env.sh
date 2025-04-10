@@ -41,6 +41,7 @@ function install_package_dependencies()
 
 function install_ubuntu_package_dependencies()
 {
+    as_root "rm /usr/local/bin/cmake"
     APT_LINUX_HEADERS="linux-headers-${KERNEL_VERSION}"
     APT_LINUX_MOD_EXTRA="linux-modules-extra-${KERNEL_VERSION}"
     as_root "${PM}" update --fix-missing && \
@@ -73,7 +74,7 @@ function install_ubuntu_package_dependencies()
         llvm \
         m4 \
         meson \
-        nasm cmake \
+        nasm cmake=3.22* \
         pkg-config \
         python3-dev \
         python3-pyelftools \
@@ -102,7 +103,7 @@ function install_yum_package_dependencies()
         curl-minimal \
         ca-certificates \
         clang \
-        cmake \
+        cmake=3.22.1-1ubuntu1 \
         dracut \
         dtc \
         elfutils-libelf-devel \
