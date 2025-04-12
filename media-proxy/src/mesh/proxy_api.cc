@@ -335,12 +335,14 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                             auto& req = bridge.st2110();
                             
                             log::info("** ST2110")
-                                     ("remote_ip", req.remote_ip())
+                                     ("ip_addr", req.ip_addr())
                                      ("port", req.port())
+                                     ("mcast_sip_addr", req.mcast_sip_addr())
                                      ("transport", req.transport());
 
-                            bridge_config.st2110.remote_ip = req.remote_ip();
+                            bridge_config.st2110.ip_addr = req.ip_addr();
                             bridge_config.st2110.port = req.port();
+                            bridge_config.st2110.mcast_sip_addr = req.mcast_sip_addr();
                             bridge_config.st2110.transport = req.transport();
                             bridge_config.st2110.payload_type = req.payload_type();
 
@@ -356,10 +358,10 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
                             auto& req = bridge.rdma();
                             
                             log::info("** RDMA")
-                                     ("remote_ip", req.remote_ip())
+                                     ("remote_ip_addr", req.remote_ip_addr())
                                      ("port", req.port());
 
-                            bridge_config.rdma.remote_ip = req.remote_ip();
+                            bridge_config.rdma.remote_ip_addr = req.remote_ip_addr();
                             bridge_config.rdma.port = req.port();
 
                             config.bridges[bridge_id] = std::move(bridge_config);

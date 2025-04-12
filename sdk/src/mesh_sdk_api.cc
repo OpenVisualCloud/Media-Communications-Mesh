@@ -142,8 +142,9 @@ public:
             config->set_allocated_multipoint_group(group);
         } else if (cfg.conn_type == MESH_CONN_TYPE_ST2110) {
             auto st2110 = new ConfigST2110();
-            st2110->set_remote_ip_addr(cfg.conn.st2110.remote_ip_addr);
-            st2110->set_remote_port(cfg.conn.st2110.remote_port);
+            st2110->set_ip_addr(cfg.conn.st2110.ip_addr);
+            st2110->set_port(cfg.conn.st2110.port);
+            st2110->set_mcast_sip_addr(cfg.conn.st2110.mcast_sip_addr);
             st2110->set_transport((ST2110Transport)cfg.conn.st2110.transport);
             st2110->set_pacing(cfg.conn.st2110.pacing);
             st2110->set_payload_type(cfg.conn.st2110.payload_type);

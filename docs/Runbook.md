@@ -149,8 +149,8 @@ Refer to the [FFmpeg MCM Plugin](FFmpegPlugin.md) documentation to learn how to 
         "connection": {
           "st2110": {
             "transport": "st2110-20",
-            "remoteIpAddr": "224.0.0.1",
-            "remotePort": 9002,
+            "ipAddr": "224.0.0.1",
+            "port": 9002,
             "pacing": "narrow",
             "payloadType": 112,
             "transportPixelFormat": "yuv422p10rfc4175"

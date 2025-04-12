@@ -59,6 +59,10 @@ typedef struct MeshConfig_ST2110 {
      */
     uint16_t local_port;
     /**
+     * Multicast source filter IP address
+     */
+    char mcast_sip_addr[MESH_IP_ADDRESS_SIZE];
+    /**
      * SMPTE ST2110-xx transport type.
      * Must be aligned with the payload type.
      * Any value of the MESH_CONN_TRANSPORT_ST2110_* constants.

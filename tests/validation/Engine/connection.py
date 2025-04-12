@@ -58,8 +58,8 @@ class St2110(Connection):
             "connection": {
                 "st2110": {
                     "transport": self.transport.value,
-                    "remoteIpAddr": self.remoteIpAddr,
-                    "remotePort": self.remotePort,
+                    "ipAddr": self.remoteIpAddr,
+                    "port": self.remotePort,
                 }
             }
         }

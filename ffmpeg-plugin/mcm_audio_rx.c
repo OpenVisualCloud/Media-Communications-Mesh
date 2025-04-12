@@ -26,6 +26,7 @@ typedef struct McmAudioDemuxerContext {
     char *urn;
     char *ip_addr;
     int port;
+    char *mcast_sip_addr;
     int payload_type;
     char *socket_name;
     int interface_id;
@@ -64,7 +65,7 @@ static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_audio_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->ip_addr, s->port, s->payload_type,
+                     s->ip_addr, s->port, s->mcast_sip_addr, s->payload_type,
                      s->channels, s->sample_rate,
                      avcodec_get_name(codec_id), s->ptime);
     } else {
@@ -205,8 +206,9 @@ static const AVOption mcm_audio_rx_options[] = {
     { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = DEC },
-    { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
+    { "ip_addr", "set ST2110 multicast IP address or unicast remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "239.168.68.190"}, .flags = DEC },
     { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, DEC },
+    { "mcast_sip_addr", "set ST2110 multicast source filter IP address", OFFSET(mcast_sip_addr), AV_OPT_TYPE_STRING, {.str = ""}, .flags = DEC },
     { "payload_type", "set ST2110 payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.i64 = 111}, 0, 127, DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
     { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },

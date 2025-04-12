@@ -6,8 +6,8 @@
     "connection": {
         "st2110": {
             "transport": "st2110-20",
-            "remoteIpAddr": "192.168.96.11",
-            "remotePort": 9002,
+            "ipAddr": "192.168.96.11",
+            "port": 9002,
             "pacing": "narrow",
             "payloadType": 112,
             "transportPixelFormat": "yuv422p10rfc4175"
