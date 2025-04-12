@@ -57,8 +57,10 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
         strlcpy(cfg_st2110.local_ip_addr,
                 config::proxy.st2110.dataplane_ip_addr.c_str(),
                 sizeof(cfg_st2110.local_ip_addr));
-        strlcpy(cfg_st2110.remote_ip_addr, cfg.st2110.remote_ip.c_str(),
+        strlcpy(cfg_st2110.remote_ip_addr, cfg.st2110.ip_addr.c_str(),
                 sizeof(cfg_st2110.remote_ip_addr));
+        strlcpy(cfg_st2110.mcast_sip_addr, cfg.st2110.mcast_sip_addr.c_str(),
+                sizeof(cfg_st2110.mcast_sip_addr));
 
         cfg_st2110.transport = cfg.st2110.transport;
         cfg_st2110.payload_type = cfg.st2110.payload_type;
@@ -217,7 +219,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
         strlcpy(req.local_addr.ip, config::proxy.rdma.dataplane_ip_addr.c_str(),
                 sizeof(req.local_addr.ip));
-        strlcpy(req.remote_addr.ip, cfg.rdma.remote_ip.c_str(),
+        strlcpy(req.remote_addr.ip, cfg.rdma.remote_ip_addr.c_str(),
                 sizeof(req.remote_addr.ip));
 
         req.payload_args.rdma_args.transfer_size = cfg.conn_config.buf_parts.total_size();

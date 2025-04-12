@@ -21,14 +21,15 @@ public:
     Config conn_config;
 
     struct {
-        std::string remote_ip;
+        std::string ip_addr;
         uint16_t port;
+        std::string mcast_sip_addr;
         sdk::ST2110Transport transport;
         uint8_t payload_type;
     } st2110;
 
     struct {
-        std::string remote_ip;
+        std::string remote_ip_addr;
         uint16_t port;
     } rdma;
 };

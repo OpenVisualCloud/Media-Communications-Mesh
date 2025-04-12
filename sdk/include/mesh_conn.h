@@ -87,8 +87,9 @@ public:
         } multipoint_group;
 
         struct {
-            std::string remote_ip_addr;
-            uint16_t remote_port;
+            std::string ip_addr;
+            uint16_t port;
+            std::string mcast_sip_addr;
 
             // SMPTE ST2110-xx transport type.
             // Any value of the MESH_CONN_TRANSPORT_ST2110_* constants.
