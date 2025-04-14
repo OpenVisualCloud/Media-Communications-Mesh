@@ -12,12 +12,13 @@ import pytest
 
 
 @pytest.fixture(scope="session")
-def build_TestApp(build: str) -> None:
+def build_TestApp(hosts, build: str) -> None:
     path = os.path.join(build, "tests", "tools", "TestApp", "build")
-    subprocess.run(f'rm -rf "{path}"', shell=True, timeout=10)
-    subprocess.run(f'mkdir -p "{path}"', shell=True, timeout=10)
-    subprocess.run("cmake ..", cwd=path, shell=True, timeout=10)
-    subprocess.run("make", cwd=path, shell=True, timeout=10)
+    for host in hosts:
+        host.execute(f'rm -rf "{path}"', shell=True, timeout=10)
+        host.execute(f'mkdir -p "{path}"', shell=True, timeout=10)
+        host.execute("cmake ..", cwd=path, shell=True, timeout=10)
+        host.execute("make", cwd=path, shell=True, timeout=10)
 
 
 def kill_all_existing_media_proxies() -> None:
