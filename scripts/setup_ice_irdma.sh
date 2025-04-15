@@ -171,7 +171,7 @@ function config_intel_rdma_driver()
     fi
     as_root dracut -f
     log_success "Queue Pair limits_sel set to 5."
-    log_success "Configuration of iRDMA finished."
+    log_success "Configuration of irdma finished."
 }
 
 function install_perftest()
@@ -295,9 +295,9 @@ then
     lib_install_fabrics
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
-      log_success "Finished: iRDMA driver configuration for Intel hardware backend."
+      log_success "Finished: irdma driver configuration for Intel hardware backend."
     else
-      log_error "Intel iRDMA configuration failed."
+      log_error "Intel irdma configuration failed."
       exit "${return_code}"
     fi
   fi
