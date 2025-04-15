@@ -3,10 +3,11 @@
 # Media Communications Mesh
 
 import os
+import pytest
 from typing import Dict
 
-import pytest
-
+from .ffmpeg_wrapper import FFmpeg
+from .host_object import Host, SSHConenction, LocalConnection, MediaProxy
 from .stash import clear_result_media, remove_result_media
 
 phase_report_key = pytest.StashKey[Dict[str, pytest.CollectReport]]()
@@ -98,3 +99,32 @@ def test_time(request):
     if test_time is None:
         return 30
     return int(test_time)
+
+@pytest.fixture(scope="session")
+def hosts(request):
+    # TODO: consider using config.json or yaml instead of command line params
+    hosts = request.config.getoption("--hosts").split(",")
+    host_dct = {}
+    for ids, host in enumerate(hosts):
+        conn = LocalConnection if "local" in host else SSHConenction
+        host_dct[f"{host}_{ids}"] = Host(host, conn(host))
+    yield host_dct
+    for host in host_dct.values():
+        host.conn.disconnect()
+
+
+@pytest.fixture(scope="session")
+def media_proxy(hosts):
+    # TODO: consider using configs or params from host object to update params into media proxy class
+    media = []
+    for host in hosts:
+        media_proxy = MediaProxy(host.conn)
+        media_proxy.run_media_proxy()
+        media.append(media_proxy)
+    yield media
+    for md in media:
+        md.stop_media()
+
+@pytest.fixture(scope="function")
+def ffmpeg(hosts):
+    return [FFmpeg(connection=host.conn) for host in hosts]
