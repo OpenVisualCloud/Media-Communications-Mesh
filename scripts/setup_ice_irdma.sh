@@ -276,7 +276,8 @@ then
   fi
   rm -f "./${WORKING_DIR}/*"
   mkdir -p "${WORKING_DIR}" "${PERF_DIR}"
-  set -exEo pipefail  
+
+  set -eEo pipefail  
  
   if [[ "${1}" == "get-ice" || "${1}" == "all" ]]; then
     install_os_dependencies && \
