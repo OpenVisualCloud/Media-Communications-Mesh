@@ -26,6 +26,7 @@ typedef struct McmVideoDemuxerContext {
     char *urn;
     char *ip_addr;
     int port;
+    char *mcast_sip_addr;
     char *transport;
     int payload_type;
     char *transport_pixel_format;
@@ -66,7 +67,8 @@ static int mcm_video_read_header(AVFormatContext* avctx)
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_video_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->ip_addr, s->port, s->transport, s->payload_type,
+                     s->ip_addr, s->port, s->mcast_sip_addr,
+                     s->transport, s->payload_type,
                      s->transport_pixel_format,
                      s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
@@ -199,8 +201,9 @@ static const AVOption mcm_video_rx_options[] = {
     { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = DEC },
-    { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
+    { "ip_addr", "set ST2110 multicast IP address or unicast remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "239.168.68.190"}, .flags = DEC },
     { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, DEC },
+    { "mcast_sip_addr", "set ST2110 multicast source filter IP address", OFFSET(mcast_sip_addr), AV_OPT_TYPE_STRING, {.str = ""}, .flags = DEC },
     { "transport", "set ST2110 transport type", OFFSET(transport), AV_OPT_TYPE_STRING, {.str = "st2110-20"}, .flags = DEC },
     { "payload_type", "set ST2110 payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.i64 = 112}, 0, 127, DEC },
     { "transport_pixel_format", "set st2110-20 transport pixel format", OFFSET(transport_pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv422p10rfc4175"}, .flags = DEC },

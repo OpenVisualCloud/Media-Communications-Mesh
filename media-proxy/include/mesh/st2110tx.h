@@ -35,9 +35,9 @@ class ST2110Tx : public ST2110<FRAME, HANDLE, OPS> {
         this->ops.port.udp_src_port[MTL_PORT_P] = cfg_st2110.local_port;
 
         log::info("ST2110Tx: configure")
-            ("dip_addr", std::to_string(this->ops.port.dip_addr[MTL_PORT_P][0]) + " " +
-                         std::to_string(this->ops.port.dip_addr[MTL_PORT_P][1]) + " " +
-                         std::to_string(this->ops.port.dip_addr[MTL_PORT_P][2]) + " " +
+            ("dip_addr", std::to_string(this->ops.port.dip_addr[MTL_PORT_P][0]) + "." +
+                         std::to_string(this->ops.port.dip_addr[MTL_PORT_P][1]) + "." +
+                         std::to_string(this->ops.port.dip_addr[MTL_PORT_P][2]) + "." +
                          std::to_string(this->ops.port.dip_addr[MTL_PORT_P][3]))
             ("udp_port", this->ops.port.udp_port[MTL_PORT_P])
             ("udp_src_port", this->ops.port.udp_src_port[MTL_PORT_P]);

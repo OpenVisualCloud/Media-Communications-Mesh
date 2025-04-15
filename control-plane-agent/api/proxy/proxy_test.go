@@ -312,8 +312,8 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 					},
 					Conn: &sdk.ConnectionConfig_St2110{
 						St2110: &sdk.ConfigST2110{
-							RemoteIpAddr: "192.168.96.10",
-							RemotePort:   8100,
+							IpAddr: "192.168.96.10",
+							Port:   8100,
 						},
 					},
 					Payload: &sdk.ConnectionConfig_Video{
@@ -341,8 +341,8 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 					},
 					Conn: &sdk.ConnectionConfig_St2110{
 						St2110: &sdk.ConfigST2110{
-							RemoteIpAddr: "192.168.97.10",
-							RemotePort:   8201,
+							IpAddr: "192.168.97.10",
+							Port:   8201,
 						},
 					},
 					Payload: &sdk.ConnectionConfig_Audio{

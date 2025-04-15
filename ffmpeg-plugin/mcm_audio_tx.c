@@ -76,7 +76,7 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_audio_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->ip_addr, s->port, s->payload_type,
+                     s->ip_addr, s->port, "", s->payload_type,
                      s->channels, s->sample_rate,
                      avcodec_get_name(codecpar->codec_id), s->ptime);
     } else {

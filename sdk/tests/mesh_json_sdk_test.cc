@@ -51,8 +51,9 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
         "connection": {
           "st2110": {
             "transport": "st2110-20",
-            "remoteIpAddr": "192.168.95.2",
-            "remotePort": 9002,
+            "ipAddr": "239.0.0.1",
+            "port": 9002,
+            "multicastSourceIpAddr": "192.168.95.2",
             "pacing": "narrow",
             "payloadType": 110,
             "transportPixelFormat": "yuv422p10rfc4175"
@@ -69,8 +70,9 @@ TEST(mesh_json_sdk, parse_conn_cfg_st2110) {
     ASSERT_EQ(err, 0);
     EXPECT_EQ(config.conn_type, MESH_CONN_TYPE_ST2110);
     EXPECT_EQ(config.conn.st2110.transport, MESH_CONN_TRANSPORT_ST2110_20);
-    EXPECT_EQ(config.conn.st2110.remote_ip_addr, "192.168.95.2");
-    EXPECT_EQ(config.conn.st2110.remote_port, 9002);
+    EXPECT_EQ(config.conn.st2110.ip_addr, "239.0.0.1");
+    EXPECT_EQ(config.conn.st2110.mcast_sip_addr, "192.168.95.2");
+    EXPECT_EQ(config.conn.st2110.port, 9002);
     EXPECT_EQ(config.conn.st2110.pacing, "narrow");
     EXPECT_EQ(config.conn.st2110.payload_type, 110);
     EXPECT_EQ(config.conn.st2110.transportPixelFormat, "yuv422p10rfc4175");

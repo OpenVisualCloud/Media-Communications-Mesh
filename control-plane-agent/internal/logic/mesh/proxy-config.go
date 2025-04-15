@@ -98,17 +98,18 @@ func ApplyProxyConfig(ctx context.Context, mp *model.MediaProxy, groups []model.
 		case "st2110":
 			pbBridge.Config = &pb.Bridge_St2110{
 				St2110: &pb.BridgeST2110{
-					RemoteIp:    bridge.Config.ST2110.RemoteIP,
-					Port:        uint32(bridge.Config.ST2110.Port),
-					Transport:   bridge.Config.ST2110.Transport,
-					PayloadType: uint32(bridge.Config.ST2110.PayloadType),
+					IpAddr:       bridge.Config.ST2110.IPAddr,
+					Port:         uint32(bridge.Config.ST2110.Port),
+					McastSipAddr: bridge.Config.ST2110.McastSipAddr,
+					Transport:    bridge.Config.ST2110.Transport,
+					PayloadType:  uint32(bridge.Config.ST2110.PayloadType),
 				},
 			}
 		case "rdma":
 			pbBridge.Config = &pb.Bridge_Rdma{
 				Rdma: &pb.BridgeRDMA{
-					RemoteIp: bridge.Config.RDMA.RemoteIP,
-					Port:     uint32(bridge.Config.RDMA.Port),
+					RemoteIpAddr: bridge.Config.RDMA.RemoteIPAddr,
+					Port:         uint32(bridge.Config.RDMA.Port),
 				},
 			}
 		}

@@ -25,8 +25,9 @@ type SDKConfigMultipointGroup struct {
 }
 
 type SDKConfigST2110 struct {
-	RemoteIPAddr string              `json:"remoteIpAddr"`
-	RemotePort   uint16              `json:"port"`
+	IPAddr       string              `json:"remoteIpAddr"`
+	Port         uint16              `json:"port"`
+	McastSipAddr string              `json:"mcastSipAddr,omitempty"`
 	Transport    sdk.ST2110Transport `json:"-"`
 	TransportStr string              `json:"transport"`
 	Pacing       string              `json:"pacing"`
@@ -161,8 +162,9 @@ func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
 		}
 	case *sdk.ConnectionConfig_St2110:
 		s.Conn.ST2110 = &SDKConfigST2110{
-			RemoteIPAddr: conn.St2110.RemoteIpAddr,
-			RemotePort:   uint16(conn.St2110.RemotePort),
+			IPAddr:       conn.St2110.IpAddr,
+			Port:         uint16(conn.St2110.Port),
+			McastSipAddr: conn.St2110.McastSipAddr,
 			Transport:    conn.St2110.Transport,
 			Pacing:       conn.St2110.Pacing,
 			PayloadType:  uint8(conn.St2110.PayloadType),
@@ -232,8 +234,9 @@ func (s *SDKConnectionConfig) AssignToPb(cfg *sdk.ConnectionConfig) {
 	case s.Conn.ST2110 != nil:
 		cfg.Conn = &sdk.ConnectionConfig_St2110{
 			St2110: &sdk.ConfigST2110{
-				RemoteIpAddr: s.Conn.ST2110.RemoteIPAddr,
-				RemotePort:   uint32(s.Conn.ST2110.RemotePort),
+				IpAddr:       s.Conn.ST2110.IPAddr,
+				Port:         uint32(s.Conn.ST2110.Port),
+				McastSipAddr: s.Conn.ST2110.McastSipAddr,
 				Transport:    s.Conn.ST2110.Transport,
 				Pacing:       s.Conn.ST2110.Pacing,
 				PayloadType:  uint32(s.Conn.ST2110.PayloadType),
@@ -294,11 +297,11 @@ func (s *SDKConnectionConfig) CheckPayloadCompatibility(c *SDKConnectionConfig) 
 		if c.Conn.ST2110 == nil {
 			return errors.New("no st2110 cfg")
 		}
-		if s.Conn.ST2110.RemoteIPAddr != c.Conn.ST2110.RemoteIPAddr ||
-			s.Conn.ST2110.RemotePort != c.Conn.ST2110.RemotePort {
+		if s.Conn.ST2110.IPAddr != c.Conn.ST2110.IPAddr ||
+			s.Conn.ST2110.Port != c.Conn.ST2110.Port {
 			return fmt.Errorf("wrong st2110 remote host: %v:%v vs. %v:%v",
-				s.Conn.ST2110.RemoteIPAddr, s.Conn.ST2110.RemotePort,
-				c.Conn.ST2110.RemoteIPAddr, c.Conn.ST2110.RemotePort)
+				s.Conn.ST2110.IPAddr, s.Conn.ST2110.Port,
+				c.Conn.ST2110.IPAddr, c.Conn.ST2110.Port)
 		}
 		if s.Conn.ST2110.Transport != c.Conn.ST2110.Transport {
 			return fmt.Errorf("incompatible st2110 transport: %v vs. %v", s.Conn.ST2110.Transport, c.Conn.ST2110.Transport)
@@ -390,7 +393,7 @@ func (s *SDKConnectionConfig) GetMultipointGroupURN() (string, error) {
 	case s.Conn.MultipointGroup != nil:
 		return s.Conn.MultipointGroup.URN, nil
 	case s.Conn.ST2110 != nil:
-		return fmt.Sprintf("%v:%v", s.Conn.ST2110.RemoteIPAddr, s.Conn.ST2110.RemotePort), nil
+		return fmt.Sprintf("%v:%v", s.Conn.ST2110.IPAddr, s.Conn.ST2110.Port), nil
 	default:
 		return "", errors.New("can't get multipoint group urn: no cfg")
 	}

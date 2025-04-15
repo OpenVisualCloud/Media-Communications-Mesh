@@ -80,8 +80,9 @@ int ConnectionConfig::parse_from_json(const char *str)
             conn.multipoint_group.urn = group.value("urn", "");
         } else if (conn_type == MESH_CONN_TYPE_ST2110) {
             auto st2110 = jconn["st2110"];
-            conn.st2110.remote_ip_addr = st2110.value("remoteIpAddr", "");
-            conn.st2110.remote_port = st2110.value("remotePort", 0);
+            conn.st2110.ip_addr = st2110.value("ipAddr", "");
+            conn.st2110.port = st2110.value("port", 0);
+            conn.st2110.mcast_sip_addr = st2110.value("multicastSourceIpAddr", "");
 
             std::string str = st2110.value("transport", "st2110-20");
             if (!str.compare("st2110-20")) {

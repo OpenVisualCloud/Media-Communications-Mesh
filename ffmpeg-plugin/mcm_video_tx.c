@@ -60,7 +60,8 @@ static int mcm_video_write_header(AVFormatContext* avctx)
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_video_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->ip_addr, s->port, s->transport, s->payload_type,
+                     s->ip_addr, s->port, "",
+                     s->transport, s->payload_type,
                      s->transport_pixel_format,
                      s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));

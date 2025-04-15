@@ -78,13 +78,14 @@ Refer to the [SDK API Definition](SDK_API_Definition.md) for the options of conf
 
 ### SMPTE ST 2110 connection parameters (`-conn_type st2110`)
 
-| Argument                  | Description                                                                                           | Example                                    |
-|---------------------------|-------------------------------------------------------------------------------------------------------|--------------------------------------------|
-| `-ip_addr`                | Remote device/host IP address, default "192.168.96.1".                                                | `-ip_addr 224.0.0.1`                       |
-| `-port`                   | **Tx connection**: remote device/host port number.<br>**Rx connection**: local host port number.      | `-port 9001`                               |
+| Argument                  | Description                                                                                                                                 | Example                                    |
+|---------------------------|---------------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------|
+| `-ip_addr`                | **Tx connection**: destination IP address.<br>**Rx connection**: multicast IP address or unicast source IP address. Default "192.168.96.1". | `-ip_addr 224.0.0.1`                       |
+| `-port`                   | **Tx connection**: destination port number.<br>**Rx connection**: local port number.                                                        | `-port 9001`                               |
+| `-mcast_sip_addr`         | **Rx connection only**: optional multicast source filter IP address.                                                                        | — |
 | `-transport`              | **Only for Video Muxer/Demuxer**: SMPTE ST 2110-2x transport type, `"st2110-20"` or `"st2110-22"`. Default "st2110-20".<br>**In Audio Muxers/Demuxers** this argument is not available. The SMPTE ST 2110 transport type is set internally to "st2110-30". | `-transport st2110-20`                     |
-| `-payload_type`           | SMPTE ST 2110 payload type, typically between 96..127.<br>Default 112 for video, 111 for audio.       | `-payload_type 112`                        |
-| `-transport_pixel_format` | Required only for the `"st2110-20"` transport type, default "yuv422p10rfc4175"                        | `-transport_pixel_format yuv422p10rfc4175` |
+| `-payload_type`           | SMPTE ST 2110 payload type, typically between 96..127.<br>Default 112 for video, 111 for audio.                                             | `-payload_type 112`                        |
+| `-transport_pixel_format` | Required only for the `"st2110-20"` transport type, default "yuv422p10rfc4175"                                                              | `-transport_pixel_format yuv422p10rfc4175` |
 
 ### Multipoint Group connection parameters (`-conn_type multipoint-group`)
 
