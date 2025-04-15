@@ -1,11 +1,11 @@
-**Usability notice:**
+**Usability Notice:**
 
-Data contained within the `tests` folder MUST NOT be used as a reference or guide for any external development.
+The data contained within the `tests` folder MUST NOT be used as a reference or guide for any external development.
 
-Please note this folder may contain code or instructions that:
-- are not up to date with the main branch or any other branch (even if it is provided on that branch),
-- use undocumented or removed features,
-- reach parts that are not exposed in the API and, from the user's perspective, should be treated as private,
-- use workarounds.
+Please note that this folder may contain code or instructions that:
+- Are not up to date with the main branch or any other branch (even if they are provided on that branch),
+- Use undocumented or deprecated features,
+- Access parts of the codebase that are not exposed in the API and should be treated as private,
+- Employ workarounds.
 
-None of above shall be treated as contrary to a provided [license](../LICENSE.md).
+None of the above shall be considered contrary to the terms of the provided [license](../LICENSE.md).
