@@ -179,7 +179,7 @@ function install_perftest()
     log_info "Start of install_perftest method. Installing apt packages."
     apt-get update --fix-missing && \
     apt install -y jq libibverbs-dev librdmacm-dev libibumad-dev libpci-dev
-    log_info "Install_perftest method. Installing apt packages successful."
+    log_info "Install_perftest method. Installing apt packages succeeded."
 
     log_info "Install_perftest method. Downloading and installing perftest-24.07.0."
     wget_download_strip_unpack "${PERF_REPO}" "${PERF_DIR}"
