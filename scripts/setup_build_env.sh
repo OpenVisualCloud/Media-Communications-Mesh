@@ -341,7 +341,7 @@ function full_build_and_install_workflow()
 # Allow sourcing of the script.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-    set -exEo pipefail
+    set -eEo pipefail
     if [ "${EUID}" != "0" ]; then
         log_error "Must be run as root. Try running below command:"
         log_error "sudo \"${BASH_SOURCE[0]}\""
