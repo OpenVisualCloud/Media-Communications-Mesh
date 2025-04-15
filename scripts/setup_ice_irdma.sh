@@ -14,7 +14,7 @@ function print_usage()
     log_info "Options:"
     log_info ""
     log_info "\tget-ice"
-    log_info "\t\t get, buiild and install ice, rdma and irdma drivers stack."
+    log_info "\t\t get, build, and install ice, rdma, and irdma drivers stack."
     log_info "\tget-irdma"
     log_info "\t\t setup and pre-configure rdma, irdma and libfabrics ."
     log_info "\tget-perftest"
