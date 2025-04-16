@@ -24,6 +24,8 @@
 
 # TODO: Continue adding above to below functions
 
+import ffmpeg as ff # typed-ffmpeg
+
 class FFmpeg:
     """
     FFmpeg wrapper with MCM plugin
@@ -37,5 +39,17 @@ class FFmpeg:
         self._processes.append(ffmpeg)
 
     def prepare_st20_tx_cmd(self):
-        # from extra_options import mcm_st20p_tx
+        # TODO: Remove this example
+        expected_cmd = 'ffmpeg -video_size 1920x1080 -i example.yuv -buf_queue_cap 8 -conn_delay 0 -conn_type multipoint-group -urn 192.168.97.1 -ip_addr 192.168.96.2 -port 9001 -transport st2110-20 -payload_type 96 -transport_pixel_format yuv422p10rfc4175 -interface_id 0 -video_size 1920x1080 -pixel_format yuv422p10le -frame_rate 25'
+
+        from extra_options.mcm_video_tx import McmVideoTx
+        mcm_vtx = McmVideoTx(video_size="1920x1080", payload_type=96)
+        fi = ff.input(filename="example.yuv", extra_options={"video_size": "1920x1080"}) # TODO: Try to change extra_options from here to .video_size()
+        fo = fi.output(filename="", extra_options=mcm_vtx.get_items())
+        cmd = " ".join(fo.compile())[:-1]
+        print(f"Produced command >{cmd}< is", end=" ")
+        if cmd == expected_cmd:
+            print("as expected")
+        else:
+            print("NOT AS EXPECTED")
         pass
