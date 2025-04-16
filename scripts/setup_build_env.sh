@@ -41,7 +41,7 @@ function install_package_dependencies()
 
 function install_ubuntu_package_dependencies()
 {
-    as_root "rm /usr/local/bin/cmake"
+    as_root "rm -f /usr/local/bin/cmake"
     APT_LINUX_HEADERS="linux-headers-${KERNEL_VERSION}"
     APT_LINUX_MOD_EXTRA="linux-modules-extra-${KERNEL_VERSION}"
     as_root "${PM}" update --fix-missing && \
@@ -341,7 +341,7 @@ function full_build_and_install_workflow()
 # Allow sourcing of the script.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-    set -exEo pipefail
+    set -eEo pipefail
     if [ "${EUID}" != "0" ]; then
         log_error "Must be run as root. Try running below command:"
         log_error "sudo \"${BASH_SOURCE[0]}\""

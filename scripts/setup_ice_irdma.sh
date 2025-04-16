@@ -13,6 +13,8 @@ function print_usage()
     log_info ""
     log_info "Options:"
     log_info ""
+    log_info "\tall"
+    log_info "\t\t get, build, and install whole stack."
     log_info "\tget-ice"
     log_info "\t\t get, build, and install ice, rdma, and irdma drivers stack."
     log_info "\tget-irdma"
@@ -42,7 +44,6 @@ function install_os_dependencies()
             cmake \
             cython3 \
             debhelper \
-            dh-systemd \
             dh-python \
             dpkg-dev \
             libnl-3-dev \
@@ -276,7 +277,8 @@ then
   fi
   rm -f "./${WORKING_DIR}/*"
   mkdir -p "${WORKING_DIR}" "${PERF_DIR}"
-  set -exEo pipefail  
+
+  set -eEo pipefail  
  
   if [[ "${1}" == "get-ice" || "${1}" == "all" ]]; then
     install_os_dependencies && \
@@ -290,6 +292,9 @@ then
     fi
   fi
   if [[ "${1}" == "get-irdma" || "${1}" == "all" ]]; then
+    if [[ "${1}" == "get-irdma" ]]; then
+      install_os_dependencies
+    fi
     build_install_and_config_irdma_drivers && \
     config_intel_rdma_driver && \
     lib_install_fabrics
