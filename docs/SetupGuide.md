@@ -24,17 +24,11 @@
 
     * **Option A** – Use environment preparation scripts. The scripts were tested under environments with `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, and `CentOS Stream9`, installed alongside the Linux kernel 5.15.
 
-        Run the following commands, first to setup build environment and to be able to build MCM bare metal version:
+        Run the following commands, execute `setup_ice_irdma.sh` to setup and install patched drivers for NIC cards, and exec second one `setup_build_env.sh` to prepared whole build stack that is mandatory for bare metal version build of MCM:
 
         ```bash
         sudo ./scripts/setup_build_env.sh
-        ```
-        
-        Then run the driver configuration part, first to obtain and installk intel-ice kahawai driver version and then to install irdma drivers:
-      
-        ```bash
-        sudo ./scripts/setup_ice_irdma.sh get-ice
-        sudo ./scripts/setup_ice_irdma.sh get-irdma
+        sudo ./scripts/setup_ice_irdma.sh all
         ```
 
         Reboot the host after the scripts are executed.
