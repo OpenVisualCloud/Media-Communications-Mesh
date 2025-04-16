@@ -24,11 +24,12 @@ enum ST2110Transport {
 }
 
 message ConfigST2110 {
-  string remote_ip_addr     = 1;
-  uint32 remote_port        = 2;
-  ST2110Transport transport = 3;
-  string pacing             = 4;
-  uint32 payload_type       = 5;
+  string ip_addr            = 1;
+  uint32 port               = 2;
+  string mcast_sip_addr     = 3;
+  ST2110Transport transport = 4;
+  string pacing             = 5;
+  uint32 payload_type       = 6;
 }
 
 message ConfigRDMA {

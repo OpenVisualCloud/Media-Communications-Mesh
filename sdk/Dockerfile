@@ -41,10 +41,10 @@ ARG IMAGE_CACHE_REGISTRY
 ARG IMAGE_NAME
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
-LABEL maintainer="milosz.linkiewicz@intel.com"
+LABEL maintainer="milosz.linkiewicz@intel.com,konstantin.ilichev@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh SDK"
 LABEL org.opencontainers.image.description="Media Communications Mesh SDK sample applications. Ubuntu 22.04 Docker Release Image"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="25.03.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
@@ -81,3 +81,4 @@ USER mcm
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["${MCM_DIR}/recver_app"]
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "recver_app\|sender_app" | wc -l) != 2 )); then exit 1; fi

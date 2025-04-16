@@ -16,16 +16,17 @@
 #include "sdk.grpc.pb.h"
 #include "mesh_logger.h"
 #include "mcm-version.h"
+#include "mesh_dp_legacy.h"
 
 using grpc::Channel;
-// using grpc::ClientContext;
 using grpc::Status;
 using sdk::SDKAPI;
 using sdk::CreateConnectionRequest;
 using sdk::CreateConnectionResponse;
+using sdk::ActivateConnectionRequest;
+using sdk::ActivateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
-using sdk::ConnectionConfig;
 using sdk::BufferPartition;
 using sdk::BufferPartitions;
 using sdk::ConnectionKind;
@@ -88,7 +89,7 @@ public:
         }
     }
 
-    int CreateConnectionJson(std::string& conn_id, const ConnectionJsonConfig& cfg,
+    int CreateConnectionJson(std::string& conn_id, const ConnectionConfig& cfg,
                              memif_conn_param *memif_param) {
         if (!memif_param)
             return -1;
@@ -141,8 +142,9 @@ public:
             config->set_allocated_multipoint_group(group);
         } else if (cfg.conn_type == MESH_CONN_TYPE_ST2110) {
             auto st2110 = new ConfigST2110();
-            st2110->set_remote_ip_addr(cfg.conn.st2110.remote_ip_addr);
-            st2110->set_remote_port(cfg.conn.st2110.remote_port);
+            st2110->set_ip_addr(cfg.conn.st2110.ip_addr);
+            st2110->set_port(cfg.conn.st2110.port);
+            st2110->set_mcast_sip_addr(cfg.conn.st2110.mcast_sip_addr);
             st2110->set_transport((ST2110Transport)cfg.conn.st2110.transport);
             st2110->set_pacing(cfg.conn.st2110.pacing);
             st2110->set_payload_type(cfg.conn.st2110.payload_type);
@@ -196,6 +198,27 @@ public:
             return 0;
         } else {
             log::error("CreateConnectionJson RPC failed: %s",
+                       status.error_message().c_str());
+            return -1;
+        }
+    }
+
+    int ActivateConnection(std::string& conn_id) {
+        ActivateConnectionRequest req;
+        req.set_client_id(client_id);
+        req.set_conn_id(conn_id);
+
+        ActivateConnectionResponse resp;
+        grpc::ClientContext context;
+        context.set_deadline(std::chrono::system_clock::now() +
+                             std::chrono::seconds(20));
+
+        Status status = stub_->ActivateConnection(&context, req, &resp);
+
+        if (status.ok()) {
+            return 0;
+        } else {
+            log::error("ActivateConnection RPC failed: %s",
                        status.error_message().c_str());
             return -1;
         }
@@ -320,7 +343,7 @@ void * mesh_grpc_create_conn(void *client, mcm_conn_param *param)
     return conn;
 }
 
-void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionJsonConfig& cfg)
+void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cfg)
 {
     if (!client)
         return NULL;
@@ -376,6 +399,16 @@ void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionJsonConfig
         log::error("gRPC: failed to create memif interface");
         return NULL;
     }
+
+    err = cli->ActivateConnection(conn->conn_id);
+    if (err) {
+        log::error("Activate gRPC connection failed (%d)", err);
+        mesh_grpc_destroy_conn(conn);
+        return NULL;
+    }
+
+    log::info("gRPC: connection active")("id", conn->conn_id)
+                                        ("client_id", cli->client_id);
 
     // Workaround to allow Mesh Agent and Media Proxies to apply necessary
     // configuration after registering the connection. The delay should

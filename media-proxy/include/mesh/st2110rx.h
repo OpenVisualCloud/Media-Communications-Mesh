@@ -33,17 +33,17 @@ class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
         }
 
         inet_pton(AF_INET, cfg_st2110.remote_ip_addr, this->ops.port.ip_addr[MTL_PORT_P]);
-        inet_pton(AF_INET, cfg_st2110.local_ip_addr, this->ops.port.mcast_sip_addr[MTL_PORT_P]);
+        inet_pton(AF_INET, cfg_st2110.mcast_sip_addr, this->ops.port.mcast_sip_addr[MTL_PORT_P]);
         this->ops.port.udp_port[MTL_PORT_P] = cfg_st2110.local_port;
 
         log::info("ST2110Rx: configure")
-            ("ip_addr", std::to_string(this->ops.port.ip_addr[MTL_PORT_P][0]) + " " +
-                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][1]) + " " +
-                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][2]) + " " +
+            ("ip_addr", std::to_string(this->ops.port.ip_addr[MTL_PORT_P][0]) + "." +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][1]) + "." +
+                        std::to_string(this->ops.port.ip_addr[MTL_PORT_P][2]) + "." +
                         std::to_string(this->ops.port.ip_addr[MTL_PORT_P][3]))
-            ("mcast_sip_addr", std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][0]) + " " +
-                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][1]) + " " +
-                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][2]) + " " +
+            ("mcast_sip_addr", std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][0]) + "." +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][1]) + "." +
+                               std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][2]) + "." +
                                std::to_string(this->ops.port.mcast_sip_addr[MTL_PORT_P][3]))
             ("udp_port", this->ops.port.udp_port[MTL_PORT_P]);
         return 0;

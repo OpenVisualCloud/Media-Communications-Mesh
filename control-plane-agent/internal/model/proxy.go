@@ -45,9 +45,10 @@ type RDMAProxyConfig struct {
 }
 
 type MediaProxyConfig struct {
-	SDKAPIPort uint32            `json:"sdkApiPort"`
-	ST2110     ST2110ProxyConfig `json:"st2110"`
-	RDMA       RDMAProxyConfig   `json:"rdma"`
+	SDKAPIPort       uint32            `json:"sdkApiPort"`
+	ControlplaneAddr string            `json:"controlplaneIpAddr"`
+	ST2110           ST2110ProxyConfig `json:"st2110"`
+	RDMA             RDMAProxyConfig   `json:"rdma"`
 }
 
 type MediaProxyStatus struct {

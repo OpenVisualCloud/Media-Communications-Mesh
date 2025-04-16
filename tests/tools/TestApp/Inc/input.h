@@ -7,6 +7,25 @@
 #ifndef _INPUT_H_
 #define _INPUT_H_
 
-char *parse_json_to_string(const char *file_name);
+#include <time.h>
+typedef struct video_params {
+    int width;
+    int height;
+    double fps;
+    int pixel_format;
+} video_params;
+
+typedef struct audio_params {
+    int channels;
+    long long sample_rate;
+    char *format;
+    long long packet_time;
+} audio_params;
+
+char *input_parse_file_to_string(const char *file_name);
+int get_video_params(const char *json_string, video_params *params);
+int get_audio_params(const char *json_string, audio_params *params);
+void parse_cli_commands(int argc, char *argv[]);
+extern int input_loop;
 
 #endif /* _INPUT_H_ */

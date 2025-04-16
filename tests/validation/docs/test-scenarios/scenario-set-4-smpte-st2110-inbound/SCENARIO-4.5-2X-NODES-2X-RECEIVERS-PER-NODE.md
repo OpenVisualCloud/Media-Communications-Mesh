@@ -30,14 +30,19 @@ flowchart LR
     proxy2 --> rxB2
 ```
 
+### Output Device – Destination IP Address Options
+
+* Unicast IP address
+* Multicast IP address
+
 ### Payload Options
 
-* Video – Uncompressed ST 2110-20
-* Video – Compressed ST 2110-22
-* Audio – ST 2110-30
+* Video – SMPTE ST 2110-20 Uncompressed Video
+* Video – SMPTE ST 2110-22 Compressed Video (JPEG XS)
+* Audio – SMPTE ST 2110-30 Uncompressed Audio (PCM)
 
 ### Notes
 
-1. For Compressed Video ST 2110-22, consider the following
-    * External ST 2110 compliant output device transmits compressed video.
+1. For SMPTE ST 2110-22 Compressed Video, consider the following
+    * External SMPTE ST 2110 compliant output device transmits compressed video.
     * Rx App 1, 2, 3, 4 receive uncompressed video frames.

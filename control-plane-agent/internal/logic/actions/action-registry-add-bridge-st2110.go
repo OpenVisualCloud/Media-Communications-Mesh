@@ -58,10 +58,11 @@ func (a *Action_RegistryAddBridgeST2110) Perform(ctx context.Context, modifier s
 	config := &model.BridgeConfig{
 		Type: connType,
 		ST2110: &model.BridgeST2110Config{
-			RemoteIP:    sdkConnConfig.Conn.ST2110.RemoteIPAddr,
-			Port:        sdkConnConfig.Conn.ST2110.RemotePort,
-			Transport:   sdkConnConfig.Conn.ST2110.Transport,
-			PayloadType: sdkConnConfig.Conn.ST2110.PayloadType,
+			IPAddr:       sdkConnConfig.Conn.ST2110.IPAddr,
+			Port:         sdkConnConfig.Conn.ST2110.Port,
+			McastSipAddr: sdkConnConfig.Conn.ST2110.McastSipAddr,
+			Transport:    sdkConnConfig.Conn.ST2110.Transport,
+			PayloadType:  sdkConnConfig.Conn.ST2110.PayloadType,
 		},
 	}
 

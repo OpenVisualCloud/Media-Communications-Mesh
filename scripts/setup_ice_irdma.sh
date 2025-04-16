@@ -6,6 +6,30 @@ export PERF_DIR="${DRIVERS_DIR}/perftest"
 
 . "${SCRIPT_DIR}/common.sh"
 
+function print_usage()
+{
+    log_info "Usage:"
+    log_info "\t $0 [option]"
+    log_info ""
+    log_info "Options:"
+    log_info ""
+    log_info "\tget-ice"
+    log_info "\t\t get, build, and install ice, rdma, and irdma drivers stack."
+    log_info "\tget-irdma"
+    log_info "\t\t setup and pre-configure rdma, irdma and libfabrics ."
+    log_info "\tget-perftest"
+    log_info "\t\t download and install perftest and dependencies."
+    log_info "\tcheck-mtu"
+    log_info "\t\t fast-check basics in environment."
+    log_info "\tset-mtu <INTERFACE>"
+    log_info "\t\t temporarily set MTU to 9000 for given interface."
+    log_info "\trun-perftest <INTERFACE>"
+    log_info "\t\t execute installed perftests."
+    log_info "" 
+    log_info "\tintel"
+    log_info "\t\t animation in bash"
+}
+
 function install_os_dependencies()
 {
     log_info Starting: OS packages installation.
@@ -69,9 +93,6 @@ function get_and_patch_intel_drivers()
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
-    IRDMA_REPO="$(get_irdma_driver_tgz)"
-    wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}" && \
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
     pushd "${ICE_DIR}" && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
@@ -97,8 +118,11 @@ function build_install_and_config_intel_drivers()
 
 function build_install_and_config_irdma_drivers()
 {
+    IRDMA_REPO="$(get_irdma_driver_tgz)"
+    wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
+    
     if pushd "${IRDMA_DIR}"; then
-
         "${IRDMA_DIR}/build_core.sh" -y || exit 2
         as_root "${IRDMA_DIR}/install_core.sh"  || exit 3
 
@@ -147,22 +171,151 @@ function config_intel_rdma_driver()
     fi
     as_root dracut -f
     log_success "Queue Pair limits_sel set to 5."
-    log_success "Configuration of iRDMA finished."
+    log_success "Configuration of irdma finished."
 }
 
+function install_perftest()
+{
+    log_info "Start of install_perftest method. Installing apt packages."
+    apt-get update --fix-missing && \
+    apt install -y jq libibverbs-dev librdmacm-dev libibumad-dev libpci-dev
+    log_info "Install_perftest method. Installing apt packages succeeded."
+
+    log_info "Install_perftest method. Downloading and installing perftest-24.07.0."
+    wget_download_strip_unpack "${PERF_REPO}" "${PERF_DIR}"
+
+    if pushd "${PERF_DIR}"; then
+       { ./autogen.sh && ./configure; } || \
+       { log_error "Intel install_perftest: Could not configure the perftest."; return 1; }
+    else
+        log_error "Intel install_perftest: Could not enter the directory ${PERF_DIR}, exiting."
+        exit 1
+    fi
+    make -j "${NPROC}" && \
+    as_root make install
+
+    log_error "Intel irdma: Could not make and/or install the perftest."
+    popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
+    log_info "End of install_perftest method. Finished installing perftest-24.07.0."
+}
+
+function check_roce()
+{
+    log_info -n "Checking RoCE... "
+    roce_ena_val=$(cat /sys/module/irdma/parameters/roce_ena)
+    if [[ "$roce_ena_val" != "1" ]] && [[ "$roce_ena_val" != "65535" ]]; then
+        log_error  "FAIL: RoCE disabled"
+        exit 1
+    fi
+    log_info "OK"
+}
+
+function check_mtu()
+{
+    log_info "Checking MTU..."
+    rdma_devices=()
+    rdma_links="$(rdma link -j | jq -r '.[] | select(.physical_state == "LINK_UP") | .netdev')"
+    mapfile -t rdma_devices <<< "${rdma_links}"
+    if [[ "${#rdma_devices[@]}" == "0" ]]; then
+        log_error  "FAIL: No RDMA devices detected"
+        exit 1
+    fi
+    fail=0
+    for device in "${rdma_devices[@]}"; do
+        mtu=$(ip addr | grep "$device:" | cut -d " " -f 5)
+        if [[ "$mtu" == "9000" ]]; then
+            log_info "* $device OK"
+        else
+            log_error  "* $device FAIL: MTU = $mtu (9000 is recommended)"
+            fail=1
+        fi
+    done
+    if [[ $fail -eq 1 ]]; then
+        exit 1
+    fi
+}
+
+function set_mtu()
+{
+    log_info -n "Setting MTU to 9000 on $1... "
+    ip link set dev "${1}" mtu 9000
+    log_info "DONE"
+}
+
+function run_perftest()
+{
+    # Usage: run_perftest <interface_name> [network_address] [network_mask]
+    interface_name="$1"
+    network_address="${2:-192.168.255.255}"
+    network_mask="${3:-24}"
+    ip addr show dev "${interface_name}" | grep "${network_address}" || \
+    ip addr add "${network_address}/${network_mask}" dev "${interface_name}"
+    taskset -c 1 ib_write_bw --qp=4 --report_gbit -D 60 --tos 96 -R &> "${WORKING_DIR}/perftest_server.log" &
+    server_pid=$!
+    ib_write_bw "${network_address}" --qp=4 --report_gbit -D 60 --tos 96 -R &> "${WORKING_DIR}/perftest_client.log" &
+    client_pid=$!
+    log_info "perftest is running. Waiting 60 s..."
+    wait $server_pid
+    wait $client_pid
+    log_info "perftest completed. See results in $WORKING_DIR/perftest_server.log and ${WORKING_DIR}/perftest_client.log"
+    ip addr del "${network_address}/${network_mask}" dev "${interface_name}"
+}
 
 # Allow sourcing of the script.
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]
 then
-    set -exEo pipefail
+  if [ "${EUID}" != "0" ]; then
+    log_error "Must be run as root. Try running below command:"
+    log_error "sudo \"${BASH_SOURCE[0]}\""
+    exit 1
+  fi
+
+  if [[ -f "${WORKING_DIR}" ]]; then
+    log_error "Can't create rdma directory because of the rdma file ${WORKING_DIR}"
+    exit 1
+  fi
+  rm -f "./${WORKING_DIR}/*"
+  mkdir -p "${WORKING_DIR}" "${PERF_DIR}"
+  set -exEo pipefail  
+ 
+  if [[ "${1}" == "get-ice" || "${1}" == "all" ]]; then
     install_os_dependencies && \
     get_and_patch_intel_drivers && \
-    build_install_and_config_intel_drivers && \
-    build_install_and_config_irdma_drivers && \
-    config_intel_rdma_driver
+    build_install_and_config_intel_drivers
     return_code="$?"
-    [[ "${return_code}" == "0" ]] && { log_success "Finished: Build, install and configuration of Intel drivers."; exit 0; }
-
-    log_error "Intel drivers configuration/installation failed."
-    exit "${return_code}"
+    if [[ "${return_code}" == "0" ]]; then
+      log_success "Finished: Build and install and configuration of Intel drivers.";
+    else
+      log_error "Intel drivers configuration/installation failed."
+    fi
+  fi
+  if [[ "${1}" == "get-irdma" || "${1}" == "all" ]]; then
+    build_install_and_config_irdma_drivers && \
+    config_intel_rdma_driver && \
+    lib_install_fabrics
+    return_code="$?"
+    if [[ "${return_code}" == "0" ]]; then
+      log_success "Finished: irdma driver configuration for Intel hardware backend."
+    else
+      log_error "Intel irdma configuration failed."
+      exit "${return_code}"
+    fi
+  fi
+  if [[ "$1" == "get-perftest" || "${1}" == "all" ]]; then
+    install_perftest
+  fi
+  if [[ "$1" == "check-mtu" ]]; then
+    check_roce
+    check_mtu
+  elif [[ "$1" == "set-mtu" ]]; then
+    MCM_MTU_OVERRIDE="${2:-$MCM_MTU_OVERRIDE}"
+    set_mtu "${MCM_MTU_OVERRIDE:-9000}"
+    check_mtu
+  elif [[ "$1" == "run-perftest" ]]; then
+    run_perftest "$@"
+  elif [[ "$1" == "intel" ]]; then
+    print_logo_anim
+  else
+    print_usage
+  fi
 fi

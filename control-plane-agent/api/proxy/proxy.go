@@ -16,6 +16,7 @@ import (
 	"github.com/sirupsen/logrus"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/peer"
 	"google.golang.org/grpc/status"
 
 	pb "control-plane-agent/api/proxy/proto/mediaproxy"
@@ -63,8 +64,22 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 		return nil, errors.New("proxy register request")
 	}
 
+	var controlPlaneIpAddr string
+	p, ok := peer.FromContext(ctx)
+	if ok {
+		if addr, ok := p.Addr.(*net.TCPAddr); ok {
+			clientIP := addr.IP
+			if clientIP.To4() != nil {
+				controlPlaneIpAddr = clientIP.To4().String()
+			} else {
+				controlPlaneIpAddr = clientIP.String()
+			}
+		}
+	}
+
 	params := map[string]interface{}{
-		"sdk_api_port": in.SdkApiPort,
+		"sdk_api_port":         in.SdkApiPort,
+		"controlplane_ip_addr": controlPlaneIpAddr,
 	}
 
 	if in.St2110Config != nil {

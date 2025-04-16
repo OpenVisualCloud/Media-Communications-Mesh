@@ -13,6 +13,49 @@ import (
 	"control-plane-agent/internal/utils"
 )
 
+type applyProxyConfigQueue struct {
+	proxyIdQueue chan string
+}
+
+var ApplyProxyConfigQueue applyProxyConfigQueue
+
+func (q *applyProxyConfigQueue) EnqueueProxyId(ctx context.Context, proxyId string) error {
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case q.proxyIdQueue <- proxyId:
+		return nil
+	}
+}
+
+func (q *applyProxyConfigQueue) Run(ctx context.Context) {
+	q.proxyIdQueue = make(chan string, 10000)
+	for {
+		select {
+		case <-ctx.Done():
+			return
+
+		case proxyId := <-q.proxyIdQueue:
+			proxy, err := registry.MediaProxyRegistry.Get(ctx, proxyId, false)
+			if err != nil {
+				logrus.Errorf("apply proxy config queue run: proxy registry err: %v", err)
+				continue
+			}
+
+			groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, false)
+			if err != nil {
+				logrus.Errorf("apply proxy config queue run: group registry err: %v", err)
+				continue
+			}
+
+			err = ApplyProxyConfig(ctx, &proxy, groups)
+			if err != nil {
+				logrus.Errorf("apply proxy config queue run: send cmd err: %v", err)
+			}
+		}
+	}
+}
+
 func ApplyProxyConfig(ctx context.Context, mp *model.MediaProxy, groups []model.MultipointGroup) error {
 
 	pbGroups := []*pb.MultipointGroup{}
@@ -55,17 +98,18 @@ func ApplyProxyConfig(ctx context.Context, mp *model.MediaProxy, groups []model.
 		case "st2110":
 			pbBridge.Config = &pb.Bridge_St2110{
 				St2110: &pb.BridgeST2110{
-					RemoteIp:    bridge.Config.ST2110.RemoteIP,
-					Port:        uint32(bridge.Config.ST2110.Port),
-					Transport:   bridge.Config.ST2110.Transport,
-					PayloadType: uint32(bridge.Config.ST2110.PayloadType),
+					IpAddr:       bridge.Config.ST2110.IPAddr,
+					Port:         uint32(bridge.Config.ST2110.Port),
+					McastSipAddr: bridge.Config.ST2110.McastSipAddr,
+					Transport:    bridge.Config.ST2110.Transport,
+					PayloadType:  uint32(bridge.Config.ST2110.PayloadType),
 				},
 			}
 		case "rdma":
 			pbBridge.Config = &pb.Bridge_Rdma{
 				Rdma: &pb.BridgeRDMA{
-					RemoteIp: bridge.Config.RDMA.RemoteIP,
-					Port:     uint32(bridge.Config.RDMA.Port),
+					RemoteIpAddr: bridge.Config.RDMA.RemoteIPAddr,
+					Port:         uint32(bridge.Config.RDMA.Port),
 				},
 			}
 		}

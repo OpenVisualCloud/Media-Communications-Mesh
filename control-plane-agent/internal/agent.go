@@ -23,6 +23,7 @@ import (
 	"control-plane-agent/internal/config"
 	"control-plane-agent/internal/event"
 	"control-plane-agent/internal/logic"
+	"control-plane-agent/internal/logic/mesh"
 	"control-plane-agent/internal/registry"
 )
 
@@ -90,6 +91,13 @@ func RunAgent() {
 	go func() {
 		defer wg.Done()
 		controlPlaneAPI.Run(ctx)
+		cancel()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		mesh.ApplyProxyConfigQueue.Run(ctx)
 		cancel()
 	}()
 

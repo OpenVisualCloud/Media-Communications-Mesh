@@ -14,29 +14,19 @@
 #include "Inc/mcm.h"
 #include "Inc/misc.h"
 
-#define SHUTDOWN_REQUESTED 1
-
-
 char *client_cfg;
 char *conn_cfg;
 MeshConnection *connection = NULL;
 MeshClient *client = NULL;
-struct sigaction sa_int;
-struct sigaction sa_term;
-int shutdown = 0;
-
-void sig_handler(int sig);
-void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig);
-int is_shutdown_requested();
 
 int main(int argc, char **argv) {
-    setup_signal_handler(&sa_int, sig_handler, SIGINT);
-    setup_signal_handler(&sa_term, sig_handler, SIGTERM);
+    parse_cli_commands(argc, argv);
+    setup_sig_int();
     if (!is_root()) {
         fprintf(stderr, "This program must be run as root. Exiting.\n");
         exit(EXIT_FAILURE);
     }
-    if (argc != 4) {
+    if (argc < 4) {
         fprintf(stderr, "Usage: %s <client_cfg.json> <connection_cfg.json> <path_to_input_file>\n",
                 argv[0]);
         exit(EXIT_FAILURE);
@@ -47,14 +37,14 @@ int main(int argc, char **argv) {
     char *video_file = argv[3];
 
     LOG("[TX] Launching TX app");
-    
+
     LOG("[TX] Reading client configuration...");
-    client_cfg = parse_json_to_string(client_cfg_file);
+    client_cfg = input_parse_file_to_string(client_cfg_file);
     LOG("[TX] Reading connection configuration...");
-    conn_cfg = parse_json_to_string(conn_cfg_file);
+    conn_cfg = input_parse_file_to_string(conn_cfg_file);
 
     /* Initialize mcm client */
-    int err = mesh_create_client_json(&client, client_cfg);
+    int err = mesh_create_client(&client, client_cfg);
     if (err) {
         LOG("[TX] Failed to create mesh client: %s (%d)", mesh_err2str(err), err);
         goto safe_exit;
@@ -68,14 +58,39 @@ int main(int argc, char **argv) {
     }
 
     /* Open file and send its contents in loop*/
-    while(1){
-        err = mcm_send_video_frames(connection, video_file, is_shutdown_requested);
-        if ( shutdown == SHUTDOWN_REQUESTED ) {
-            goto safe_exit;
+    if (input_loop == -1) {
+        LOG("[TX] sending video frames inf times");
+        while (1) {
+            err = mcm_send_video_frames(connection, video_file, conn_cfg);
+            if (err) {
+                LOG("[TX] Failed to send audio packets: %s (%d)", mesh_err2str(err), err);
+                break;
+            }
+            if (shutdown_flag == SHUTDOWN_REQUESTED) {
+                break;
+            }
+        }
+    } else if (input_loop > 0) {
+        LOG("[TX] sending video frames %d times", input_loop);
+        for (int i = 0; i < input_loop; i++) {
+            err = mcm_send_video_frames(connection, video_file, conn_cfg);
+            if (err) {
+                LOG("[TX] Failed to send video frames: %s (%d)", mesh_err2str(err), err);
+                break;
+            }
+            if (shutdown_flag != 0) {
+                break;
+            }
+        }
+    } else {
+        LOG("[TX] sending video frames 1 time");
+        err = mcm_send_video_frames(connection, video_file, conn_cfg);
+        if (err) {
+            LOG("[TX] Failed to send video frames: %s (%d)", mesh_err2str(err), err);
         }
     }
+
 safe_exit:
-    LOG("[TX] shut down request, dropping connection to media-proxy...");
     LOG("[TX] Shuting down connection");
     if (connection) {
         mesh_delete_connection(&connection);
@@ -88,18 +103,3 @@ safe_exit:
     free(conn_cfg);
     return err;
 }
-int is_shutdown_requested() {
-    return shutdown;
-}
-
-void sig_handler(int sig) {
-        shutdown = SHUTDOWN_REQUESTED;
-}
-
-void setup_signal_handler(struct sigaction *sa, void (*handler)(int),int sig) {
-    sa->sa_handler = handler;
-    sigemptyset(&(sa->sa_mask));
-    sa->sa_flags = 0;
-    sigaction(sig, sa, NULL);
-}
-

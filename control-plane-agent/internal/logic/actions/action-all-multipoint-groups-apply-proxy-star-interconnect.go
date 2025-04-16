@@ -172,11 +172,11 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 	type bridgeConfig struct {
 		model.SDKConnectionConfig
 
-		GroupId  string
-		ProxyId  string
-		Kind     string
-		RemoteIP string
-		Port     uint16
+		GroupId      string
+		ProxyId      string
+		Kind         string
+		RemoteIPAddr string
+		Port         uint16
 
 		Exists bool
 	}
@@ -197,19 +197,19 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			}
 
 			destBridge := bridgeConfig{
-				GroupId:  groupId,
-				ProxyId:  destProxyId,
-				Kind:     "rx",
-				RemoteIP: sourceProxy.Config.RDMA.DataplaneIPAddr,
+				GroupId:      groupId,
+				ProxyId:      destProxyId,
+				Kind:         "rx",
+				RemoteIPAddr: sourceProxy.Config.RDMA.DataplaneIPAddr,
 				// Port:     port, // 9100, // DEBUG
 			}
 			destBridge.CopyFrom(&group.SDKConnectionConfig)
 
 			sourceBridge := bridgeConfig{
-				GroupId:  groupId,
-				ProxyId:  group.SourceProxyId,
-				Kind:     "tx",
-				RemoteIP: destProxy.Config.RDMA.DataplaneIPAddr,
+				GroupId:      groupId,
+				ProxyId:      group.SourceProxyId,
+				Kind:         "tx",
+				RemoteIPAddr: destProxy.Config.RDMA.DataplaneIPAddr,
 				// Port:     port, // 9100, // DEBUG
 			}
 			sourceBridge.CopyFrom(&group.SDKConnectionConfig)
@@ -235,7 +235,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			if bridge.GroupId == newBridge.GroupId &&
 				bridge.ProxyId == newBridge.ProxyId &&
 				bridge.Config.Kind == newBridge.Kind &&
-				bridge.Config.RDMA.RemoteIP == newBridge.RemoteIP {
+				bridge.Config.RDMA.RemoteIPAddr == newBridge.RemoteIPAddr {
 				// bridge.Config.RDMA.Port == newBridge.Port {
 				newBridge.Exists = true
 				found = true
@@ -314,8 +314,8 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			Kind: newBridge.Kind,
 			Type: "rdma",
 			RDMA: &model.BridgeRDMAConfig{
-				RemoteIP: newBridge.RemoteIP,
-				Port:     newBridge.Port,
+				RemoteIPAddr: newBridge.RemoteIPAddr,
+				Port:         newBridge.Port,
 			},
 		}
 

@@ -11,6 +11,9 @@
 #include "mesh_sdk_api.h"
 #include "mesh_logger.h"
 #include "json.hpp"
+#include <thread>
+#include <stop_token>
+#include "mesh_dp_legacy.h"
 
 /**
  * Isolation interface for testability. Accessed from unit tests only.
@@ -31,7 +34,7 @@ struct mesh_internal_ops_t mesh_internal_ops = {
 
 namespace mesh {
 
-int ConnectionJsonConfig::parse_json(const char *str)
+int ConnectionConfig::parse_from_json(const char *str)
 {
     try {
         auto j = nlohmann::json::parse(str);
@@ -77,8 +80,9 @@ int ConnectionJsonConfig::parse_json(const char *str)
             conn.multipoint_group.urn = group.value("urn", "");
         } else if (conn_type == MESH_CONN_TYPE_ST2110) {
             auto st2110 = jconn["st2110"];
-            conn.st2110.remote_ip_addr = st2110.value("remoteIpAddr", "");
-            conn.st2110.remote_port = st2110.value("remotePort", 0);
+            conn.st2110.ip_addr = st2110.value("ipAddr", "");
+            conn.st2110.port = st2110.value("port", 0);
+            conn.st2110.mcast_sip_addr = st2110.value("multicastSourceIpAddr", "");
 
             std::string str = st2110.value("transport", "st2110-20");
             if (!str.compare("st2110-20")) {
@@ -184,7 +188,6 @@ int ConnectionJsonConfig::parse_json(const char *str)
 
                 str = audio.value("packetTime", "1ms");
                 if (!str.compare("1ms")) {
-                } else if (!str.compare("1ms")) {
                     payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_1MS;
                 } else if (!str.compare("125us")) {
                     payload.audio.packet_time = MESH_AUDIO_PACKET_TIME_125US;
@@ -259,7 +262,7 @@ int ConnectionJsonConfig::parse_json(const char *str)
     return -MESH_ERR_CONN_CONFIG_INVAL;
 }
 
-int ConnectionJsonConfig::calc_audio_buf_size()
+int ConnectionConfig::calc_audio_buf_size()
 {
     uint32_t sample_size = 0;
     uint32_t sample_num = 0;
@@ -352,7 +355,7 @@ int ConnectionJsonConfig::calc_audio_buf_size()
     return 0;
 }
 
-int ConnectionJsonConfig::calc_video_buf_size()
+int ConnectionConfig::calc_video_buf_size()
 {
     uint32_t pixels = payload.video.width * payload.video.height;
 
@@ -386,7 +389,7 @@ int ConnectionJsonConfig::calc_video_buf_size()
     return 0;
 }
 
-int ConnectionJsonConfig::calc_payload_size()
+int ConnectionConfig::calc_payload_size()
 {
     switch (payload_type) {
     case MESH_PAYLOAD_TYPE_VIDEO:
@@ -401,7 +404,7 @@ int ConnectionJsonConfig::calc_payload_size()
     return -MESH_ERR_CONN_CONFIG_INVAL;
 }
 
-int ConnectionJsonConfig::configure_buf_partitions()
+int ConnectionConfig::configure_buf_partitions()
 {
     buf_parts.sysdata.offset = 0;
     buf_parts.sysdata.size = (sizeof(BufferSysData) + 7) & ~7;
@@ -420,7 +423,7 @@ int ConnectionJsonConfig::configure_buf_partitions()
     return 0;
 }
 
-int ConnectionJsonConfig::assign_to_mcm_conn_param(mcm_conn_param& param) const
+int ConnectionConfig::assign_to_mcm_conn_param(mcm_conn_param& param) const
 {
     /**
      * Parse video payload parameters
@@ -549,355 +552,22 @@ ConnectionContext::ConnectionContext(ClientContext *parent)
     cfg.payload_type = MESH_PAYLOAD_TYPE_UNINITIALIZED;
 }
 
-int ConnectionContext::apply_config_memif(MeshConfig_Memif *config)
-{
-    if (!config)
-        return -MESH_ERR_BAD_CONFIG_PTR;
-
-    cfg.conn_type = MESH_CONN_TYPE_MEMIF;
-    memcpy(&cfg.conn.memif, config, sizeof(MeshConfig_Memif));
-    return 0;
-}
-
-int ConnectionContext::apply_config_st2110(MeshConfig_ST2110 *config)
-{
-    if (!config)
-        return -MESH_ERR_BAD_CONFIG_PTR;
-
-    cfg.conn_type = MESH_CONN_TYPE_ST2110;
-    memcpy(&cfg.conn.st2110, config, sizeof(MeshConfig_ST2110));
-    return 0;
-}
-
-int ConnectionContext::apply_config_rdma(MeshConfig_RDMA *config)
-{
-    if (!config)
-        return -MESH_ERR_BAD_CONFIG_PTR;
-
-    cfg.conn_type = MESH_CONN_TYPE_RDMA;
-    memcpy(&cfg.conn.rdma, config, sizeof(MeshConfig_RDMA));
-    return 0;
-}
-
-int ConnectionContext::apply_config_video(MeshConfig_Video *config)
-{
-    if (!config)
-        return -MESH_ERR_BAD_CONFIG_PTR;
-
-    cfg.payload_type = MESH_PAYLOAD_TYPE_VIDEO;
-    memcpy(&cfg.payload.video, config, sizeof(MeshConfig_Video));
-    return 0;
-}
-
-int ConnectionContext::apply_config_audio(MeshConfig_Audio *config)
-{
-    if (!config)
-        return -MESH_ERR_BAD_CONFIG_PTR;
-
-    cfg.payload_type = MESH_PAYLOAD_TYPE_AUDIO;
-    memcpy(&cfg.payload.audio, config, sizeof(MeshConfig_Audio));
-    return 0;
-}
-
-int ConnectionContext::parse_payload_config(mcm_conn_param *param)
-{
-    /**
-     * Parse video payload parameters
-     */
-    if (cfg.payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
-
-        switch (cfg.payload.video.pixel_format) {
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE:
-            param->pix_fmt = PIX_FMT_YUV422PLANAR10LE;
-            break;            
-        case MESH_VIDEO_PIXEL_FORMAT_V210:
-            param->pix_fmt = PIX_FMT_V210;
-            break;            
-        case MESH_VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10:
-            param->pix_fmt = PIX_FMT_YUV422RFC4175BE10;
-            break;
-        default:
-            return -MESH_ERR_CONN_CONFIG_INVAL;
-        }
-
-        param->payload_args.video_args.pix_fmt = param->pix_fmt;
-        param->payload_args.video_args.width   = cfg.payload.video.width;
-        param->width                           = cfg.payload.video.width;
-        param->payload_args.video_args.height  = cfg.payload.video.height;
-        param->height                          = cfg.payload.video.height;
-        param->payload_args.video_args.fps     = param->fps = cfg.payload.video.fps;
-
-        return 0;
-    }
-
-    /**
-     * Parse audio payload parameters
-     */
-    if (cfg.payload_type == MESH_PAYLOAD_TYPE_AUDIO) {
-
-        switch (cfg.payload.audio.sample_rate) {
-        case MESH_AUDIO_SAMPLE_RATE_44100:
-            param->payload_args.audio_args.sampling = AUDIO_SAMPLING_44K;
-            break; 
-        case MESH_AUDIO_SAMPLE_RATE_48000:
-            param->payload_args.audio_args.sampling = AUDIO_SAMPLING_48K;
-            break;
-        case MESH_AUDIO_SAMPLE_RATE_96000:
-            param->payload_args.audio_args.sampling = AUDIO_SAMPLING_96K;
-            break;
-        default:
-            return -MESH_ERR_CONN_CONFIG_INVAL;
-        }
-
-        switch (cfg.payload.audio.sample_rate) {
-        case MESH_AUDIO_SAMPLE_RATE_48000:
-        case MESH_AUDIO_SAMPLE_RATE_96000:
-            switch (cfg.payload.audio.packet_time) {
-            case MESH_AUDIO_PACKET_TIME_1MS:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_1MS;
-                break;
-            case MESH_AUDIO_PACKET_TIME_125US:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_125US;
-                break;
-            case MESH_AUDIO_PACKET_TIME_250US:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_250US;
-                break;
-            case MESH_AUDIO_PACKET_TIME_333US:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_333US;
-                break;
-            case MESH_AUDIO_PACKET_TIME_4MS:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_4MS;
-                break;
-            case MESH_AUDIO_PACKET_TIME_80US:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_80US;
-                break;
-            default:
-                return -MESH_ERR_CONN_CONFIG_INCOMPAT;
-            }
-            break;
-        case MESH_AUDIO_SAMPLE_RATE_44100:
-            switch (cfg.payload.audio.packet_time) {
-            case MESH_AUDIO_PACKET_TIME_1_09MS:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_1_09MS;
-                break;
-            case MESH_AUDIO_PACKET_TIME_0_14MS:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_0_14MS;
-                break;
-            case MESH_AUDIO_PACKET_TIME_0_09MS:
-                param->payload_args.audio_args.ptime = AUDIO_PTIME_0_09MS;
-                break;
-            default:
-                return -MESH_ERR_CONN_CONFIG_INCOMPAT;
-            }
-            break;
-        default:
-            /**
-             * Default case cannot happen here by design.
-             */
-            break;
-        }
-
-        switch (cfg.payload.audio.format) {
-        case MESH_AUDIO_FORMAT_PCM_S8:
-            param->payload_args.audio_args.format = AUDIO_FMT_PCM8;
-            break;
-        case MESH_AUDIO_FORMAT_PCM_S16BE:
-            param->payload_args.audio_args.format = AUDIO_FMT_PCM16;
-            break;
-        case MESH_AUDIO_FORMAT_PCM_S24BE:
-            param->payload_args.audio_args.format = AUDIO_FMT_PCM24;
-            break;
-        default:
-            return -MESH_ERR_CONN_CONFIG_INVAL;
-        }
-
-        param->payload_args.audio_args.type = AUDIO_TYPE_FRAME_LEVEL;
-        param->payload_args.audio_args.channel = cfg.payload.audio.channels;
-
-        return 0;
-    }
-
-    return -MESH_ERR_CONN_CONFIG_INVAL;
-}
-
-int ConnectionContext::parse_conn_config(mcm_conn_param *param)
-{
-    switch (cfg.kind) {
-    case MESH_CONN_KIND_SENDER:
-        param->type = is_tx;
-        break;
-    case MESH_CONN_KIND_RECEIVER:
-        param->type = is_rx;
-        break;
-    default:
-        return -MESH_ERR_CONN_CONFIG_INVAL;
-    }
-
-    switch (cfg.conn_type) {
-    /**
-     * Parse parameters of memif connection.
-     */
-    case MESH_CONN_TYPE_MEMIF:
-        param->protocol = PROTO_MEMIF;
-
-        strlcpy(param->memif_interface.socket_path,
-                cfg.conn.memif.socket_path,
-                sizeof(param->memif_interface.socket_path));
-
-        param->memif_interface.interface_id = cfg.conn.memif.interface_id;
-        param->memif_interface.is_master = (param->type == is_tx) ? 1 : 0;
-
-        if (cfg.payload_type == MESH_PAYLOAD_TYPE_VIDEO)
-            param->payload_type = PAYLOAD_TYPE_ST20_VIDEO;
-        else if (cfg.payload_type == MESH_PAYLOAD_TYPE_AUDIO)
-            param->payload_type = PAYLOAD_TYPE_ST30_AUDIO;
-        break;
-    /**
-     * Parse and check parameters of SMPTE ST2110-XX connection.
-     */
-    case MESH_CONN_TYPE_ST2110:
-        param->protocol = PROTO_AUTO;
-
-        strlcpy(param->local_addr.ip, cfg.conn.st2110.local_ip_addr,
-                sizeof(param->local_addr.ip));
-        snprintf(param->local_addr.port, sizeof(param->local_addr.port),
-                 "%u", cfg.conn.st2110.local_port);
-
-        strlcpy(param->remote_addr.ip, cfg.conn.st2110.remote_ip_addr,
-                sizeof(param->remote_addr.ip));
-        snprintf(param->remote_addr.port, sizeof(param->remote_addr.port),
-                 "%u", cfg.conn.st2110.remote_port);
-
-        switch (cfg.conn.st2110.transport) {
-        /**
-         * SMPTE ST2110-20 Uncompressed video transport
-         */
-        case MESH_CONN_TRANSPORT_ST2110_20:
-            if (cfg.payload_type != MESH_PAYLOAD_TYPE_VIDEO)
-                return -MESH_ERR_CONN_CONFIG_INCOMPAT;
-
-            param->payload_type = PAYLOAD_TYPE_ST20_VIDEO;
-            break;
-        /**
-         * SMPTE ST2110-22 Constant Bit-Rate Compressed Video transport
-         */
-        case MESH_CONN_TRANSPORT_ST2110_22:
-            if (cfg.payload_type != MESH_PAYLOAD_TYPE_VIDEO)
-                return -MESH_ERR_CONN_CONFIG_INCOMPAT;
-
-            param->payload_type = PAYLOAD_TYPE_ST22_VIDEO;
-            param->payload_codec = PAYLOAD_CODEC_JPEGXS;
-            break;
-        /**
-         * SMPTE ST2110-30 Audio transport
-         */
-        case MESH_CONN_TRANSPORT_ST2110_30:
-            if (cfg.payload_type != MESH_PAYLOAD_TYPE_AUDIO)
-                return -MESH_ERR_CONN_CONFIG_INCOMPAT;
-
-            param->payload_type = PAYLOAD_TYPE_ST30_AUDIO;
-            break;
-        /**
-         * Unknown transport
-         */
-        default:
-            return -MESH_ERR_CONN_CONFIG_INVAL;
-        }
-        break;
-    /**
-     * Parse parameters of RDMA connection.
-     */
-    case MESH_CONN_TYPE_RDMA:
-        param->protocol = PROTO_AUTO;
-
-        strlcpy(param->local_addr.ip, cfg.conn.rdma.local_ip_addr,
-                sizeof(param->local_addr.ip));
-        snprintf(param->local_addr.port, sizeof(param->local_addr.port),
-                 "%u", cfg.conn.rdma.local_port);
-
-        strlcpy(param->remote_addr.ip, cfg.conn.rdma.remote_ip_addr,
-                sizeof(param->remote_addr.ip));
-        snprintf(param->remote_addr.port, sizeof(param->remote_addr.port),
-                 "%u", cfg.conn.rdma.remote_port);
-
-        /**
-         * TODO: Rework this to enable both video and audio payloads.
-         */
-        param->payload_type = PAYLOAD_TYPE_RDMA_VIDEO;
-        break;
-    /**
-     * Unknown connection type
-     */
-    default:
-        return -MESH_ERR_CONN_CONFIG_INVAL;
-    }
-
-    return 0;
-}
-
-int ConnectionContext::establish(int kind)
-{
-    mcm_conn_param param = {};
-    int err;
-
-    if (handle)
-        return -MESH_ERR_BAD_CONN_PTR;
-
-    ClientContext *mc_ctx = (ClientContext *)__public.client;
-    if (!mc_ctx)
-        return -MESH_ERR_BAD_CLIENT_PTR;
-
-    if (cfg.conn_type == MESH_CONN_TYPE_UNINITIALIZED ||
-        cfg.payload_type == MESH_PAYLOAD_TYPE_UNINITIALIZED)
-        return -MESH_ERR_CONN_CONFIG_INVAL;
-
-    cfg.kind = kind;
-
-    err = parse_payload_config(&param);
-    if (err)
-        return err;
-
-    err = parse_conn_config(&param);
-    if (err)
-        return err;
-
-    if (mc_ctx->config.enable_grpc) {
-        grpc_conn = mesh_internal_ops.grpc_create_conn(mc_ctx->grpc_client,
-                                                       &param);
-        if (!grpc_conn) {
-            handle = NULL;
-            return -MESH_ERR_CONN_FAILED;
-        }
-        handle = *(mcm_conn_context **)grpc_conn; // unsafe type casting
-        if (!handle)
-            return -MESH_ERR_CONN_FAILED;
-    } else {
-        handle = mesh_internal_ops.create_conn(&param);
-        if (!handle)
-            return -MESH_ERR_CONN_FAILED;
-    }
-
-    *(size_t *)&__public.buf_size = handle->frame_size;
-
-    return 0;
-}
-
 int ConnectionContext::apply_json_config(const char *config) {
 
-    auto err = cfg_json.parse_json(config);
+    auto err = cfg.parse_from_json(config);
     if (err)
         return err;
 
     log::debug("JSON conn config: %s", config);
 
-    err = cfg_json.calc_payload_size();
+    err = cfg.calc_payload_size();
     if (err)
         return err;
 
-    return cfg_json.configure_buf_partitions();
+    return cfg.configure_buf_partitions();
 }
 
-int ConnectionContext::establish_json()
+int ConnectionContext::establish()
 {
     int err;
 
@@ -909,7 +579,7 @@ int ConnectionContext::establish_json()
         return -MESH_ERR_BAD_CLIENT_PTR;
 
     grpc_conn = mesh_internal_ops.grpc_create_conn_json(mc_ctx->grpc_client,
-                                                        cfg_json);
+                                                        cfg);
     if (!grpc_conn) {
         handle = NULL;
         return -MESH_ERR_CONN_FAILED;
@@ -918,10 +588,10 @@ int ConnectionContext::establish_json()
     if (!handle)
         return -MESH_ERR_CONN_FAILED;
 
-    *(size_t *)&__public.payload_size = cfg_json.buf_parts.payload.size;
-    *(size_t *)&__public.metadata_size = cfg_json.buf_parts.metadata.size;
+    *(size_t *)&__public.payload_size = cfg.buf_parts.payload.size;
+    *(size_t *)&__public.metadata_size = cfg.buf_parts.metadata.size;
 
-    if (cfg_json.buf_parts.total_size() != handle->frame_size)
+    if (cfg.buf_parts.total_size() != handle->frame_size)
         return -MESH_ERR_CONN_FAILED;
 
     return 0;
@@ -933,37 +603,55 @@ int ConnectionContext::shutdown()
     if (!mc_ctx)
         return -MESH_ERR_BAD_CLIENT_PTR;
 
-    if (mc_ctx->config.enable_grpc) {
-        if (grpc_conn) {
-            /** In Sender mode, delay for 50ms to allow for completing
-             * transmission of all buffers sitting in the memif queue
-             * before destroying the connection.
-             *
-             * TODO: Replace the delay with polling of the actual memif
-             * queue status.
+    if (grpc_conn) {
+        /** In Sender mode, delay for 50 ms to allow for completing
+         * transmission of all buffers sitting in the memif queue
+         * before destroying the connection.
+         *
+         * TODO: Replace the delay with polling of the actual memif
+         * queue status.
+         */
+        if (cfg.kind == MESH_CONN_KIND_SENDER) {
+            usleep(50000);
+            mesh_internal_ops.grpc_destroy_conn(grpc_conn);
+        } else {
+            /**
+             * In Receiver mode, start a thread to drain the queue continuously
+             * while the DeleteConnection request is being processed in Media
+             * Proxy and Mesh Agent. This prevents the following errors at
+             * connection shutdown:
+             *     Failed to alloc memif buffer: Ring buffer full.
              */
-            if (cfg.kind == MESH_CONN_KIND_SENDER)
-                usleep(50000);
+            std::stop_source ss;
+
+            std::jthread th([&] {
+                while (!ss.stop_requested()) {
+                    BufferContext *buf_ctx = new(std::nothrow) BufferContext(this);
+                    if (!buf_ctx)
+                        break;
+                
+                    int err = buf_ctx->dequeue(500);
+                    if (err) {
+                        delete buf_ctx;
+                        break;
+                    }
+
+                    err = buf_ctx->enqueue(500);
+
+                    delete buf_ctx;
+
+                    if (err)
+                        break;
+                }
+            });
 
             mesh_internal_ops.grpc_destroy_conn(grpc_conn);
-            grpc_conn = NULL;
-            handle = NULL;
-        }
-    } else {
-        if (handle) {
-            /** In Sender mode, delay for 50ms to allow for completing
-             * transmission of all buffers sitting in the memif queue
-             * before destroying the connection.
-             *
-             * TODO: Replace the delay with polling of the actual memif
-             * queue status.
-             */
-            if (cfg.kind == MESH_CONN_KIND_SENDER)
-                usleep(50000);
 
-            mesh_internal_ops.destroy_conn(handle);
-            handle = NULL;
+            ss.request_stop();
         }
+
+        grpc_conn = NULL;
+        handle = NULL;
     }
 
     return 0;
@@ -988,7 +676,7 @@ int ConnectionContext::get_buffer_timeout(MeshBuffer **buf, int timeout_ms)
         return -ENOMEM;
 
     if (timeout_ms == MESH_TIMEOUT_DEFAULT && __public.client)
-        timeout_ms = ((ClientContext *)__public.client)->config.timeout_ms;
+        timeout_ms = ((ClientContext *)__public.client)->cfg.default_timeout_us;
 
     int err = buf_ctx->dequeue(timeout_ms);
     if (err) {

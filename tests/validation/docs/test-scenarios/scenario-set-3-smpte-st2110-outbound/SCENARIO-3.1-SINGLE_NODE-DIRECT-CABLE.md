@@ -17,12 +17,12 @@ flowchart LR
 
 ### Payload Options
 
-* Video – Uncompressed ST 2110-20
-* Video – Compressed ST 2110-22
-* Audio – ST 2110-30
+* Video – SMPTE ST 2110-20 Uncompressed Video
+* Video – SMPTE ST 2110-22 Compressed Video (JPEG XS)
+* Audio – SMPTE ST 2110-30 Uncompressed Audio (PCM)
 
 ### Notes
 
-1. For Compressed Video ST 2110-22, consider the following
+1. For SMPTE ST 2110-22 Compressed Video, consider the following
     * Tx App transmits uncompressed video frames.
-    * External ST 2110 compliant input device receives compressed video.
+    * External SMPTE ST 2110 compliant input device receives compressed video.

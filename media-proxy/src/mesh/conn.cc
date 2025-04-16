@@ -89,8 +89,9 @@ void Connection::set_config(const Config& cfg)
         break;
     case CONN_TYPE_ST2110:
         log::debug("[SDK] ST2110 config")
-                  ("remote_ip_addr", config.conn.st2110.remote_ip_addr)
-                  ("remote_port", config.conn.st2110.remote_port)
+                  ("ip_addr", config.conn.st2110.ip_addr)
+                  ("port", config.conn.st2110.port)
+                  ("mcast_sip_addr", config.conn.st2110.mcast_sip_addr)
                   ("transport", config.st2110_transport2str())
                   ("pacing", config.conn.st2110.pacing)
                   ("payload_type", config.conn.st2110.payload_type);
@@ -142,12 +143,10 @@ Result Connection::establish_async(context::Context& ctx)
 
         try {
             establish_th = std::jthread([this]() {
-                // log::debug("ON ESTABLISH THREAD START");
                 auto res = on_establish(establish_ctx);
                 if (res != Result::success)
                     log::error("Threaded on_establish() err: %s",
                                result2str(res));
-                // log::debug("ON ESTABLISH THREAD EXIT");
             });
         }
         catch (const std::system_error& e) {
@@ -204,20 +203,16 @@ Result Connection::shutdown_async(context::Context& ctx)
 
         try {
             shutdown_th = std::jthread([this, &ctx]() {
-                // log::debug("======= ON SHUTDOWN THREAD START");
 
                 establish_ctx.cancel();
-                if (establish_th.joinable()) {
-                    // log::debug("ON SHUTDOWN THREAD - waiting for establish thread to exit");
+                if (establish_th.joinable())
                     establish_th.join();
-                    // log::debug("ON SHUTDOWN THREAD - establish thread exited");
-                }
 
                 auto res = on_shutdown(ctx);
                 if (res != Result::success)
                     log::error("Threaded on_shutdown() err: %s",
                                result2str(res));
-                // log::debug("======= ON SHUTDOWN THREAD EXIT");
+
                 shutdown_th.detach();
                 delete this; // TODO: consider on making this safer
             });
@@ -238,25 +233,24 @@ Result Connection::transmit(context::Context& ctx, void *ptr, uint32_t sz)
     if (state() != State::active)
         return set_result(Result::error_wrong_state);
 
-    if (!_link)
+    if (!ptr || !sz)
+        return set_result(Result::error_no_buffer);
+
+    auto _link = (Connection *)dp_link.load_next_lock();
+
+    if (!_link) {
+        dp_link.unlock();
         return set_result(Result::error_no_link_assigned);
+    }
 
     metrics.inbound_bytes += sz;
 
     uint32_t sent = 0;
     Result res;
 
-    // transmitting.store(true, std::memory_order_release);
-    // setting_link.wait(true, std::memory_order_acquire);
-    {
-        const std::lock_guard<std::mutex> lk(link_mx);
+    res = _link->do_receive(ctx, ptr, sz, sent);
 
-        res = _link->do_receive(ctx, ptr, sz, sent);
-    }
-    // transmitting.store(false, std::memory_order_release);
-    // transmitting.notify_all();
-
-    // thread::Sleep(ctx, std::chrono::milliseconds(1));
+    dp_link.unlock();
 
     metrics.outbound_bytes += sent;
 
@@ -273,6 +267,9 @@ Result Connection::do_receive(context::Context& ctx, void *ptr, uint32_t sz,
 {
     // WARNING: This is the hot path of Data Plane.
     // Avoid any unnecessary operations that can increase latency.
+
+    if (!ptr || !sz)
+        return set_result(Result::error_no_buffer);
 
     metrics.inbound_bytes += sz;
 
@@ -311,31 +308,23 @@ Result Connection::set_link(context::Context& ctx, Connection *new_link,
     // WARNING: Changing a link will affect the hot path of Data Plane.
     // Avoid any unnecessary operations that can increase latency.
 
-    if (_link == new_link)
+    if (link() == new_link)
         return set_result(Result::success);
 
     // TODO: generate an Event (conn_changing_link).
     // Use context to cancel sending the Event.
 
-    // setting_link.store(true, std::memory_order_release);
-    // transmitting.wait(true, std::memory_order_acquire);
-    {
-        const std::lock_guard<std::mutex> lk(link_mx);
-
-        _link = new_link;
-    }
-    // setting_link.store(false, std::memory_order_release);
-    // setting_link.notify_one();
+    dp_link.store_wait(new_link);
 
     // TODO: generate a post Event (conn_link_changed).
     // Use context to cancel sending the Event.
 
-    return set_result(Result::success); // TODO: return error if needed
+    return set_result(Result::success);
 }
 
 Connection * Connection::link()
 {
-    return _link;
+    return (Connection *)dp_link.load();
 }
 
 Result Connection::set_result(Result res)
@@ -580,8 +569,9 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
     } else if (config.has_st2110()) {
         conn_type = ConnectionType::CONN_TYPE_ST2110;
         const sdk::ConfigST2110& st2110 = config.st2110();
-        conn.st2110.remote_ip_addr = st2110.remote_ip_addr();
-        conn.st2110.remote_port    = st2110.remote_port();
+        conn.st2110.ip_addr        = st2110.ip_addr();
+        conn.st2110.port           = st2110.port();
+        conn.st2110.mcast_sip_addr = st2110.mcast_sip_addr();
         conn.st2110.transport      = st2110.transport();
         conn.st2110.pacing         = st2110.pacing();
         conn.st2110.payload_type   = st2110.payload_type();
@@ -646,8 +636,9 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
         config.set_allocated_multipoint_group(group);
     } else if (conn_type == ConnectionType::CONN_TYPE_ST2110) {
         auto st2110 = new sdk::ConfigST2110();
-        st2110->set_remote_ip_addr(conn.st2110.remote_ip_addr);
-        st2110->set_remote_port(conn.st2110.remote_port);
+        st2110->set_ip_addr(conn.st2110.ip_addr);
+        st2110->set_port(conn.st2110.port);
+        st2110->set_mcast_sip_addr(conn.st2110.mcast_sip_addr);
         st2110->set_transport(conn.st2110.transport);
         st2110->set_pacing(conn.st2110.pacing);
         st2110->set_payload_type(conn.st2110.payload_type);

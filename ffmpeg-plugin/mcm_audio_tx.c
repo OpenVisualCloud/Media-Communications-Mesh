@@ -17,6 +17,7 @@ typedef struct McmAudioMuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    int buf_queue_cap;
     int conn_delay;
     char *conn_type;
     char *urn;
@@ -66,14 +67,16 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
 
     if (!strcmp(s->conn_type, "multipoint-group")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_multipoint_group_audio_format, s->conn_delay,
+                     mcm_json_config_multipoint_group_audio_format,
+                     s->buf_queue_cap, s->conn_delay,
                      s->urn, s->channels, s->sample_rate,
                      avcodec_get_name(codecpar->codec_id), s->ptime);
                      
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
-                     mcm_json_config_st2110_audio_format, s->conn_delay,
-                     s->ip_addr, s->port, s->payload_type,
+                     mcm_json_config_st2110_audio_format,
+                     s->buf_queue_cap, s->conn_delay,
+                     s->ip_addr, s->port, "", s->payload_type,
                      s->channels, s->sample_rate,
                      avcodec_get_name(codecpar->codec_id), s->ptime);
     } else {
@@ -130,12 +133,12 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         len = FFMIN(max_len, size + s->unsent_len);
 
         if (len < max_len) {
-            memcpy((char *)s->unsent_buf->data + s->unsent_len, data, size);
+            memcpy((char *)s->unsent_buf->payload_ptr + s->unsent_len, data, size);
             s->unsent_len += size;
             break;
         }
 
-        dest = s->unsent_buf->data;
+        dest = s->unsent_buf->payload_ptr;
 
         if (s->unsent_len) {
             dest += s->unsent_len;
@@ -165,8 +168,8 @@ static int mcm_audio_write_trailer(AVFormatContext* avctx)
 
     if (s->unsent_buf) {
         /* zero the unused rest of the buffer */
-        memset((char *)s->unsent_buf->data + s->unsent_len, 0,
-               s->unsent_buf->data_len - s->unsent_len);
+        memset((char *)s->unsent_buf->payload_ptr + s->unsent_len, 0,
+               s->unsent_buf->payload_len - s->unsent_len);
 
         /* The last packet is shorter than default, so setting its length */
         mesh_buffer_set_payload_len(s->unsent_buf, s->unsent_len);
@@ -192,6 +195,7 @@ static int mcm_audio_write_trailer(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmAudioMuxerContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption mcm_audio_tx_options[] = {
+    { "buf_queue_cap", "set buffer queue capacity", OFFSET(buf_queue_cap), AV_OPT_TYPE_INT, {.i64 = 16}, 1, 255, ENC },
     { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, ENC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = ENC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = ENC },

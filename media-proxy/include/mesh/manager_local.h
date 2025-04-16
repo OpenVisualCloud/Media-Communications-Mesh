@@ -20,6 +20,8 @@ public:
                               mcm_conn_param *param, memif_conn_param *memif_param,
                               const Config& conn_config, std::string& err_str);
 
+    int activate_connection_sdk(context::Context& ctx, const std::string& id);
+
     int delete_connection_sdk(context::Context& ctx, const std::string& id,
                               bool do_unregister = true);
 

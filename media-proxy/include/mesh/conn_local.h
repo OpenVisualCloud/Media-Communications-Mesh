@@ -18,7 +18,7 @@ class Local : public Connection {
 
 public:
     Result configure_memif(context::Context& ctx, memif_ops_t *ops,
-                           size_t frame_size);
+                           size_t frame_size, uint8_t log2_ring_size);
     void get_params(memif_conn_param *param);
 
 protected:
