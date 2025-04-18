@@ -119,15 +119,17 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         if (!s->unsent_buf) {
             err = mesh_get_buffer(s->conn, &s->unsent_buf);
 
+            if (mcm_shutdown_requested()) {
+                mesh_put_buffer(&s->unsent_buf);
+                return AVERROR_EXIT;
+            }
+        
             if (err) {
                 av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
                        mesh_err2str(err), err);
                 return AVERROR(EIO);
             }
         }
-
-        if (mcm_shutdown_requested())
-            return AVERROR_EOF;
 
         max_len = s->unsent_buf->payload_len;
         len = FFMIN(max_len, size + s->unsent_len);
@@ -151,6 +153,10 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         size -= len;
 
         err = mesh_put_buffer(&s->unsent_buf);
+
+        if (mcm_shutdown_requested())
+            return AVERROR_EXIT;
+
         if (err) {
             av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
                    mesh_err2str(err), err);
