@@ -345,6 +345,11 @@ If you encounter any issues or need assistance, there are several ways to seek s
 
 We are here to help, so do not hesitate to reach out to us if you need assistance.
 
+## Note
+
+This project is under development.
+All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
+
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
 [license]: https://opensource.org/license/bsd-3-clause
