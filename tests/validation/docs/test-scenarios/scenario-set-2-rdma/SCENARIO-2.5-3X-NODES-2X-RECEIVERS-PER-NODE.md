@@ -38,9 +38,3 @@ flowchart LR
     proxy3 --> rxC1
     proxy3 --> rxC2
 ```
-
-### Payload Options
-
-* Blob
-* Video – Uncompressed
-* Audio
