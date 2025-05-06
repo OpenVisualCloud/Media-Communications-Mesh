@@ -99,19 +99,26 @@ static int mcm_video_write_packet(AVFormatContext* avctx, AVPacket* pkt)
     int err;
 
     err = mesh_get_buffer(s->conn, &buf);
+
+    if (mcm_shutdown_requested()) {
+        mesh_put_buffer(&buf);
+        return AVERROR_EXIT;
+    }
+
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
                mesh_err2str(err), err);
         return AVERROR(EIO);
     }
 
-    if (mcm_shutdown_requested())
-        return AVERROR_EOF;
-
     memcpy(buf->payload_ptr, pkt->data,
            pkt->size <= buf->payload_len ? pkt->size : buf->payload_len);
 
     err = mesh_put_buffer(&buf);
+
+    if (mcm_shutdown_requested())
+        return AVERROR_EXIT;
+
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
                 mesh_err2str(err), err);

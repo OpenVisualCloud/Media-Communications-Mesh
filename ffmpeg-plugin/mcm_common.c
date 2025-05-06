@@ -24,8 +24,17 @@ void mcm_replace_back_quotes(char *str) {
     }
 }
 
+static volatile __sighandler_t prev_SIGINT_handler;
+static volatile __sighandler_t prev_SIGTERM_handler;
+
 static void mcm_handle_signal(int signal) {
     atomic_store(&shutdown_requested, true);
+
+    if (signal == SIGINT && prev_SIGINT_handler) {
+        prev_SIGINT_handler(signal);
+    } else if (signal == SIGTERM && prev_SIGTERM_handler) {
+        prev_SIGTERM_handler(signal);
+    }
 }
 
 /**
@@ -66,9 +75,23 @@ int mcm_get_client(MeshClient **mc)
         if (err) {
             client = NULL;
         } else {
+            struct sigaction action = { 0 };
+                    
+            sigfillset(&action.sa_mask);
+
+            action.sa_flags = SA_RESTART;
+            action.sa_handler = mcm_handle_signal;
+
+            if (!prev_SIGINT_handler) {
+                prev_SIGINT_handler = signal(SIGINT, SIG_DFL);
+                sigaction(SIGINT, &action, NULL);
+            }
+            if (!prev_SIGTERM_handler) {
+                prev_SIGTERM_handler = signal(SIGTERM, SIG_DFL);
+                sigaction(SIGTERM, &action, NULL);
+            }
+
             refcnt = 1;
-            signal(SIGINT, mcm_handle_signal);
-            signal(SIGTERM, mcm_handle_signal);
         }
     } else {
         refcnt++;
