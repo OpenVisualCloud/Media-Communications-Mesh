@@ -144,7 +144,7 @@ function install_yum_package_dependencies()
         texinfo \
         wget \
         zlib-devel && \
-    python3 -m pip install meson~=0.61.2 ninja~=1.11.1 && \
+    python3 -m pip install meson ninja && \
     lib_install_nasm_from_rpm && \
     lib_build_and_install_libfdt && \
     lib_build_and_install_jsonc && \
