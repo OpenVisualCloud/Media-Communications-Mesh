@@ -23,7 +23,11 @@ replace `7.0` with `6.1` in the following script.
 1. Run the FFmpeg configuration tool
 
    ```bash
-   ./configure-ffmpeg.sh
+   ./configure-ffmpeg.sh 
+   ```
+   To be able to measure end-to-end please use following configuration parameters
+   ```bash
+   ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
    ```
 
 1. Build and install FFmpeg with the Media Communications Mesh FFmpeg plugin
@@ -187,6 +191,101 @@ On the remote machine start the VLC player and open a network stream from the fo
 udp://@:1234
 ```
 
+## Example – Run video transmission with end-to-end latency measurement
+
+This example demonstrates sending a video file from the 1st FFmpeg instance to the 2nd FFmpeg instance via Media Communications Mesh, with timestamps to measure end-to-end latency
+
+### Run Mesh Agent
+   ```bash
+   mesh-agent
+   ```
+
+### Receiver side setup
+
+1. Start Media Proxy
+
+   ```bash
+   sudo media_proxy        \
+        -d 0000:32:01.1    \
+        -i 192.168.96.11   \
+        -r 192.168.97.11   \
+        -p 9200-9299       \
+        -t 8002
+   ```
+
+1. Start FFmpeg to receive frames from Media Communications Mesh and save received data on hard drive
+
+   ```bash
+   sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg                                    \
+      -f mcm                                                                \
+          -conn_type st2110                                                 \
+          -transport st2110-20                                              \
+          -ip_addr 192.168.96.10                                            \
+          -port 9001                                                        \
+          -frame_rate 60                                                    \
+          -video_size 1920x1080                                             \
+          -pixel_format yuv422p10le                                         \
+          -i -                                                              \
+      -vf                                                                   \
+          "drawtext=fontsize=30:                                            \
+          text='1 Rx timestamp %{localtime\\:%H\\\\\:%M\\\\\:%S\\\\\:%3N}': \
+          x=10: y=50: fontcolor=white: box=1: boxcolor=black"               \
+      -vcodec mpeg4 recv.mp4
+   ```
+
+### Sender side setup
+
+1. Start Media Proxy
+
+   ```bash
+   sudo media_proxy        \
+        -d 0000:32:01.0    \
+        -i 192.168.96.10   \
+        -r 192.168.97.10   \
+        -p 9100-9199       \
+        -t 8001
+   ```
+
+2. Start FFmpeg to stream a video file to the receiver via Media Communications Mesh
+
+   ```bash
+   sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <video-file-path>            \
+   -vf                                                                   \
+       "drawtext=fontsize=30:                                            \
+       text='1 Tx timestamp %{localtime\\:%H\\\\\:%M\\\\\:%S\\\\\:%3N}': \
+       x=10: y=10: fontcolor=white: box=1: boxcolor=black"               \
+   -f mcm                                                                \
+      -conn_type st2110                                                  \
+      -transport st2110-20                                               \
+      -ip_addr 192.168.96.11                                             \
+      -port 9001                                                         \
+      -frame_rate 60                                                     \
+      -video_size 1920x1080                                              \
+      -pixel_format yuv422p10le -
+   ```
+
+   When sending a raw video file that lack metadata, you must explicitly provide FFmpeg
+   with the necessary video frame details. This includes specifying the format
+   `-f rawvideo`, pixel format `-pix_fmt`, and resolution `-s WxH`. Example:
+
+   ```bash
+   ffmpeg -f rawvideo -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
+   ```
+   To get meaningfull latency measurement it is also recommended to provide rate at which FFmpeg will read frames from file `-readrate`. Example:
+      ```bash
+   ffmpeg -f rawvideo -readrate 2.4 -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
+   ```
+   Please note that `-readrate` value have to be calculated based on `-frame_rate` parameter, simple equation is as follow: 
+   ```
+   readrate = frame_rate / 25
+   ```
+   example:
+   | frame_rate | readrate |
+   |------------|----------|
+   |    25      |    1     |
+   |    50      |    2     |
+   |    60      |   2.4    |
+
 
 ## Example – Run audio transmission, PCM 24-bit
 
@@ -274,6 +373,16 @@ root@my-machine:~# ffmpeg
 ffmpeg version n6.1.1-152-ge821e6c21d Copyright (c) 2000-2023 the FFmpeg developers
   built with gcc 11 (Ubuntu 11.4.0-1ubuntu1~22.04)
 ```
+
+
+While measuring latency, it is necessary to configure FFmpeg with additional parameters. If the error `No such filter: 'drawtext'` occurs, please reconfigure and rebuild FFmpeg:
+   ```bash
+   ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
+   ```
+
+
+
+
 
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
