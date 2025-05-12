@@ -23,7 +23,11 @@ replace `7.0` with `6.1` in the following script.
 1. Run the FFmpeg configuration tool
 
    ```bash
-   ./configure-ffmpeg.sh
+   ./configure-ffmpeg.sh 
+   ```
+   To be able to measure end-to-end please use following configuration parameters
+   ```bash
+   ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
    ```
 
 1. Build and install FFmpeg with the Media Communications Mesh FFmpeg plugin
@@ -274,6 +278,11 @@ root@my-machine:~# ffmpeg
 ffmpeg version n6.1.1-152-ge821e6c21d Copyright (c) 2000-2023 the FFmpeg developers
   built with gcc 11 (Ubuntu 11.4.0-1ubuntu1~22.04)
 ```
+
+While measuring latency, it is necessary to configure FFmpeg with additional parameters. If the error `No such filter: 'drawtext'` occurs, please reconfigure and rebuild FFmpeg:
+   ```bash
+   ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
+   ```
 
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
