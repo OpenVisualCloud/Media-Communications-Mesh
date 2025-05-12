@@ -10,6 +10,20 @@ Before reading this document, please read [FFmpeg Plugin](FFmpegPlugin.md) to fa
    ```bash
    ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
    ```
+## Time synchronization between hosts
+
+__host-1 Controller clock__
+```bash
+sudo ptp4l -i <network_interface_1> -m 2 
+```
+__host-2 Worker clock__
+```bash
+sudo ptp4l -i <network_interface_2> -m 2 -s
+sudo -s phc2sys -s <network_interface_2> -c CLOCK_REALTIME -O 0 -m
+```
+*Please note that `network_interface_1` and `network_interface_2` have to be physically connected to the same network
+
+
 ## Example – Run video transmission between 2 FFmpeg instances on the same host
 
 This example demonstrates sending a video file from the 1st FFmpeg instance to the 2nd FFmpeg instance via Media Communications Mesh on the same host, with timestamps to measure end-to-end latency using the `drawtext` feature in FFmpeg. The `drawtext` filter allows you to overlay timestamps directly onto the video stream, providing a visual representation of latency as the video is processed and transmitted between instances/hosts.
@@ -153,6 +167,26 @@ This example demonstrates sending a video file from the 1st FFmpeg instance to t
       -video_size 1920x1080                                               \
       -pixel_format yuv422p10le -
    ```
+
+## Stream postprocessing
+The generated stream can be analyzed manually, but it is a long process. To accelerate it, there is a small sript written in Python that automatically extracts and plots latency.
+
+1. install reuired python packages
+   ```bash
+      apt install tesseract-ocr
+      pip install opencv-python
+      pip install pytesseract
+      pip install matplotlib
+   ```
+2. Postprocess stream with command
+   ```bash
+      python text-detection.py <input_video_file> <output_image_name>
+   ```
+   ```bash
+      python text-detection.py recv.mp4 latency_chart.jpg
+   ```
+When preparing FFmpeg command if you change parameters of `drawtext` filter, especialy `fontsize`, `x`, `y` or `text`, you have to adjust script __text-detection.py__ too, please refer to function `extract_text_from_region(image, x, y, font_size, length)`
+
 
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
