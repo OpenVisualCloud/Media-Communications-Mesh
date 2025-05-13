@@ -138,14 +138,18 @@ static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         goto error_close_conn;
     }
     if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
-               mesh_err2str(err), err);
-        ret = AVERROR(EIO);
+        if (mcm_shutdown_requested()) {
+            ret = AVERROR_EXIT;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
+                   mesh_err2str(err), err);
+            ret = AVERROR(EIO);
+        }
         goto error_close_conn;
     }
 
     if (mcm_shutdown_requested()) {
-        ret = AVERROR_EOF;
+        ret = AVERROR_EXIT;
         goto error_put_buf;
     }
 

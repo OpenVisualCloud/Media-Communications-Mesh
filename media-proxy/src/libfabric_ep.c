@@ -196,8 +196,13 @@ int ep_send_buf(ep_ctx_t* ep_ctx, void* buf, size_t buf_size) {
     }
 
     int ret;
+    struct timespec start_time, current_time;
+    long elapsed_time_ms;
 
-    do {
+    // Get the current time as the start time
+    clock_gettime(CLOCK_MONOTONIC, &start_time);
+
+    for (;;) {
          // Check if the stop flag is set
         if (ep_ctx->stop_flag) {
             ERROR("RDMA stop flag is set. Aborting send.");
@@ -210,7 +215,22 @@ int ep_send_buf(ep_ctx_t* ep_ctx, void* buf, size_t buf_size) {
             struct fi_cq_entry cq_entry;
             (void)fi_cq_read(ep_ctx->cq_ctx.cq, &cq_entry, 1); // Drain CQ
         }
-    } while (ret == -EAGAIN);
+
+        // Get the current time and calculate the elapsed time
+        clock_gettime(CLOCK_MONOTONIC, &current_time);
+        elapsed_time_ms = (current_time.tv_sec - start_time.tv_sec) * 1000 +
+                        (current_time.tv_nsec - start_time.tv_nsec) / 1000000;
+
+        if (ret == -EAGAIN) {
+            // Check if the elapsed time exceeds the timeout interval
+            if (elapsed_time_ms > 100)
+                return -ETIMEDOUT;
+            else
+                continue;
+        }
+
+        break;
+    }
 
     return ret;
 }

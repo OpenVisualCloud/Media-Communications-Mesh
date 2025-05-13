@@ -1,6 +1,6 @@
 # Media Communications Mesh
 
-[![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build_standalone.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/build_standalone.yml)
+[![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/base_build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/base_build.yml)
 [![Coverity Status](https://scan.coverity.com/projects/30272/badge.svg?flat=1)](https://scan.coverity.com/projects/media-communications-mesh)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenVisualCloud/Media-Communications-Mesh/badge)](https://securityscorecards.dev/viewer/?uri=github.com/OpenVisualCloud/Media-Communications-Mesh)
 [![BSD 3-Clause][license-img]][license]
@@ -344,6 +344,11 @@ If you encounter any issues or need assistance, there are several ways to seek s
    Before submitting an issue, please check the existing documentation and discussions to avoid duplication and streamline the support process.
 
 We are here to help, so do not hesitate to reach out to us if you need assistance.
+
+## Note
+
+This project is under development.
+All source code and features on the main branch are for the purpose of testing or evaluation and not production ready.
 
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
