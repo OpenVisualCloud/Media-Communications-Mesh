@@ -8,7 +8,7 @@ Before reading this document, please read [FFmpeg Plugin](FFmpegPlugin.md) to fa
 
 1. Please follow build and install steps from [FFmpeg Plugin](FFmpegPlugin.md). with one exception, FFmpeg configuration tool requires additional parameters.
    ```bash
-   ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
+   ./configure-ffmpeg.sh ${FFMPEG_VER} --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
    ```
 ## Time synchronization between hosts
 
@@ -82,7 +82,7 @@ This example demonstrates sending a video file from the 1st FFmpeg instance to t
    ```bash
    ffmpeg -f rawvideo -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
    ```
-   To get meaningfull latency measurement it is also recommended to provide rate `-readrate` at which FFmpeg will read frames from file . Example:
+   To get meaningful latency measurement it is also recommended to provide rate `-readrate` at which FFmpeg will read frames from file. Example:
    ```bash
    ffmpeg -f rawvideo -readrate 2.4 -pix_fmt yuv422p10le -s 1920x1080 -i <video-file-path> ...
    ```
@@ -171,9 +171,12 @@ This example demonstrates sending a video file from the 1st FFmpeg instance to t
 ## Stream postprocessing
 The generated stream can be analyzed manually, but it is a long process. To accelerate it, there is a small sript written in Python that automatically extracts and plots latency.
 
-1. install reuired python packages
+1. install Install Tesseract OCR
    ```bash
       apt install tesseract-ocr
+   ```
+2. Install Python packages
+   ```bash
       pip install opencv-python
       pip install pytesseract
       pip install matplotlib
