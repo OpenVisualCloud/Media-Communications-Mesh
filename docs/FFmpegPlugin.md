@@ -25,9 +25,9 @@ replace `7.0` with `6.1` in the following script.
    ```bash
    ./configure-ffmpeg.sh 
    ```
-   To be able to measure end-to-end please use following configuration parameters
+   To be able to measure end-to-end latency please use following configuration parameters
    ```bash
-   ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
+   ./configure-ffmpeg.sh ${FFMPEG_VER} --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
    ```
 
 1. Build and install FFmpeg with the Media Communications Mesh FFmpeg plugin
@@ -281,7 +281,7 @@ ffmpeg version n6.1.1-152-ge821e6c21d Copyright (c) 2000-2023 the FFmpeg develop
 
 While measuring latency, it is necessary to configure FFmpeg with additional parameters. If the error `No such filter: 'drawtext'` occurs, please reconfigure and rebuild FFmpeg:
    ```bash
-   ./configure-ffmpeg.sh --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
+   ./configure-ffmpeg.sh ${FFMPEG_VER} --enable-libfreetype --enable-libharfbuzz --enable-libfontconfig
    ```
 
 <!-- References -->
