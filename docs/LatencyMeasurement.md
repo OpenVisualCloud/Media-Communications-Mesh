@@ -15,11 +15,12 @@ Before reading this document, please read [FFmpeg Plugin](FFmpegPlugin.md) to fa
 __host-1 Controller clock__
 ```bash
 sudo ptp4l -i <network_interface_1> -m 2 
+sudo  phc2sys -a -r -r -m
 ```
 __host-2 Worker clock__
 ```bash
 sudo ptp4l -i <network_interface_2> -m 2 -s
-sudo -s phc2sys -s <network_interface_2> -c CLOCK_REALTIME -O 0 -m
+sudo phc2sys -a -r
 ```
 *Please note that `network_interface_1` and `network_interface_2` have to be physically connected to the same network
 
@@ -177,16 +178,14 @@ The generated stream can be analyzed manually, but it is a long process. To acce
    ```
 2. Install Python packages
    ```bash
-      pip install opencv-python
-      pip install pytesseract
-      pip install matplotlib
+      pip install opencv-python~=4.11.0 pytesseract~=0.3.13 matplotlib~=3.10.3
    ```
 2. Postprocess stream with command
    ```bash
-      python text-detection.py <input_video_file> <output_image_name>
+      python text-detection.py <input_video_file> <optional_output_image_name>
    ```
    ```bash
-      python text-detection.py recv.mp4 latency_chart.jpg
+      python text-detection.py recv.mp4 latency.jpg
    ```
 When preparing FFmpeg command if you change parameters of `drawtext` filter, especialy `fontsize`, `x`, `y` or `text`, you have to adjust script __text-detection.py__ too, please refer to function `extract_text_from_region(image, x, y, font_size, length)`
 
