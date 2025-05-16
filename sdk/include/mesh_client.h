@@ -10,6 +10,7 @@
 #include <mutex>
 #include <string>
 #include "mesh_dp.h"
+#include "mesh_concurrency.h"
 
 namespace mesh {
 
@@ -44,6 +45,12 @@ public:
 
     void *grpc_client = nullptr;
 };
+
+/**
+ * Global context for managing SDK client life cycle.
+ * Termination signals trigger immediate closing of this context.
+ */
+extern context::Context gctx;
 
 } // namespace mesh
 

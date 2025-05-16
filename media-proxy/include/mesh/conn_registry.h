@@ -57,6 +57,11 @@ public:
         return ids;
     }
 
+    int size() {
+        std::shared_lock lk(mx);
+        return conns.size();
+    }
+
 private:
     std::unordered_map<std::string, Connection *> conns;
 
@@ -67,8 +72,6 @@ private:
     // Consider removing this mutex.
     std::shared_mutex mx;
 };
-
-extern Registry registry;
 
 } // namespace mesh::connection
 
