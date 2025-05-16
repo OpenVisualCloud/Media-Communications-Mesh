@@ -20,6 +20,7 @@ namespace mesh {
 
 using grpc::Server;
 using grpc::ServerBuilder;
+using grpc::ServerWriter;
 using grpc::ServerContext;
 using grpc::Status;
 using grpc::StatusCode;
@@ -30,6 +31,8 @@ using sdk::ActivateConnectionRequest;
 using sdk::ActivateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
+using sdk::RegisterRequest;
+using sdk::Event;
 using sdk::ConnectionConfig;
 using sdk::ConfigMultipointGroup;
 using sdk::ConfigST2110;
@@ -107,14 +110,21 @@ public:
         auto conn_id = req->conn_id();
 
         auto& mgr = connection::local_manager;
-        int err = mgr.activate_connection_sdk(ctx, conn_id);
-        if (err)
-            ; // log::error("activate_local_conn err (%d)", err);
-        else
+        auto ret = mgr.activate_connection_sdk(ctx, conn_id);
+        switch (ret) {
+        case connection::Result::success:
             log::info("[SDK] Connection active")("id", req->conn_id())
                                                 ("client_id", req->client_id());
+            resp->set_linked(true);
+            return Status::OK;
+        
+        case connection::Result::error_no_link_assigned:
+            resp->set_linked(false);
+            return Status::OK;
 
-        return Status::OK;
+        default:
+            return Status(StatusCode::INTERNAL, connection::result2str(ret));
+        }
     }
 
     Status DeleteConnection(ServerContext* sctx, const DeleteConnectionRequest* req,
@@ -133,6 +143,25 @@ public:
 
         return Status::OK;
     }
+
+    Status RegisterAndStreamEvents(ServerContext* sctx, const RegisterRequest* req,
+                                   ServerWriter<Event>* writer) override {
+        Event event;
+        event.mutable_client_registered()->set_client_id("New client!");
+
+        writer->Write(event);
+
+        // Simulate sending events
+        for (int i = 0; i < 10; ++i) {
+            Event event;
+            // Populate event fields as needed
+            writer->Write(event);
+
+            thread::Sleep(context::Background(), std::chrono::milliseconds(1000));
+        }
+
+        return Status::OK;
+    }    
 };
 
 void RunSDKAPIServer(context::Context& ctx) {

@@ -148,11 +148,14 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     return 0;
 }
 
-int LocalManager::activate_connection_sdk(context::Context& ctx, const std::string& id)
+Result LocalManager::activate_connection_sdk(context::Context& ctx, const std::string& id)
 {
     auto conn = registry_sdk.get(id);
     if (!conn)
-        return -1;
+        return Result::error_bad_argument;
+
+    if (!conn->link())
+        return Result::error_no_link_assigned;
 
     log::debug("Activate local conn")("conn_id", conn->id)("id", id);
 
@@ -163,7 +166,7 @@ int LocalManager::activate_connection_sdk(context::Context& ctx, const std::stri
         conn->resume(ctx);
     }
 
-    return 0;
+    return Result::success;
 }
 
 int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string& id,

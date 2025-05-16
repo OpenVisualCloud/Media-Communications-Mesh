@@ -6,12 +6,29 @@ syntax = "proto3";
 
 package sdk;
 
+import "type.proto";
 import "conn-config.proto";
 
 service SDKAPI {
+  rpc RegisterAndStreamEvents (RegisterRequest) returns (stream Event);
+
   rpc CreateConnection (CreateConnectionRequest) returns (CreateConnectionResponse);
   rpc ActivateConnection (ActivateConnectionRequest) returns (ActivateConnectionResponse);
   rpc DeleteConnection (DeleteConnectionRequest) returns (DeleteConnectionResponse);
+}
+
+message RegisterRequest {
+  repeated type.Tag tags = 1;
+}
+
+message ClientRegisteredEvent {
+  string client_id = 1;
+}
+
+message Event {
+  oneof event {
+    ClientRegisteredEvent client_registered = 1;
+  }
 }
 
 message CreateConnectionRequest {
@@ -32,6 +49,7 @@ message ActivateConnectionRequest {
 }
 
 message ActivateConnectionResponse {
+  bool linked = 1;
 }
 
 message DeleteConnectionRequest {
