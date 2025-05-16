@@ -6,12 +6,40 @@ syntax = "proto3";
 
 package sdk;
 
+import "type.proto";
 import "conn-config.proto";
 
 service SDKAPI {
+  rpc RegisterAndStreamEvents (RegisterRequest) returns (stream Event);
+
   rpc CreateConnection (CreateConnectionRequest) returns (CreateConnectionResponse);
   rpc ActivateConnection (ActivateConnectionRequest) returns (ActivateConnectionResponse);
   rpc DeleteConnection (DeleteConnectionRequest) returns (DeleteConnectionResponse);
+}
+
+message RegisterRequest {
+  repeated type.Tag tags = 1;
+}
+
+message ClientRegisteredEvent {
+  string client_id = 1;
+}
+
+message ConnectionUnlinkRequestedEvent {
+  string conn_id = 1;
+}
+
+message LoggerConfigChangedEvent {
+  repeated string filters = 1;
+}
+
+message Event {
+  oneof event {
+    ClientRegisteredEvent client_registered              = 1;
+    ConnectionUnlinkRequestedEvent conn_unlink_requested = 2;
+
+    LoggerConfigChangedEvent logger_config_changed       = 100;
+  }
 }
 
 message CreateConnectionRequest {
@@ -21,9 +49,8 @@ message CreateConnectionRequest {
 }
 
 message CreateConnectionResponse {
-  string client_id       = 1;
-  string conn_id         = 2;
-  bytes memif_conn_param = 3;
+  string conn_id         = 1;
+  bytes memif_conn_param = 2;
 }
 
 message ActivateConnectionRequest {
@@ -32,6 +59,7 @@ message ActivateConnectionRequest {
 }
 
 message ActivateConnectionResponse {
+  bool linked = 1;
 }
 
 message DeleteConnectionRequest {
