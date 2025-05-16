@@ -213,6 +213,9 @@ public:
     Connection * link();
 
     void set_config(const Config& cfg);
+    void set_parent(const std::string& parent_id);
+
+    void notify_parent_conn_unlink_requested(context::Context& ctx);
 
     Result establish(context::Context& ctx);
     Result establish_async(context::Context& ctx);
@@ -234,6 +237,7 @@ public:
     } info;
 
     Config config;
+    std::string legacy_sdk_id;
 
 protected:
     void set_state(context::Context& ctx, State new_state);
@@ -275,6 +279,7 @@ private:
     context::Context establish_ctx = context::WithCancel(context::Background());
     std::jthread establish_th;
     std::jthread shutdown_th;
+    std::string parent_id;
 };
 
 const char * kind2str(Kind kind, bool brief = false);

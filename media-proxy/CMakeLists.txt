@@ -66,6 +66,7 @@ endif()
 
 # Define the .proto files
 set(PROTO_FILES
+    ${PROTO_DIR}/type.proto
     ${PROTO_DIR}/conn-config.proto
     ${PROTO_DIR}/sdk.proto
     ${PROTO_DIR}/mediaproxy.proto
