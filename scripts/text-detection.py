@@ -98,7 +98,7 @@ def main():
     cap.release()
 
     plt.plot(time_differences, marker='o')
-    plt.title('Media Communication Mesh Latency')
+    plt.title('Media Communications Mesh Latency')
     plt.xlabel('Frame Index')
     plt.ylabel('Measured latency (ms)')
     plt.grid(True)
