@@ -88,16 +88,15 @@ function get_irdma_driver_tgz() {
 function get_and_patch_intel_drivers()
 {
     log_info "Intel drivers: Starting download and patching actions."
-    if [[ -d "${ICE_DIR}" ]]; then
-        rm -rf "${ICE_DIR}"
-        mkdir -p "${ICE_DIR}"
-    fi
     if [[ ! -d "${MTL_DIR}" ]]; then
         git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
     fi
     if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
+    fi
+    if [[ -d "${ICE_DIR}" ]]; then
+        rm -rf "${ICE_DIR}"
     fi
     git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
@@ -298,11 +297,11 @@ then
   fi
   if [[ "${1}" == "get-irdma" || "${1}" == "all" ]]; then
     if [[ "${1}" == "get-irdma" ]]; then
-      install_os_dependencies
+      install_os_dependencies && \
+      lib_install_fabrics
     fi
     build_install_and_config_irdma_drivers && \
-    config_intel_rdma_driver && \
-    lib_install_fabrics
+    config_intel_rdma_driver
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
       log_success "Finished: irdma driver configuration for Intel hardware backend."
