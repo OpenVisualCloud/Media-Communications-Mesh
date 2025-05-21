@@ -5,6 +5,7 @@ export WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
 export PERF_DIR="${DRIVERS_DIR}/perftest"
 
 . "${SCRIPT_DIR}/common.sh"
+. "${SCRIPT_DIR}/setup_build_env.sh"
 
 function print_usage()
 {
@@ -87,6 +88,10 @@ function get_irdma_driver_tgz() {
 function get_and_patch_intel_drivers()
 {
     log_info "Intel drivers: Starting download and patching actions."
+    if [[ -d "${ICE_DIR}" ]]; then
+        rm -rf "${ICE_DIR}"
+        mkdir -p "${ICE_DIR}"
+    fi
     if [[ ! -d "${MTL_DIR}" ]]; then
         git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
     fi
@@ -94,6 +99,7 @@ function get_and_patch_intel_drivers()
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
     pushd "${ICE_DIR}" && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
@@ -121,7 +127,6 @@ function build_install_and_config_irdma_drivers()
 {
     IRDMA_REPO="$(get_irdma_driver_tgz)"
     wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
     
     if pushd "${IRDMA_DIR}"; then
         "${IRDMA_DIR}/build_core.sh" -y || exit 2
