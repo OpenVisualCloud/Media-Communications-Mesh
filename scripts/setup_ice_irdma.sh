@@ -197,9 +197,9 @@ function install_perftest()
         exit 1
     fi
     make -j "${NPROC}" && \
-    as_root make install
+    as_root make install || \
+    { log_error log_error "Intel irdma: Could not make and/or install the perftest."; return 1; }
 
-    log_error "Intel irdma: Could not make and/or install the perftest."
     popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
     log_info "End of install_perftest method. Finished installing perftest-24.07.0."
 }
