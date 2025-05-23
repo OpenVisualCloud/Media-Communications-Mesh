@@ -5,12 +5,51 @@
  */
 #include "mesh_client.h"
 #include <string.h>
+#include <signal.h>
 #include "mesh_conn.h"
 #include "mesh_logger.h"
 #include "json.hpp"
 #include "mesh_dp_legacy.h"
 
 namespace mesh {
+
+static volatile __sighandler_t prev_SIGINT_handler;
+static volatile __sighandler_t prev_SIGTERM_handler;
+context::Context gctx = context::WithCancel(context::Background());
+
+static void HandleSignal(int signal) {
+    log::warn("Shutdown signal received");
+    gctx.cancel();
+
+    if (signal == SIGINT && prev_SIGINT_handler)
+        prev_SIGINT_handler(signal);
+    else if (signal == SIGTERM && prev_SIGTERM_handler)
+        prev_SIGTERM_handler(signal);
+}
+
+static void RegisterSigActionsOnce() {
+    static std::atomic<bool> initialized = false;
+    if (initialized)
+        return;
+
+    struct sigaction action = { 0 };
+            
+    sigfillset(&action.sa_mask);
+
+    action.sa_flags = SA_RESTART;
+    action.sa_handler = HandleSignal;
+
+    if (!prev_SIGINT_handler) {
+        prev_SIGINT_handler = signal(SIGINT, SIG_DFL);
+        sigaction(SIGINT, &action, NULL);
+    }
+    if (!prev_SIGTERM_handler) {
+        prev_SIGTERM_handler = signal(SIGTERM, SIG_DFL);
+        sigaction(SIGTERM, &action, NULL);
+    }
+
+    initialized = true;
+}
 
 class KeyValueString {
 public:
@@ -95,6 +134,7 @@ int ClientConfig::parse_from_json(const char *str)
 
 ClientContext::ClientContext()
 {
+    RegisterSigActionsOnce();
 }
 
 int ClientContext::shutdown()
@@ -123,7 +163,9 @@ int ClientContext::init(const char *config)
         return err;
 
     std::string endpoint = cfg.proxy_ip + ":" + cfg.proxy_port;
-    grpc_client = mesh_internal_ops.grpc_create_client_json(endpoint);
+    grpc_client = mesh_internal_ops.grpc_create_client_json(endpoint, this);
+    if (!grpc_client)
+        return -MESH_ERR_CLIENT_FAILED;
 
     return 0;
 }

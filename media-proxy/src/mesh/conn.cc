@@ -7,6 +7,7 @@
 #include "conn.h"
 #include <cstring>
 #include "logger.h"
+#include "event.h"
 
 namespace mesh::connection {
 
@@ -118,6 +119,18 @@ void Connection::set_config(const Config& cfg)
                   ("packet_time", config.audio_packet_time2str());
         break;
     }
+}
+
+void Connection::set_parent(const std::string& parent_id)
+{
+    this->parent_id = parent_id;
+}
+
+void Connection::notify_parent_conn_unlink_requested(context::Context& ctx)
+{
+    if (!parent_id.empty())
+            event::broker.send(ctx, parent_id, event::Type::conn_unlink_requested,
+                               {{"conn_id", id}});
 }
 
 Result Connection::establish(context::Context& ctx)
@@ -316,8 +329,8 @@ Result Connection::set_link(context::Context& ctx, Connection *new_link,
 
     dp_link.store_wait(new_link);
 
-    // TODO: generate a post Event (conn_link_changed).
-    // Use context to cancel sending the Event.
+    if (!new_link)
+        notify_parent_conn_unlink_requested(ctx);
 
     return set_result(Result::success);
 }
