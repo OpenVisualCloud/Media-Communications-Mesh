@@ -52,7 +52,9 @@ public:
 
     bool unsubscribe(thread::Channel<Event> *ch) {
         std::unique_lock lk(mx);
-        return channels.erase(ch) > 0;
+        auto ret = channels.erase(ch) > 0;
+        delete ch;
+        return ret;
     }
 
     bool send(context::Context& ctx, const std::string& consumer_id, const Type type,
