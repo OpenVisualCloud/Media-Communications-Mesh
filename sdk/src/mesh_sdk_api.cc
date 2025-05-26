@@ -17,6 +17,7 @@
 #include "mesh_logger.h"
 #include "mcm-version.h"
 #include "mesh_dp_legacy.h"
+#include "mesh_concurrency.h"
 
 using grpc::Channel;
 using grpc::Status;
@@ -27,6 +28,8 @@ using sdk::ActivateConnectionRequest;
 using sdk::ActivateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
+using sdk::RegisterRequest;
+using sdk::Event;
 using sdk::BufferPartition;
 using sdk::BufferPartitions;
 using sdk::ConnectionKind;
@@ -42,12 +45,14 @@ using sdk::AudioSampleRate;
 using sdk::AudioFormat;
 using sdk::AudioPacketTime;
 
+extern "C" void mcm_cancel_poll_event_memif(void *pctx);
+
 using namespace mesh;
 
 class SDKAPIClient {
 public:
-    SDKAPIClient(std::shared_ptr<Channel> channel)
-        : stub_(SDKAPI::NewStub(channel)) {}
+    SDKAPIClient(std::shared_ptr<Channel> channel, mesh::ClientContext *parent)
+        : stub_(SDKAPI::NewStub(channel)), parent(parent) {}
 
     int CreateConnection(std::string& conn_id, mcm_conn_param *param,
                          memif_conn_param *memif_param) {
@@ -69,7 +74,6 @@ public:
         Status status = stub_->CreateConnection(&context, req, &resp);
 
         if (status.ok()) {
-            client_id = resp.client_id();
             conn_id = resp.conn_id();
 
             int sz = resp.memif_conn_param().size();
@@ -183,7 +187,6 @@ public:
         Status status = stub_->CreateConnection(&context, req, &resp);
 
         if (status.ok()) {
-            client_id = resp.client_id();
             conn_id = resp.conn_id();
 
             int sz = resp.memif_conn_param().size();
@@ -216,7 +219,10 @@ public:
         Status status = stub_->ActivateConnection(&context, req, &resp);
 
         if (status.ok()) {
-            return 0;
+            if (!resp.linked())
+                return -EAGAIN;
+            else
+                return 0;
         } else {
             log::error("ActivateConnection RPC failed: %s",
                        status.error_message().c_str());
@@ -245,10 +251,108 @@ public:
         }
     }
 
+    void RegisterAndStreamEvents() {
+        RegisterRequest req;
+    
+        grpc::ClientContext context;
+
+        std::jthread shutdown_thread([&]() {
+            ctx.done();
+            context.TryCancel();
+        });
+    
+        thread::Defer d([&]{ ctx.cancel(); });
+
+        std::unique_ptr<grpc::ClientReader<Event>> reader(
+            stub_->RegisterAndStreamEvents(&context, req));
+
+        Event event;
+        while (reader->Read(&event)) {
+            if (event.has_client_registered()) {
+                client_id = event.client_registered().client_id();
+                registered_ch.send(ctx, true);
+            } else if (event.has_conn_unlink_requested()) {
+                auto conn_id = event.conn_unlink_requested().conn_id();
+                log::debug("[EVENT] Conn unlink requested")("id", conn_id);
+
+                if (parent) {
+                    std::lock_guard<std::mutex> lk(parent->mx);
+                    for (const auto conn : parent->conns) {
+                        conn->ctx.cancel();
+                        if (conn->grpc_conn) {
+                            auto handle = *(mcm_conn_context **)conn->grpc_conn;
+                            if (handle)
+                                mcm_cancel_poll_event_memif(handle->priv);
+                        }
+                    }
+                }
+            } else if (event.has_logger_config_changed()) {
+                log::debug("[EVENT] Logger config changed");
+            } else {
+                log::info("Received unknown event type");
+            }
+        }
+
+        Status status = reader->Finish();
+        registered_ch.send(ctx, false);
+        if (!status.ok()) {
+            if (status.error_code() == grpc::StatusCode::CANCELLED)
+                return;
+        
+            log::error("RegisterAndStreamEvents RPC failed: %s",
+                       status.error_message().c_str());
+        }
+    }
+
+    int Run() {
+        try {
+            th = std::jthread([this]() {
+                RegisterAndStreamEvents();
+            });
+        }
+        catch (const std::system_error& e) {
+            log::error("SDK client background thread creation failed");
+            Shutdown();
+            return -ENOMEM;
+        }
+
+        auto tctx = context::WithTimeout(gctx, std::chrono::milliseconds(15000));
+        auto registered = registered_ch.receive(tctx);
+        if (!registered.has_value()) {
+            if (tctx.cancelled() && !gctx.cancelled())
+                log::error("SDK client registration timeout");
+            Shutdown();
+            return -EIO;
+        }
+        if (!registered.value()) {
+            log::error("SDK client registration failed");
+            Shutdown();
+            return -EIO;
+        }
+
+        log::info("SDK client registered successfully")("client_id", client_id);
+
+        return 0;
+    }
+
+    void Shutdown() {
+        ctx.cancel();
+        if (th.joinable())
+            th.join();
+    }
+
     std::string client_id;
 
 private:
+    // void BackgroundProcess() {
+    //     thread::Sleep(ctx, std::chrono::milliseconds(1000));
+    // }
+
     std::unique_ptr<SDKAPI::Stub> stub_;
+    std::jthread th;
+    thread::Channel<bool> registered_ch;
+    context::Context ctx = context::WithCancel(context::Background());
+    mesh::ClientContext *parent = nullptr;
 };
 
 // DEBUG
@@ -269,18 +373,28 @@ void * mesh_grpc_create_client()
 
     auto client = new(std::nothrow)
         SDKAPIClient(grpc::CreateChannel("localhost:" + sdk_port, // gRPC default 50051
-                     grpc::InsecureChannelCredentials()));
+                     grpc::InsecureChannelCredentials()), nullptr);
     return client;
 }
 
-void * mesh_grpc_create_client_json(const std::string& endpoint) {
+void * mesh_grpc_create_client_json(const std::string& endpoint,
+                                    mesh::ClientContext *parent) {
 
     log::info("Media Communications Mesh SDK version %s #%s", VERSION_TAG, VERSION_HASH)
              ("endpoint", endpoint);
 
     auto client = new(std::nothrow)
         SDKAPIClient(grpc::CreateChannel(endpoint,
-                     grpc::InsecureChannelCredentials()));
+                     grpc::InsecureChannelCredentials()), parent);
+
+    if (client) {
+        auto err = client->Run();
+        if (err) {
+            delete client;
+            return NULL;
+        }
+    }
+
     return client;
 }
 
@@ -288,6 +402,7 @@ void mesh_grpc_destroy_client(void *client)
 {
     if (client) {
         auto cli = static_cast<SDKAPIClient *>(client);
+        cli->Shutdown();
         delete cli;
     }
 }
@@ -400,7 +515,16 @@ void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cf
         return NULL;
     }
 
-    err = cli->ActivateConnection(conn->conn_id);
+    while (!gctx.cancelled()) {
+        err = cli->ActivateConnection(conn->conn_id);
+        if (err == -EAGAIN) {
+            // Repeat after a small delay
+            thread::Sleep(gctx, std::chrono::milliseconds(50));
+            continue;
+        }
+        break;
+    }
+
     if (err) {
         log::error("Activate gRPC connection failed (%d)", err);
         mesh_grpc_destroy_conn(conn);
