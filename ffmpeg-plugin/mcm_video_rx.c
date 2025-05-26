@@ -128,19 +128,17 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     s->first_frame = false;
 
     err = mesh_get_buffer_timeout(s->conn, &buf, timeout);
-    if (err == -MESH_ERR_CONN_CLOSED) {
-        ret = AVERROR_EOF;
-        goto error_close_conn;
-    }
+    if (err == -MESH_ERR_CONN_CLOSED)
+        return AVERROR_EOF;
+
     if (err) {
         if (mcm_shutdown_requested()) {
-            ret = AVERROR_EXIT;
+            return AVERROR_EXIT;
         } else {
             av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
                    mesh_err2str(err), err);
-            ret = AVERROR(EIO);
+            return AVERROR(EIO);
         }
-        goto error_close_conn;
     }
 
     if (mcm_shutdown_requested()) {
@@ -161,17 +159,13 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
                mesh_err2str(err), err);
-        ret = AVERROR(EIO);
-        goto error_close_conn;
+        return AVERROR(EIO);
     }
 
     return len;
 
 error_put_buf:
     mesh_put_buffer(&buf);
-
-error_close_conn:
-    mesh_delete_connection(&s->conn);
 
     return ret;
 }

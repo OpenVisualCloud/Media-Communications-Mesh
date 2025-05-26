@@ -132,7 +132,7 @@ template <typename FRAME, typename HANDLE, typename OPS> class ST2110 : public C
 
         mtl_session = create_session(mtl_device, &ops);
         if (!mtl_session) {
-            log::error("Failed to create session");
+            log::error("Failed to create MTL session");
             set_state(ctx, State::closed);
             return set_result(Result::error_general_failure);
         }

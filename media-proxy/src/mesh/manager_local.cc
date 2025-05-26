@@ -18,10 +18,8 @@ namespace mesh::connection {
 
 LocalManager local_manager;
 
-// Temporary Multipoint group business logic.
-// std::string tx_id, rx_id;
-
 int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
+                                        const std::string& client_id,
                                         mcm_conn_param *param,
                                         memif_conn_param *memif_param,
                                         const Config& conn_config,
@@ -47,7 +45,6 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     memif_ops_t memif_ops = {};
     memif_ops.interface_id = 0;
 
-    // const char *type_str = param->type == is_tx ? "tx" : "rx";
     const char *type_str = conn_config.kind2str();
 
     snprintf(memif_ops.app_name, sizeof(memif_ops.app_name),
@@ -57,17 +54,10 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     snprintf(memif_ops.socket_path, sizeof(memif_ops.socket_path),
              "/run/mcm/media_proxy_%s_%s.sock", type_str, id.c_str());
 
-    // size_t frame_size = st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE,
-    //                                   param->width, param->height, false);
-    // size_t frame_size = st_frame_size(ST_FRAME_FMT_YUV422PLANAR10LE,
-    //                                   conn_config.payload.video.width,
-    //                                   conn_config.payload.video.height, false);
-
     size_t frame_size = conn_config.buf_parts.total_size();
 
     Local *conn;
 
-    // if (param->type == is_tx)
     if (conn_config.kind == sdk::CONN_KIND_TRANSMITTER)
         conn = new(std::nothrow) LocalRx;
     else
@@ -79,6 +69,7 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     }
 
     conn->set_config(conn_config);
+    conn->set_parent(client_id);
 
     uint8_t log2_ring_size = conn_config.buf_queue_capacity ?
                              std::log2(conn_config.buf_queue_capacity) : 0;
@@ -90,7 +81,6 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     }
 
     // Prepare parameters to register in Media Proxy
-    // std::string kind = param->type == is_tx ? "rx" : "tx";
     std::string kind = conn_config.kind == sdk::CONN_KIND_TRANSMITTER ? "rx" : "tx";
 
     lock();
@@ -113,10 +103,6 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
         return -1;
     }
 
-    // log::debug("MCM PARAMS")
-    //           ("remote", std::string(param->remote_addr.ip) + ":" + std::string(param->remote_addr.port))
-    //           ("local", std::string(param->local_addr.ip) + ":" + std::string(param->local_addr.port));
-
     conn->get_params(memif_param);
 
     // Assign id accessed by metrics collector.
@@ -125,34 +111,21 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     // TODO: Rethink the flow to avoid using two registries with different ids.
     registry_sdk.replace(id, conn);
     registry.add(agent_assigned_id, conn);
-    // log::debug("Added local conn")("conn_id", conn->id)("id", id);
 
-    // // Temporary Multipoint group business logic.
-    // // TODO: Remove when Multipoint Groups are implemented.
-    // if (param->type == is_tx) {
-    //     auto tx_conn = registry_sdk.get(tx_id);
-    //     if (tx_conn) {
-    //         conn->set_link(ctx, tx_conn);
-    //         tx_conn->set_link(ctx, conn);
-    //     }
-    //     rx_id = id;
-    // } else {
-    //     auto rx_conn = registry_sdk.get(rx_id);
-    //     if (rx_conn) {
-    //         conn->set_link(ctx, rx_conn);
-    //         rx_conn->set_link(ctx, conn);
-    //     }
-    //     tx_id = id;
-    // }
+    conn->legacy_sdk_id = id; // Remember the id generated in Media Proxy.
+    id = agent_assigned_id;   // Let SDK use the Agent provided id.
 
     return 0;
 }
 
-int LocalManager::activate_connection_sdk(context::Context& ctx, const std::string& id)
+Result LocalManager::activate_connection_sdk(context::Context& ctx, const std::string& id)
 {
-    auto conn = registry_sdk.get(id);
+    auto conn = registry.get(id);
     if (!conn)
-        return -1;
+        return Result::error_bad_argument;
+
+    if (!conn->link())
+        return Result::error_no_link_assigned;
 
     log::debug("Activate local conn")("conn_id", conn->id)("id", id);
 
@@ -163,13 +136,13 @@ int LocalManager::activate_connection_sdk(context::Context& ctx, const std::stri
         conn->resume(ctx);
     }
 
-    return 0;
+    return Result::success;
 }
 
 int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string& id,
                                         bool do_unregister)
 {
-    auto conn = registry_sdk.get(id);
+    auto conn = registry.get(id);
     if (!conn)
         return -1;
 
@@ -193,7 +166,7 @@ int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string
         }
 
         registry.remove(conn->id);
-        registry_sdk.remove(id);
+        registry_sdk.remove(conn->legacy_sdk_id);
     }
 
     auto res = conn->shutdown(ctx);
@@ -210,13 +183,13 @@ Connection * LocalManager::get_connection(context::Context& ctx,
 
 int LocalManager::reregister_all_connections(context::Context& ctx)
 {
-    auto ids = registry_sdk.get_all_ids();
+    auto ids = registry.get_all_ids();
 
     Config conn_config;
 
     log::debug("Re-register all conns");
     for (std::string id : ids) {
-        auto conn = registry_sdk.get(id);
+        auto conn = registry.get(id);
         if (!conn)
             continue;
 
@@ -244,9 +217,37 @@ int LocalManager::reregister_all_connections(context::Context& ctx)
     return 0;
 }
 
+int LocalManager::notify_all_shutdown_wait(context::Context& ctx)
+{
+    auto ids = registry.get_all_ids();
+
+    lock();
+
+    for (const std::string& id : ids) {
+        auto conn = registry.get(id);
+        if (conn)
+            conn->notify_parent_conn_unlink_requested(ctx);
+    }
+
+    unlock();
+
+    while (!ctx.cancelled()) {
+        if (registry.size() == 0)
+            return 0;
+
+        thread::Sleep(ctx, std::chrono::milliseconds(100));
+    }
+
+    return -1;
+}
+
 void LocalManager::shutdown(context::Context& ctx)
 {
-    auto ids = registry_sdk.get_all_ids();
+    auto err = notify_all_shutdown_wait(ctx);
+    if (err)
+        log::error("Shutdown notification timeout");
+
+    auto ids = registry.get_all_ids();
 
     for (const std::string& id : ids) {
         auto err = delete_connection_sdk(ctx, id);

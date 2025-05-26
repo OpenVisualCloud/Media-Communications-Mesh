@@ -17,10 +17,11 @@ namespace mesh::connection {
 class LocalManager {
 public:
     int create_connection_sdk(context::Context& ctx, std::string& id,
-                              mcm_conn_param *param, memif_conn_param *memif_param,
+                              const std::string& client_id, mcm_conn_param *param,
+                              memif_conn_param *memif_param,
                               const Config& conn_config, std::string& err_str);
 
-    int activate_connection_sdk(context::Context& ctx, const std::string& id);
+    Result activate_connection_sdk(context::Context& ctx, const std::string& id);
 
     int delete_connection_sdk(context::Context& ctx, const std::string& id,
                               bool do_unregister = true);
@@ -28,6 +29,8 @@ public:
     Connection * get_connection(context::Context& ctx, const std::string& id);
 
     int reregister_all_connections(context::Context& ctx);
+
+    int notify_all_shutdown_wait(context::Context& ctx);
 
     void shutdown(context::Context& ctx);
 

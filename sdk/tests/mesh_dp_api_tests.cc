@@ -100,7 +100,8 @@ void * mock_grpc_create_client()
     return NULL;
 }
 
-void * mock_grpc_create_client_json(const std::string& endpoint)
+void * mock_grpc_create_client_json(const std::string& endpoint,
+                                    mesh::ClientContext *parent)
 {
     return NULL;
 }
@@ -1533,15 +1534,16 @@ TEST(APITests_MeshBuffer, Test_ImportantConstants) {
     EXPECT_EQ(MESH_ERR_BAD_CONFIG_PTR,       1002);
     EXPECT_EQ(MESH_ERR_BAD_BUF_PTR,          1003);
     EXPECT_EQ(MESH_ERR_BAD_BUF_LEN,          1004);
-    EXPECT_EQ(MESH_ERR_CLIENT_CONFIG_INVAL,  1005);
-    EXPECT_EQ(MESH_ERR_MAX_CONN,             1006);
-    EXPECT_EQ(MESH_ERR_FOUND_ALLOCATED,      1007);
-    EXPECT_EQ(MESH_ERR_CONN_FAILED,          1008);
-    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INVAL,    1009);
-    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INCOMPAT, 1010);
-    EXPECT_EQ(MESH_ERR_CONN_CLOSED,          1011);
-    EXPECT_EQ(MESH_ERR_TIMEOUT,              1012);
-    EXPECT_EQ(MESH_ERR_NOT_IMPLEMENTED,      1013);
+    EXPECT_EQ(MESH_ERR_CLIENT_FAILED,        1005);
+    EXPECT_EQ(MESH_ERR_CLIENT_CONFIG_INVAL,  1006);
+    EXPECT_EQ(MESH_ERR_MAX_CONN,             1007);
+    EXPECT_EQ(MESH_ERR_FOUND_ALLOCATED,      1008);
+    EXPECT_EQ(MESH_ERR_CONN_FAILED,          1009);
+    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INVAL,    1010);
+    EXPECT_EQ(MESH_ERR_CONN_CONFIG_INCOMPAT, 1011);
+    EXPECT_EQ(MESH_ERR_CONN_CLOSED,          1012);
+    EXPECT_EQ(MESH_ERR_TIMEOUT,              1013);
+    EXPECT_EQ(MESH_ERR_NOT_IMPLEMENTED,      1014);
 
     EXPECT_EQ(MESH_TIMEOUT_DEFAULT,  -2);
     EXPECT_EQ(MESH_TIMEOUT_INFINITE, -1);

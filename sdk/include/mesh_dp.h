@@ -96,15 +96,16 @@ typedef struct{
 #define MESH_ERR_BAD_CONFIG_PTR       1002 ///< Bad configuration pointer
 #define MESH_ERR_BAD_BUF_PTR          1003 ///< Bad buffer pointer
 #define MESH_ERR_BAD_BUF_LEN          1004 ///< Bad buffer length
-#define MESH_ERR_CLIENT_CONFIG_INVAL  1005 ///< Invalid client config
-#define MESH_ERR_MAX_CONN             1006 ///< Reached max connections number
-#define MESH_ERR_FOUND_ALLOCATED      1007 ///< Found allocated resources
-#define MESH_ERR_CONN_FAILED          1008 ///< Connection creation failed
-#define MESH_ERR_CONN_CONFIG_INVAL    1009 ///< Invalid connection config
-#define MESH_ERR_CONN_CONFIG_INCOMPAT 1010 ///< Incompatible connection config
-#define MESH_ERR_CONN_CLOSED          1011 ///< Connection is closed
-#define MESH_ERR_TIMEOUT              1012 ///< Timeout occurred
-#define MESH_ERR_NOT_IMPLEMENTED      1013 ///< Feature not implemented yet
+#define MESH_ERR_CLIENT_FAILED        1005 ///< Client creation failed
+#define MESH_ERR_CLIENT_CONFIG_INVAL  1006 ///< Invalid client config
+#define MESH_ERR_MAX_CONN             1007 ///< Reached max connections number
+#define MESH_ERR_FOUND_ALLOCATED      1008 ///< Found allocated resources
+#define MESH_ERR_CONN_FAILED          1009 ///< Connection creation failed
+#define MESH_ERR_CONN_CONFIG_INVAL    1010 ///< Invalid connection config
+#define MESH_ERR_CONN_CONFIG_INCOMPAT 1011 ///< Incompatible connection config
+#define MESH_ERR_CONN_CLOSED          1012 ///< Connection is closed
+#define MESH_ERR_TIMEOUT              1013 ///< Timeout occurred
+#define MESH_ERR_NOT_IMPLEMENTED      1014 ///< Feature not implemented yet
 
 /**
  * @brief Create a new mesh client.
