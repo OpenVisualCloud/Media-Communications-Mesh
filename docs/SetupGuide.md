@@ -24,7 +24,7 @@
 
     * **Option A** – Use environment preparation scripts. The scripts were tested under environments with `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, and `CentOS Stream9`, installed alongside the Linux kernel 5.15.
 
-        Run the following commands, execute `setup_ice_irdma.sh` to setup and install patched drivers for NIC cards, and exec second one `setup_build_env.sh` to prepared whole build stack that is mandatory for bare metal version build of MCM:
+        Run the following commands, execute `setup_build_env.sh` to prepare the whole build stack and build dependencies that are mandatory for bare metal version of MCM and exec second one `setup_ice_irdma.sh all` to download, patch, setup and install ICE as well as iRDMA drivers for CLV NIC (E810) cards:
 
         ```bash
         sudo ./scripts/setup_build_env.sh
@@ -51,10 +51,10 @@
                 sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
                 ```
 
-        * Install the `irdma` driver and `libfabric`:
+        * Install the `irdma` driver and `libfabric` using script:
 
             ```bash
-            ./scripts/setup_rdma_env.sh install
+            ./scripts/setup_ice_irdma.sh get-irdma
             ```
             For more information, see [Building and installing libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source).
 
