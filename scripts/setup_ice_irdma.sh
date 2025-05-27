@@ -59,11 +59,6 @@ function install_os_dependencies()
             valgrind \
             build-essential \
             gcc \
-            python3-pyverbs \
-            libelf-dev \
-            infiniband-diags \
-            rdma-core \
-            ibverbs-utils \
             perftest \
             ethtool
 
