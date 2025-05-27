@@ -4,7 +4,6 @@ SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 export WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
 export PERF_DIR="${DRIVERS_DIR}/perftest"
 
-. "${SCRIPT_DIR}/common.sh"
 . "${SCRIPT_DIR}/setup_build_env.sh"
 
 function print_usage()
