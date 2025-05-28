@@ -233,8 +233,6 @@ const char * mesh_err2str(int err)
         return "Bad buffer pointer";
     case -MESH_ERR_BAD_BUF_LEN:
         return "Bad buffer length";
-    case -MESH_ERR_CLIENT_FAILED:
-        return "Client creation failed";
     case -MESH_ERR_CLIENT_CONFIG_INVAL:
         return "Invalid parameters in client configuration";
     case -MESH_ERR_MAX_CONN:

@@ -18,7 +18,6 @@
 #include "metrics_collector.h"
 #include "proxy_config.h"
 #include "mcm-version.h"
-#include "event.h"
 
 #include <execinfo.h>
 #include <dlfcn.h>
@@ -210,12 +209,6 @@ int main(int argc, char* argv[])
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
 
-    // Start event broker
-    auto event_ctx = context::WithCancel(context::Background());
-    std::thread eventBrokerThread([&]() {
-        event::broker.run(event_ctx);
-    });
-
     // Start ProxyAPI client
     auto err = RunProxyAPIClient(ctx);
     if (err)
@@ -240,8 +233,8 @@ int main(int argc, char* argv[])
     // Stop Local connection manager
     log::info("Shutting down Local conn manager");
     auto tctx = context::WithTimeout(context::Background(),
-                                     std::chrono::milliseconds(5000));
-    connection::local_manager.shutdown(tctx);
+                                     std::chrono::milliseconds(3000));
+    connection::local_manager.shutdown(ctx);
 
     metricsCollectorThread.join();
 
@@ -251,10 +244,6 @@ int main(int argc, char* argv[])
     // Shutdown SDK API server
     sdk_ctx.cancel();
     sdkApiThread.join();
-
-    // Shutdown event broker
-    event_ctx.cancel();
-    eventBrokerThread.join();
 
     log::info("Media Proxy exited");
     exit(0);
