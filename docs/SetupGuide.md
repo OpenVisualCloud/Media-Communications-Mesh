@@ -65,7 +65,7 @@
     Run the build script
 
     ```bash
-    ./build.sh
+    sudo ./build.sh
     ```
 
     This script builds and installs the following software components
