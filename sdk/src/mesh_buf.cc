@@ -21,20 +21,10 @@ int BufferContext::dequeue(int timeout_ms)
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
 
-    if (conn->ctx.cancelled())
-        return -MESH_ERR_CONN_CLOSED;
-
     int err;
     buf = mesh_internal_ops.dequeue_buf(conn->handle, timeout_ms, &err);
-    if (!buf) {
-        if (!err ||
-            err == MEMIF_ERR_POLL_CANCEL ||
-            err == MEMIF_ERR_DISCONNECT ||
-            err == MEMIF_ERR_DISCONNECTED)
-            return -MESH_ERR_CONN_CLOSED;
-        else
-            return err;
-    }
+    if (!buf)
+        return err ? err : -MESH_ERR_CONN_CLOSED;
 
     if (buf->len != conn->cfg.buf_parts.total_size()) {
         mesh_internal_ops.enqueue_buf(conn->handle, buf);
@@ -69,9 +59,6 @@ int BufferContext::enqueue(int timeout_ms)
     ConnectionContext *conn = (ConnectionContext *)__public.conn;
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
-
-    if (conn->ctx.cancelled())
-        return -MESH_ERR_CONN_CLOSED;
 
     if (conn->cfg.kind == MESH_CONN_KIND_SENDER) {
         auto base_ptr = (char *)buf->data;
