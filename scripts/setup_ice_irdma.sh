@@ -4,7 +4,7 @@ SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 export WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
 export PERF_DIR="${DRIVERS_DIR}/perftest"
 
-. "${SCRIPT_DIR}/common.sh"
+. "${SCRIPT_DIR}/setup_build_env.sh"
 
 function print_usage()
 {
@@ -61,7 +61,6 @@ function install_os_dependencies()
             python3-pyverbs \
             libelf-dev \
             infiniband-diags \
-            rdma-core \
             ibverbs-utils \
             perftest \
             ethtool
@@ -94,6 +93,10 @@ function get_and_patch_intel_drivers()
         log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
         return 1
     fi
+    if [[ -d "${ICE_DIR}" ]]; then
+        rm -rf "${ICE_DIR}"
+    fi
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
 
     pushd "${ICE_DIR}" && \
     patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
@@ -121,7 +124,6 @@ function build_install_and_config_irdma_drivers()
 {
     IRDMA_REPO="$(get_irdma_driver_tgz)"
     wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
     
     if pushd "${IRDMA_DIR}"; then
         "${IRDMA_DIR}/build_core.sh" -y || exit 2
@@ -193,9 +195,9 @@ function install_perftest()
         exit 1
     fi
     make -j "${NPROC}" && \
-    as_root make install
+    as_root make install || \
+    { log_error log_error "Intel irdma: Could not make and/or install the perftest."; return 1; }
 
-    log_error "Intel irdma: Could not make and/or install the perftest."
     popd || log_warning "Intel irdma: Could not popd (directory). Ignoring."
     log_info "End of install_perftest method. Finished installing perftest-24.07.0."
 }
@@ -293,11 +295,11 @@ then
   fi
   if [[ "${1}" == "get-irdma" || "${1}" == "all" ]]; then
     if [[ "${1}" == "get-irdma" ]]; then
-      install_os_dependencies
+      install_os_dependencies && \
+      lib_install_fabrics
     fi
     build_install_and_config_irdma_drivers && \
-    config_intel_rdma_driver && \
-    lib_install_fabrics
+    config_intel_rdma_driver
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
       log_success "Finished: irdma driver configuration for Intel hardware backend."
