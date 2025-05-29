@@ -234,7 +234,6 @@ int main(int argc, char* argv[])
     sdkApiThread.join();
 
     log::info("Media Proxy exited");
-    exit(0);
 
     return 0;
 }
