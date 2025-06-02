@@ -74,9 +74,10 @@ def main():
         print("Usage: python text-detection.py <input_video_file> <output_image_name>")
         sys.exit(1)
 
-    cap = cv.VideoCapture(sys.argv[1])
+    input_video_file = sys.argv[1]
+    cap = cv.VideoCapture(input_video_file)
     if not cap.isOpened():
-        print("Error: Could not open video file.")
+        print("Fatal: Could not open video file.")
         sys.exit(1)
    
     frame_idx = 0
@@ -95,13 +96,57 @@ def main():
         for future in futures:
             time_differences.append(future.result())
 
+    # Filter out zero values from time_differences
+    non_zero_time_differences = [td for td in time_differences if td != 0]
+
+    # Calculate the average latency excluding zero values
+    if non_zero_time_differences:
+        average_latency = np.mean(non_zero_time_differences)
+
+        # Filter out anomaly peaks that differ more than 25% from the average for average calculation
+        filtered_time_differences = [
+            td for td in non_zero_time_differences if abs(td - average_latency) <= 0.25 * average_latency
+        ]
+
+        # Calculate the average latency using the filtered data
+        filtered_average_latency = np.mean(filtered_time_differences)
+    else:
+        print("Fatal: No timestamps recognized in the video. No data for calculating latency.")
+        sys.exit(1)
+
+    # Plot the non-zero data
+    plt.plot(non_zero_time_differences, marker='o')
+    plt.title('End-to-End Latency — Media Communications Mesh')
+    plt.xlabel('Frame Index')
+    plt.ylabel('Latency, ms')
+    plt.grid(True)
+
+    # Adjust the layout to create more space for the text
+    plt.subplots_adjust(bottom=0.5)
+
+    # Prepare text for display and stdout
+    average_latency_text = f'Average End-to-End Latency: {filtered_average_latency:.2f} ms'
+    file_name = os.path.basename(input_video_file)
+    file_mod_time = datetime.fromtimestamp(os.path.getmtime(input_video_file)).strftime('%Y-%m-%d %H:%M:%S')
+    file_info_text = f'File: {file_name} | Last modified: {file_mod_time} UTC'
+    width = int(cap.get(cv.CAP_PROP_FRAME_WIDTH))
+    height = int(cap.get(cv.CAP_PROP_FRAME_HEIGHT))
+    fps = cap.get(cv.CAP_PROP_FPS)
+    video_properties_text = f'Resolution: {width}x{height} | FPS: {fps:.2f}'
+
     cap.release()
 
-    plt.plot(time_differences, marker='o')
-    plt.title('Media Communications Mesh Latency')
-    plt.xlabel('Frame Index')
-    plt.ylabel('Measured latency (ms)')
-    plt.grid(True)
+    # Display text on the plot
+    plt.text(0.5, -0.55, average_latency_text, 
+             horizontalalignment='center', verticalalignment='center', 
+             transform=plt.gca().transAxes)
+    plt.text(0.5, -0.85, file_info_text, 
+             horizontalalignment='center', verticalalignment='center', 
+             transform=plt.gca().transAxes)
+    plt.text(0.5, -1, video_properties_text, 
+             horizontalalignment='center', verticalalignment='center', 
+             transform=plt.gca().transAxes)
+
     if is_display_attached():
         plt.show()
 
@@ -109,7 +154,12 @@ def main():
         filename = sys.argv[2]
         if not filename.endswith('.jpg'):
             filename += '.jpg'
-        print("Saving the plot to: ", filename)
+        print("Saving the latency chart to: ", filename)
         plt.savefig(filename, format='jpg', dpi=300)
-    
+
+    # Print text to stdout
+    print(file_info_text)
+    print(video_properties_text)
+    print(average_latency_text)
+
 main()
