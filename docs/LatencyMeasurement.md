@@ -288,6 +288,9 @@ This example demonstrates sending a video file from the 1st FFmpeg instance to t
 
    See the [Sample latency diagram](#sample-latency-diagram).
 
+## Customization
+When modifying FFmpeg commands if you change parameters of `drawtext` filter, especialy `fontsize`, `x`, `y` or `text`, you have to adjust python script __text-detection.py__ too, please refer to function `extract_text_from_region(image, x, y, font_size, length)`
+
 
 <!-- References -->
 [license-img]: https://img.shields.io/badge/License-BSD_3--Clause-blue.svg
