@@ -23,7 +23,7 @@ replace `7.0` with `6.1` in the following script.
 1. Run the FFmpeg configuration tool
 
    ```bash
-   ./configure-ffmpeg.sh 
+   ./configure-ffmpeg.sh
    ```
 
 1. Build and install FFmpeg with the Media Communications Mesh FFmpeg plugin
