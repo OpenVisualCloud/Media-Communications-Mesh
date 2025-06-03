@@ -7,8 +7,6 @@
 #include <getopt.h>
 #include <thread>
 
-#include "api_server_tcp.h"
-
 #include <csignal>
 #include "concurrency.h"
 #include "sdk_api.h"
@@ -18,7 +16,6 @@
 #include "metrics_collector.h"
 #include "proxy_config.h"
 #include "mcm-version.h"
-#include "event.h"
 
 #include <execinfo.h>
 #include <dlfcn.h>
@@ -193,13 +190,6 @@ int main(int argc, char* argv[])
     log::info("RDMA dataplane local port ranges: %s",
               config::proxy.rdma.dataplane_local_ports.c_str());
 
-    std::string legacy_grpc_port = DEFAULT_GRPC_PORT;
-    auto legacy_tcp_port = std::to_string(config::proxy.sdk_api_port + 10000); // DEBUG
-    ProxyContext* proxy_ctx = new ProxyContext("0.0.0.0:" + legacy_grpc_port,
-                                               "0.0.0.0:" + legacy_tcp_port);
-    proxy_ctx->setDevicePort(config::proxy.st2110.dev_port_bdf);
-    proxy_ctx->setDataPlaneAddress(config::proxy.st2110.dataplane_ip_addr);
-
     // Intercept shutdown signals to cancel the main context
     auto signal_handler = [](int sig) {
         if (sig == SIGINT || sig == SIGTERM) {
@@ -209,12 +199,6 @@ int main(int argc, char* argv[])
     };
     std::signal(SIGINT, signal_handler);
     std::signal(SIGTERM, signal_handler);
-
-    // Start event broker
-    auto event_ctx = context::WithCancel(context::Background());
-    std::thread eventBrokerThread([&]() {
-        event::broker.run(event_ctx);
-    });
 
     // Start ProxyAPI client
     auto err = RunProxyAPIClient(ctx);
@@ -227,9 +211,6 @@ int main(int argc, char* argv[])
         collector.run(ctx);
     });
 
-    /* start TCP server */
-    std::thread tcpThread(RunTCPServer, proxy_ctx);
-
     // Start SDK API server
     auto sdk_ctx = context::WithCancel(context::Background());
     std::thread sdkApiThread([&]() { RunSDKAPIServer(sdk_ctx); });
@@ -240,8 +221,8 @@ int main(int argc, char* argv[])
     // Stop Local connection manager
     log::info("Shutting down Local conn manager");
     auto tctx = context::WithTimeout(context::Background(),
-                                     std::chrono::milliseconds(5000));
-    connection::local_manager.shutdown(tctx);
+                                     std::chrono::milliseconds(3000));
+    connection::local_manager.shutdown(ctx);
 
     metricsCollectorThread.join();
 
@@ -252,16 +233,7 @@ int main(int argc, char* argv[])
     sdk_ctx.cancel();
     sdkApiThread.join();
 
-    // Shutdown event broker
-    event_ctx.cancel();
-    eventBrokerThread.join();
-
     log::info("Media Proxy exited");
-    exit(0);
-
-    tcpThread.join();
-
-    delete (proxy_ctx);
 
     return 0;
 }

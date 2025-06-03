@@ -482,21 +482,6 @@ void mcm_destroy_connection_memif(memif_conn_context* pctx)
     return;
 }
 
-void mcm_cancel_poll_event_memif(void *pctx) {
-    memif_conn_context *pmemif = (memif_conn_context *)pctx;
-    int err;
-
-    if (!pmemif)
-        return;
-
-    err = memif_cancel_poll_event(memif_get_socket_handle(pmemif->conn));
-    if (err != MEMIF_ERR_SUCCESS) {
-        log_error("Error cancelling memif poll event");
-    } else {
-        log_info("Memif poll event cancelled");
-    }
-}
-
 // /* Alloc buffer from queue. */
 // void* memif_alloc_buffer(void* conn_ctx, size_t size)
 // {

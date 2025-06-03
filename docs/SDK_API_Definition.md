@@ -441,10 +441,9 @@ NOTE: The codes are negative integer values.
 | `-MESH_ERR_BAD_CONFIG_PTR`       | Bad configuration pointer      | The configuration pointer is NULL. |
 | `-MESH_ERR_BAD_BUF_PTR`          | Bad buffer pointer             | The buffer pointer is NULL.        |
 | `-MESH_ERR_BAD_BUF_LEN`          | Bad buffer length              | **Rx connection**: The buffer length is corrupted.<br>**Tx connection**: The buffer length is bigger than maximum. |
-| `-MESH_ERR_CLIENT_FAILED`        | Client creation failed         | An error occurred while creating an SDK client. |
 | `-MESH_ERR_CLIENT_CONFIG_INVAL`  | Invalid client config          | JSON client configuration string is malformed. |
 | `-MESH_ERR_MAX_CONN`             | Reached max connections number | An attempt to create a connection failed due to reaching the maximum number of connections defined in `"maxMediaConnections"`. |
-| `-MESH_ERR_FOUND_ALLOCATED`      | Found allocated resources      | When deleting an SDK client, some connections were found not closed. Delete all connections explicitly before deleting the client. |
+| `-MESH_ERR_FOUND_ALLOCATED`      | Found allocated resources      | When deleting a client, some connections were found not closed. Delete all connections explicitly before deleting the client. |
 | `-MESH_ERR_CONN_FAILED`          | Connection creation failed     | An error occurred while creating a connection. |
 | `-MESH_ERR_CONN_CONFIG_INVAL`    | Invalid connection config      | JSON connection configuration string is malformed or one of parameters has an incorrect value. |
 | `-MESH_ERR_CONN_CONFIG_INCOMPAT` | Incompatible connection config | Incompatible parameters found in the JSON connection configuration string. |

@@ -12,8 +12,7 @@
 #include "mesh_conn.h"
 
 void * mesh_grpc_create_client();
-void * mesh_grpc_create_client_json(const std::string& endpoint,
-                                    mesh::ClientContext *parent);
+void * mesh_grpc_create_client_json(const std::string& endpoint);
 void   mesh_grpc_destroy_client(void *client);
 void * mesh_grpc_create_conn(void *client, mcm_conn_param *param);
 void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cfg);

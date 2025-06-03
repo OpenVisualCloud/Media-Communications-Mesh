@@ -26,8 +26,7 @@ struct mesh_internal_ops_t {
     int (*enqueue_buf)(mcm_conn_context *pctx, mcm_buffer *buf);
 
     void * (*grpc_create_client)();
-    void * (*grpc_create_client_json)(const std::string& endpoint,
-                                      mesh::ClientContext *parent);
+    void * (*grpc_create_client_json)(const std::string& endpoint);
     void (*grpc_destroy_client)(void *client);
     void * (*grpc_create_conn)(void *client, mcm_conn_param *param);
     void * (*grpc_create_conn_json)(void *client, const mesh::ConnectionConfig& cfg);
@@ -177,8 +176,6 @@ public:
     void *grpc_conn = nullptr;
 
     ConnectionConfig cfg;
-
-    context::Context ctx = context::WithCancel(context::Background());
 };
 
 } // namespace mesh
