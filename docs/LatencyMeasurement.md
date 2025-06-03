@@ -57,6 +57,12 @@ flowchart LR
 
 If [FFmpeg Plugin](FFmpegPlugin.md) was installed earlier, remove its directory before proceeding with the following.
 
+1. Install required packages
+
+   ```bash
+   sudo apt install libfreetype6-dev libharfbuzz-dev libfontconfig1-dev
+   ```
+
 1. Clone the FFmpeg 7.0 repository and apply patches.
 
    ```bash
