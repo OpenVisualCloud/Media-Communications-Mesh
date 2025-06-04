@@ -584,6 +584,15 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
         return Result::error_conn_config_invalid;
     }
 
+    if (config.has_options()) {
+        const sdk::ConnectionOptions& conn_options = config.options();
+        if (conn_options.has_rdma()) {
+            const sdk::ConnectionOptionsRDMA& options_rdma = conn_options.rdma();
+            options.rdma.provider = options_rdma.provider();
+            options.rdma.num_endpoints = options_rdma.num_endpoints();
+        }
+    }
+
     if (config.has_video()) {
         payload_type = PayloadType::PAYLOAD_TYPE_VIDEO;
         const sdk::ConfigVideo& video = config.video();
@@ -649,6 +658,12 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
         rdma->set_max_latency_ns(conn.rdma.max_latency_ns);
         config.set_allocated_rdma(rdma);
     }
+
+    auto conn_options = config.mutable_options();
+    auto options_rdma = new sdk::ConnectionOptionsRDMA();
+    options_rdma->set_provider(options.rdma.provider);
+    options_rdma->set_num_endpoints(options.rdma.num_endpoints);
+    conn_options->set_allocated_rdma(options_rdma);
 
     if (payload_type == PayloadType::PAYLOAD_TYPE_VIDEO) {
         auto video = new sdk::ConfigVideo();

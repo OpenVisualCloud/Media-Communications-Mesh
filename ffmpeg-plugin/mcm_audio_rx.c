@@ -35,6 +35,9 @@ typedef struct McmAudioDemuxerContext {
     int sample_rate;
     char* ptime;
 
+    char *rdma_provider;
+    int rdma_num_endpoints;
+
     MeshClient *mc;
     MeshConnection *conn;
     bool first_frame;
@@ -58,7 +61,8 @@ static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_multipoint_group_audio_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->urn, s->channels, s->sample_rate,
+                     s->urn, s->rdma_provider, s->rdma_num_endpoints,
+                     s->channels, s->sample_rate,
                      avcodec_get_name(codec_id), s->ptime);
                      
     } else if (!strcmp(s->conn_type, "st2110")) {
@@ -66,6 +70,7 @@ static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id
                      mcm_json_config_st2110_audio_format,
                      s->buf_queue_cap, s->conn_delay,
                      s->ip_addr, s->port, s->mcast_sip_addr, s->payload_type,
+                     s->rdma_provider, s->rdma_num_endpoints,
                      s->channels, s->sample_rate,
                      avcodec_get_name(codec_id), s->ptime);
     } else {
@@ -219,6 +224,8 @@ static const AVOption mcm_audio_rx_options[] = {
     { "channels", "number of audio channels", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, DEC },
     { "sample_rate", "audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 48000}, 1, INT_MAX, DEC },
     { "ptime", "audio packet time", OFFSET(ptime), AV_OPT_TYPE_STRING, {.str = "1ms"}, .flags = DEC },
+    { "rdma_provider", "optional: set RDMA provider type ('tcp' or 'verbs')", OFFSET(rdma_provider), AV_OPT_TYPE_STRING, {.str = "tcp"}, .flags = DEC },
+    { "rdma_num_endpoints", "optional: set number of RDMA endpoints, range 1..8", OFFSET(rdma_num_endpoints), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 8, DEC },
     { NULL },
 };
 

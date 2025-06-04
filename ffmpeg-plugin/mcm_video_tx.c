@@ -33,6 +33,9 @@ typedef struct McmVideoMuxerContext {
     enum AVPixelFormat pixel_format;
     AVRational frame_rate;
 
+    char *rdma_provider;
+    int rdma_num_endpoints;
+
     MeshClient *mc;
     MeshConnection *conn;
 } McmVideoMuxerContext;
@@ -54,7 +57,8 @@ static int mcm_video_write_header(AVFormatContext* avctx)
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_multipoint_group_video_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->urn, s->width, s->height, av_q2d(s->frame_rate),
+                     s->urn, s->rdma_provider, s->rdma_num_endpoints,
+                     s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
@@ -63,6 +67,7 @@ static int mcm_video_write_header(AVFormatContext* avctx)
                      s->ip_addr, s->port, "",
                      s->transport, s->payload_type,
                      s->transport_pixel_format,
+                     s->rdma_provider, s->rdma_num_endpoints,
                      s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else {
@@ -162,6 +167,8 @@ static const AVOption mcm_video_tx_options[] = {
     { "video_size", "set video frame size given a string such as 640x480 or hd720", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1920x1080"}, 0, 0, ENC },
     { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV422P10LE}, AV_PIX_FMT_NONE, INT_MAX, ENC },
     { "frame_rate", "set video frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, ENC },
+    { "rdma_provider", "optional: set RDMA provider type ('tcp' or 'verbs')", OFFSET(rdma_provider), AV_OPT_TYPE_STRING, {.str = "tcp"}, .flags = ENC },
+    { "rdma_num_endpoints", "optional: set number of RDMA endpoints, range 1..8", OFFSET(rdma_num_endpoints), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 8, ENC },
     { NULL },
 };
 

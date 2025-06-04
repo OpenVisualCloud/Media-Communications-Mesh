@@ -82,6 +82,12 @@ Creates a transmitter connection with the provided JSON configuration.
       "transportPixelFormat": "yuv422p10rfc4175"
     },
   },
+  "options": {
+    "rdma": {
+      "provider": "tcp",
+      "numEndpoints": 2,
+    }
+  },
   "payload": {
     "video": {
       "width": 1920,
@@ -118,6 +124,16 @@ to setup various connection and payload options. The examples correspond to the 
     "payloadType": 112
   }
 }
+```
+
+### Configure connection options
+```json
+"options": {
+  "rdma": {
+    "provider": "tcp",
+    "numEndpoints": 2,
+  }
+},
 ```
 
 ### Configure payload – Video
@@ -181,6 +197,12 @@ The above `maxPayloadSize` is set explicitly to define the buffer size for the B
       * `"transportPixelFormat"` – Required only for the `"st2110-20"` transport type, default "yuv422p10rfc4175".
    1. `"multipointGroup"` – Multipoint Group connection.
       * `"urn"` – Uniform Resource Name (URN) of the multipoint group, e.g. "ipv4:224.0.0.1:9003".
+* `"options"` – Connection options
+   * `"rdma"` – RDMA bridge related parameters
+      * `"provider"` – Default "tcp".
+         * `"tcp"`
+         * `"verbs"`
+      * `"numEndpoints"` – Integer number of RDMA endpoints between 1-8, default 1.
 * `"payload"` – Payload type, options 1-3 are the following:
    1. `"video"` – Video payload.
       * `"width"` – Integer frame width, e.g. 1920.
