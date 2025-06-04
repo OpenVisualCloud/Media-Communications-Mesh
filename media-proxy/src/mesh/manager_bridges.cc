@@ -217,6 +217,10 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
         mcm_conn_param req = {};
 
+        log::debug("RDMA bridge options")
+                  ("provider", cfg.conn_config.options.rdma.provider)
+                  ("num_endpoints", cfg.conn_config.options.rdma.num_endpoints);
+
         strlcpy(req.local_addr.ip, config::proxy.rdma.dataplane_ip_addr.c_str(),
                 sizeof(req.local_addr.ip));
         strlcpy(req.remote_addr.ip, cfg.rdma.remote_ip_addr.c_str(),

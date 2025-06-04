@@ -93,6 +93,13 @@ Refer to the [SDK API Definition](SDK_API_Definition.md) for the options of conf
 |----------|------------------------------------------------------------------------|---------------------|
 | `-urn`   | Multipoint group Uniform Resource Name, or URN. Default "192.168.97.1" | `-urn 192.168.97.1` |
 
+### Connection options – RDMA ingress/egress bridge related parameters
+
+| Argument              | Description                               | Example                 |
+|-----------------------|-------------------------------------------|-------------------------|
+| `-rdma_provider`      | RDMA provider type. Default "tcp"         | `-rdma_provider verbs`  |
+| `-rdma_num_endpoints` | Number of RDMA endpoints, 1..8. Default 1 | `-rdma_num_endpoints 4` |
+
 ### Video payload parameters
 
 | Argument        | Description                                                                                    | Example                     |
