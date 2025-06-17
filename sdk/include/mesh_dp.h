@@ -131,17 +131,29 @@ int mesh_delete_client(MeshClient **mc);
 
 /**
  * @brief Create a new mesh transmitter connection.
+ * 
+ * Creates a new mesh transmitter connection from the given json configuration
+ * structure.
+ * 
  * @param [in] mc Pointer to a parent mesh client.
  * @param [out] conn Address of a pointer to the connection structure.
  * @param [in] cfg Pointer to a json configuration string.
+ *
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_create_tx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg);
 
 /**
  * @brief Create a new mesh receiver connection.
+ * 
+ * Creates a new mesh receiver connection from the given json configuration
+ * structure.
+ * 
  * @param [in] mc Pointer to a parent mesh client.
  * @param [out] conn Address of a pointer to the connection structure.
  * @param [in] cfg Pointer to a json configuration string.
+ *
+ * @return 0 on success; an error code otherwise.
  */
 int mesh_create_rx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg);
 
