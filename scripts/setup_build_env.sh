@@ -74,7 +74,7 @@ function install_ubuntu_package_dependencies()
         llvm \
         m4 \
         meson \
-        nasm cmake=3.22* \
+        nasm cmake=3.* \
         pkg-config \
         python3-dev \
         python3-pyelftools \
