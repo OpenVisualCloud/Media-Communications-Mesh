@@ -43,6 +43,7 @@ typedef struct {
     rdma_addr remote_addr;
     rdma_addr local_addr;
     enum direction dir;
+    struct fid_cq *shared_rx_cq;
 } ep_cfg_t;
 
 /**

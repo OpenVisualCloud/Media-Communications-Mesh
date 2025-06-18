@@ -1,12 +1,22 @@
 #include <queue>
 #include "conn_rdma.h"
+#include <netinet/in.h>   // for sockaddr_in
+#include <arpa/inet.h>    // for ntohs/htons
 
 namespace mesh::connection {
 
 std::atomic<int> Rdma::active_connections(0);
 
-Rdma::Rdma() : ep_ctx(nullptr), init(false), trx_sz(0), m_dev_handle(nullptr),
-    buffer_block(nullptr), queue_size(0) {
+Rdma::Rdma()
+  : ep_ctxs{}    
+  , next_tx_idx(0)                     // start round-robin at 0
+  , next_rx_idx(0)
+  , init(false)
+  , trx_sz(0)
+  , m_dev_handle(nullptr)
+  , buffer_block(nullptr)
+  , queue_size(0)
+{
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
     ++active_connections;
 }
@@ -176,6 +186,27 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
 {
 
     trx_sz = request.payload_args.rdma_args.transfer_size;
+    // --- validate & assign RDMA provider ---
+    if (request.payload_args.rdma_args.provider
+        && *request.payload_args.rdma_args.provider) {
+        rdma_provider = request.payload_args.rdma_args.provider;
+    } else {
+        log::warn("RDMA provider not specified, defaulting to 'verbs'");
+        rdma_provider = "verbs";
+    }
+
+    // --- validate & assign number of endpoints ---
+    uint32_t neps = request.payload_args.rdma_args.num_endpoints;
+    if (neps >= 1 && neps <= 8) {
+        rdma_num_eps = neps;
+    } else {
+        log::warn(
+            "RDMA num_endpoints {} out of valid range [1..8], defaulting to 4",
+            neps
+        );
+        rdma_num_eps = 4;
+    }
+
     _kind = kind();
 
     std::memset(&ep_cfg, 0, sizeof(ep_cfg));
@@ -205,75 +236,185 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
  */
 Result Rdma::on_establish(context::Context& ctx)
 {
+    // 1) Already initialized?
     if (init) {
         log::error("RDMA device is already initialized")("state", "initialized");
         set_state(ctx, State::active);
         return Result::error_already_initialized;
     }
 
+    // 2) Unblock buffer threads
     init_buf_available();
 
-    int ret;
+    int    ret;
     Result res;
 
+    // 3) Initialize the RDMA device if needed
     if (!m_dev_handle) {
+        m_dev_handle = (libfabric_ctx*)calloc(1, sizeof(libfabric_ctx));
+        if (!m_dev_handle) {
+            log::error("Failed to allocate RDMA context")("error", strerror(errno));
+            return Result::error_out_of_memory;
+        }
+        _kind = kind();
+        m_dev_handle->kind        = (_kind == Kind::receiver ? KIND_RECEIVER : KIND_TRANSMITTER);
+        m_dev_handle->local_ip    = ep_cfg.local_addr.ip;
+        m_dev_handle->local_port  = ep_cfg.local_addr.port;
+        m_dev_handle->remote_ip   = ep_cfg.remote_addr.ip;
+        m_dev_handle->remote_port = ep_cfg.remote_addr.port;
+        m_dev_handle->provider_name = strdup(rdma_provider.c_str());
         ret = libfabric_dev_ops.rdma_init(&m_dev_handle);
+
         if (ret) {
-            log::error("Failed to initialize RDMA device")("ret", ret);
+            log::error("Failed to initialize RDMA device")("ret", ret)
+                     ("error", fi_strerror(-ret));
+            free(m_dev_handle);
+            m_dev_handle = nullptr;
+            set_state(ctx, State::closed);
+            return Result::error_initialization_failed;
+        }
+        log::info("RDMA device successfully initialized");
+    }
+
+    auto bump_sock = [](sockaddr_in* sa, uint32_t delta)
+    {
+        unsigned short p = ntohs(sa->sin_port);
+        sa->sin_port    = htons(static_cast<unsigned short>(p + delta));
+    };
+
+    auto bump_port_str = [](char dst[6], const char src[6], uint32_t delta)
+    {
+        unsigned short p = static_cast<unsigned short>(std::atoi(src));
+        std::snprintf(dst, 6, "%u", p + delta);
+    };
+
+    /* --------------------------------------------------------------------
+    * 4) Allocate per‐EP arrays by rdma_num_eps
+    * ------------------------------------------------------------------*/
+    std::vector<libfabric_ctx*>  devs(rdma_num_eps, nullptr);
+    std::vector<fi_info*>        info_dups(rdma_num_eps, nullptr);
+
+    // resize our member‐vector of EP pointers
+    ep_ctxs.resize(rdma_num_eps);
+
+    /* EP-0 re-uses the context already created in rdma_init() */
+    devs[0] = m_dev_handle;                 // never null
+    info_dups[0] = m_dev_handle->info;      // keep for uniform cleanup
+
+    /* create clones for EP-1 … EP-N */
+    for (uint32_t i = 1; i < rdma_num_eps; ++i) {
+        fi_info* dup = fi_dupinfo(m_dev_handle->info);
+        if (!dup) {
+            log::error("fi_dupinfo failed for EP %u", i)("kind", kind2str(_kind));
+            set_state(ctx, State::closed);
+            return Result::error_initialization_failed;
+        }
+        info_dups[i] = dup;
+
+        if (dup->src_addr  && dup->src_addrlen  == sizeof(sockaddr_in))
+            bump_sock(reinterpret_cast<sockaddr_in*>(dup->src_addr),  i);
+        if (dup->dest_addr && dup->dest_addrlen == sizeof(sockaddr_in))
+            bump_sock(reinterpret_cast<sockaddr_in*>(dup->dest_addr), i);
+
+        devs[i]                 = static_cast<libfabric_ctx*>(calloc(1, sizeof(libfabric_ctx)));
+        *devs[i]                = *m_dev_handle;   // shallow copy
+        devs[i]->info           = dup;
+        devs[i]->is_initialized = true;
+    }
+
+    /* ---------- cfgs ---------------------------------------------------- */
+    std::vector<ep_cfg_t> cfgs(rdma_num_eps, ep_cfg);
+    for (uint32_t i = 1; i < rdma_num_eps; ++i) {
+        bump_port_str(cfgs[i].local_addr.port,  cfgs[0].local_addr.port,  i);
+        bump_port_str(cfgs[i].remote_addr.port, cfgs[0].remote_addr.port, i);
+    }
+
+    /* ---------- bring up endpoints ------------------------------------- */
+    for (uint32_t i = 0; i < rdma_num_eps; ++i) {
+        cfgs[i].rdma_ctx = devs[i];
+        if (i > 0) {
+            cfgs[i].shared_rx_cq = ep_ctxs[0]->cq_ctx.cq; // use EP-0 CQ for RX
+        } else {
+            cfgs[i].shared_rx_cq = nullptr; // no shared CQ for EP-0
+        }
+        int ret = libfabric_ep_ops.ep_init(&ep_ctxs[i], &cfgs[i]);
+        if (ret) {
+            log::error("Failed to initialize RDMA endpoint #%u", i)
+                    ("ret", ret)("error", fi_strerror(-ret));
+            for (uint32_t j = 0; j <= i; ++j)
+                if (ep_ctxs[j]) libfabric_ep_ops.ep_destroy(&ep_ctxs[j]);
+            for (uint32_t j = 1; j < rdma_num_eps; ++j) {
+                if (info_dups[j]) fi_freeinfo(info_dups[j]);
+                if (devs[j])      free(devs[j]);
+            }
             set_state(ctx, State::closed);
             return Result::error_initialization_failed;
         }
     }
 
-    ep_cfg.rdma_ctx = m_dev_handle;
-
-    ret = libfabric_ep_ops.ep_init(&ep_ctx, &ep_cfg);
-    if (ret) {
-        log::error("Failed to initialize RDMA endpoint context")("error", fi_strerror(-ret));
-        set_state(ctx, State::closed);
-        return Result::error_initialization_failed;
-    }
-    if(queue_size == 0) {
-        log::error("RDMA queue size is not set")("queue_size", queue_size);
-        set_state(ctx, State::closed);
-        return Result::error_bad_argument;
-    }
-
-    res = init_queue_with_elements(queue_size, trx_sz);
+    /* ---------- queue & MR section (no duplicate ‘res’) ----------------- */
+    res = init_queue_with_elements(queue_size, trx_sz + TRAILER);
     if (res != Result::success) {
-        log::error("Failed to initialize RDMA buffer queue")("trx_sz", trx_sz);
-        if (ep_ctx) {
-            libfabric_ep_ops.ep_destroy(&ep_ctx);
+        log::error("Failed to initialise RDMA buffer queue")("trx_sz", trx_sz);
+        for (auto &e : ep_ctxs) if (e) libfabric_ep_ops.ep_destroy(&e);
+        for (std::size_t i = 1; i < rdma_num_eps; ++i) {
+            if (info_dups[i]) fi_freeinfo(info_dups[i]);
+            if (devs[i])      free(devs[i]);
         }
         set_state(ctx, State::closed);
         return res;
     }
 
-    // Configure RDMA endpoint
-    res = configure_endpoint(ctx);
-    if (res != Result::success) {
-        log::error("RDMA configuring failed")("state", "closed");
-        if (ep_ctx) {
-            libfabric_ep_ops.ep_destroy(&ep_ctx);
+    /* ------------------------------------------------------------------
+    * 8) Register the **same** memory block on every endpoint
+    * -----------------------------------------------------------------*/
+    {
+        std::lock_guard<std::mutex> lock(queue_mutex);
+
+        std::size_t aligned_sz =                               /* one slot */
+            (((trx_sz + TRAILER) + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
+        std::size_t total_size = queue_size * aligned_sz;
+
+        for (auto* ep : ep_ctxs) {
+            int rc = libfabric_ep_ops.ep_reg_mr(ep, buffer_block, total_size);
+            if (rc) {
+                log::error("Memory registration failed")("error", fi_strerror(-rc));
+                for (auto &ee : ep_ctxs) if (ee) libfabric_ep_ops.ep_destroy(&ee);
+                for (std::size_t i = 1; i < rdma_num_eps; ++i) {
+                    if (info_dups[i]) fi_freeinfo(info_dups[i]);
+                    if (devs[i])      free(devs[i]);
+                }
+                set_state(ctx, State::closed);
+                return Result::error_memory_registration_failed;
+            }
         }
-        set_state(ctx, State::closed);
-        return res;
     }
 
+    /* ------------------------------------------------------------------
+    * 9) Start TX / RX / CQ threads
+    * -----------------------------------------------------------------*/
     init = true;
-    res = start_threads(ctx);
+    res  = start_threads(ctx);
     if (res != Result::success) {
         log::error("Failed to start RDMA threads")("state", "closed");
-        if (ep_ctx) {
-            libfabric_ep_ops.ep_destroy(&ep_ctx);
+        for (auto &e : ep_ctxs) if (e) libfabric_ep_ops.ep_destroy(&e);
+        for (std::size_t i = 1; i < rdma_num_eps; ++i) {
+            if (info_dups[i]) fi_freeinfo(info_dups[i]);
+            if (devs[i])      free(devs[i]);
         }
         set_state(ctx, State::closed);
         return res;
     }
 
+    /* ------------------------------------------------------------------
+    * 10) Ready for traffic
+    * -----------------------------------------------------------------*/
     set_state(ctx, State::active);
     return Result::success;
+
 }
+
+
 
 /**
  * @brief Cleans up RDMA resources and resets the state.
@@ -352,27 +493,38 @@ void Rdma::on_delete(context::Context& ctx)
  */
 Result Rdma::configure_endpoint(context::Context& ctx)
 {
-    if (!ep_ctx) {
-        log::error("RDMA endpoint context is not initialized");
-        return Result::error_wrong_state;
+    // Ensure we have initialized endpoints
+    for (size_t i = 0; i < ep_ctxs.size(); ++i) {
+        if (!ep_ctxs[i]) {
+            log::error("RDMA endpoint context #%zu is not initialized", i)
+                ("kind", kind2str(_kind));
+            return Result::error_wrong_state;
+        }
     }
 
     std::lock_guard<std::mutex> lock(queue_mutex);
 
     if (!buffer_block) {
-        log::error("Memory block for RDMA buffer queue is not allocated");
+        log::error("Memory block for RDMA buffer queue is not allocated")
+            ("kind", kind2str(_kind));
         return Result::error_out_of_memory;
     }
 
-    // Calculate the total size of the memory block
-    size_t total_size = buffer_queue.size() * ((trx_sz + PAGE_SIZE - 1) / PAGE_SIZE * PAGE_SIZE);
+    // Total size in bytes of the contiguous buffer pool
+    size_t buf_count    = buffer_queue.size();
+    size_t aligned_sz = (((trx_sz + TRAILER) + PAGE_SIZE - 1) / PAGE_SIZE) * PAGE_SIZE;
+    size_t total_size   = buf_count * aligned_sz;
 
-    // Register the entire memory block with the RDMA endpoint
-    int ret = libfabric_ep_ops.ep_reg_mr(ep_ctx, buffer_block, total_size);
-    if (ret) {
-        log::error("Memory registration failed for the RDMA buffer block")
-                  ("error", fi_strerror(-ret));
-        return Result::error_memory_registration_failed;
+    // Register the entire buffer block with each endpoint (QP)
+    for (size_t i = 0; i < ep_ctxs.size(); ++i) {
+        ep_ctx_t* e = ep_ctxs[i];
+        int ret = libfabric_ep_ops.ep_reg_mr(e, buffer_block, total_size);
+        if (ret) {
+            log::error("Memory registration failed on endpoint #%zu", i)
+                ("error", fi_strerror(-ret))
+                ("kind", kind2str(_kind));
+            return Result::error_memory_registration_failed;
+        }
     }
 
     return Result::success;
@@ -381,21 +533,28 @@ Result Rdma::configure_endpoint(context::Context& ctx)
 
 Result Rdma::cleanup_resources(context::Context& ctx)
 {
-    if (ep_ctx) {
-        int err = libfabric_ep_ops.ep_destroy(&ep_ctx);
-        if (err) {
-            log::error("Failed to destroy RDMA endpoint")("error", fi_strerror(-err));
-            return Result::error_general_failure;
+    // Destroy each endpoint (QP)
+    for (size_t i = ep_ctxs.size(); i >= 1; --i) {
+        ep_ctx_t*& e = ep_ctxs[i-1];
+        if (e) {
+            int err = libfabric_ep_ops.ep_destroy(&e);
+            if (err) {
+                log::error("Failed to destroy RDMA endpoint #%zu", i)
+                    ("error", fi_strerror(-err))
+                    ("kind", kind2str(_kind));
+                return Result::error_general_failure;
+            }
+            e = nullptr;
         }
     }
 
-    // Clean up the buffer queue
+    // Free and clear our buffer queue
     cleanup_queue();
 
-    // Mark RDMA as uninitialized
+    // Mark as uninitialized so we can re-establish if needed
     init = false;
-
     return Result::success;
 }
+
 
 } // namespace mesh::connection

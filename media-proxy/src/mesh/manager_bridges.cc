@@ -228,6 +228,8 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
         req.payload_args.rdma_args.transfer_size = cfg.conn_config.buf_parts.total_size();
         req.payload_args.rdma_args.queue_size = 16;
+        req.payload_args.rdma_args.provider = strdup(cfg.conn_config.options.rdma.provider.c_str());
+        req.payload_args.rdma_args.num_endpoints = cfg.conn_config.options.rdma.num_endpoints;
 
         // Create Egress RDMA Bridge
         if (cfg.kind == Kind::transmitter) {

@@ -204,6 +204,8 @@ typedef struct {
 typedef struct {
     size_t transfer_size;
     int queue_size;
+    char     *provider;
+    uint16_t  num_endpoints;
 } mcm_rdma_args;
 
 typedef struct {

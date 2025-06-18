@@ -52,6 +52,16 @@ file(GLOB PHYS_RDMA_TEST_SOURCES
 )
 
 # Find source files for physical-RDMA-specific tests
+file(GLOB PHYS_RDMA_RX_TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/rdma_rx_test.cpp"
+)
+
+# Find source files for physical-RDMA-specific tests
+file(GLOB PHYS_RDMA_TX_TEST_SOURCES
+    "${CMAKE_CURRENT_SOURCE_DIR}/rdma_tx_test.cpp"
+)
+
+# Find source files for physical-RDMA-specific tests
 file(GLOB RDMA_BASE_TEST_SOURCES
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_tests.cc"
     "${CMAKE_CURRENT_SOURCE_DIR}/conn_rdma_test_mocks.cc"
@@ -96,6 +106,26 @@ target_include_directories(conn_rdma_base_unit_tests PUBLIC
 add_executable(conn_rdma_real_ep_test ${PHYS_RDMA_TEST_SOURCES})
 target_link_libraries(conn_rdma_real_ep_test PRIVATE gtest gtest_main ${MP_LIB})
 target_include_directories(conn_rdma_real_ep_test PUBLIC
+    ${CMAKE_SOURCE_DIR}/media-proxy/include
+    ${CMAKE_BINARY_DIR}/media-proxy/generated
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
+)
+
+# Add an executable for physical-RDMA-RX-specific test
+add_executable(rdma_rx_test ${PHYS_RDMA_RX_TEST_SOURCES})
+target_link_libraries(rdma_rx_test PRIVATE gtest gtest_main ${MP_LIB} rdmacm)
+target_include_directories(rdma_rx_test PUBLIC
+    ${CMAKE_SOURCE_DIR}/media-proxy/include
+    ${CMAKE_BINARY_DIR}/media-proxy/generated
+    ${CMAKE_CURRENT_SOURCE_DIR}
+    ${CMAKE_SOURCE_DIR}/sdk/3rdparty/libmemif/src
+)
+
+# Add an executable for physical-RDMA-TX-specific test
+add_executable(rdma_tx_test ${PHYS_RDMA_TX_TEST_SOURCES})
+target_link_libraries(rdma_tx_test PRIVATE gtest gtest_main ${MP_LIB} rdmacm)
+target_include_directories(rdma_tx_test PUBLIC
     ${CMAKE_SOURCE_DIR}/media-proxy/include
     ${CMAKE_BINARY_DIR}/media-proxy/generated
     ${CMAKE_CURRENT_SOURCE_DIR}

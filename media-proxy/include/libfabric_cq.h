@@ -12,6 +12,7 @@ extern "C" {
 #endif
 
 #include <rdma/fi_eq.h>
+#include <stdbool.h>
 
 /* forward declaration */
 typedef struct ep_ctx_t ep_ctx_t;
@@ -30,6 +31,7 @@ typedef struct {
     uint64_t cq_cntr;
     int cq_fd;
     int (*eq_read)(ep_ctx_t *ep_ctx, struct fi_cq_err_entry *entry, int timeout);
+    bool external;
 } cq_ctx_t;
 
 #ifdef UNIT_TESTS_ENABLED

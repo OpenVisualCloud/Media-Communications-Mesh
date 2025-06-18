@@ -67,6 +67,10 @@
 #include <net/if.h>
 #include <netdb.h>
 
+#include <rdma/rdma_verbs.h>
+#include <rdma/rdma_cma.h>
+#include <errno.h>
+
 int get_interface_name_by_ip(const char *ip_str, char *if_name, size_t if_name_len) {
     struct ifaddrs *ifaddr, *ifa;
     int family;
@@ -110,11 +114,26 @@ static int enable_ep(ep_ctx_t *ep_ctx)
 {
     int ret;
 
-    RDMA_EP_BIND(ep_ctx->ep, ep_ctx->av, 0);
+    // Only bind to AV if it exists
+    if (ep_ctx->av) {
+        ret = fi_ep_bind(ep_ctx->ep, &ep_ctx->av->fid, 0);
+        if (ret) {
+            RDMA_PRINTERR("fi_ep_bind (AV)", ret);
+            return ret;
+        }
+    } else {
+        // For endpoints that don't require AV (like FI_EP_MSG)
+        printf("[enable_ep] Note: No AV to bind (normal for some endpoint types)\n");
+    }
 
-    /* TODO: Find out if unidirectional endpoint can be created */
-    RDMA_EP_BIND(ep_ctx->ep, ep_ctx->cq_ctx.cq, FI_SEND | FI_RECV);
+    // CQ binding is required for all endpoint types
+    ret = fi_ep_bind(ep_ctx->ep, &ep_ctx->cq_ctx.cq->fid, FI_SEND | FI_RECV);
+    if (ret) {
+        RDMA_PRINTERR("fi_ep_bind (CQ)", ret);
+        return ret;
+    }
 
+    // Now enable the endpoint
     ret = fi_enable(ep_ctx->ep);
     if (ret) {
         RDMA_PRINTERR("fi_enable", ret);
@@ -188,52 +207,53 @@ int ep_reg_mr(ep_ctx_t *ep_ctx, void *data_buf, size_t data_buf_size)
     return ret;
 }
 
-int ep_send_buf(ep_ctx_t* ep_ctx, void* buf, size_t buf_size) {
-    if (!ep_ctx || !buf || buf_size == 0) {
-        ERROR("Invalid parameters provided to ep_send_buf: ep_ctx=%p, buf=%p, buf_size=%zu",
-              ep_ctx, buf, buf_size);
+int ep_send_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size)
+{
+    if (!ep_ctx || !buf || buf_size == 0)
+        return -EINVAL;
+
+    if (ep_ctx->dest_av_entry == FI_ADDR_UNSPEC) {
+        fprintf(stderr, "[ep_send_buf] ERROR: Invalid destination address\n");
         return -EINVAL;
     }
 
-    int ret;
-    struct timespec start_time, current_time;
-    long elapsed_time_ms;
+    const int max_retries   = 30;
+    const int backoff_us[5] = {  50, 100, 250, 500, 1000 };   /* capped */
 
-    // Get the current time as the start time
-    clock_gettime(CLOCK_MONOTONIC, &start_time);
+    void *desc = ep_ctx->data_desc ? ep_ctx->data_desc : NULL;
+    int   retry = 0;
+    int   ret;
 
-    for (;;) {
-         // Check if the stop flag is set
-        if (ep_ctx->stop_flag) {
-            ERROR("RDMA stop flag is set. Aborting send.");
+    do {
+        if (ep_ctx->stop_flag)
             return -ECANCELED;
-        }
 
-        // Pass the buffer address as the context to fi_send
-        ret = fi_send(ep_ctx->ep, buf, buf_size, ep_ctx->data_desc, ep_ctx->dest_av_entry, buf);
-        if (ret == -EAGAIN) {
-            struct fi_cq_entry cq_entry;
-            (void)fi_cq_read(ep_ctx->cq_ctx.cq, &cq_entry, 1); // Drain CQ
-        }
+        ret = fi_send(ep_ctx->ep, buf, buf_size, desc,
+                      ep_ctx->dest_av_entry, buf);
+        if (ret == -FI_EAGAIN || ret == -FI_ENODATA) {
 
-        // Get the current time and calculate the elapsed time
-        clock_gettime(CLOCK_MONOTONIC, &current_time);
-        elapsed_time_ms = (current_time.tv_sec - start_time.tv_sec) * 1000 +
-                        (current_time.tv_nsec - start_time.tv_nsec) / 1000000;
+            (void)fi_cq_read(ep_ctx->cq_ctx.cq, NULL, 0);
 
-        if (ret == -EAGAIN) {
-            // Check if the elapsed time exceeds the timeout interval
-            if (elapsed_time_ms > 100)
+            if (retry == 0 || retry % 5 == 0)
+                fprintf(stderr,
+                        "[ep_send_buf] Connection not ready, retry %d/%d\n",
+                        retry, max_retries);
+
+            if (++retry > max_retries)
                 return -ETIMEDOUT;
-            else
-                continue;
+
+            /* short exponential back-off without polling the CQ */
+            int idx = retry < 5 ? retry : 4;
+            usleep(backoff_us[idx]);
         }
+    } while (ret == -FI_EAGAIN || ret == -FI_ENODATA);
 
-        break;
-    }
+    if (ret)
+        fprintf(stderr, "[ep_send_buf] fi_send failed: %s\n", fi_strerror(-ret));
 
-    return ret;
+    return ret;      /* 0 on success; <0 on error */
 }
+
 
 int ep_recv_buf(ep_ctx_t *ep_ctx, void *buf, size_t buf_size, void *buf_ctx)
 {
@@ -269,122 +289,156 @@ int ep_cq_read(ep_ctx_t *ep_ctx, void **buf_ctx, int timeout)
     return 0;
 }
 
+static void print_libfabric_error(const char *msg, int ret)
+{
+    fprintf(stderr, "%s: ret=%d (%s)\n", msg, ret, fi_strerror(-ret));
+}
+
 int ep_init(ep_ctx_t **ep_ctx, ep_cfg_t *cfg)
 {
     int ret;
-    struct fi_info *fi;
-    struct fi_info *hints;
+    struct fi_info     *old_info    = NULL;
 
-    if (!ep_ctx || !cfg)
+    if (!ep_ctx || !cfg) {
+        fprintf(stderr, "[ep_init] ERROR: ep_ctx/cfg is NULL\n");
         return -EINVAL;
+    }
 
-    if (cfg->rdma_ctx == NULL)
+    if (!cfg->rdma_ctx) {
+        fprintf(stderr, "[ep_init] ERROR: cfg->rdma_ctx is NULL\n");
         return -EINVAL;
+    }
 
+    // Validate device context is properly initialized
+    if (!cfg->rdma_ctx->is_initialized || !cfg->rdma_ctx->fabric || !cfg->rdma_ctx->domain ||
+        !cfg->rdma_ctx->info) {
+        fprintf(stderr, "[ep_init] ERROR: Device context not properly initialized\n");
+        return -EINVAL;
+    }
+
+    // Allocate endpoint context
     *ep_ctx = calloc(1, sizeof(ep_ctx_t));
     if (!(*ep_ctx)) {
-        RDMA_PRINTERR("libfabric ep context malloc fail\n", -ENOMEM);
+        fprintf(stderr, "[ep_init] ERROR: Failed to allocate endpoint context\n");
         return -ENOMEM;
     }
+
+    // Store reference to device context
     (*ep_ctx)->rdma_ctx = cfg->rdma_ctx;
     (*ep_ctx)->stop_flag = false;
 
-    hints = fi_dupinfo((*ep_ctx)->rdma_ctx->info);
-    if (!hints) {
-        RDMA_PRINTERR("fi_dupinfo failed\n", -ENOMEM);
-        libfabric_ep_ops.ep_destroy(ep_ctx);
-        return -ENOMEM;
+    // Create the endpoint using the domain from the device context
+    ret = fi_endpoint(cfg->rdma_ctx->domain, cfg->rdma_ctx->info, &(*ep_ctx)->ep, NULL);
+    if (ret) {
+        fprintf(stderr, "[ep_init] ERROR: fi_endpoint returned %d\n", ret);
+        goto err;
     }
 
-    hints->src_addr = NULL;
-    hints->src_addrlen = 0;
-    hints->dest_addr = NULL;
-    hints->dest_addrlen = 0;
-
-    char if_name[IF_NAMESIZE];
-
-    if (cfg->dir == RX) {
-        if (get_interface_name_by_ip(cfg->local_addr.ip, if_name, sizeof(if_name)) == 0) {
-            printf("Interface for IP %s is: %s\n", cfg->local_addr.ip, if_name);
-        } else {
-            printf("Interface for IP %s not found\n", cfg->local_addr.ip);
-        }
-
-        hints->domain_attr->name = strdup(if_name);
-        ret = fi_getinfo(FI_VERSION(1, 21), cfg->local_addr.ip, cfg->local_addr.port, FI_SOURCE,
-                         hints, &fi);
+    // Initialize completion queue but use caller-supplied CQ if present
+    if (cfg->shared_rx_cq) {
+        (*ep_ctx)->cq_ctx.cq = cfg->shared_rx_cq;
+        (*ep_ctx)->cq_ctx.external = true; // Indicate this CQ is owned by the caller
+        /* NOTE: do NOT close in ep_destroy – caller owns it */
     } else {
-        if (get_interface_name_by_ip(cfg->local_addr.ip, if_name, sizeof(if_name)) == 0) {
-            printf("Interface for IP %s is: %s\n", cfg->local_addr.ip, if_name);
-        } else {
-            printf("Interface for IP %s not found\n", cfg->local_addr.ip);
-        }
-
-        struct sockaddr_in local_sockaddr;
-        memset(&local_sockaddr, 0, sizeof(local_sockaddr));
-        local_sockaddr.sin_family = AF_INET;
-        local_sockaddr.sin_port = htons(0); // Any available port
-        inet_pton(AF_INET, cfg->local_addr.ip, &local_sockaddr.sin_addr);
-
-        hints->src_addr = (void *)&local_sockaddr;
-        hints->src_addrlen = sizeof(local_sockaddr);
-
-        hints->domain_attr->name = strdup(if_name);
-        ret = fi_getinfo(FI_VERSION(1, 21), cfg->remote_addr.ip, cfg->remote_addr.port, 0, hints,
-                         &fi);
-    }
-    if (ret) {
-        RDMA_PRINTERR("fi_getinfo", ret);
-        libfabric_ep_ops.ep_destroy(ep_ctx);
-        return ret;
-    }
-
-    ret = ep_alloc_res(*ep_ctx, (*ep_ctx)->rdma_ctx, fi, 1);
-    if (ret) {
-        RDMA_PRINTERR("ep_alloc_res fail\n", ret);
-        libfabric_ep_ops.ep_destroy(ep_ctx);
-        return ret;
-    }
-
-    ret = enable_ep((*ep_ctx));
-    if (ret) {
-        RDMA_PRINTERR("ep_enable fail\n", ret);
-        libfabric_ep_ops.ep_destroy(ep_ctx);
-        return ret;
-    }
-
-    if (fi->dest_addr) {
-        ret = ep_av_insert((*ep_ctx)->rdma_ctx, (*ep_ctx)->av, fi->dest_addr, 1,
-                           &(*ep_ctx)->dest_av_entry, 0, NULL);
+        ret = libfabric_cq_ops.rdma_cq_open(*ep_ctx, 0, RDMA_COMP_SREAD);
         if (ret) {
-            RDMA_PRINTERR("ep_av_insert fail\n", ret);
-            libfabric_ep_ops.ep_destroy(ep_ctx);
-            return ret;
+            fprintf(stderr, "[ep_init] ERROR: rdma_cq_open returned %d\n", ret);
+            goto err_ep;
+        }
+        (*ep_ctx)->cq_ctx.external = false;
+        cfg->shared_rx_cq = (*ep_ctx)->cq_ctx.cq; // Store for caller
+    }
+
+    // Create address vector if needed based on endpoint type
+    if (cfg->rdma_ctx->ep_attr_type == FI_EP_RDM || 
+        cfg->rdma_ctx->ep_attr_type == FI_EP_DGRAM) {
+        
+        struct fi_av_attr av_attr = {
+            .type = FI_AV_MAP,
+            .count = 1
+        };
+
+        ret = fi_av_open(cfg->rdma_ctx->domain, &av_attr, &(*ep_ctx)->av, NULL);
+        if (ret) {
+            fprintf(stderr, "[ep_init] ERROR: fi_av_open returned %d\n", ret);
+            goto err_cq;
         }
     }
 
-    fi_freeinfo(fi);
+    // Enable the endpoint
+    ret = enable_ep(*ep_ctx);
+    if (ret) {
+        fprintf(stderr, "[ep_init] ERROR: enable_ep returned %d\n", ret);
+        goto err_av;
+    }
 
+    // Insert destination address if available (TX mode)
+    if (cfg->dir == TX && cfg->rdma_ctx->info->dest_addr) {
+        ret = ep_av_insert((*ep_ctx)->rdma_ctx, (*ep_ctx)->av, 
+                          cfg->rdma_ctx->info->dest_addr, 1,
+                          &(*ep_ctx)->dest_av_entry, 0, NULL);
+        if (ret) {
+            fprintf(stderr, "[ep_init] ERROR: ep_av_insert returned %d\n", ret);
+            goto err_av;
+        }
+    }
+
+    fprintf(stderr, "[ep_init] Endpoint successfully initialized\n");
     return 0;
+
+err_av:
+    if ((*ep_ctx)->av) {
+        fi_close(&(*ep_ctx)->av->fid);
+    }
+
+err_cq:
+    if ((*ep_ctx)->cq_ctx.cq) {
+        fi_close(&(*ep_ctx)->cq_ctx.cq->fid);
+    }
+    if ((*ep_ctx)->cq_ctx.waitset) {
+        fi_close(&(*ep_ctx)->cq_ctx.waitset->fid);
+    }
+
+err_ep:
+    if ((*ep_ctx)->ep) {
+        fi_close(&(*ep_ctx)->ep->fid);
+    }
+
+err:
+    free(*ep_ctx);
+    *ep_ctx = NULL;
+    return ret;
 }
 
 int ep_destroy(ep_ctx_t **ep_ctx)
 {
-
     if (!ep_ctx || !(*ep_ctx))
         return -EINVAL;
 
-    libfabric_mr_ops.rdma_unreg_mr((*ep_ctx)->data_mr);
-    RDMA_CLOSE_FID((*ep_ctx)->ep);
+    ep_ctx_t *ctx = *ep_ctx;
 
-    RDMA_CLOSE_FID((*ep_ctx)->cq_ctx.cq);
-    RDMA_CLOSE_FID((*ep_ctx)->av);
-    RDMA_CLOSE_FID((*ep_ctx)->cq_ctx.waitset);
+    /* 1. unregister MR (ignore ENOENT-like errors) */
+    if (ctx->data_mr)
+        libfabric_mr_ops.rdma_unreg_mr(ctx->data_mr);
 
-    if (ep_ctx && *ep_ctx) {
-        free(*ep_ctx);
-        *ep_ctx = NULL;
-    }
+    /* 2. Close endpoint object itself */
+    RDMA_CLOSE_FID(ctx->ep);
+
+    /* 3. Close CQ only if this EP owns it
+     *    (ctx->cq_ctx.external == true  ⇒ shared CQ owned by caller) */
+    if (ctx->cq_ctx.cq && !ctx->cq_ctx.external)
+        RDMA_CLOSE_FID(ctx->cq_ctx.cq);
+
+    /* 3a. The waitset belongs to the CQ; close only if we closed the CQ */
+    if (ctx->cq_ctx.waitset && !ctx->cq_ctx.external)
+        RDMA_CLOSE_FID(ctx->cq_ctx.waitset);
+
+    /* 4. Address vector always owned by the EP */
+    RDMA_CLOSE_FID(ctx->av);
+
+    /* 5. finally free the context struct */
+    free(ctx);
+    *ep_ctx = NULL;
 
     return 0;
 }

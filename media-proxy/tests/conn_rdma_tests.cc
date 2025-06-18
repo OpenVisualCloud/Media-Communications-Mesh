@@ -10,6 +10,13 @@ using namespace mesh;
 using namespace connection;
 using namespace mesh::log;
 
+// Helper alias
+constexpr std::size_t NUM_EPS = RDMA_NUM_EPS;
+
+
+// ──────────────────────────────────────────────────────────────────────────────
+// A thin wrapper that exposes the protected internals we want to poke at
+// ──────────────────────────────────────────────────────────────────────────────
 class TestRdma : public Rdma {
   public:
     using Rdma::add_to_queue;
@@ -19,7 +26,7 @@ class TestRdma : public Rdma {
     using Rdma::configure_endpoint;
     using Rdma::consume_from_queue;
     using Rdma::ep_cfg;
-    using Rdma::ep_ctx;
+    using Rdma::ep_ctxs;
     using Rdma::init;
     using Rdma::init_queue_with_elements;
     using Rdma::m_dev_handle;
@@ -28,7 +35,9 @@ class TestRdma : public Rdma {
     using Rdma::on_shutdown;
     using Rdma::trx_sz;
     void set_kind(Kind kind) { _kind = kind; }
-    Result start_threads(mesh::context::Context& ctx) {return Result::success;}
+
+    /* don’t really spin up threads in the unit-test build */
+    Result start_threads(context::Context&) override { return Result::success; }
 };
 
 // Test fixture
@@ -93,21 +102,28 @@ TEST_F(RdmaTest, EstablishSuccess) {
         .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle), ::testing::Return(0)));
 
     EXPECT_CALL(*mock_ep_ops, ep_init(::testing::_, ::testing::_))
-        .WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx, ep_cfg_t * /*cfg*/) -> int {
             *ep_ctx = new ep_ctx_t();
             (*ep_ctx)->stop_flag = false;
-            (*ep_ctx)->ep = reinterpret_cast<fid_ep *>(0xdeadbeef); // Mock endpoint
-            return 0;                                               // Success
+            (*ep_ctx)->ep = reinterpret_cast<fid_ep *>(0xdeadbeef);
+            return 0;
         });
 
-    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
+    // Each endpoint registers its MR once:
+    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _))
+        .Times(NUM_EPS)
+        .WillRepeatedly(Return(0));
 
-    EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).WillOnce([](ep_ctx_t **ep_ctx) -> int {
-        delete *ep_ctx;
-        return 0;
-    });
+    // on_shutdown (called in Rdma’s destructor) must destroy all NUM_EPS ep_ctxs:
+    EXPECT_CALL(*mock_ep_ops, ep_destroy(_))
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx) -> int {
+            delete *ep_ctx;
+            return 0;
+        });
 
-    auto result = rdma->on_establish(ctx);
+    auto result = rdma->establish(ctx);
     ASSERT_EQ(result, Result::success);
     ASSERT_EQ(rdma->state(), State::active);
 }
@@ -121,10 +137,13 @@ TEST_F(RdmaTest, EstablishFailureEpInit) {
     EXPECT_CALL(*mock_dev_ops, rdma_init(::testing::_))
         .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle), ::testing::Return(0)));
 
-    // Simulate failure during ep_init
-    EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce(Return(-1));
+    // If the very first ep_init fails, Rdma::establish should abort immediately
+    EXPECT_CALL(*mock_ep_ops, ep_init(_, _))
+        .WillOnce(Return(-1))
+        .RetiresOnSaturation();
+    // No further ep_init calls are expected after a failure.
 
-    auto result = rdma->on_establish(ctx);
+    auto result = rdma->establish(ctx);
     ASSERT_EQ(result, Result::error_initialization_failed);
     ASSERT_EQ(rdma->state(), State::closed);
 }
@@ -140,19 +159,28 @@ TEST_F(RdmaTest, CleanupResources)
         .WillOnce(::testing::DoAll(::testing::SetArgPointee<0>(dev_handle),
                                    ::testing::Return(0)));
 
-    EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
-        *ep_ctx = new ep_ctx_t();
-        return 0;
-    });
+    // Expect rdma->establish to initialize all NUM_EPS endpoints:
+    EXPECT_CALL(*mock_ep_ops, ep_init(_, _))
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx, ep_cfg_t *) -> int {
+            *ep_ctx = new ep_ctx_t();
+            return 0;
+        });
 
-    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
+    // Each endpoint also registers its MR once:
+    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _))
+        .Times(NUM_EPS)
+        .WillRepeatedly(Return(0));
 
-    EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).WillOnce([](ep_ctx_t **ep_ctx) -> int {
-        delete *ep_ctx;
-        return 0;
-    });
+    // on_shutdown should destroy all NUM_EPS ep_ctxs:
+    EXPECT_CALL(*mock_ep_ops, ep_destroy(_))
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx) -> int {
+            delete *ep_ctx;
+            return 0;
+        });
 
-    auto result = rdma->on_establish(ctx);
+    auto result = rdma->establish(ctx);
     ASSERT_EQ(result, Result::success);
 
     // Trigger cleanup
@@ -164,18 +192,27 @@ TEST_F(RdmaTest, CleanupResources)
 
 TEST_F(RdmaTest, ValidateStateTransitions)
 {
-    EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
-        *ep_ctx = new ep_ctx_t();
-        return 0; // Success
-    });
+    // establish will call ep_init() once per endpoint
+    EXPECT_CALL(*mock_ep_ops, ep_init(_, _))
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx, ep_cfg_t *) -> int {
+            *ep_ctx = new ep_ctx_t();
+            return 0; // Success
+        });
 
-    EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).WillOnce([](ep_ctx_t **ep_ctx) -> int {
-        delete *ep_ctx;
-        *ep_ctx = nullptr;
-        return 0; // Success
-    });
+    // on_shutdown will destroy all endpoints
+    EXPECT_CALL(*mock_ep_ops, ep_destroy(_))
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx) -> int {
+            delete *ep_ctx;
+            *ep_ctx = nullptr;
+            return 0; // Success
+        });
 
-    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
+    // Each endpoint will register its MR once
+    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _))
+        .Times(NUM_EPS)
+        .WillRepeatedly(Return(0));
 
     libfabric_ctx *dev_handle = nullptr;
 
@@ -410,22 +447,30 @@ TEST_F(RdmaTest, RepeatedShutdown) {
     });
 
     // Mock ep_init
-    EXPECT_CALL(*mock_ep_ops, ep_init(_, _)).WillOnce([](ep_ctx_t **ep_ctx, ep_cfg_t *cfg) -> int {
-        *ep_ctx = new ep_ctx_t();
-        return 0; // Success
-    });
+    EXPECT_CALL(*mock_ep_ops, ep_init(_, _))
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx, ep_cfg_t *) -> int {
+            *ep_ctx = new ep_ctx_t();
+            return 0; // Success
+        });
 
     // Mock ep_reg_mr
-    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _)).WillRepeatedly(Return(0));
+    EXPECT_CALL(*mock_ep_ops, ep_reg_mr(_, _, _))
+        .Times(NUM_EPS)
+        .WillRepeatedly(Return(0));
 
     // Mock ep_destroy
-    EXPECT_CALL(*mock_ep_ops, ep_destroy(_)).Times(1).WillRepeatedly([](ep_ctx_t **ep_ctx) -> int {
-        delete *ep_ctx;
-        *ep_ctx = nullptr;
-        return 0; // Success
-    });
+    EXPECT_CALL(*mock_ep_ops, ep_destroy(_))
+        .Times(NUM_EPS)
+        .WillRepeatedly([](ep_ctx_t **ep_ctx) -> int {
+            delete *ep_ctx;
+            *ep_ctx = nullptr;
+            return 0; // Success
+        });
 
-    EXPECT_CALL(*mock_dev_ops, rdma_deinit(::testing::_)).Times(1).WillOnce(::testing::Return(0));
+    EXPECT_CALL(*mock_dev_ops, rdma_deinit(::testing::_))
+        .Times(1)
+        .WillOnce(::testing::Return(0));
 
     // Use ConfigureRdma helper to configure the RDMA instance
     ConfigureRdma(rdma, ctx, 1024, Kind::transmitter);

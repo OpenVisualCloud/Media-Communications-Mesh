@@ -28,6 +28,8 @@ public:
 protected:
     virtual Result start_threads(context::Context& ctx);
     void rdma_cq_thread(context::Context& ctx);
+    // one 64-bit counter shared by all RdmaTx
+    inline static std::atomic<uint64_t> global_seq{0};    
 };
 
 } // namespace mesh::connection
