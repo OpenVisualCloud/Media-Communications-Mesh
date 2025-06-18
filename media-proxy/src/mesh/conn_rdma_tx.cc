@@ -192,7 +192,6 @@ Result RdmaTx::on_receive(context::Context& ctx, void *ptr, uint32_t sz, uint32_
         std::memset(data_ptr + to_send, 0, trx_sz - to_send);
 
     // ---- write trailer at fixed offset ----
-    static constexpr size_t TRAILER = sizeof(uint64_t);
     uint64_t seq = global_seq.fetch_add(1, std::memory_order_relaxed);
     *reinterpret_cast<uint64_t*>(data_ptr + trx_sz) = seq;
 

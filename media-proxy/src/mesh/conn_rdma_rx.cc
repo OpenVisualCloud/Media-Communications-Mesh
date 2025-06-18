@@ -128,13 +128,6 @@ void RdmaRx::process_buffers_thread(context::Context& ctx)
  * @param ctx The context for managing thread cancellation and operations.
  */
 void RdmaRx::rdma_cq_thread(context::Context& ctx) {
-    // Window size must be a power of two and exceed any out‐of‐order gap
-    static constexpr size_t REORDER_WINDOW = 256;
-
-    // Per‐thread reorder buffer and head index
-    std::array<void*, REORDER_WINDOW> reorder_ring{};
-    uint64_t reorder_head = UINT64_MAX;
-
     constexpr int CQ_RETRY_DELAY_US = 100;
     struct fi_cq_entry cq_entries[CQ_BATCH_SIZE];
 
