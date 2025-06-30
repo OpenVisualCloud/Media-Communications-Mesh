@@ -7,6 +7,7 @@ namespace mesh::connection {
 
 RdmaRx::RdmaRx() : Rdma() {
     _kind = Kind::receiver; // Set the Kind in the constructor
+    next_rx_idx = 0; // Initialize the next receive index
 }
 
 RdmaRx::~RdmaRx()
@@ -133,7 +134,6 @@ void RdmaRx::rdma_cq_thread(context::Context& ctx) {
 
     while (!ctx.cancelled()) {
         bool did_work = false;
-
 
         // Poll each *unique* CQ only once
         struct fid_cq *last_cq = nullptr;

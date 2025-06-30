@@ -25,6 +25,15 @@ static void rdma_freehints(struct fi_info *hints)
     if (!hints)
         return;
 
+    if (hints->tx_attr) {
+        free(hints->tx_attr);
+        hints->tx_attr = NULL;
+    }
+    if (hints->rx_attr) {
+        free(hints->rx_attr);
+        hints->rx_attr = NULL;
+    }
+
     if (hints->domain_attr->name) {
         free(hints->domain_attr->name);
         hints->domain_attr->name = NULL;
@@ -131,7 +140,7 @@ int rdma_init(libfabric_ctx **ctx)
         hints->domain_attr->data_progress = FI_PROGRESS_AUTO; // Use auto progress
 
         /* Adjust capabilities based on the direction */
-        if ((*ctx)->kind == KIND_RECEIVER) {
+        if ((*ctx)->kind == FI_KIND_RECEIVER) {
             hints->caps = FI_MSG | FI_RECV | FI_RMA | FI_REMOTE_READ | FI_LOCAL_COMM;
             hints->rx_attr = calloc(1, sizeof(struct fi_rx_attr));
             if (hints->rx_attr) {
@@ -165,7 +174,7 @@ int rdma_init(libfabric_ctx **ctx)
     (*ctx)->addr_format = hints->addr_format;
 
     /* Adjust capabilities based on the connection kind */
-    if ((*ctx)->kind == KIND_RECEIVER) {
+    if ((*ctx)->kind == FI_KIND_RECEIVER) {
         /* For RX, resolve the local address */
         ret = rdma_getaddrinfo((*ctx)->local_ip, (*ctx)->local_port, &rai_hints, &rai_res);
         if (ret) {
@@ -217,7 +226,7 @@ int rdma_init(libfabric_ctx **ctx)
 
     /* Create fabric info, domain and fabric */
     // For RX, pass hostname and port to enforce binding
-    if ((*ctx)->kind == KIND_RECEIVER) {
+    if ((*ctx)->kind == FI_KIND_RECEIVER) {
         ret = fi_getinfo(FI_VERSION(2, 0), (*ctx)->local_ip, (*ctx)->local_port, 
                         FI_SOURCE, hints, &(*ctx)->info);
     } else {
@@ -255,21 +264,15 @@ int rdma_init(libfabric_ctx **ctx)
 
 err_fabric:
     fi_close(&(*ctx)->fabric->fid);
-    (*ctx)->fabric = NULL;
     
 err_info:
     fi_freeinfo((*ctx)->info);
-    (*ctx)->info = NULL;
     free(*ctx);
     *ctx = NULL;
     
 err:
-    if (rai_res) {
-        rdma_freeaddrinfo(rai_res);
-    }
-    if (hints) {
-        rdma_freehints(hints);
-    }
+    rdma_freeaddrinfo(rai_res);
+    rdma_freehints(hints);
     fprintf(stderr, "[rdma_init] Failed with error %d\n", ret);
     return ret;
 }

@@ -12,6 +12,11 @@
 #include "mesh/concurrency.h"
 #include "logger.h"
 #include <arpa/inet.h>
+#include "metrics.h"
+#include <sys/resource.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <unistd.h>
 
 using namespace mesh::log;
 
@@ -88,7 +93,10 @@ public:
      * Similar to single-machine SetupRdmaConnections, but only
      * creates and configures the TX side (since RX is on another machine).
      */
-    void SetupRdmaConnectionsTx(size_t payload_size, int queue_size) {
+    void SetupRdmaConnectionsTx(size_t payload_size,
+                                int queue_size,
+                                char* provider_name,
+                                int    num_endpoints) {
         // Create new transmitter components
         conn_tx = new RdmaTx();
         emulated_tx = new EmulatedTransmitter(ctx);
@@ -99,10 +107,10 @@ public:
         tx_request.type = is_tx;
         tx_request.local_addr = {.ip = "192.168.2.20", .port = "9003"};  // adjust to your local
         tx_request.remote_addr = {.ip = "192.168.2.30", .port = "9002"}; // the remote Rx
-        // tx_request.local_addr = {.ip = "192.168.2.30", .port = "9003"};  // adjust to your local
-        // tx_request.remote_addr = {.ip = "192.168.2.20", .port = "9002"}; // the remote Rx
         tx_request.payload_args.rdma_args.transfer_size = payload_size;
         tx_request.payload_args.rdma_args.queue_size = queue_size;
+        tx_request.payload_args.rdma_args.provider = provider_name;
+        tx_request.payload_args.rdma_args.num_endpoints = num_endpoints;        
 
         // Configure & establish
         ASSERT_EQ(conn_tx->configure(ctx, tx_request, tx_dev_handle), connection::Result::success);
@@ -169,120 +177,218 @@ public:
 //     CleanupRdmaConnectionsTx();
 // }
 
-/**
- * Test 2: Latency & Bandwidth over multiple (payload_size, queue_size) combos
- *
- * This mimics the original single-machine approach:
- * 1) For each payload_size & queue_size:
- *    - Cleanup (if existing) and re-Setup fresh Tx connections
- *    - Measure "latency" by timing a small number of transmissions
- *    - Measure "bandwidth" by sending a large total amount of data
- *    - Then Cleanup
- *
- * Note: Without a round-trip ACK from the Rx side, this is purely the local
- *       "post-send" time on the Tx side. If you want real end-to-end times,
- *       you must implement an ACK and wait for it here.
- */
-TEST_F(RdmaRealEndpointsTxTest, LatencyAndBandwidthForVaryingPayloadSizesAndQueueSizes) {
-    // Match the original single-machine values
-    const size_t payload_sizes[] = {1 << 20, 8 << 20, 3840ULL * 2160ULL * 4ULL,
-                                    64 << 20}; // 1MB, 8MB, ~32MB
-    const int queue_sizes[] = {8, 16, 32, 64};
-    const size_t total_data_size = 16ULL * 1024ULL * 1024ULL * 1024ULL; // 16 GB
-    const size_t num_iterations = 200;
-    const char filler = 'A';
+// ---------------------------------------------------------------------------
+//  RdmaRealEndpointsTxTest
+//  End-to-end matrix with
+//      • 200 × 16-byte frames → average **TTFB**
+//      • 200 × normal-size frames → average **TTLB**
+//      • 16 GiB raw stream      → **Throughput + CPU-load**
+//  The RX side calculates the two latencies and ships them back in a
+//  single StatsMsg; the TX side prints the full table.
+// ---------------------------------------------------------------------------
+TEST_F(RdmaRealEndpointsTxTest,
+       LatencyAndBandwidthForVaryingPayloadSizesAndQueueSizes)
+{
+    /* ---------- test matrix ------------------------------------------------- */
+    const size_t payload_sizes[] = {568ULL * 320ULL * 4ULL,     // 320p
+                                    1280ULL * 720ULL * 4ULL,    // 720p
+                                    1920ULL * 1080ULL * 4ULL,   // 1080p
+                                    3840ULL * 2160ULL * 4ULL};  // 4k
+    const int    queue_sizes[]  = {1, 4, 16};
+    char* providers[]      = { "tcp", "verbs" };
+    const int   endpoint_counts[] = { 1, 2, 4 };
 
-    // Store results for: (PayloadMB, QueueSize, AvgLatencyMS, BandwidthGB/s)
-    std::vector<std::tuple<double, int, double, double>> results;
+    const size_t TOTAL_STREAM_BYTES = 16ULL * 1024ULL * 1024ULL * 1024ULL; // 16 GiB
 
-    for (int qsz : queue_sizes) {
-        for (size_t psz : payload_sizes) {
-            printf("\nTesting payload size: %zu bytes, queue size: %d\n", psz, qsz);
-            sleep(1);
-            // 2) Set up a new Tx connection for this (psz, qsz)
-            SetupRdmaConnectionsTx(psz, qsz);
+    /* ---------- latency-probe parameters ------------------------------------ */
+    static constexpr size_t TTLB_ITERS = 200;   // normal frames
 
-            // Prepare data
-            // Reserve space for a 4-byte frame number + payload
-            const size_t header_size = sizeof(uint32_t);
-            std::vector<char> test_data(header_size + psz - header_size, filler);
+    const char  filler = 'A';
 
-            // Frame counter
-            uint32_t frame_number = 0;
+    /* ---------- helpers ----------------------------------------------------- */
+    constexpr int METRICS_PORT = 9999;
 
-            // --- Measure latency (local post-send time) ---
-            double total_latency_ms = 0.0;
-            for (size_t i = 0; i < num_iterations; ++i) {
-                auto start = std::chrono::high_resolution_clock::now();
-                // --- insert frame number in network byte-order at start of buffer ---
-                uint32_t netfn = htonl(frame_number);
-                std::memcpy(test_data.data(), &netfn, header_size);
+    auto cpu_seconds = []() -> double {
+        rusage ru{}; getrusage(RUSAGE_SELF, &ru);
+        return ru.ru_utime.tv_sec  + ru.ru_utime.tv_usec/1e6 +
+               ru.ru_stime.tv_sec  + ru.ru_stime.tv_usec/1e6;
+    };
+    auto now_ns = []() -> uint64_t {
+        return std::chrono::time_point_cast<std::chrono::nanoseconds>(
+                   std::chrono::high_resolution_clock::now())
+               .time_since_epoch().count();
+    };
 
-                auto res = emulated_tx->transmit_plaintext(ctx, test_data.data(), test_data.size());
-                EXPECT_EQ(res, connection::Result::success);
-                frame_number++;
+    /* ---------- UDP socket for StatsMsg ------------------------------------- */
+    int stat_sock = socket(AF_INET, SOCK_DGRAM, 0);
+    sockaddr_in si{};  si.sin_family = AF_INET;
+    si.sin_addr.s_addr = INADDR_ANY;
+    si.sin_port        = htons(METRICS_PORT);
+    bind(stat_sock, reinterpret_cast<sockaddr*>(&si), sizeof(si));
+    timeval tv{.tv_sec = 5, .tv_usec = 0};
+    setsockopt(stat_sock, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv));
 
-                // If you want real end-to-end times, you need an ACK from receiver here:
-                // e.g. WaitForReceiverAck();
+    // { provider, num_endpoints, payload_mb, queue_size,
+    //   ttlb_spaced_ms, ttlb_full_ms, throughput_gbps,
+    //   cpu_tx_pct, cpu_rx_pct }
+    std::vector<
+        std::tuple<
+            std::string,  // provider
+            int,          // #endpoints
+            double,       // payload size (MB)
+            int,          // queue size
+            double,       // TTLB @60 fps (ms)
+            double,       // TTLB full-speed (ms)
+            double,       // throughput (GB/s)
+            double,       // CPU-TX (%)
+            double        // CPU-RX (%)
+        >
+    > results;
 
-                auto end = std::chrono::high_resolution_clock::now();
-                total_latency_ms += std::chrono::duration<double, std::milli>(end - start).count();
-            }
-            double avg_latency_ms = total_latency_ms / num_iterations;
-
-            // --- Measure bandwidth ---
-            size_t num_sends = total_data_size / psz;
-            auto bdw_start = std::chrono::high_resolution_clock::now();
-
-            for (size_t i = 0; i < num_sends; ++i) {
-
-                // keep numbering across the bandwidth test too,
-                // and send in network-byte-order
-                uint32_t netfn = htonl(frame_number);
-                std::memcpy(test_data.data(), &netfn, header_size);
-
-                auto res = emulated_tx->transmit_plaintext(ctx, test_data.data(), test_data.size());
-                EXPECT_EQ(res, connection::Result::success);
-                frame_number++;
-                // WaitForReceiverAck(); // if doing real round-trip
-            }
-
-            auto bdw_end = std::chrono::high_resolution_clock::now();
-            double elapsed_sec = std::chrono::duration<double>(bdw_end - bdw_start).count();
-
-            double total_gb = (static_cast<double>(psz) * num_sends) / (1024.0 * 1024.0 * 1024.0);
-            double throughput_gb_s = total_gb / elapsed_sec;
-
-            // Save results
-            results.emplace_back(static_cast<double>(psz) / (1024.0 * 1024.0), qsz, avg_latency_ms,
-                                 throughput_gb_s);
-            sleep(1); // Give some time before next test
-            std::cout << "[TX] Completed payload size: " << psz / (1024 * 1024)
-                      << " MB, queue size: " << qsz
-                      << ", Avg Latency: " << avg_latency_ms
-                      << " ms, Throughput: " << throughput_gb_s
-                      << " GB/s\n";
-            // 3) Clean up the connection after finishing this (psz, qsz)
-            CleanupRdmaConnectionsTx();
+    /* ======================================================================= */
+    for (auto prov : providers)
+    for (int num_eps : endpoint_counts)    
+    for (int qsz : queue_sizes)
+    for (size_t psz : payload_sizes)
+    {
+        if (prov == "tcp" && num_eps > 1) {
+            std::cerr << "[TX] ⚠ TCP provider does not support multiple endpoints\n";
+            continue; // skip TCP with multiple endpoints
         }
+
+        std::cout << "\n[TX] payload " << (psz / 1024 / 1024) << " MB, queue " << qsz << " Prov "
+                  << prov << " #EP " << num_eps << " …\n";
+        sleep(1);
+
+        /* ---- fresh RDMA connection --------------------------------------- */
+        SetupRdmaConnectionsTx(psz, qsz, prov, num_eps);
+
+        /* ---- pre-allocate buffers ---------------------------------- */
+
+        std::vector<char> buf_big(psz, filler);                 // phase A
+        auto* hdr_big  = reinterpret_cast<FrameHdr*>(buf_big.data());
+
+        std::vector<char> buf_raw(psz, filler);                 // phase B
+        auto* hdr_raw  = reinterpret_cast<FrameHdr*>(buf_raw.data());
+        hdr_raw->tx_ns = 0;                                     // no timestamp
+
+        uint32_t frame = 0;
+
+        /* ---------------------- Warmup Phase ------------------ */
+        for (size_t i = 0; i < TTLB_ITERS; ++i) {
+            hdr_big->frame = htonl(frame++);
+            hdr_big->tx_ns = htobe64(now_ns());
+            EXPECT_EQ(emulated_tx->transmit_plaintext(ctx,
+                          buf_big.data(), buf_big.size()),
+                      connection::Result::success);
+        }
+
+        sleep(0.2);        
+
+        /* ---------------------- (A)  normal-probe → TTLB ------------------ */
+        for (size_t i = 0; i < TTLB_ITERS; ++i) {
+            hdr_big->frame = htonl(frame++);
+            hdr_big->tx_ns = htobe64(now_ns());
+            EXPECT_EQ(emulated_tx->transmit_plaintext(ctx,
+                          buf_big.data(), buf_big.size()),
+                      connection::Result::success);
+            std::this_thread::sleep_for(std::chrono::milliseconds(16));
+        }
+
+        sleep(0.2);
+
+        /* ---------------------- (B)  normal-probe → TTLB ------------------ */
+        for (size_t i = 0; i < TTLB_ITERS; ++i) {
+            hdr_big->frame = htonl(frame++);
+            hdr_big->tx_ns = htobe64(now_ns());
+            EXPECT_EQ(emulated_tx->transmit_plaintext(ctx,
+                          buf_big.data(), buf_big.size()),
+                      connection::Result::success);
+        }
+
+        sleep(0.2);
+
+        /* ---------------------- (C)  raw throughput ----------------------- */
+        size_t sends_needed = TOTAL_STREAM_BYTES / psz;
+        auto   thr_start    = std::chrono::steady_clock::now();
+        double cpu_start    = cpu_seconds();
+
+        for (size_t i = 0; i < sends_needed; ++i) {
+            hdr_raw->frame = htonl(frame++);    // still unique, no ts
+            EXPECT_EQ(emulated_tx->transmit_plaintext(ctx,
+                          buf_raw.data(), buf_raw.size()),
+                      connection::Result::success);
+        }
+
+        sleep(0.2);
+
+        auto   thr_end   = std::chrono::steady_clock::now();
+        double cpu_end   = cpu_seconds();
+        double thr_sec   = std::chrono::duration<double>(thr_end - thr_start).count();
+        double cpu_tx_pct = 100.0 * (cpu_end - cpu_start) / thr_sec;
+
+        double total_gib = static_cast<double>(psz) * sends_needed /
+                           (1024.0*1024.0*1024.0);
+        double gbps = total_gib / thr_sec;
+
+        /* ---- wait for StatsMsg from RX ----------------------------------- */
+        StatsMsg sm{};
+        sockaddr_in src{}; socklen_t slen = sizeof(src);
+        ssize_t n = recvfrom(stat_sock, &sm, sizeof(sm), 0,
+                             reinterpret_cast<sockaddr*>(&src), &slen);
+
+        if (n == sizeof(sm)) {
+            results.emplace_back(
+                                 std::string(prov),                    // provider
+                                 num_eps,                              // #endpoints
+                                 static_cast<double>(psz)/(1024*1024), // payload MB
+                                 qsz,                                  // queue
+                                 sm.ttlb_spaced_ms, sm.ttlb_full_ms,   // TTLB
+                                 gbps,                                 // throughput
+                                 cpu_tx_pct, sm.cpu_rx_pct);           // CPU
+
+            std::cout << "[TX]" << " ms  ttlb @60fps=" << sm.ttlb_spaced_ms
+                      << " ms  ttlb @max=" << sm.ttlb_full_ms
+                      << " ms  thr=" << gbps << " GB/s  CPU-TX=" << cpu_tx_pct
+                      << "%  CPU-RX=" << sm.cpu_rx_pct << "%\n";
+        } else {
+            std::cerr << "[TX] ⚠ no StatsMsg for "
+                      << (psz/1024/1024) << " MB,q" << qsz << '\n';
+        }
+
+        CleanupRdmaConnectionsTx();
+        sleep(1);
+    }
+    /* ======================================================================= */
+
+    /* ---------- pretty-print table ----------------------------------------- */
+    std::cout << "\n+----------+-----------+-------------------+-------------+-----------+--------------+--------------------+------------+------------+\n"
+            <<   "| Provider | #Endpoints| Payload Size (MB) | Queue Size  | TTLB (ms) |   TTLB (ms)  | Maximum Throughput | CPU-TX (%) | CPU-RX (%) |\n"
+            <<   "|          |           |                   |             |  @60 fps  |   @max thr.  |       (GB/s)       |     (100% is 1 core)    |\n"
+            <<   "+----------+-----------+-------------------+-------------+-----------+--------------+--------------------+------------+------------+\n";
+
+    for (const auto& r : results) {
+        std::cout << "| " << std::setw(8)  << std::get<0>(r)                             // provider
+                << " | " << std::setw(9)  << std::get<1>(r)                             // #endpoints
+                << " | " << std::setw(17) << std::fixed << std::setprecision(2)
+                                    << std::get<2>(r)                             // payload MB
+                << " | " << std::setw(11) << std::get<3>(r)                             // queue
+                << " | " << std::setw(9)  << std::fixed << std::setprecision(3)
+                                    << std::get<4>(r)                             // TTLB spaced
+                << " | " << std::setw(12) << std::fixed << std::setprecision(3)
+                                    << std::get<5>(r)                             // TTLB full-speed
+                << " | " << std::setw(18) << std::fixed << std::setprecision(3)
+                                    << std::get<6>(r)                             // throughput
+                << " | " << std::setw(10) << std::fixed << std::setprecision(1)
+                                    << std::get<7>(r)                             // CPU-TX
+                << " | " << std::setw(10) << std::fixed << std::setprecision(1)
+                                    << std::get<8>(r)                             // CPU-RX
+                << " |\n";
     }
 
-    // Print results in a table
-    std::cout
-        << "\n+-------------------+-------------+--------------------+----------------------+\n";
-    std::cout
-        << "| Payload Size (MB) | Queue Size  |    Latency (ms)    | Transfer Rate (GB/s) |\n";
-    std::cout
-        << "+-------------------+-------------+--------------------+----------------------+\n";
-    for (auto& entry : results) {
-        std::cout << "| " << std::setw(17) << std::fixed << std::setprecision(2)
-                  << std::get<0>(entry) << " | " << std::setw(11) << std::get<1>(entry) << " | "
-                  << std::setw(18) << std::fixed << std::setprecision(3) << std::get<2>(entry)
-                  << " | " << std::setw(20) << std::fixed << std::setprecision(3)
-                  << std::get<3>(entry) << " |\n";
-    }
-    std::cout
-        << "+-------------------+-------------+--------------------+----------------------+\n";
+    std::cout <<   "+----------+-----------+-------------------+-------------+-----------+--------------+--------------------+------------+------------+\n";
+
+
 }
 
 } // namespace connection

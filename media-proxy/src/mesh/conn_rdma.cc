@@ -9,8 +9,6 @@ std::atomic<int> Rdma::active_connections(0);
 
 Rdma::Rdma()
   : ep_ctxs{}    
-  , next_tx_idx(0)                     // start round-robin at 0
-  , next_rx_idx(0)
   , init(false)
   , trx_sz(0)
   , m_dev_handle(nullptr)
@@ -201,10 +199,10 @@ Result Rdma::configure(context::Context& ctx, const mcm_conn_param& request,
         rdma_num_eps = neps;
     } else {
         log::warn(
-            "RDMA num_endpoints {} out of valid range [1..8], defaulting to 4",
+            "RDMA num_endpoints {} out of valid range [1..8], defaulting to 1",
             neps
         );
-        rdma_num_eps = 4;
+        rdma_num_eps = 1;
     }
 
     _kind = kind();
@@ -257,7 +255,9 @@ Result Rdma::on_establish(context::Context& ctx)
             return Result::error_out_of_memory;
         }
         _kind = kind();
-        m_dev_handle->kind        = (_kind == Kind::receiver ? KIND_RECEIVER : KIND_TRANSMITTER);
+        m_dev_handle->kind        = (_kind == Kind::receiver
+                                     ? FI_KIND_RECEIVER
+                                     : FI_KIND_TRANSMITTER);        
         m_dev_handle->local_ip    = ep_cfg.local_addr.ip;
         m_dev_handle->local_port  = ep_cfg.local_addr.port;
         m_dev_handle->remote_ip   = ep_cfg.remote_addr.ip;
@@ -294,31 +294,56 @@ Result Rdma::on_establish(context::Context& ctx)
     std::vector<libfabric_ctx*>  devs(rdma_num_eps, nullptr);
     std::vector<fi_info*>        info_dups(rdma_num_eps, nullptr);
 
+    // cleanup helper: free all clones [1..n)
+    auto cleanup_clones = [&](std::size_t upto) {
+        for (std::size_t j = 1; j < upto; ++j) {
+            if (info_dups[j]) {
+                fi_freeinfo(info_dups[j]);
+                info_dups[j] = nullptr;
+            }
+            if (devs[j]) {
+                free(devs[j]);
+                devs[j] = nullptr;
+            }
+        }
+    };
+    
     // resize our member‐vector of EP pointers
     ep_ctxs.resize(rdma_num_eps);
 
     /* EP-0 re-uses the context already created in rdma_init() */
-    devs[0] = m_dev_handle;                 // never null
-    info_dups[0] = m_dev_handle->info;      // keep for uniform cleanup
+    devs[0] = m_dev_handle;            // never null
+    info_dups[0] = m_dev_handle->info; // keep for uniform cleanup
 
     /* create clones for EP-1 … EP-N */
     for (uint32_t i = 1; i < rdma_num_eps; ++i) {
         fi_info* dup = fi_dupinfo(m_dev_handle->info);
         if (!dup) {
             log::error("fi_dupinfo failed for EP %u", i)("kind", kind2str(_kind));
+            // free any earlier clones
+            cleanup_clones(i);
             set_state(ctx, State::closed);
             return Result::error_initialization_failed;
         }
         info_dups[i] = dup;
 
-        if (dup->src_addr  && dup->src_addrlen  == sizeof(sockaddr_in))
-            bump_sock(reinterpret_cast<sockaddr_in*>(dup->src_addr),  i);
+        if (dup->src_addr && dup->src_addrlen == sizeof(sockaddr_in))
+            bump_sock(reinterpret_cast<sockaddr_in*>(dup->src_addr), i);
         if (dup->dest_addr && dup->dest_addrlen == sizeof(sockaddr_in))
             bump_sock(reinterpret_cast<sockaddr_in*>(dup->dest_addr), i);
 
-        devs[i]                 = static_cast<libfabric_ctx*>(calloc(1, sizeof(libfabric_ctx)));
-        *devs[i]                = *m_dev_handle;   // shallow copy
-        devs[i]->info           = dup;
+        devs[i] = static_cast<libfabric_ctx*>(calloc(1, sizeof(libfabric_ctx)));
+        if (!devs[i]) {
+            log::error("Failed to allocate RDMA context clone for EP %u", i)("error",
+                                                                             strerror(errno));
+            fi_freeinfo(dup);
+            // free any earlier clones
+            cleanup_clones(i);
+            set_state(ctx, State::closed);
+            return Result::error_out_of_memory;
+        }
+        *devs[i] = *m_dev_handle; // shallow copy
+        devs[i]->info = dup;
         devs[i]->is_initialized = true;
     }
 
@@ -339,14 +364,15 @@ Result Rdma::on_establish(context::Context& ctx)
         }
         int ret = libfabric_ep_ops.ep_init(&ep_ctxs[i], &cfgs[i]);
         if (ret) {
-            log::error("Failed to initialize RDMA endpoint #%u", i)
-                    ("ret", ret)("error", fi_strerror(-ret));
-            for (uint32_t j = 0; j <= i; ++j)
-                if (ep_ctxs[j]) libfabric_ep_ops.ep_destroy(&ep_ctxs[j]);
-            for (uint32_t j = 1; j < rdma_num_eps; ++j) {
-                if (info_dups[j]) fi_freeinfo(info_dups[j]);
-                if (devs[j])      free(devs[j]);
+            log::error("Failed to initialize RDMA endpoint #%u", i)("ret", ret)("error",
+                       fi_strerror(-ret));
+            // destroy all created endpoints
+            for (auto& e : ep_ctxs) {
+                if (e) {
+                    libfabric_ep_ops.ep_destroy(&e);
+                }
             }
+            cleanup_clones(i + 1);
             set_state(ctx, State::closed);
             return Result::error_initialization_failed;
         }
@@ -356,11 +382,12 @@ Result Rdma::on_establish(context::Context& ctx)
     res = init_queue_with_elements(queue_size, trx_sz + TRAILER);
     if (res != Result::success) {
         log::error("Failed to initialise RDMA buffer queue")("trx_sz", trx_sz);
-        for (auto &e : ep_ctxs) if (e) libfabric_ep_ops.ep_destroy(&e);
-        for (std::size_t i = 1; i < rdma_num_eps; ++i) {
-            if (info_dups[i]) fi_freeinfo(info_dups[i]);
-            if (devs[i])      free(devs[i]);
+        for (auto &e : ep_ctxs) {
+            if (e) {
+                libfabric_ep_ops.ep_destroy(&e);
+            }
         }
+        cleanup_clones(rdma_num_eps);        
         set_state(ctx, State::closed);
         return res;
     }
@@ -379,11 +406,12 @@ Result Rdma::on_establish(context::Context& ctx)
             int rc = libfabric_ep_ops.ep_reg_mr(ep, buffer_block, total_size);
             if (rc) {
                 log::error("Memory registration failed")("error", fi_strerror(-rc));
-                for (auto &ee : ep_ctxs) if (ee) libfabric_ep_ops.ep_destroy(&ee);
-                for (std::size_t i = 1; i < rdma_num_eps; ++i) {
-                    if (info_dups[i]) fi_freeinfo(info_dups[i]);
-                    if (devs[i])      free(devs[i]);
+            for (auto &ee : ep_ctxs) {
+                if (ee) {
+                    libfabric_ep_ops.ep_destroy(&ee);
                 }
+            }
+            cleanup_clones(rdma_num_eps);
                 set_state(ctx, State::closed);
                 return Result::error_memory_registration_failed;
             }

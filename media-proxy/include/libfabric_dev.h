@@ -122,8 +122,8 @@ extern "C" {
  */
 typedef enum {
     KIND_UNDEFINED = 0,
-    KIND_TRANSMITTER,
-    KIND_RECEIVER,
+    FI_KIND_TRANSMITTER,
+    FI_KIND_RECEIVER,
 } conn_kind;
 typedef struct {
     struct fid_fabric *fabric;

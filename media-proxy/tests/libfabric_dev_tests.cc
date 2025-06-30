@@ -70,7 +70,7 @@ void LibfabricDevTest::SetUp() {
     ctx = (libfabric_ctx*)malloc(sizeof(libfabric_ctx));
     memset(ctx, 0, sizeof(libfabric_ctx));
     // Set receiver parameters.
-    ctx->kind = KIND_RECEIVER;
+    ctx->kind = FI_KIND_RECEIVER;
     ctx->local_ip = strdup("127.0.0.1");
     ctx->local_port = strdup("12345");
 

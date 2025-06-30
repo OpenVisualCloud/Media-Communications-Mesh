@@ -89,8 +89,6 @@ protected:
     std::string          rdma_provider = "verbs"; // Default provider
     // Endpoint contexts (one pointer per EP)
     std::vector<ep_ctx_t*> ep_ctxs;
-    std::atomic<uint32_t>       next_tx_idx;
-    std::atomic<uint32_t>       next_rx_idx;
     ep_cfg_t ep_cfg;                            // RDMA endpoint configuration
     size_t trx_sz;                              // Data transfer size
     bool init;                                  // Indicates if RDMA is initialized
@@ -98,9 +96,6 @@ protected:
     int queue_size;                             // Number of buffers in the queue
     static std::atomic<int> active_connections; // Number of active RDMA connections
 
-    static constexpr size_t REORDER_WINDOW = 256;  // > max expected out-of-order
-    std::array<void*,REORDER_WINDOW> reorder_ring{{nullptr}};
-    uint64_t reorder_head = UINT64_MAX;
     static constexpr size_t TRAILER = sizeof(uint64_t); // Size of the trailer for sequence number
 
     // Queue for managing buffers

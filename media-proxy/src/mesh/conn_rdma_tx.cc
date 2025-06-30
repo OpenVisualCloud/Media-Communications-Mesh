@@ -6,6 +6,7 @@ namespace mesh::connection {
 
 RdmaTx::RdmaTx() : Rdma() {
     _kind = Kind::transmitter; // Set the Kind in the constructor
+    next_tx_idx = 0; // Initialize the next transmit index
 }
 
 RdmaTx::~RdmaTx()
