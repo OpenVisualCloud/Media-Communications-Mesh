@@ -142,13 +142,11 @@ int rdma_init(libfabric_ctx **ctx)
         /* Adjust capabilities based on the direction */
         if ((*ctx)->kind == FI_KIND_RECEIVER) {
             hints->caps = FI_MSG | FI_RECV | FI_RMA | FI_REMOTE_READ | FI_LOCAL_COMM;
-            hints->rx_attr = calloc(1, sizeof(struct fi_rx_attr));
             if (hints->rx_attr) {
                 hints->rx_attr->size = 1024;  // Larger receive queue
             }
         } else {
             hints->caps = FI_MSG | FI_SEND | FI_RMA | FI_REMOTE_WRITE | FI_LOCAL_COMM;
-            hints->tx_attr = calloc(1, sizeof(struct fi_tx_attr));
             if (hints->tx_attr) {
                 hints->tx_attr->size = 1024;  // Larger send queue
             }

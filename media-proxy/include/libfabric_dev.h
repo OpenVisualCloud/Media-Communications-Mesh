@@ -121,7 +121,7 @@ extern "C" {
  * Definition of connection kinds.
  */
 typedef enum {
-    KIND_UNDEFINED = 0,
+    FI_KIND_UNDEFINED = 0,
     FI_KIND_TRANSMITTER,
     FI_KIND_RECEIVER,
 } conn_kind;
