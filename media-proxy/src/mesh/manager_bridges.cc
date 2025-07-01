@@ -228,6 +228,9 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
         req.payload_args.rdma_args.transfer_size = cfg.conn_config.buf_parts.total_size();
         req.payload_args.rdma_args.queue_size = 16;
+        req.payload_args.rdma_args.provider = strdup(cfg.conn_config.options.rdma.provider.c_str());
+        char* _rdma_provider_dup = req.payload_args.rdma_args.provider;
+        req.payload_args.rdma_args.num_endpoints = cfg.conn_config.options.rdma.num_endpoints;
 
         // Create Egress RDMA Bridge
         if (cfg.kind == Kind::transmitter) {
@@ -245,6 +248,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
             if (res != Result::success) {
                 log::error("Error configuring RDMA Egress bridge: %s",
                            result2str(res));
+                free(_rdma_provider_dup);
                 delete egress_bridge;
                 return -1;
             }
@@ -254,6 +258,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
         } else if (cfg.kind == Kind::receiver) {
             auto ingress_bridge = new(std::nothrow) RdmaRx;
             if (!ingress_bridge)
+                free(_rdma_provider_dup);
                 return -ENOMEM;
 
             req.type = is_rx;
@@ -266,14 +271,18 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
             if (res != Result::success) {
                 log::error("Error configuring RDMA Ingress bridge: %s",
                            result2str(res));
+                free(_rdma_provider_dup);
                 delete ingress_bridge;
                 return -1;
             }
             bridge = ingress_bridge;
 
         } else {
+            free(_rdma_provider_dup);
             return -1;
         }
+        // we've handed off the provider into Rdma::configure, free our copy
+        free(_rdma_provider_dup);
     }
 
     // log::debug("BEFORE ESTABLISH");
