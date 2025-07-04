@@ -14,7 +14,9 @@ namespace mesh::config {
 
 class Proxy {
 public:
-    struct {
+    std::string name;
+
+struct {
         std::string dev_port_bdf;
         std::string dataplane_ip_addr;
     } st2110 = {

@@ -23,7 +23,7 @@ namespace mesh::sync {
  * The hotpath access is the fastest possible lock-free approach to read
  * the memory pointer value. It is meant to be used in interrupts and callbacks
  * that happen when a new block of data appears on the network. The critical
- * section begins with an invokation of the load_next_lock() method that returns
+ * section begins with an invocation of the load_next_lock() method that returns
  * the pointer value and locks the write access. To exit the critical section,
  * the unlock() method must be called, which unlocks the write access.
  * 

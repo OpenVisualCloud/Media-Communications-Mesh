@@ -29,7 +29,7 @@ func (a *API) ListMultipointGroups(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for i := range groups {
-		populateConnMetrics(groups[i].Status, groups[i].Id)
+		PopulateConnMetrics(groups[i].Status, groups[i].Id)
 	}
 
 	resp := struct {

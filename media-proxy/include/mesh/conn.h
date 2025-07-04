@@ -157,6 +157,8 @@ public:
     } conn;
 
     struct {
+        std::string engine;
+
         struct {
             std::string provider;
             uint16_t num_endpoints;
@@ -207,6 +209,7 @@ public:
     Kind kind();
     State state();
     Status status();
+    const std::string& name();
 
     virtual Result set_link(context::Context& ctx, Connection *new_link,
                             Connection *requester = nullptr);
@@ -214,6 +217,9 @@ public:
 
     void set_config(const Config& cfg);
     void set_parent(const std::string& parent_id);
+    void set_name(const std::string& name);
+
+    void log_dump_config();
 
     void notify_parent_conn_unlink_requested(context::Context& ctx);
 
@@ -224,7 +230,8 @@ public:
     Result resume(context::Context& ctx);
 
     Result shutdown(context::Context& ctx);
-    Result shutdown_async(context::Context& ctx);
+    Result shutdown_async(context::Context& ctx,
+                          std::function<void()> on_shutdown_complete = nullptr);
 
     Result do_receive(context::Context& ctx, void *ptr, uint32_t sz,
                       uint32_t& sent);
@@ -248,6 +255,7 @@ protected:
 
     virtual Result on_establish(context::Context& ctx) = 0;
     virtual Result on_shutdown(context::Context& ctx) = 0;
+    virtual Result on_resume(context::Context& ctx);
     virtual Result on_receive(context::Context& ctx, void *ptr, uint32_t sz,
                               uint32_t& sent);
     virtual void on_delete(context::Context& ctx) {}
@@ -280,6 +288,7 @@ private:
     std::jthread establish_th;
     std::jthread shutdown_th;
     std::string parent_id;
+    std::string _name;
 };
 
 const char * kind2str(Kind kind, bool brief = false);

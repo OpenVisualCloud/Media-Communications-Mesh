@@ -69,10 +69,17 @@ Status Connection::status()
     }
 }
 
+const std::string& Connection::name() {
+    return _name;
+}
+
 void Connection::set_config(const Config& cfg)
 {
     config = cfg;
+}
 
+void Connection::log_dump_config()
+{
     log::debug("[SDK] Conn config")
               ("kind", config.kind2str())
               ("conn_type", config.conn_type2str())
@@ -126,6 +133,11 @@ void Connection::set_parent(const std::string& parent_id)
     this->parent_id = parent_id;
 }
 
+void Connection::set_name(const std::string& name)
+{
+    _name = name;
+}
+
 void Connection::notify_parent_conn_unlink_requested(context::Context& ctx)
 {
     if (!parent_id.empty())
@@ -156,10 +168,13 @@ Result Connection::establish_async(context::Context& ctx)
 
         try {
             establish_th = std::jthread([this]() {
+                log::warn("START establish thread");
                 auto res = on_establish(establish_ctx);
                 if (res != Result::success)
                     log::error("Threaded on_establish() err: %s",
                                result2str(res));
+
+                log::warn("EXIT establish thread");
             });
         }
         catch (const std::system_error& e) {
@@ -188,7 +203,7 @@ Result Connection::resume(context::Context& ctx)
         return set_result(Result::error_wrong_state);
 
     set_state(ctx, State::active);
-    return set_result(Result::success);
+    return set_result(on_resume(ctx));
 }
 
 Result Connection::shutdown(context::Context& ctx)
@@ -204,18 +219,30 @@ Result Connection::shutdown(context::Context& ctx)
     }
 }
 
-Result Connection::shutdown_async(context::Context& ctx)
+Result Connection::shutdown_async(context::Context& ctx,
+                                  std::function<void()> on_shutdown_complete)
 {
+    auto invoke_on_shutdown_complete = [on_shutdown_complete]() {
+        try {
+            if (on_shutdown_complete)
+                on_shutdown_complete();
+        }
+        catch (const std::bad_function_call& ex) {}
+    };
+
     switch (state()) {
     case State::closed:
+        invoke_on_shutdown_complete();
         return set_result(Result::success);
+
     case State::deleting:
         return set_result(Result::error_wrong_state);
+
     default:
         set_state(ctx, State::closing);
 
         try {
-            shutdown_th = std::jthread([this, &ctx]() {
+            shutdown_th = std::jthread([this, &ctx, invoke_on_shutdown_complete]() {
 
                 establish_ctx.cancel();
                 if (establish_th.joinable())
@@ -226,12 +253,15 @@ Result Connection::shutdown_async(context::Context& ctx)
                     log::error("Threaded on_shutdown() err: %s",
                                result2str(res));
 
+                invoke_on_shutdown_complete();
+
                 shutdown_th.detach();
                 delete this; // TODO: consider on making this safer
             });
         }
         catch (const std::system_error& e) {
             log::error("Thread creation for on_shutdown() failed");
+            invoke_on_shutdown_complete();
             return set_result(Result::error_out_of_memory);
         }
         return set_result(Result::success);
@@ -298,6 +328,11 @@ Result Connection::do_receive(context::Context& ctx, void *ptr, uint32_t sz,
         metrics.transactions_failed++;
 
     return res;
+}
+
+Result Connection::on_resume(context::Context& ctx)
+{
+    return Result::success;
 }
 
 Result Connection::on_receive(context::Context& ctx, void *ptr, uint32_t sz,
@@ -599,6 +634,8 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
 
     if (config.has_options()) {
         const sdk::ConnectionOptions& conn_options = config.options();
+        options.engine = conn_options.engine();
+
         if (conn_options.has_rdma()) {
             const sdk::ConnectionOptionsRDMA& options_rdma = conn_options.rdma();
             options.rdma.provider = options_rdma.provider();
@@ -673,6 +710,8 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
     }
 
     auto conn_options = config.mutable_options();
+    conn_options->set_engine(options.engine);
+
     auto options_rdma = new sdk::ConnectionOptionsRDMA();
     options_rdma->set_provider(options.rdma.provider);
     options_rdma->set_num_endpoints(options.rdma.num_endpoints);

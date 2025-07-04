@@ -52,6 +52,7 @@ int ProxyAPIClient::RegisterMediaProxy()
 {
     RegisterMediaProxyRequest request;
     request.set_sdk_api_port(config::proxy.sdk_api_port);
+    request.set_name(config::proxy.name);
 
     ST2110ProxyConfig* st2110_cfg = request.mutable_st2110_config();
     st2110_cfg->set_dev_port_bdf(config::proxy.st2110.dev_port_bdf);
@@ -101,12 +102,13 @@ int ProxyAPIClient::UnregisterMediaProxy()
 
 int ProxyAPIClient::RegisterConnection(std::string& conn_id, const std::string& kind,
                                        const connection::Config& config,
-                                       std::string& err)
+                                       const std::string& name, std::string& err)
 {
     RegisterConnectionRequest request;
     request.set_proxy_id(GetProxyId());
     request.set_kind(kind);
     request.set_conn_id(conn_id); // Normally should be empty.
+    request.set_conn_name(name);
 
     ConnectionConfig* cfg = request.mutable_config();
     config.assign_to_pb(*cfg);
@@ -279,8 +281,15 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
                     log::info("* Group")
                              ("group_id", group.group_id())
+                             ("engine", group.conn_config().options().engine())
                              ("conns", group.conn_ids_size())
                              ("bridges", group.bridge_ids_size());
+
+                    if (group.has_conn_config())
+                        group_config.conn_config.assign_from_pb(group.conn_config());
+                    else
+                        log::error("No conn config for group")
+                                  ("group_id", group.group_id());
 
                     for (const auto& conn_id : group.conn_ids()) {
                         // log::debug("-- Conn")("conn_id", conn_id);
@@ -314,7 +323,7 @@ int ProxyAPIClient::StartCommandQueue(context::Context& ctx)
 
                     const auto& bridge_id = bridge.bridge_id();
 
-                    multipoint::BridgeConfig bridge_config = {
+                    connection::BridgeConfig bridge_config = {
                         .type = bridge.type(),
                         .kind = kind,
                     };

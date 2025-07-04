@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #ifndef MANAGER_MULTIPOINT_H
 #define MANAGER_MULTIPOINT_H
 
@@ -16,6 +22,7 @@ namespace mesh::multipoint {
 class GroupChangeConfig {
 public:
     std::string group_id;
+    connection::Config conn_config;
     std::vector<std::string> added_conn_ids;
     std::vector<std::string> deleted_conn_ids;
     std::vector<std::string> added_bridge_ids;
@@ -24,6 +31,7 @@ public:
 
 class GroupConfig {
 public:
+    connection::Config conn_config;
     std::vector<std::string> conn_ids;
     std::vector<std::string> bridge_ids;
 };
@@ -41,10 +49,14 @@ public:
                             std::vector<GroupChangeConfig> added_groups,
                             std::vector<GroupChangeConfig> deleted_groups,
                             std::vector<GroupChangeConfig> updated_groups);
+    void unassociate_conn(const std::string& conn_id);
+    void run(context::Context& ctx);
+
 private:
+    Group * create_group(const std::string& id, const std::string& engine);
     Result associate(context::Context& ctx, Group *group, Connection *conn);
 
-    int add_group(const std::string& id, Group *group) {
+    int register_group(const std::string& id, Group *group) {
         std::unique_lock lk(mx);
         if (groups.contains(id))
             return -1;
@@ -52,12 +64,13 @@ private:
         return 0;
     }
 
-    bool delete_group(const std::string& id) {
+    bool unregister_group(Group *group) {
         std::unique_lock lk(mx);
-        return groups.erase(id) > 0;
+        deleted_groups[group->id] = group;
+        return groups.erase(group->id) > 0;
     }
 
-    Group * get_group(const std::string& id) {
+    Group * find_group(const std::string& id) {
         std::shared_lock lk(mx);
         auto it = groups.find(id);
         if (it != groups.end()) {
@@ -69,6 +82,8 @@ private:
     Config cfg;
 
     std::unordered_map<std::string, Group *> groups;
+    std::unordered_map<std::string, Group *> deleted_groups;
+    std::unordered_map<std::string, std::string> associations;
     std::shared_mutex mx;
 };
 

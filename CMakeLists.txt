@@ -26,6 +26,7 @@ set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 set(SDK_TESTS_DIR ${SDK_DIR}/tests)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
 set(AGENT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/control-plane-agent)
+set(CLI_DIR ${CMAKE_CURRENT_SOURCE_DIR}/control-plane-cli)
 
 # Setup output folder
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -35,6 +36,7 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 add_subdirectory(${SDK_DIR})
 add_subdirectory(${MP_DIR})
 add_subdirectory(${AGENT_DIR})
+add_subdirectory(${CLI_DIR})
 
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
 option(BUILD_UNIT_TESTS "Build and enable unit tests" ON)

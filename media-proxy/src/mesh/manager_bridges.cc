@@ -13,6 +13,9 @@
 #include "proxy_config.h"
 #include "conn_rdma_tx.h"
 #include "conn_rdma_rx.h"
+#include "manager_multipoint.h"
+#include "bridge_zc_wrap_tx.h"
+#include "bridge_zc_wrap_rx.h"
 
 namespace mesh::connection {
 
@@ -26,8 +29,8 @@ std::string_view getGroupURN(std::string_view group_id) {
     return group_id;
 }
 
-int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
-                                  const std::string& id, const BridgeConfig& cfg)
+int BridgesManager::make_bridge(context::Context& ctx, Connection*& bridge,
+                                const BridgeConfig& cfg)
 {
     // DEBUG
     // auto mocked_bridge = new(std::nothrow) MockedBridge;
@@ -47,8 +50,50 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
               ("calc_payload_size", cfg.conn_config.calculated_payload_size)
               ("buf_total_size", cfg.conn_config.buf_parts.total_size())
               ("transport", cfg.st2110.transport)
-              ("payload_type", (uint32_t)cfg.st2110.payload_type);
+              ("payload_type", (uint32_t)cfg.st2110.payload_type)
+              ("engine", cfg.conn_config.options.engine);
 
+    if (cfg.conn_config.options.engine.starts_with("zero-copy")) {
+        if (cfg.kind == Kind::transmitter) {
+            auto egress_bridge = new(std::nothrow) ZeroCopyWrapperBridgeTx;
+            if (!egress_bridge)
+                return -ENOMEM;
+
+            auto res = egress_bridge->configure(ctx, cfg);
+            if (res != Result::success) {
+                log::error("Error configuring zero-copy Egress bridge wrapper: %s",
+                           result2str(res));
+                delete egress_bridge;
+                return -1;
+            }
+            bridge = egress_bridge;
+        } else if (cfg.kind == Kind::receiver) {
+            auto ingress_bridge = new(std::nothrow) ZeroCopyWrapperBridgeRx;
+            if (!ingress_bridge)
+                return -ENOMEM;
+
+            auto res = ingress_bridge->configure(ctx, cfg);
+            if (res != Result::success) {
+                log::error("Error configuring zero-copy Ingress bridge wrapper: %s",
+                           result2str(res));
+                delete ingress_bridge;
+                return -1;
+            }
+            bridge = ingress_bridge;
+        } else {
+            log::error("ERROR HERE (1)");
+            return -1;
+        }
+
+        auto res = bridge->establish(ctx);
+        if (res != Result::success) {
+            log::error("ERROR HERE (0)");
+            delete bridge;
+            return -1;
+        }
+        return 0;
+    }
+    
     if (!cfg.type.compare("st2110")) {
         MeshConfig_ST2110 cfg_st2110 = {
             .transport_format = MESH_CONN_ST2110_20_TRANSPORT_FMT_YUV422_10BIT,
@@ -96,7 +141,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
                                                     cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-20 Egress bridge: %s",
-                               result2str(res));
+                            result2str(res));
                     delete egress_bridge;
                     return -1;
                 }
@@ -112,11 +157,11 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = ingress_bridge->configure(ctx,
-                                                     config::proxy.st2110.dev_port_bdf,
-                                                     cfg_st2110, cfg_video);
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-20 Ingress bridge: %s",
-                               result2str(res));
+                            result2str(res));
                     delete ingress_bridge;
                     return -1;
                 }
@@ -139,7 +184,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
                                                     cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-22 Egress bridge: %s",
-                               result2str(res));
+                            result2str(res));
                     delete egress_bridge;
                     return -1;
                 }
@@ -155,11 +200,11 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = ingress_bridge->configure(ctx,
-                                                     config::proxy.st2110.dev_port_bdf,
-                                                     cfg_st2110, cfg_video);
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_video);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-22 Ingress bridge: %s",
-                               result2str(res));
+                            result2str(res));
                     delete ingress_bridge;
                     return -1;
                 }
@@ -182,7 +227,7 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
                                                     cfg_st2110, cfg_audio);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-30 Egress bridge: %s",
-                               result2str(res));
+                            result2str(res));
                     delete egress_bridge;
                     return -1;
                 }
@@ -198,11 +243,11 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
 
                 ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
                 auto res = ingress_bridge->configure(ctx,
-                                                     config::proxy.st2110.dev_port_bdf,
-                                                     cfg_st2110, cfg_audio);
+                                                    config::proxy.st2110.dev_port_bdf,
+                                                    cfg_st2110, cfg_audio);
                 if (res != Result::success) {
                     log::error("Error configuring ST2110-30 Ingress bridge: %s",
-                               result2str(res));
+                            result2str(res));
                     delete ingress_bridge;
                     return -1;
                 }
@@ -211,15 +256,15 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
                 return -1;
             }
         }
-  
+
     } else if (!cfg.type.compare("rdma")) {
         libfabric_ctx *dev_handle = NULL;
 
         mcm_conn_param req = {};
 
         log::debug("RDMA bridge options")
-                  ("provider", cfg.conn_config.options.rdma.provider)
-                  ("num_endpoints", cfg.conn_config.options.rdma.num_endpoints);
+                ("provider", cfg.conn_config.options.rdma.provider)
+                ("num_endpoints", cfg.conn_config.options.rdma.num_endpoints);
 
         strlcpy(req.local_addr.ip, config::proxy.rdma.dataplane_ip_addr.c_str(),
                 sizeof(req.local_addr.ip));
@@ -238,13 +283,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
             req.type = is_tx;
 
             snprintf(req.remote_addr.port, sizeof(req.remote_addr.port),
-                     "%u", cfg.rdma.port);
+                    "%u", cfg.rdma.port);
 
             egress_bridge->config.copy_buf_parts_from(cfg.conn_config);
             auto res = egress_bridge->configure(ctx, req, dev_handle);
             if (res != Result::success) {
                 log::error("Error configuring RDMA Egress bridge: %s",
-                           result2str(res));
+                        result2str(res));
                 delete egress_bridge;
                 return -1;
             }
@@ -259,13 +304,13 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
             req.type = is_rx;
             
             snprintf(req.local_addr.port, sizeof(req.local_addr.port),
-                     "%u", cfg.rdma.port);
+                    "%u", cfg.rdma.port);
 
             ingress_bridge->config.copy_buf_parts_from(cfg.conn_config);
             auto res = ingress_bridge->configure(ctx, req, dev_handle);
             if (res != Result::success) {
                 log::error("Error configuring RDMA Ingress bridge: %s",
-                           result2str(res));
+                        result2str(res));
                 delete ingress_bridge;
                 return -1;
             }
@@ -285,6 +330,15 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
     }
 
     // log::debug("ESTABLISH COMPLETED");
+
+    return 0;
+}
+
+int BridgesManager::register_bridge(context::Context& ctx, const std::string& id,
+                                    Connection *bridge)
+{
+    if (!bridge)
+        return -1;
 
     lock();
     thread::Defer d([this]{ unlock(); });
@@ -316,7 +370,9 @@ int BridgesManager::delete_bridge(context::Context& ctx, const std::string& id)
         registry.remove(id);
     }
 
-    auto res = bridge->shutdown_async(ctx);
+    auto res = bridge->shutdown_async(ctx, [id]() {
+        multipoint::group_manager.unassociate_conn(id);
+    });
     // delete bridge; // The instance is deleted in a thread in shutdown_async()
 
     return 0;

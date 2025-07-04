@@ -20,7 +20,7 @@ import (
 	"control-plane-agent/internal/telemetry"
 )
 
-func populateConnMetrics(status *model.ConnectionStatus, id string) {
+func PopulateConnMetrics(status *model.ConnectionStatus, id string) {
 	if status != nil {
 		metric, ok := telemetry.Storage.GetMetric(id)
 		// logrus.Debugf("DEBUG %v, %v, %v, %v", id, metric, ok, telemetry.Storage.Metrics)
@@ -80,7 +80,7 @@ func (a *API) ListMediaProxies(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				for j := range conns {
 					conns[j].ProxyId = "" // Hide the id in JSON (omitempty)
-					populateConnMetrics(conns[j].Status, conns[j].Id)
+					PopulateConnMetrics(conns[j].Status, conns[j].Id)
 				}
 				proxies[i].Conns = conns
 			}
@@ -90,7 +90,7 @@ func (a *API) ListMediaProxies(w http.ResponseWriter, r *http.Request) {
 			if err == nil {
 				for j := range bridges {
 					bridges[j].ProxyId = "" // Hide the id in JSON (omitempty)
-					populateConnMetrics(bridges[j].Status, bridges[j].Id)
+					PopulateConnMetrics(bridges[j].Status, bridges[j].Id)
 				}
 				proxies[i].Bridges = bridges
 			}

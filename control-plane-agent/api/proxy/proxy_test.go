@@ -360,6 +360,8 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 		},
 	}
 
+	registry.MediaProxyRegistry.Init(registry.MediaProxyRegistryConfig{})
+
 	eventHandler := &MockEventhandler{}
 
 	err := event.EventProcessor.Init(event.EventProcessorConfig{EventHandler: eventHandler})
@@ -369,6 +371,13 @@ func TestProxyAPI_RegisterConnection(t *testing.T) {
 	defer cancel()
 
 	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		err := registry.MediaProxyRegistry.Run(ctx)
+		require.NoError(t, err)
+	}()
 
 	wg.Add(1)
 	go func() {

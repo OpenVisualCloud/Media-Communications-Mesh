@@ -39,6 +39,7 @@ int ConnectionConfig::parse_from_json(const char *str)
     try {
         auto j = nlohmann::json::parse(str);
 
+        name = j.value("name", "");
         buf_queue_capacity = j.value("bufferQueueCapacity", 16);
         max_payload_size = j.value("maxPayloadSize", 0);
         max_metadata_size = j.value("maxMetadataSize", 0);
@@ -110,6 +111,8 @@ int ConnectionConfig::parse_from_json(const char *str)
 
         if (j.contains("options")) {
             auto joptions = j["options"];
+
+            options.engine = joptions.value("engine", "");
 
             if (joptions.contains("rdma")) {
                 auto rdma = joptions["rdma"];

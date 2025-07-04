@@ -46,6 +46,7 @@ message CreateConnectionRequest {
   string client_id        = 1;
   bytes mcm_conn_param    = 2;
   ConnectionConfig config = 3;
+  string name             = 4;
 }
 
 message CreateConnectionResponse {

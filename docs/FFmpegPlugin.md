@@ -75,6 +75,7 @@ Refer to the [SDK API Definition](SDK_API_Definition.md) for the options of conf
 | `-conn_type`     | Connection type, `"st2110"` or `"multipoint-group"`. Default "multipoint-group".        | `-conn_type st2110` |
 | `-conn_delay`    | Connection creation delay in milliseconds, 0..10000. Default 0.                         | `-conn_delay 100`   |
 | `-buf_queue_cap` | Buffer queue capacity, 2, 4, 8, 16, 32, 64, or 128. Default: 8 for video, 16 for audio. | `-buf_queue_cap 64` |
+| `-name`          | Optional unique connection name. Default empty.                                         | `-name video-in-1`  |
 
 ### SMPTE ST 2110 connection parameters (`-conn_type st2110`)
 

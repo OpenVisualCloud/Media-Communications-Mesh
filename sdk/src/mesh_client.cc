@@ -139,10 +139,12 @@ ClientContext::ClientContext()
 
 int ClientContext::shutdown()
 {
-    std::lock_guard<std::mutex> lk(mx);
+    {
+        std::lock_guard<std::mutex> lk(mx);
 
-    if (!conns.empty())
-        return -MESH_ERR_FOUND_ALLOCATED;
+        if (!conns.empty())
+            return -MESH_ERR_FOUND_ALLOCATED;
+    }
 
     /**
      * TODO: Shutdown and deallocate connections here

@@ -140,6 +140,7 @@ func (r *mediaProxyRegistry) Add(ctx context.Context, proxy model.MediaProxy) (s
 	req := NewRequest(OpAddOne)
 	proxy.Init(r.cfg.CancelCommandRequestFunc)
 
+	req.Name = proxy.Name
 	req.Data = proxy
 	reply, err := r.ExecRequest(ctx, req)
 	if err != nil {

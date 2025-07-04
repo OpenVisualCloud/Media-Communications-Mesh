@@ -58,6 +58,7 @@ func (lc *logicController) HandleEvent(ctx context.Context, e event.Event) event
 			ctx, result, err = action.Perform(ctx, actionDeclaration.Modifier, e.Params)
 			if err != nil {
 				logrus.Errorf("action err (%v): %v", actionWithModifier, err)
+				ctx = context.WithValue(ctx, event.ParamName("error"), err.Error())
 			} else {
 				getResultStr := func(result bool) string {
 					if result {

@@ -20,6 +20,7 @@ import (
 
 	controlplane "control-plane-agent/api/control-plane"
 	"control-plane-agent/api/proxy"
+	"control-plane-agent/api/pulse"
 	"control-plane-agent/internal/config"
 	"control-plane-agent/internal/event"
 	"control-plane-agent/internal/logic"
@@ -49,6 +50,7 @@ func RunAgent() {
 
 	proxyAPIPort := flag.Uint("p", 50051, "Proxy API port number")
 	controlAPIPort := flag.Uint("c", 8100, "Control API port number")
+	pulseAPIPort := flag.Uint("u", 50061, "Pulse API port number")
 	verboseOutput := flag.Bool("v", false, "Verbose output")
 	flag.Parse()
 
@@ -58,6 +60,7 @@ func RunAgent() {
 
 	controlPlaneAPI := controlplane.NewAPI(controlplane.Config{ListenPort: int(*controlAPIPort)})
 	proxyAPI := proxy.NewAPI(proxy.Config{ListenPort: int(*proxyAPIPort)})
+	pulseAPI := pulse.NewAPI(pulse.Config{ListenPort: int(*pulseAPIPort)})
 
 	registry.MediaProxyRegistry.Init(registry.MediaProxyRegistryConfig{CancelCommandRequestFunc: proxyAPI.CancelCommandRequest})
 	registry.ConnRegistry.Init()
@@ -105,6 +108,13 @@ func RunAgent() {
 	go func() {
 		defer wg.Done()
 		proxyAPI.Run(ctx)
+		cancel()
+	}()
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		pulseAPI.Run(ctx)
 		cancel()
 	}()
 

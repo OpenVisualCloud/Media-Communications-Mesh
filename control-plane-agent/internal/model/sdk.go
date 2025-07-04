@@ -80,7 +80,8 @@ type SDKConnectionConfig struct {
 	} `json:"conn"`
 
 	Options struct {
-		RDMA SDKConnectionOptionsRDMA `json:"rdma"`
+		Engine string                   `json:"engine,omitempty"`
+		RDMA   SDKConnectionOptionsRDMA `json:"rdma"`
 	} `json:"options"`
 
 	Payload struct {
@@ -187,9 +188,13 @@ func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
 		return errors.New("unknown sdk conn cfg type")
 	}
 
-	if cfg.Options != nil && cfg.Options.Rdma != nil {
-		s.Options.RDMA.Provider = cfg.Options.Rdma.Provider
-		s.Options.RDMA.NumEndpoints = uint8(cfg.Options.Rdma.NumEndpoints)
+	if cfg.Options != nil {
+		s.Options.Engine = cfg.Options.Engine
+
+		if cfg.Options.Rdma != nil {
+			s.Options.RDMA.Provider = cfg.Options.Rdma.Provider
+			s.Options.RDMA.NumEndpoints = uint8(cfg.Options.Rdma.NumEndpoints)
+		}
 	}
 
 	switch payload := cfg.Payload.(type) {
@@ -266,6 +271,7 @@ func (s *SDKConnectionConfig) AssignToPb(cfg *sdk.ConnectionConfig) {
 	}
 
 	cfg.Options = &sdk.ConnectionOptions{
+		Engine: s.Options.Engine,
 		Rdma: &sdk.ConnectionOptionsRDMA{
 			Provider:     s.Options.RDMA.Provider,
 			NumEndpoints: uint32(s.Options.RDMA.NumEndpoints),
@@ -301,6 +307,9 @@ func (s *SDKConnectionConfig) AssignToPb(cfg *sdk.ConnectionConfig) {
 func (s *SDKConnectionConfig) CheckPayloadCompatibility(c *SDKConnectionConfig) error {
 	if c == nil {
 		return errors.New("sdk cfg is nil")
+	}
+	if s.Options.Engine != c.Options.Engine {
+		return fmt.Errorf("incompatible engine: %v != %v", s.Options.Engine, c.Options.Engine)
 	}
 	if s.CalculatedPayloadSize != c.CalculatedPayloadSize {
 		return fmt.Errorf("incompatible calculated payload size: %v != %v", s.CalculatedPayloadSize, c.CalculatedPayloadSize)

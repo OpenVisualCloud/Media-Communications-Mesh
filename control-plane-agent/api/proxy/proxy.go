@@ -80,6 +80,7 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 	params := map[string]interface{}{
 		"sdk_api_port":         in.SdkApiPort,
 		"controlplane_ip_addr": controlPlaneIpAddr,
+		"proxy_name":           in.Name,
 	}
 
 	if in.St2110Config != nil {
@@ -96,6 +97,11 @@ func (a *API) RegisterMediaProxy(ctx context.Context, in *pb.RegisterMediaProxyR
 	if reply.Err != nil {
 		logrus.Errorf("Proxy register req err: %v", reply.Err)
 		return nil, reply.Err
+	}
+
+	errStr, ok := reply.Ctx.Value(event.ParamName("error")).(string)
+	if ok {
+		return nil, fmt.Errorf("proxy register request: %v", errStr)
 	}
 
 	id, ok := reply.Ctx.Value(event.ParamName("proxy_id")).(string)
@@ -143,7 +149,7 @@ func (a *API) RegisterConnection(ctx context.Context, in *pb.RegisterConnectionR
 	if in.Config == nil {
 		return nil, errors.New("nil register conn config")
 	}
-	logrus.Infof("Conn register %+v", in.Config)
+	logrus.Infof("Conn register: name:%v %+v", in.ConnName, in.Config)
 
 	config := &model.SDKConnectionConfig{}
 	err := config.AssignFromPb(in.Config)
@@ -156,10 +162,18 @@ func (a *API) RegisterConnection(ctx context.Context, in *pb.RegisterConnectionR
 		return nil, err
 	}
 
+	var proxyName string
+	proxy, err := registry.MediaProxyRegistry.Get(ctx, in.ProxyId, false)
+	if err == nil {
+		proxyName = proxy.Name
+	}
+
 	reply := event.PostEventSync(ctx, event.OnRegisterConnection, map[string]interface{}{
 		"proxy_id":    in.ProxyId,
+		"proxy_name":  proxyName,
 		"kind":        in.Kind,
 		"conn_id":     in.ConnId, // Normally, this should be empty
+		"conn_name":   in.ConnName,
 		"conn_config": config,
 		"conn_type":   config.ConnType(),
 		"group_id":    groupURN, // Here the group URN becomes Group ID

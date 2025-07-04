@@ -46,6 +46,7 @@ func (a *Action_RegistryAddBridgeST2110) Perform(ctx context.Context, modifier s
 	if err != nil {
 		logrus.Errorf("registry add bridge st2110 proxy_id err: %v", err)
 	}
+	proxyName, _ := param.GetString("proxy_name")
 	connKind, err := param.GetString("kind")
 	if err != nil {
 		logrus.Errorf("registry add bridge st2110 kind err: %v", err)
@@ -76,9 +77,10 @@ func (a *Action_RegistryAddBridgeST2110) Perform(ctx context.Context, modifier s
 
 	id, err := registry.BridgeRegistry.Add(ctx,
 		model.Bridge{
-			ProxyId: proxyId,
-			GroupId: groupId,
-			Config:  config,
+			ProxyId:   proxyId,
+			ProxyName: proxyName,
+			GroupId:   groupId,
+			Config:    config,
 			Status: &model.ConnectionStatus{
 				RegisteredAt: model.CustomTime(time.Now()),
 				State:        "active", // TODO: Rework this to use string enum?

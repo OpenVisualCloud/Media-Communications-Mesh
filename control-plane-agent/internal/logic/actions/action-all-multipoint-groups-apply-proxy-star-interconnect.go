@@ -98,8 +98,9 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 	type groupStarConfig struct {
 		model.SDKConnectionConfig
 
-		SourceProxyId string
-		DestProxyIds  map[string]interface{}
+		SourceProxyId   string
+		SourceProxyName string
+		DestProxyIds    map[string]interface{}
 	}
 	groupStarConfigs := make(map[string]groupStarConfig)
 
@@ -108,6 +109,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 		// Looking for an active sourceConnId in the group
 		var sourceConnId string
 		var sourceProxyId string
+		var sourceProxyName string
 		for _, connId := range group.ConnIds {
 			conn, ok := connsMap[connId]
 			if !ok {
@@ -118,6 +120,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 				if len(sourceConnId) == 0 {
 					sourceConnId = connId
 					sourceProxyId = conn.ProxyId
+					sourceProxyName = conn.ProxyName
 				} else {
 					logrus.Errorf("Star interconnect: multiple sources, conn id: '%s', first: '%s'", connId, sourceConnId)
 					return ctx, false, nil
@@ -135,6 +138,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 					if len(sourceConnId) == 0 {
 						sourceConnId = bridgeId
 						sourceProxyId = bridge.ProxyId
+						sourceProxyName = bridge.ProxyName
 					} else {
 						logrus.Errorf("Star interconnect: multiple sources, bridge id: '%s', first: '%s'", bridgeId, sourceConnId)
 						return ctx, false, nil
@@ -158,7 +162,11 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			continue
 		}
 
-		config := groupStarConfig{SourceProxyId: sourceProxyId, DestProxyIds: destProxyIds}
+		config := groupStarConfig{
+			SourceProxyId:   sourceProxyId,
+			SourceProxyName: sourceProxyName,
+			DestProxyIds:    destProxyIds,
+		}
 		config.CopyFrom(&group.Config.SDKConnectionConfig)
 
 		groupStarConfigs[group.Id] = config
@@ -174,6 +182,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 
 		GroupId      string
 		ProxyId      string
+		ProxyName    string
 		Kind         string
 		RemoteIPAddr string
 		Port         uint16
@@ -199,6 +208,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			destBridge := bridgeConfig{
 				GroupId:      groupId,
 				ProxyId:      destProxyId,
+				ProxyName:    destProxy.Name,
 				Kind:         "rx",
 				RemoteIPAddr: sourceProxy.Config.RDMA.DataplaneIPAddr,
 				// Port:     port, // 9100, // DEBUG
@@ -208,6 +218,7 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 			sourceBridge := bridgeConfig{
 				GroupId:      groupId,
 				ProxyId:      group.SourceProxyId,
+				ProxyName:    group.SourceProxyName,
 				Kind:         "tx",
 				RemoteIPAddr: destProxy.Config.RDMA.DataplaneIPAddr,
 				// Port:     port, // 9100, // DEBUG
@@ -323,9 +334,10 @@ func (a *Action_AllMultipointGroupsApplyProxyStarInterconnect) Perform(ctx conte
 
 		id, err := registry.BridgeRegistry.Add(ctx,
 			model.Bridge{
-				ProxyId: newBridge.ProxyId,
-				GroupId: newBridge.GroupId,
-				Config:  bridgeConfig,
+				ProxyId:   newBridge.ProxyId,
+				ProxyName: newBridge.ProxyName,
+				GroupId:   newBridge.GroupId,
+				Config:    bridgeConfig,
 				Status: &model.ConnectionStatus{
 					RegisteredAt: model.CustomTime(time.Now()),
 					State:        "active", // TODO: Rework this to use string enum?

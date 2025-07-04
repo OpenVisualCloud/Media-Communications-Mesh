@@ -28,6 +28,7 @@ func (a *Action_RegistryAddConnection) Perform(ctx context.Context, modifier str
 	if err != nil {
 		logrus.Errorf("registry add conn proxy id err: %v", err)
 	}
+	proxyName, _ := param.GetString("proxy_name")
 	kind, err := param.GetString("kind")
 	if err != nil {
 		logrus.Errorf("registry add conn kind err: %v", err)
@@ -40,6 +41,7 @@ func (a *Action_RegistryAddConnection) Perform(ctx context.Context, modifier str
 	if err != nil {
 		logrus.Errorf("registry add conn conn id err: %v", err)
 	}
+	connName, _ := param.GetString("conn_name")
 
 	// _, _, err = mesh.ParseGroupURN(groupURN)
 	// if err != nil {
@@ -56,9 +58,11 @@ func (a *Action_RegistryAddConnection) Perform(ctx context.Context, modifier str
 
 	id, err := registry.ConnRegistry.Add(ctx,
 		model.Connection{
-			Id:      connId, // Normally, this should be empty. If Media Proxy lost connection to Agent, this is the id assigned by Agent at previous registration.
-			ProxyId: proxyId,
-			Config:  config,
+			Id:        connId, // Normally, this should be empty. If Media Proxy lost connection to Agent, this is the id assigned by Agent at previous registration.
+			Name:      connName,
+			ProxyId:   proxyId,
+			ProxyName: proxyName,
+			Config:    config,
 			Status: &model.ConnectionStatus{
 				RegisteredAt: model.CustomTime(time.Now()),
 				State:        "active", // TODO: Rework this to use string enum?

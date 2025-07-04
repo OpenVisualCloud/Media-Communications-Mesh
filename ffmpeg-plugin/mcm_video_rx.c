@@ -20,6 +20,7 @@ typedef struct McmVideoDemuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    char *name;
     int buf_queue_cap;
     int conn_delay;
     char *conn_type;
@@ -63,14 +64,14 @@ static int mcm_video_read_header(AVFormatContext* avctx)
     if (!strcmp(s->conn_type, "multipoint-group")) {
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_multipoint_group_video_format,
-                     s->buf_queue_cap, s->conn_delay,
+                     s->name, s->buf_queue_cap, s->conn_delay,
                      s->urn, s->rdma_provider, s->rdma_num_endpoints,
                      s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_video_format,
-                     s->buf_queue_cap, s->conn_delay,
+                     s->name, s->buf_queue_cap, s->conn_delay,
                      s->ip_addr, s->port, s->mcast_sip_addr,
                      s->transport, s->payload_type,
                      s->transport_pixel_format,
@@ -197,6 +198,7 @@ static int mcm_video_read_close(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmVideoDemuxerContext, x)
 #define DEC (AV_OPT_FLAG_DECODING_PARAM)
 static const AVOption mcm_video_rx_options[] = {
+    { "name", "set unique connection name", OFFSET(name), AV_OPT_TYPE_STRING, {.str = ""}, .flags = DEC },
     { "buf_queue_cap", "set buffer queue capacity", OFFSET(buf_queue_cap), AV_OPT_TYPE_INT, {.i64 = 8}, 1, 255, DEC },
     { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },

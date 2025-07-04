@@ -1,0 +1,24 @@
+// SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
+syntax = "proto3";
+
+package pulse;
+
+service PulseAPI {
+  rpc ProxyList           (ListRequest) returns (Reply) {}
+  rpc ConnectionList      (ListRequest) returns (Reply) {}
+  rpc BridgeList          (ListRequest) returns (Reply) {}
+  rpc MultipointGroupList (ListRequest) returns (Reply) {}
+}
+
+message Reply {
+  string text = 1;
+}
+
+message ListRequest {
+  repeated string ids     = 1;
+  string output_format    = 2;
+  repeated string filters = 3;
+}

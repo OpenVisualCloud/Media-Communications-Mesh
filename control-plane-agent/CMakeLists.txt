@@ -61,6 +61,8 @@ configure_file(
 set(PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../protos/mediaproxy.proto")
 set(GENERATED_DIR_MEDIAPROXY "${CMAKE_CURRENT_SOURCE_DIR}/api/proxy/proto/mediaproxy")
 set(GENERATED_DIR_SDK "${CMAKE_CURRENT_SOURCE_DIR}/api/proxy/proto/sdk")
+set(PULSE_PROTO_FILE "${CMAKE_CURRENT_SOURCE_DIR}/../protos/pulse.proto")
+set(GENERATED_DIR_PULSE "${CMAKE_CURRENT_SOURCE_DIR}/api/pulse/proto/pulse")
 
 # Define the output directory for the executable
 set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../_build/mcm/bin")
@@ -69,12 +71,13 @@ set(OUTPUT_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../_build/mcm/bin")
 file(MAKE_DIRECTORY ${OUTPUT_DIR})
 file(MAKE_DIRECTORY ${GENERATED_DIR_MEDIAPROXY})
 file(MAKE_DIRECTORY ${GENERATED_DIR_SDK})
+file(MAKE_DIRECTORY ${GENERATED_DIR_PULSE})
 
 # Define the output executable name
 set(EXECUTABLE_NAME "mesh-agent")
 
 # Add a custom target to generate gRPC code from the proto files
-add_custom_target(generate_grpc
+add_custom_target(generate_grpc_agent
     COMMAND ${PROTOC_EXECUTABLE}
             --proto_path=${CMAKE_CURRENT_SOURCE_DIR}/../protos
             --go_out=paths=source_relative:${GENERATED_DIR_MEDIAPROXY}
@@ -89,23 +92,32 @@ add_custom_target(generate_grpc
             --plugin=protoc-gen-go=${PROTOC_GEN_GO_EXECUTABLE}
             --plugin=protoc-gen-go-grpc=${PROTOC_GEN_GO_GRPC_EXECUTABLE}
             ${CMAKE_CURRENT_SOURCE_DIR}/../protos/conn-config.proto
+    COMMAND ${PROTOC_EXECUTABLE}
+            --proto_path=${CMAKE_CURRENT_SOURCE_DIR}/../protos
+            --go_out=paths=source_relative:${GENERATED_DIR_PULSE}
+            --go-grpc_out=paths=source_relative:${GENERATED_DIR_PULSE}
+            --go_opt=Mpulse.proto=control-plane-agent/api/pulse/proto/pulse
+            --go-grpc_opt=Mpulse.proto=control-plane-agent/api/pulse/proto/pulse
+            --plugin=protoc-gen-go=${PROTOC_GEN_GO_EXECUTABLE}
+            --plugin=protoc-gen-go-grpc=${PROTOC_GEN_GO_GRPC_EXECUTABLE}
+            ${CMAKE_CURRENT_SOURCE_DIR}/../protos/pulse.proto
     COMMENT "Generating gRPC code from proto files..."
 )
 
 # Add a custom target to run all unit tests
-add_custom_target(gotest
+add_custom_target(gotest_agent
     COMMAND ${GO_EXECUTABLE} test -timeout=30s ./...
     WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
     COMMENT "Running Go unit tests..."
-    DEPENDS generate_grpc
+    DEPENDS generate_grpc_agent
 )
 
 # Add a custom target to build the Go project
-add_custom_target(build ALL
+add_custom_target(build_agent ALL
     COMMAND ${GO_EXECUTABLE} build -o ${OUTPUT_DIR}/${EXECUTABLE_NAME} ${MAIN_GO_FILE}
     WORKING_DIRECTORY ${SOURCE_DIR}
     COMMENT "Building Go project..."
-    DEPENDS generate_grpc gotest
+    DEPENDS generate_grpc_agent gotest_agent
 )
 
 install(PROGRAMS ${OUTPUT_DIR}/${EXECUTABLE_NAME} DESTINATION ${CMAKE_INSTALL_PATH})

@@ -38,7 +38,8 @@ message ConfigRDMA {
 }
 
 message ConnectionOptions {
-  ConnectionOptionsRDMA rdma = 1;
+  string engine              = 1;
+  ConnectionOptionsRDMA rdma = 2;
 }
 
 message ConnectionOptionsRDMA {

@@ -48,6 +48,10 @@ func (a *Action_RegistryAddProxy) Perform(ctx context.Context, modifier string, 
 	if err != nil {
 		logrus.Errorf("registry add proxy rdma dataplane local ports err: %v", err)
 	}
+	name, err := param.GetString("proxy_name")
+	if err != nil {
+		logrus.Errorf("registry add proxy name err: %v", err)
+	}
 
 	rdmaBitMask, err := model.NewPortMask(rdma_DataplaneLocalPorts)
 	if err != nil {
@@ -56,6 +60,7 @@ func (a *Action_RegistryAddProxy) Perform(ctx context.Context, modifier string, 
 	}
 
 	proxy := model.MediaProxy{
+		Name: name,
 		Config: &model.MediaProxyConfig{
 			SDKAPIPort:       sdkAPIPort,
 			ControlplaneAddr: controlplaneIpAddr,

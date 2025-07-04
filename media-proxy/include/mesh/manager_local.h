@@ -11,6 +11,7 @@
 #include <string>
 #include "concurrency.h"
 #include "conn_registry.h"
+#include "conn_local.h"
 
 namespace mesh::connection {
 
@@ -19,14 +20,15 @@ public:
     int create_connection_sdk(context::Context& ctx, std::string& id,
                               const std::string& client_id, mcm_conn_param *param,
                               memif_conn_param *memif_param,
-                              const Config& conn_config, std::string& err_str);
+                              const Config& conn_config, const std::string& name,
+                              std::string& err_str);
 
     Result activate_connection_sdk(context::Context& ctx, const std::string& id);
 
     int delete_connection_sdk(context::Context& ctx, const std::string& id,
                               bool do_unregister = true);
 
-    Connection * get_connection(context::Context& ctx, const std::string& id);
+    Connection * find_connection(context::Context& ctx, const std::string& id);
 
     int reregister_all_connections(context::Context& ctx);
 
@@ -41,6 +43,9 @@ private:
     Registry registry_sdk; // This registry uses SDK ids
     Registry registry;     // This registry uses Agent assigned ids
     std::mutex mx;
+
+    Result make_connection(context::Context& ctx, const Config& cfg,
+                           Connection *& conn, Local *& memif_conn);
 };
 
 extern LocalManager local_manager;

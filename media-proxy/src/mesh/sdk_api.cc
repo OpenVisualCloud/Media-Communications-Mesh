@@ -18,6 +18,7 @@
 #include "client_registry.h"
 #include "uuid.h"
 #include "event.h"
+#include "manager_multipoint.h"
 
 namespace mesh {
 
@@ -62,6 +63,8 @@ public:
 
         // log::debug("Has config?")("yes", req->has_config());
 
+        std::string name = req->name();
+
         if (!req->has_config()) {
             log::error("SDK: no config provided");
             return Status(StatusCode::INVALID_ARGUMENT, "no config provided");
@@ -89,11 +92,11 @@ public:
 
         auto& mgr = connection::local_manager;
         int err = mgr.create_connection_sdk(ctx, conn_id, client_id, &param,
-                                            &memif_param, conn_config, err_str);
+                                            &memif_param, conn_config, name, err_str);
         if (err) {
-            log::error("create_local_conn() failed (%d)", err);
+            log::error("create_connection_sdk() failed (%d)", err);
             if (err_str.empty())
-                return Status(StatusCode::INTERNAL, "create_local_conn() failed");
+                return Status(StatusCode::INTERNAL, "create_connection_sdk() failed");
             else
                 return Status(StatusCode::INTERNAL, err_str);
         }
@@ -153,8 +156,10 @@ public:
         if (err)
             ; // log::error("delete_local_conn err (%d)", err);
         else
-            log::info("[SDK] Connection deleted")("id", req->conn_id())
+            log::info("[SDK] Connection deleted")("id", conn_id)
                                                  ("client_id", client_id);
+
+        multipoint::group_manager.unassociate_conn(conn_id);
 
         return Status::OK;
     }
@@ -170,7 +175,7 @@ public:
 
         auto ch = event::broker.subscribe(id);
         if (!ch) {
-            log::error("SDK client event subscription err: %s", status.error_message().c_str());
+            log::error("SDK client event subscription failed");
             return status;
         }
 

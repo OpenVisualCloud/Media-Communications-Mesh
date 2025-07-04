@@ -1,3 +1,9 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #include "manager_multipoint.h"
 #include <unordered_set>
 #include <utility>
@@ -5,6 +11,10 @@
 #include "logger.h"
 #include "manager_local.h"
 #include "manager_bridges.h"
+#include "event.h"
+#include "conn_local.h"
+#include "multipoint_copy.h"
+#include "multipoint_zc.h"
 
 namespace mesh::multipoint {
 
@@ -88,6 +98,7 @@ Result GroupManager::apply_config(context::Context& ctx, const Config& new_cfg)
 
         GroupChangeConfig cc = {
             .group_id = group_id,
+            .conn_config = it_current->second.conn_config,
             .added_conn_ids = added_conn_ids,
             .deleted_conn_ids = deleted_conn_ids,
             .added_bridge_ids = added_bridge_ids,
@@ -101,6 +112,7 @@ Result GroupManager::apply_config(context::Context& ctx, const Config& new_cfg)
         if (it != new_cfg.groups.end()) {
             GroupChangeConfig cc = {
                 .group_id = group_id,
+                .conn_config = it->second.conn_config,
                 .added_conn_ids = it->second.conn_ids,
                 .added_bridge_ids = it->second.bridge_ids,
             };
@@ -113,6 +125,7 @@ Result GroupManager::apply_config(context::Context& ctx, const Config& new_cfg)
         if (it != cfg.groups.end()) {
             GroupChangeConfig cc = {
                 .group_id = group_id,
+                .conn_config = it->second.conn_config,
                 .deleted_conn_ids = it->second.conn_ids,
                 .deleted_bridge_ids = it->second.bridge_ids,
             };
@@ -182,21 +195,13 @@ Result GroupManager::reconcile_config(context::Context& ctx,
 
     // Delete entire groups, including associated connections and bridges
     for (const auto& cfg : deleted_groups) {
-        Group *group = get_group(cfg.group_id);
+        Group *group = find_group(cfg.group_id);
         if (!group) {
             log::error("[RECONCILE] Delete group: not found")("group_id", cfg.group_id);
             continue;
         }
 
         log::info("[RECONCILE] Delete group and its conns")("group_id", cfg.group_id);
-
-        if (group->link()) {
-            group->link()->set_link(ctx, nullptr);
-            group->set_link(ctx, nullptr);
-        }
-
-        group->shutdown(ctx);
-        group->delete_all_outputs();
 
         for (const auto& bridge_id : cfg.deleted_bridge_ids) {
             auto err = bridges_manager.delete_bridge(ctx, bridge_id);
@@ -206,13 +211,13 @@ Result GroupManager::reconcile_config(context::Context& ctx,
                           ("bridge_id", bridge_id);
         }
 
-        delete_group(cfg.group_id);
-        delete group;
+        unregister_group(group);
+        // delete group; -- Deletion should be done in a separate thread.
     }
 
     // Delete some connections and bridges in existing groups
     for (const auto& cfg : updated_groups) {
-        Group *group = get_group(cfg.group_id);
+        Group *group = find_group(cfg.group_id);
         if (!group) {
             log::error("[RECONCILE] Update group del: not found")
                       ("group_id", cfg.group_id)
@@ -221,7 +226,7 @@ Result GroupManager::reconcile_config(context::Context& ctx,
         }
 
         for (const auto& conn_id : cfg.deleted_conn_ids) {
-            auto conn = local_manager.get_connection(ctx, conn_id);
+            auto conn = local_manager.find_connection(ctx, conn_id);
             if (!conn) {
                 // log::error("[RECONCILE] Delete conn: not found")
                 //           ("group_id", cfg.group_id)
@@ -250,7 +255,7 @@ Result GroupManager::reconcile_config(context::Context& ctx,
     // Lambda function for adding local connections to a group
     auto add_conns = [this, &ctx](Group *group, std::vector<std::string> conn_ids) {
         for (const auto& conn_id : conn_ids) {
-            auto conn = local_manager.get_connection(ctx, conn_id);
+            auto conn = local_manager.find_connection(ctx, conn_id);
             if (!conn) {
                 log::error("[RECONCILE] Add conn: not found")
                           ("group_id", group->id)
@@ -287,10 +292,18 @@ Result GroupManager::reconcile_config(context::Context& ctx,
             }
             const auto& bridge_config = it->second;
 
-            auto err = bridges_manager.create_bridge(ctx, bridge, bridge_id,
-                                                     bridge_config);
+            auto err = bridges_manager.make_bridge(ctx, bridge, bridge_config);
             if (err) {
-                log::error("[RECONCILE] Add bridge err: %d", err)
+                log::error("[RECONCILE] Make bridge err: %d", err)
+                          ("group_id", group->id)
+                          ("bridge_id", bridge_id)
+                          ("kind", kind2str(kind));
+                continue;
+            }
+
+            err = bridges_manager.register_bridge(ctx, bridge_id, bridge);
+            if (err) {
+                log::error("[RECONCILE] Register bridge err: %d", err)
                           ("group_id", group->id)
                           ("bridge_id", bridge_id)
                           ("kind", kind2str(kind));
@@ -307,24 +320,30 @@ Result GroupManager::reconcile_config(context::Context& ctx,
 
     // Add new groups and their connections and bridges
     for (const auto& cfg : added_groups) {
-        auto group = new(std::nothrow) Group(cfg.group_id);
+        auto group = create_group(cfg.group_id, cfg.conn_config.options.engine);
         if (!group)
             return Result::error_out_of_memory;
 
         log::info("[RECONCILE] Add group")("group_id", group->id)
+                                          ("engine", cfg.conn_config.options.engine)
                                           ("conns", cfg.added_conn_ids.size())
                                           ("bridges", cfg.added_bridge_ids.size());
 
+        group->set_config(cfg.conn_config);
         group->configure(ctx);
         auto res = group->establish(ctx);
         if (res != Result::success) {
             log::error("[RECONCILE] Group establish err: %s", result2str(res))
                       ("group_id", group->id);
+            group->shutdown(ctx);
+            delete group;
+            continue;
         }
 
-        auto err = add_group(cfg.group_id, group);
+        auto err = register_group(cfg.group_id, group);
         if (err) {
             log::error("[RECONCILE] Add group err: %d", err)("group_id", cfg.group_id);
+            group->shutdown(ctx);
             delete group;
             continue;
         }
@@ -335,7 +354,7 @@ Result GroupManager::reconcile_config(context::Context& ctx,
 
     // Add new connections to existing groups
     for (const auto& cfg : updated_groups) {
-        Group *group = get_group(cfg.group_id);
+        Group *group = find_group(cfg.group_id);
         if (!group) {
             log::error("[RECONCILE] Update group: not found")("group_id", cfg.group_id);
             continue;
@@ -351,7 +370,7 @@ Result GroupManager::reconcile_config(context::Context& ctx,
 
         log::info("* Group")
                  ("group_id", group->id)
-                 ("input", group->link() ? "assigned" : "n/a")
+                 ("input", group->input_assigned() ? "assigned" : "n/a")
                  ("outputs", group->outputs_num());
     }
 
@@ -360,23 +379,86 @@ Result GroupManager::reconcile_config(context::Context& ctx,
     return Result::success;
 }
 
+Group * GroupManager::create_group(const std::string& id, const std::string& engine)
+{
+    if (engine.starts_with("zero-copy"))
+        return new(std::nothrow) ZeroCopyGroup(id);
+    else
+        return new(std::nothrow) CopyGroup(id);
+}
+
 Result GroupManager::associate(context::Context& ctx, Group *group,
                                Connection *conn) {
     switch (conn->kind()) {
     case Kind::receiver:
         if (group->assign_input(ctx, conn) == Result::success)
             conn->set_link(ctx, group);
-        return Result::success;
+        break;
 
     case Kind::transmitter:
         if (conn->set_link(ctx, group) == Result::success)
             group->add_output(ctx, conn);
-        return Result::success;
+        break;
 
     default:
         return Result::error_bad_argument;
     }
+
+    if (dynamic_cast<Local *>(conn)) {
+        std::unique_lock lk(mx);
+        associations[conn->id] = group->id;
+        log::warn("Added to associations");
+    }
+
+    return Result::success;
 };
 
+void GroupManager::unassociate_conn(const std::string& conn_id)
+{
+    associations.erase(conn_id);
+}
+
+void GroupManager::run(context::Context& ctx)
+{
+    while (!ctx.cancelled()) {
+        mx.lock();
+
+        std::unordered_set<std::string> associated_group_ids;
+        for (const auto& [_, group_id] : associations) {
+            associated_group_ids.insert(group_id);
+            log::debug("associated_group")("group_id", group_id);
+        }
+
+        log::debug("associated_group_ids")("size", associated_group_ids.size())("deleted_groups", deleted_groups.size());
+
+        std::unordered_set<std::string> group_ids_to_erase;
+        for (const auto& [group_id, group] : deleted_groups) {
+            if (!associated_group_ids.contains(group_id)) {
+                group->shutdown(ctx);
+                delete group;
+                group_ids_to_erase.insert(group_id);
+                log::debug("Group finally deleted")("group_id", group_id);
+            }
+        }
+
+        for (const auto& group_id : group_ids_to_erase)
+            deleted_groups.erase(group_id);
+
+        mx.unlock();
+
+        thread::Sleep(ctx, std::chrono::milliseconds(1000));
+    }
+
+    auto tctx = context::WithTimeout(context::Background(), std::chrono::seconds(15));
+    for (const auto& [group_id, group] : groups) {
+        group->shutdown(tctx);
+        delete group;
+
+        if (tctx.cancelled()) {
+            log::warn("Group manager shutdown t/o");
+            break;            
+        }
+    }
+}
 
 } // namespace mesh::multipoint

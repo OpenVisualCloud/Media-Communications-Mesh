@@ -21,7 +21,7 @@ int mesh_create_client(MeshClient **mc, const char *cfg)
     if (!cfg)
         return -MESH_ERR_BAD_CONFIG_PTR;
 
-    ClientContext *mc_ctx = new (std::nothrow) ClientContext();
+    ClientContext *mc_ctx = new(std::nothrow) ClientContext();
     if (!mc_ctx) {
         *mc = NULL;
         return -ENOMEM;

@@ -17,6 +17,7 @@
 #include "proxy_config.h"
 #include "mcm-version.h"
 #include "event.h"
+#include "manager_multipoint.h"
 
 #include <execinfo.h>
 #include <dlfcn.h>
@@ -60,6 +61,8 @@ void usage(FILE* fp, const char* path)
     fprintf(fp, "-p, --rdma_ports=ports_ranges\t"
                 "Local port ranges for incoming RDMA connections (default: %s)\n",
             config::proxy.rdma.dataplane_local_ports.c_str());
+    fprintf(fp, "-n, --name=proxy_name\t\t"
+                "Optional unique proxy name (default: empty)\n");
 }
 
 void PrintStackTrace() {
@@ -108,6 +111,7 @@ int main(int argc, char* argv[])
     std::string st2110_ip_addr = config::proxy.st2110.dataplane_ip_addr;
     std::string rdma_ip_addr = config::proxy.rdma.dataplane_ip_addr;
     std::string rdma_ports = config::proxy.rdma.dataplane_local_ports;
+    std::string proxy_name;
     int help_flag = 0;
 
     int opt;
@@ -119,12 +123,13 @@ int main(int argc, char* argv[])
         { "st2110_ip", required_argument, NULL, 'i' },
         { "rdma_ip", required_argument, NULL, 'r' },
         { "rdma_ports", required_argument, NULL, 'p' },
+        { "name", required_argument, NULL, 'n' },
         { 0 }
     };
 
     /* infinite loop, to be broken when we are done parsing options */
     while (1) {
-        opt = getopt_long(argc, argv, "h?t:a:d:i:r:p:", longopts, 0);
+        opt = getopt_long(argc, argv, "h?t:a:d:i:r:p:n:", longopts, 0);
         if (opt == -1)
             break;
 
@@ -151,6 +156,9 @@ int main(int argc, char* argv[])
         case 'p':
             rdma_ports = optarg;
             break;
+        case 'n':
+            proxy_name = optarg;
+            break;
         }
     }
 
@@ -172,6 +180,7 @@ int main(int argc, char* argv[])
     config::proxy.st2110.dataplane_ip_addr   = std::move(st2110_ip_addr);
     config::proxy.rdma.dataplane_ip_addr     = std::move(rdma_ip_addr);
     config::proxy.rdma.dataplane_local_ports = std::move(rdma_ports);
+    config::proxy.name                       = std::move(proxy_name);
 
     try {
         config::proxy.sdk_api_port = std::stoi(sdk_port);
@@ -179,6 +188,9 @@ int main(int argc, char* argv[])
         log::warn("Can't parse SDK API port. Using default port: %d",
                   config::proxy.sdk_api_port);
     }
+
+    if (!config::proxy.name.empty())
+        log::info("Proxy name: %s", config::proxy.name.c_str());
 
     log::info("SDK API port: %u", config::proxy.sdk_api_port);
     log::info("MCM Agent Proxy API addr: %s", config::proxy.agent_addr.c_str());
@@ -205,6 +217,12 @@ int main(int argc, char* argv[])
     auto event_ctx = context::WithCancel(context::Background());
     std::thread eventBrokerThread([&]() {
         event::broker.run(event_ctx);
+    });
+
+    // Start multipoint group manager background process
+    auto group_ctx = context::WithCancel(context::Background());
+    std::thread groupManagerThread([&]() {
+        multipoint::group_manager.run(group_ctx);
     });
 
     // Start ProxyAPI client
@@ -239,6 +257,10 @@ int main(int argc, char* argv[])
     // Shutdown SDK API server
     sdk_ctx.cancel();
     sdkApiThread.join();
+
+    // Shutdown multipoint group manager background process
+    group_ctx.cancel();
+    groupManagerThread.join();
 
     // Shutdown event broker
     event_ctx.cancel();

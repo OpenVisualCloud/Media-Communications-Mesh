@@ -66,6 +66,8 @@ public:
     // Any value of the MESH_CONN_KIND_* constants.
     int kind;
 
+    std::string name;
+
     uint16_t buf_queue_capacity;
     uint32_t max_payload_size;
     uint32_t max_metadata_size;
@@ -108,6 +110,8 @@ public:
     } conn;
 
     struct {
+        std::string engine;
+    
         struct {
             std::string provider = "tcp";
             uint8_t num_endpoints = 1;

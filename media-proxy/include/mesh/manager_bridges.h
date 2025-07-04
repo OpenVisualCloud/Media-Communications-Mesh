@@ -36,8 +36,11 @@ public:
 
 class BridgesManager {
 public:
-    int create_bridge(context::Context& ctx, Connection*& bridge,
-                      const std::string& id, const BridgeConfig& cfg);
+    int make_bridge(context::Context& ctx, Connection*& bridge,
+                    const BridgeConfig& cfg);
+
+    int register_bridge(context::Context& ctx, const std::string& id,
+                        Connection *bridge);
 
     int delete_bridge(context::Context& ctx, const std::string& id);
 

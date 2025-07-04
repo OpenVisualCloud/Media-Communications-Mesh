@@ -14,11 +14,12 @@ import (
 )
 
 type Bridge struct {
-	Id      string            `json:"id,omitempty"`
-	ProxyId string            `json:"proxyId,omitempty"`
-	GroupId string            `json:"groupId,omitempty"`
-	Config  *BridgeConfig     `json:"config,omitempty"`
-	Status  *ConnectionStatus `json:"status,omitempty"`
+	Id        string            `json:"id,omitempty"`
+	ProxyId   string            `json:"proxyId,omitempty"`
+	ProxyName string            `json:"proxyName,omitempty"`
+	GroupId   string            `json:"groupId,omitempty"`
+	Config    *BridgeConfig     `json:"config,omitempty"`
+	Status    *ConnectionStatus `json:"status,omitempty"`
 }
 
 type BridgeST2110Config struct {

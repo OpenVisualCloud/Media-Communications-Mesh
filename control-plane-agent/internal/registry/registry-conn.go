@@ -120,6 +120,7 @@ func (r *connRegistry) Get(ctx context.Context, id string, addConfig bool) (mode
 func (r *connRegistry) Add(ctx context.Context, conn model.Connection) (string, error) {
 	req := NewRequest(OpAddOne)
 	req.Id = conn.Id
+	req.Name = conn.Name
 	req.Data = conn
 	reply, err := r.ExecRequest(ctx, req)
 	if err != nil {

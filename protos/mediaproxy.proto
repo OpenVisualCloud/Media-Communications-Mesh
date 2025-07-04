@@ -40,6 +40,7 @@ message RegisterMediaProxyRequest {
   uint32 sdk_api_port             = 1;
   ST2110ProxyConfig st2110_config = 2;
   RDMAProxyConfig rdma_config     = 3;
+  string name                     = 4;
 }
 
 message RegisterMediaProxyReply {
@@ -61,6 +62,8 @@ message RegisterConnectionRequest {
   // Normally, this field is empty. If connection to Agent was lost,
   // this is the id assigned by Agent at previous registration.
   string conn_id              = 4;
+
+  string conn_name            = 5;
 }
 
 message RegisterConnectionReply {
@@ -89,9 +92,10 @@ message CommandRequest {
 }
 
 message MultipointGroup {
-  string group_id            = 1;
-  repeated string conn_ids   = 2;
-  repeated string bridge_ids = 3;
+  string group_id                  = 1;
+  sdk.ConnectionConfig conn_config = 2;
+  repeated string conn_ids         = 3;
+  repeated string bridge_ids       = 4;
 }
 
 message BridgeST2110 {

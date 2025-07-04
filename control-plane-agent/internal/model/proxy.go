@@ -15,6 +15,7 @@ import (
 
 type MediaProxy struct {
 	Id               string            `json:"id,omitempty"`
+	Name             string            `json:"name,omitempty"`
 	Config           *MediaProxyConfig `json:"config,omitempty"`
 	Status           *MediaProxyStatus `json:"status,omitempty"`
 	ConnIds          []string          `json:"-"`       // array of local connection ids, hidden in JSON

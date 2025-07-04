@@ -17,22 +17,21 @@ namespace mesh::connection {
 class Local : public Connection {
 
 public:
-    Result configure_memif(context::Context& ctx, memif_ops_t *ops,
-                           size_t frame_size, uint8_t log2_ring_size);
-    void get_params(memif_conn_param *param);
+    Result configure_memif(context::Context& ctx);
+    void get_params_memif(memif_conn_param *param);
 
 protected:
     virtual void default_memif_ops(memif_ops_t *ops) = 0;
     virtual int on_memif_receive(void *ptr, uint32_t sz) = 0;
+
+    Result on_establish(context::Context& ctx) override;
+    Result on_shutdown(context::Context& ctx) override;
 
     memif_socket_handle_t memif_socket;
     memif_conn_handle_t memif_conn;
     size_t frame_size;
 
 private:
-    Result on_establish(context::Context& ctx) override;
-    Result on_shutdown(context::Context& ctx) override;
-
     static int callback_on_connect(memif_conn_handle_t conn, void *private_ctx);
     static int callback_on_disconnect(memif_conn_handle_t conn, void *private_ctx);
     static int callback_on_interrupt(memif_conn_handle_t conn, void *private_ctx,

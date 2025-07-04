@@ -100,6 +100,7 @@ public:
 
         CreateConnectionRequest req;
         req.set_client_id(client_id);
+        req.set_name(cfg.name);
 
         // mcm_conn_param param = {
         //     .type = is_rx,
@@ -161,6 +162,8 @@ public:
         }
 
         auto options = config->mutable_options();
+        options->set_engine(cfg.options.engine);
+
         auto options_rdma = options->mutable_rdma();
         options_rdma->set_provider(cfg.options.rdma.provider);
         options_rdma->set_num_endpoints(cfg.options.rdma.num_endpoints);

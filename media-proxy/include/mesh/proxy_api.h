@@ -27,7 +27,7 @@ public:
 
     int RegisterConnection(std::string& conn_id, const std::string& kind,
                            const connection::Config& config,
-                           std::string& err);
+                           const std::string& name, std::string& err);
     int UnregisterConnection(const std::string& conn_id);
     int SendMetrics(const std::vector<telemetry::Metric>& metrics);
     int StartCommandQueue(context::Context& ctx);

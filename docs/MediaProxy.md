@@ -26,6 +26,7 @@ Media Proxy should be running in privileged mode.
 | `-i` `--st2110_ip`  | IP address for SMPTE ST 2110 connections, default 192.168.96.1                  | `-i 192.168.96.10`       |
 | `-r` `--rdma_ip`    | IP address for RDMA connections, default 192.168.96.2                           | `-r 192.168.97.10`       |
 | `-p` `--rdma_ports` | Local port ranges for incoming RDMA connections, default 9100-9999              | `-p 9100-9199,8500-8599` |
+| `-n` `--name`       | Optional unique proxy name, default empty                                       | `-n proxy-1`             |
 | `-h` `--help`       | Print usage help                                                                | –                        |
 
 ## Environment variables

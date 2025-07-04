@@ -77,8 +77,8 @@ public:
                 continue;
 
             auto evt = v.value();
-            for (const auto& kv : channels) {
-                if (kv.second == evt.consumer_id) {
+            for (const auto& [ch, id] : channels) {
+                if (id == evt.consumer_id) {
                     auto tctx = context::WithTimeout(ctx, std::chrono::milliseconds(3000));
                     if (ctx.cancelled())
                         return;
@@ -86,7 +86,7 @@ public:
                     if (tctx.cancelled()) {
                         log::error("Event sending timeout")("type", (int)evt.type)
                                   ("consumer_id", evt.consumer_id);
-                    } else if (!kv.first->send(tctx, evt)) {
+                    } else if (!ch->send(tctx, evt)) {
                         log::error("Event sending failed")("type", (int)evt.type)
                                   ("consumer_id", evt.consumer_id);
                     }

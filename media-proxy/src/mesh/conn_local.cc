@@ -11,33 +11,41 @@
 
 namespace mesh::connection {
 
-Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
-                              size_t frame_size, uint8_t log2_ring_size)
+Result Local::configure_memif(context::Context& ctx)
 {
-    this->frame_size = frame_size;
+    memif_ops_t ops = {};
+    ops.interface_id = 0;
 
+    const char *type_str = config.kind2str();
+
+    snprintf(ops.app_name, sizeof(ops.app_name),
+             "memif_%s_%s", type_str, id.c_str());
+    snprintf(ops.interface_name, sizeof(ops.interface_name),
+             "memif_%s_%s", type_str, id.c_str());
+    snprintf(ops.socket_path, sizeof(ops.socket_path),
+             "/run/mcm/media_proxy_%s_%s.sock", type_str, id.c_str());
+
+    frame_size = config.buf_parts.total_size();
     log::debug("FRAME SIZE %lu", frame_size);
+
+    uint8_t log2_ring_size = config.buf_queue_capacity ?
+                             std::log2(config.buf_queue_capacity) : 0;
 
     bzero(memif_socket_args.app_name, sizeof(memif_socket_args.app_name));
     bzero(memif_socket_args.path, sizeof(memif_socket_args.path));
 
-    if (!ops) {
-        ops = &this->ops;
-        default_memif_ops(ops);
-    }
-
     // Set application name
-    strlcpy(memif_socket_args.app_name, ops->app_name,
+    strlcpy(memif_socket_args.app_name, ops.app_name,
             sizeof(memif_socket_args.app_name));
 
     // Create memif socket.
     // Interfaces are internally stored in a database referenced by memif socket.
-    strlcpy(memif_socket_args.path, ops->socket_path, sizeof(memif_socket_args.path));
+    strlcpy(memif_socket_args.path, ops.socket_path, sizeof(memif_socket_args.path));
 
     // Create memif interfaces
     // Both interaces are assigned the same socket and same id to create a loopback.
     ready = false;
-    memif_conn_args.interface_id = ops->interface_id;
+    memif_conn_args.interface_id = ops.interface_id;
     memif_conn_args.buffer_size = (uint32_t)frame_size;
 
     const uint8_t MEMIF_DEFAULT_LOG2_RING_SIZE = 4;
@@ -45,14 +53,14 @@ Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
                                      MEMIF_DEFAULT_LOG2_RING_SIZE;
 
     snprintf((char*)memif_conn_args.interface_name,
-             sizeof(memif_conn_args.interface_name), "%s", ops->interface_name);
+             sizeof(memif_conn_args.interface_name), "%s", ops.interface_name);
     memif_conn_args.is_master = 1;
 
     set_state(ctx, State::configured);
     return Result::success;
 }
 
-void Local::get_params(memif_conn_param *param)
+void Local::get_params_memif(memif_conn_param *param)
 {
     if (param) {
         memcpy(&param->socket_args, &memif_socket_args, sizeof(param->socket_args));

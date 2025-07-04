@@ -72,6 +72,7 @@ stateDiagram
     configured --> configuring: Configure
     configured --> establishing: Establish
     establishing --> active: Establish Succeeded
+    establishing --> suspended: Establish Succeeded
     establishing --> closed: Establish Failed
     active --> closing: Shutdown
     active --> suspended: Suspend

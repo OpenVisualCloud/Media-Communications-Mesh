@@ -7,9 +7,11 @@
 package model
 
 type Connection struct {
-	Id      string `json:"id,omitempty"`
-	ProxyId string `json:"proxyId,omitempty"`
-	GroupId string `json:"groupId,omitempty"`
+	Id        string `json:"id,omitempty"`
+	Name      string `json:"name,omitempty"`
+	ProxyId   string `json:"proxyId,omitempty"`
+	ProxyName string `json:"proxyName,omitempty"`
+	GroupId   string `json:"groupId,omitempty"`
 
 	Config *ConnectionConfig `json:"config,omitempty"`
 	Status *ConnectionStatus `json:"status,omitempty"`

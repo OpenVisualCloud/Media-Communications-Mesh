@@ -28,6 +28,7 @@ type Request struct {
 	Operation Operation
 	Id        string   // for OpReadOne, OpAddOne, OpUpdateOne, OpDeleteOne
 	Ids       []string // for OpReadMany
+	Name      string   // for OpAddOne
 	Data      interface{}
 	Flags     uint32
 	Reply     chan Reply
@@ -57,12 +58,14 @@ type Registry struct {
 	queue      chan Request
 	items      map[string]interface{}
 	orderedIds []string
+	names      map[string]string
 	handler    RequestHandler
 }
 
 func (r *Registry) Init() {
 	r.queue = make(chan Request, 100) // TODO: capacity to be configured
 	r.items = make(map[string]interface{})
+	r.names = make(map[string]string)
 }
 
 func (r *Registry) Run(ctx context.Context) error {
@@ -85,18 +88,38 @@ func (r *Registry) Run(ctx context.Context) error {
 			case OpReadMany:
 				if len(req.Ids) == 0 {
 					req.Ids = r.orderedIds
+				} else {
+					for i, v := range req.Ids {
+						id, ok := r.names[v]
+						if ok {
+							req.Ids[i] = id
+						}
+					}
 				}
 				r.handler.HandleReadMany(req)
 
 			case OpReadOne:
-				item := r.items[req.Id]
-				if item == nil {
+				if len(req.Id) > 0 {
+					id, ok := r.names[req.Id]
+					if ok {
+						req.Id = id
+					}
+				}
+				item, ok := r.items[req.Id]
+				if !ok {
 					req.Reply <- Reply{Err: ErrResourceNotFound}
 					break
 				}
 				r.handler.HandleReadOne(req, item)
 
 			case OpAddOne:
+				if len(req.Name) > 0 {
+					_, ok := r.names[req.Name]
+					if ok {
+						req.Reply <- Reply{Err: fmt.Errorf("name already exists in registry (%v)", req.Name)}
+						break
+					}
+				}
 				if req.Id == "" {
 					req.Id = uuid.NewString()
 				}
@@ -107,6 +130,9 @@ func (r *Registry) Run(ctx context.Context) error {
 				}
 				r.items[req.Id] = req.Data
 				r.orderedIds = append(r.orderedIds, req.Id)
+				if len(req.Name) > 0 {
+					r.names[req.Name] = req.Id
+				}
 				req.Reply <- Reply{Id: req.Id}
 
 			case OpDeleteOne:
@@ -117,6 +143,11 @@ func (r *Registry) Run(ctx context.Context) error {
 				}
 				r.handler.HandleDeleteOne(req, item)
 				delete(r.items, req.Id)
+				for k, v := range r.names {
+					if v == req.Id {
+						delete(r.names, k)
+					}
+				}
 				for i, v := range r.orderedIds {
 					if v == req.Id {
 						r.orderedIds = append(r.orderedIds[:i], r.orderedIds[i+1:]...)

@@ -13,16 +13,53 @@
 #include <mtl/st_pipeline_api.h>
 #include "proxy_api.h"
 #include <cmath>
+#include "conn_local_zc_wrap_rx.h"
+#include "conn_local_zc_wrap_tx.h"
 
 namespace mesh::connection {
 
 LocalManager local_manager;
+
+Result LocalManager::make_connection(context::Context& ctx, const Config& cfg,
+                                     Connection *& conn, Local *& memif_conn)
+{
+    if (!cfg.options.engine.compare("zero-copy")) {
+        if (cfg.kind == sdk::CONN_KIND_TRANSMITTER) {
+            auto zc_conn = new(std::nothrow) ZeroCopyWrapperLocalRx;
+            conn = zc_conn;
+            if (conn) {
+                memif_conn = zc_conn->get_memif_conn();
+                zc_conn->configure(ctx);
+            }
+        } else {
+            memif_conn = new(std::nothrow) ZeroCopyWrapperLocalTx;
+            conn = memif_conn;
+        }
+    } else {
+        if (cfg.kind == sdk::CONN_KIND_TRANSMITTER) {
+            memif_conn = new(std::nothrow) LocalRx;
+            conn = memif_conn;
+        } else {
+            memif_conn = new(std::nothrow) LocalTx;
+            conn = memif_conn;
+        }
+    }
+
+    if (!conn || !memif_conn) {
+        delete conn;
+        delete memif_conn;
+        return Result::error_out_of_memory;
+    }
+
+    return Result::success;
+}
 
 int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
                                         const std::string& client_id,
                                         mcm_conn_param *param,
                                         memif_conn_param *memif_param,
                                         const Config& conn_config,
+                                        const std::string& name,
                                         std::string& err_str)
 {
     if (!param)
@@ -42,38 +79,24 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
         return -1;
     }
 
-    memif_ops_t memif_ops = {};
-    memif_ops.interface_id = 0;
+    Connection *conn = nullptr;
+    Local *memif_conn = nullptr;
 
-    const char *type_str = conn_config.kind2str();
-
-    snprintf(memif_ops.app_name, sizeof(memif_ops.app_name),
-             "memif_%s_%s", type_str, id.c_str());
-    snprintf(memif_ops.interface_name, sizeof(memif_ops.interface_name),
-             "memif_%s_%s", type_str, id.c_str());
-    snprintf(memif_ops.socket_path, sizeof(memif_ops.socket_path),
-             "/run/mcm/media_proxy_%s_%s.sock", type_str, id.c_str());
-
-    size_t frame_size = conn_config.buf_parts.total_size();
-
-    Local *conn;
-
-    if (conn_config.kind == sdk::CONN_KIND_TRANSMITTER)
-        conn = new(std::nothrow) LocalRx;
-    else
-        conn = new(std::nothrow) LocalTx;
-
-    if (!conn) {
+    auto res = make_connection(ctx, conn_config, conn, memif_conn);
+    if (res != Result::success) {
         registry_sdk.remove(id);
         return -ENOMEM;
     }
 
     conn->set_config(conn_config);
-    conn->set_parent(client_id);
+    memif_conn->set_config(conn_config);
 
-    uint8_t log2_ring_size = conn_config.buf_queue_capacity ?
-                             std::log2(conn_config.buf_queue_capacity) : 0;
-    auto res = conn->configure_memif(ctx, &memif_ops, frame_size, log2_ring_size);
+    conn->log_dump_config();
+
+    conn->set_parent(client_id);
+    conn->set_name(name);
+
+    res = memif_conn->configure_memif(ctx);
     if (res != Result::success) {
         registry_sdk.remove(id);
         delete conn;
@@ -89,7 +112,7 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
     // Register local connection in Media Proxy
     std::string agent_assigned_id;
     int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind,
-                                                 conn_config, err_str);
+                                                 conn_config, name, err_str);
     if (err) {
         registry_sdk.remove(id);
         delete conn;
@@ -98,12 +121,14 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
 
     res = conn->establish(ctx);
     if (res != Result::success) {
+        log::error("Local conn establish failed: %s", result2str(res))
+                  ("conn_id", agent_assigned_id);
         registry_sdk.remove(id);
         delete conn;
         return -1;
     }
 
-    conn->get_params(memif_param);
+    memif_conn->get_params_memif(memif_param);
 
     // Assign id accessed by metrics collector.
     conn->assign_id(agent_assigned_id);
@@ -175,7 +200,7 @@ int LocalManager::delete_connection_sdk(context::Context& ctx, const std::string
     return 0;
 }
 
-Connection * LocalManager::get_connection(context::Context& ctx,
+Connection * LocalManager::find_connection(context::Context& ctx,
                                           const std::string& id)
 {
     return registry.get(id);
@@ -202,7 +227,8 @@ int LocalManager::reregister_all_connections(context::Context& ctx)
         std::string existing_conn_id = conn->id;
 
         int err = proxyApiClient->RegisterConnection(existing_conn_id, kind,
-                                                     conn->config, err_unused);
+                                                     conn->config, conn->name(),
+                                                     err_unused);
         if (err) {
             log::error("Error re-registering local conn (%d)", err)
                       ("conn_id", conn->id);

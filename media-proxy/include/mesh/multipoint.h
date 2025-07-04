@@ -1,51 +1,45 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
+ *
+ * SPDX-License-Identifier: BSD-3-Clause
+ */
+
 #ifndef MULTIPOINT_H
 #define MULTIPOINT_H
 
-#include "conn.h"
 #include <list>
-
-namespace mesh::multipoint {
+#include "metrics.h"
+#include "concurrency.h"
+#include "conn.h"
 
 using namespace mesh::connection;
 
-class Group : public Connection {
+namespace mesh::multipoint {
 
+class Group : public Connection {
 public:
-    Group(const std::string& group_id);
-    ~Group() override;
+    Group(const std::string& id);
+    ~Group() {}
 
     void configure(context::Context& ctx);
-
-    Result set_link(context::Context& ctx, Connection *new_link,
-                    Connection *requester = nullptr) override;
 
     Result assign_input(context::Context& ctx, Connection *input);
     Result add_output(context::Context& ctx, Connection *output);
 
-    void delete_all_outputs() {
-        outputs.clear();
-    }
+    bool input_assigned();
+    int outputs_num();
 
-    int outputs_num() {
-        return outputs.size();
-    }
-
-private:
-    Result on_establish(context::Context& ctx) override;
-    Result on_receive(context::Context& ctx, void *ptr, uint32_t sz,
-                      uint32_t& sent) override;
-    Result on_shutdown(context::Context& ctx) override;
-    void on_delete(context::Context& ctx) override;
-
-private:
+protected:
     std::list<Connection *> outputs;
     std::mutex outputs_mx;
 
-    sync::DataplaneAtomicPtr outputs_ptr;
+    Result on_shutdown(context::Context& ctx) override;
 
-    std::list<Connection *> * get_hotpath_outputs_lock();
-    void hotpath_outputs_unlock();
-    void set_hotpath_outputs(std::list<Connection *> *new_outputs);
+    virtual void on_outputs_updated() {}
+
+private:
+    Result set_link(context::Context& ctx, Connection *new_link,
+                    Connection *requester = nullptr) override;
 };
 
 } // namespace mesh::multipoint

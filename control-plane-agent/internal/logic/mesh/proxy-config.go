@@ -42,7 +42,7 @@ func (q *applyProxyConfigQueue) Run(ctx context.Context) {
 				continue
 			}
 
-			groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, false)
+			groups, err := registry.MultipointGroupRegistry.List(ctx, nil, false, true)
 			if err != nil {
 				logrus.Errorf("apply proxy config queue run: group registry err: %v", err)
 				continue
@@ -64,10 +64,15 @@ func ApplyProxyConfig(ctx context.Context, mp *model.MediaProxy, groups []model.
 		if len(connIds) == 0 {
 			continue
 		}
+
+		connConfig := &sdk.ConnectionConfig{}
+		groups[i].Config.AssignToPb(connConfig)
+
 		pbGroups = append(pbGroups, &pb.MultipointGroup{
-			GroupId:   groups[i].Id + "/" + mp.Id, // composite value: Group ID + Proxy ID
-			ConnIds:   connIds,
-			BridgeIds: utils.Intersection(groups[i].BridgeIds, mp.BridgeIds),
+			GroupId:    groups[i].Id + "/" + mp.Id, // composite value: Group ID + Proxy ID
+			ConnConfig: connConfig,
+			ConnIds:    connIds,
+			BridgeIds:  utils.Intersection(groups[i].BridgeIds, mp.BridgeIds),
 		})
 	}
 
