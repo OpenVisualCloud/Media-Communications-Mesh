@@ -1,4 +1,3 @@
-
 /*
  * SPDX-FileCopyrightText: Copyright (c) 2025 Intel Corporation
  *
@@ -20,6 +19,7 @@ int mcm_send_audio_packets(MeshConnection *connection, const char *filename,
                            const char *json_conn_config);
 int mcm_send_blob_packets(MeshConnection *connection, const char *filename);
 void read_data_in_loop(MeshConnection *connection, const char *filename);
+void read_data_in_loop_with_interval(MeshConnection *connection, const char *filename, int save_interval_sec);
 int is_root();
 
 #endif /* _MCM_H_ */

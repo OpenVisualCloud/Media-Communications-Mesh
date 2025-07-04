@@ -35,4 +35,6 @@ target_link_libraries(RxVideoApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_L
 target_link_libraries(TxAudioApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
 target_link_libraries(RxAudioApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
 target_link_libraries(TxBlobApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
-target_link_libraries(RxBlobApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
+include(cmake/linker.cmake)
+include(cmake/compiler.cmake)
+# target_link_libraries(RxBlobApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)

@@ -4,6 +4,7 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
+#define _POSIX_C_SOURCE 199309L
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
@@ -249,10 +250,54 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
     int frame = 0;
     int err = 0;
     MeshBuffer *buf = NULL;
-    FILE *out = fopen(filename, "a");
+    FILE *out = NULL;
+    
+    /* Timer variables for 3-second file rotation */
+    struct timespec last_save_time, current_time;
+    const long SAVE_INTERVAL_SEC = 3;
+    int file_counter = 0;
+    char timestamped_filename[512];
+    
+    /* Initialize timer */
+    clock_gettime(CLOCK_REALTIME, &last_save_time);
+    
+    /* Create initial timestamped filename */
+    snprintf(timestamped_filename, sizeof(timestamped_filename), "%s_%d_%ld.dat", 
+             filename, file_counter++, last_save_time.tv_sec);
+    out = fopen(timestamped_filename, "a");
+    if (out == NULL) {
+        LOG("[RX] Failed to open initial output file: %s", timestamped_filename);
+        return;
+    }
+    LOG("[RX] Created initial output file: %s", timestamped_filename);
+    
     while (1) {
+        /* Check if 3 seconds have elapsed since last file save */
+        clock_gettime(CLOCK_REALTIME, &current_time);
+        if ((current_time.tv_sec - last_save_time.tv_sec) >= SAVE_INTERVAL_SEC) {
+            /* Close current file */
+            if (out != NULL) {
+                fclose(out);
+                LOG("[RX] Closed file: %s", timestamped_filename);
+            }
+            
+            /* Create new timestamped filename */
+            snprintf(timestamped_filename, sizeof(timestamped_filename), "%s_%d_%ld.dat", 
+                     filename, file_counter++, current_time.tv_sec);
+            
+            /* Open new file */
+            out = fopen(timestamped_filename, "a");
+            if (out == NULL) {
+                LOG("[RX] Failed to open new output file: %s", timestamped_filename);
+                break;
+            }
+            LOG("[RX] Created new output file: %s", timestamped_filename);
+            
+            /* Update last save time */
+            last_save_time = current_time;
+        }
 
-        /* Set loop's  error*/
+        /* Set loop's error */
         err = 0;
         timeout = (frame) ? 1000 : MESH_TIMEOUT_INFINITE;
 
@@ -281,7 +326,11 @@ void read_data_in_loop(MeshConnection *connection, const char *filename) {
             break;
         }
     }
-    fclose(out);
+    
+    if (out != NULL) {
+        fclose(out);
+        LOG("[RX] Closed final output file: %s", timestamped_filename);
+    }
     LOG("[RX] Done reading the data");
 }
 
@@ -294,6 +343,113 @@ void buffer_to_file(FILE *file, MeshBuffer *buf) {
     // Write the buffer to the file
     fwrite(buf->payload_ptr, buf->payload_len, 1, file);
     LOG("[RX] Saving buffer data to a file");
+}
+
+void read_data_in_loop_with_interval(MeshConnection *connection, const char *filename, int save_interval_sec) {
+    int timeout = MESH_TIMEOUT_INFINITE;
+    int frame = 0;
+    int err = 0;
+    MeshBuffer *buf = NULL;
+    FILE *out = NULL;
+    
+    /* Timer variables for configurable file rotation */
+    struct timespec last_save_time, current_time;
+    int file_counter = 0;
+    char timestamped_filename[512];
+    
+    /* Initialize timer */
+    clock_gettime(CLOCK_REALTIME, &last_save_time);
+    
+    /* Create initial timestamped filename with more detailed timestamp */
+    struct tm *tm_info = localtime(&last_save_time.tv_sec);
+    snprintf(timestamped_filename, sizeof(timestamped_filename), 
+             "%s_%04d%02d%02d_%02d%02d%02d_%d.dat", 
+             filename, 
+             tm_info->tm_year + 1900, tm_info->tm_mon + 1, tm_info->tm_mday,
+             tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec,
+             file_counter++);
+    
+    out = fopen(timestamped_filename, "a");
+    if (out == NULL) {
+        LOG("[RX] Failed to open initial output file: %s", timestamped_filename);
+        return;
+    }
+    LOG("[RX] Created initial output file: %s (saving every %d seconds)", timestamped_filename, save_interval_sec);
+    
+    while (1) {
+        /* Check if configured interval has elapsed since last file save */
+        clock_gettime(CLOCK_REALTIME, &current_time);
+        if ((current_time.tv_sec - last_save_time.tv_sec) >= save_interval_sec) {
+            /* Close current file and flush any remaining data */
+            if (out != NULL) {
+                fflush(out);
+                fclose(out);
+                LOG("[RX] Closed file: %s", timestamped_filename);
+            }
+            
+            /* Create new timestamped filename */
+            tm_info = localtime(&current_time.tv_sec);
+            snprintf(timestamped_filename, sizeof(timestamped_filename), 
+                     "%s_%04d%02d%02d_%02d%02d%02d_%d.dat", 
+                     filename, 
+                     tm_info->tm_year + 1900, tm_info->tm_mon + 1, tm_info->tm_mday,
+                     tm_info->tm_hour, tm_info->tm_min, tm_info->tm_sec,
+                     file_counter++);
+            
+            /* Open new file */
+            out = fopen(timestamped_filename, "a");
+            if (out == NULL) {
+                LOG("[RX] Failed to open new output file: %s", timestamped_filename);
+                break;
+            }
+            LOG("[RX] Created new output file: %s", timestamped_filename);
+            
+            /* Update last save time */
+            last_save_time = current_time;
+        }
+
+        /* Set loop's error */
+        err = 0;
+        timeout = (frame) ? 1000 : MESH_TIMEOUT_INFINITE;
+
+        /* Receive a buffer from the mesh */
+        err = mesh_get_buffer_timeout(connection, &buf, timeout);
+        if (err == MESH_ERR_CONN_CLOSED) {
+            LOG("[RX] Connection closed");
+            break;
+        }
+        LOG("[RX] Fetched mesh data buffer");
+        if (err) {
+            LOG("[RX] Failed to get buffer: %s (%d)", mesh_err2str(err), err);
+            break;
+        }
+        
+        /* Process the received user data */
+        buffer_to_file(out, buf);
+        
+        /* Flush data to ensure it's written immediately */
+        if (out != NULL) {
+            fflush(out);
+        }
+
+        err = mesh_put_buffer(&buf);
+        if (err) {
+            LOG("[RX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
+            break;
+        }
+        LOG("[RX] Frame: %d", ++frame);
+        if (shutdown_flag != 0) {
+            LOG("[RX] Graceful shutdown requested");
+            break;
+        }
+    }
+    
+    if (out != NULL) {
+        fflush(out);
+        fclose(out);
+        LOG("[RX] Closed final output file: %s", timestamped_filename);
+    }
+    LOG("[RX] Done reading the data");
 }
 
 int is_root() { return geteuid() == 0; }
