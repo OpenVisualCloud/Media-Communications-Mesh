@@ -53,6 +53,7 @@ function install_ubuntu_package_dependencies()
         build-essential \
         ca-certificates \
         clang \
+        cmake>=3.16 \
         curl \
         dracut \
         gcc-multilib \
@@ -74,7 +75,7 @@ function install_ubuntu_package_dependencies()
         llvm \
         m4 \
         meson \
-        nasm cmake=3.* \
+        nasm \
         pkg-config \
         python3-dev \
         python3-pyelftools \
