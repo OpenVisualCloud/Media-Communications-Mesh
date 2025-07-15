@@ -556,13 +556,13 @@ int test_format(const char *format) {
 }
 
 char* generate_format_config() {
-    char *config = malloc(1024);
+    char *config = malloc(2048);
     if (!config) {
         LOG("[FMT] Failed to allocate memory for config");
         return NULL;
     }
 
-    snprintf(config, 1024,
+    snprintf(config, 2048,
         "{\n"
         "  \"connection\": {\n"
         "    \"formatValidation\": {\n"

@@ -13,6 +13,7 @@
 #include <time.h>
 #include <sys/time.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include "Inc/input.h"
 #include "Inc/mcm.h"
