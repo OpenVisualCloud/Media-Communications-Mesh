@@ -19,6 +19,8 @@ int mcm_send_video_frames(MeshConnection *connection, const char *filename,
 int mcm_send_audio_packets(MeshConnection *connection, const char *filename,
                            const char *json_conn_config);
 int mcm_send_blob_packets(MeshConnection *connection, const char *filename);
+int mcm_recv_video_frames(MeshConnection *connection, const char *output_filename);
+int mcm_recv_audio_packets(MeshConnection *connection, const char *output_filename);
 void read_data_in_loop(MeshConnection *connection, const char *filename);
 int is_root();
 

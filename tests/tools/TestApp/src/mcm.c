@@ -296,4 +296,104 @@ void buffer_to_file(FILE *file, MeshBuffer *buf) {
     LOG("[RX] Saving buffer data to a file");
 }
 
+int mcm_recv_video_frames(MeshConnection *connection, const char *output_filename) {
+    int timeout = MESH_TIMEOUT_INFINITE;
+    int frame = 0;
+    int err = 0;
+    MeshBuffer *buf = NULL;
+    FILE *out = NULL;
+    
+    if (output_filename) {
+        out = fopen(output_filename, "ab");
+        if (!out) {
+            LOG("[RX] Failed to open output file: %s", output_filename);
+            return -1;
+        }
+    }
+    
+    /* Set loop's error */
+    err = 0;
+    timeout = (frame) ? 1000 : MESH_TIMEOUT_INFINITE;
+
+    /* Receive a buffer from the mesh */
+    err = mesh_get_buffer_timeout(connection, &buf, timeout);
+    if (err == MESH_ERR_CONN_CLOSED) {
+        LOG("[RX] Connection closed");
+        if (out) fclose(out);
+        return err;
+    }
+    if (err) {
+        LOG("[RX] Failed to get buffer: %s (%d)", mesh_err2str(err), err);
+        if (out) fclose(out);
+        return err;
+    }
+    
+    LOG("[RX] Received video frame: %d, size: %zu", ++frame, buf->payload_len);
+    
+    /* Save received data if output file specified */
+    if (out) {
+        buffer_to_file(out, buf);
+    }
+
+    err = mesh_put_buffer(&buf);
+    if (err) {
+        LOG("[RX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
+        if (out) fclose(out);
+        return err;
+    }
+    
+    if (out) fclose(out);
+    return 0;
+}
+
+int mcm_recv_audio_packets(MeshConnection *connection, const char *output_filename) {
+    int timeout = MESH_TIMEOUT_INFINITE;
+    int packet = 0;
+    int err = 0;
+    MeshBuffer *buf = NULL;
+    FILE *out = NULL;
+    
+    if (output_filename) {
+        out = fopen(output_filename, "ab");
+        if (!out) {
+            LOG("[RX] Failed to open output file: %s", output_filename);
+            return -1;
+        }
+    }
+    
+    /* Set loop's error */
+    err = 0;
+    timeout = (packet) ? 1000 : MESH_TIMEOUT_INFINITE;
+
+    /* Receive a buffer from the mesh */
+    err = mesh_get_buffer_timeout(connection, &buf, timeout);
+    if (err == MESH_ERR_CONN_CLOSED) {
+        LOG("[RX] Connection closed");
+        if (out) fclose(out);
+        return err;
+    }
+    if (err) {
+        LOG("[RX] Failed to get buffer: %s (%d)", mesh_err2str(err), err);
+        if (out) fclose(out);
+        return err;
+    }
+    
+    LOG("[RX] Received audio packet: %d, size: %zu", ++packet, buf->payload_len);
+    
+    /* Save received data if output file specified */
+    if (out) {
+        buffer_to_file(out, buf);
+    }
+
+    err = mesh_put_buffer(&buf);
+    if (err) {
+        LOG("[RX] Failed to put buffer: %s (%d)", mesh_err2str(err), err);
+        if (out) fclose(out);
+        return err;
+    }
+    
+    if (out) fclose(out);
+    return 0;
+}
+
 int is_root() { return geteuid() == 0; }
