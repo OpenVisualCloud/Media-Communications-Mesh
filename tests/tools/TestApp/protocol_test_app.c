@@ -14,6 +14,8 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <arpa/inet.h>
+#include <math.h>
+#include <float.h>
 
 #include "Inc/input.h"
 #include "Inc/mcm.h"
@@ -252,7 +254,7 @@ int create_test_packet(MeshBuffer *buf, uint32_t sequence, int packet_size) {
         return -1;
     }
     
-    test_packet_header_t *header = (test_packet_header_t *)buf->data;
+    test_packet_header_t *header = (test_packet_header_t *)buf->payload_ptr;
     memset(header, 0, sizeof(test_packet_header_t));
     
     // Fill header
@@ -270,7 +272,7 @@ int create_test_packet(MeshBuffer *buf, uint32_t sequence, int packet_size) {
     strncpy(header->protocol_name, prot_cfg.protocol_type, sizeof(header->protocol_name) - 1);
     
     // Fill payload
-    uint8_t *payload = (uint8_t *)buf->data + sizeof(test_packet_header_t);
+    uint8_t *payload = (uint8_t *)buf->payload_ptr + sizeof(test_packet_header_t);
     int payload_size = packet_size - sizeof(test_packet_header_t);
     
     if (strcmp(prot_cfg.payload_type, "video") == 0) {
@@ -295,18 +297,19 @@ int create_test_packet(MeshBuffer *buf, uint32_t sequence, int packet_size) {
         header->checksum = htonl(calculate_checksum(payload, payload_size));
     }
     
-    buf->data_len = packet_size;
+    // Set the payload length using the mesh API function
+    mesh_buffer_set_payload_len(buf, packet_size);
     return 0;
 }
 
 // Validate received packet
 int validate_packet(MeshBuffer *buf) {
-    if (!buf || buf->data_len < sizeof(test_packet_header_t)) {
+    if (!buf || buf->payload_len < sizeof(test_packet_header_t)) {
         stats.packets_corrupted++;
         return -1;
     }
     
-    test_packet_header_t *header = (test_packet_header_t *)buf->data;
+    test_packet_header_t *header = (test_packet_header_t *)buf->payload_ptr;
     
     // Validate magic number
     if (ntohl(header->magic) != 0xDEADBEEF) {
@@ -317,7 +320,7 @@ int validate_packet(MeshBuffer *buf) {
     uint32_t sequence = ntohl(header->sequence);
     uint32_t packet_size = ntohl(header->packet_size);
     
-    if (packet_size != buf->data_len) {
+    if (packet_size != buf->payload_len) {
         stats.packets_corrupted++;
         return -1;
     }
@@ -339,7 +342,7 @@ int validate_packet(MeshBuffer *buf) {
     // Validate checksum if enabled
     if (prot_cfg.validate_checksums) {
         uint32_t stored_checksum = ntohl(header->checksum);
-        uint8_t *payload = (uint8_t *)buf->data + sizeof(test_packet_header_t);
+        uint8_t *payload = (uint8_t *)buf->payload_ptr + sizeof(test_packet_header_t);
         int payload_size = packet_size - sizeof(test_packet_header_t);
         uint32_t calculated_checksum = calculate_checksum(payload, payload_size);
         
