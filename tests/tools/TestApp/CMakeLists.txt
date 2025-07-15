@@ -62,5 +62,5 @@ target_link_libraries(MemoryTestApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BS
 target_link_libraries(PerformanceProfileApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
 target_link_libraries(ProtocolTestApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson m)
 target_link_libraries(FormatValidationApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
-target_link_libraries(CodecTestApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
+target_link_libraries(CodecTestApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson m)
 target_link_libraries(ContainerValidationApp PRIVATE memif ${CMAKE_THREAD_LIBS_INIT} ${BSD_LIB} mcm_dp jansson)
