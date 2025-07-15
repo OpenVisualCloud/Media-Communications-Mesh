@@ -12,6 +12,7 @@
 #include <getopt.h>
 #include <time.h>
 #include <sys/time.h>
+#include <math.h>
 
 #include "Inc/input.h"
 #include "Inc/mcm.h"
@@ -101,7 +102,7 @@ typedef struct {
 static group_stats_t stats = {0};
 
 void print_usage(const char *prog_name) {
-    printf("Usage: %s [OPTIONS]\n\n");
+    printf("Usage: %s [OPTIONS]\n\n", prog_name);
     printf("Multipoint Group Receiver Test Application\n\n");
     printf("Group Configuration:\n");
     printf("  -g, --group <name>         Group name (default: %s)\n", mp_cfg.group_name);

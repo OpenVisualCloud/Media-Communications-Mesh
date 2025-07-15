@@ -70,7 +70,7 @@ static st2110_config_t st2110_cfg = {
 };
 
 void print_usage(const char *prog_name) {
-    printf("Usage: %s [OPTIONS] <input_file>\n\n");
+    printf("Usage: %s [OPTIONS] <input_file>\n\n", prog_name);
     printf("SMPTE ST 2110 Transmitter Test Application\n\n");
     printf("Options:\n");
     printf("  -t, --transport <type>     Transport type: st2110-20, st2110-22, st2110-30 (default: %s)\n", st2110_cfg.transport);

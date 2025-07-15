@@ -18,6 +18,28 @@
 #include "Inc/mcm.h"
 #include "Inc/misc.h"
 
+// Define missing callback types for testing purposes
+typedef enum {
+    MESH_CONN_EVENT_CONNECTED,
+    MESH_CONN_EVENT_DISCONNECTED,
+    MESH_CONN_EVENT_ERROR,
+    MESH_CONN_EVENT_TIMEOUT
+} mesh_conn_event_t;
+
+typedef enum {
+    MESH_BUFFER_STATUS_NORMAL,
+    MESH_BUFFER_STATUS_EMPTY,
+    MESH_BUFFER_STATUS_FULL,
+    MESH_BUFFER_STATUS_OVERFLOW
+} mesh_buffer_status_t;
+
+typedef enum {
+    MESH_STATUS_DISCONNECTED,
+    MESH_STATUS_CONNECTING,
+    MESH_STATUS_CONNECTED,
+    MESH_STATUS_ERROR
+} mesh_status_t;
+
 char *client_cfg;
 char *conn_cfg;
 MeshConnection *connection = NULL;

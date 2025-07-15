@@ -76,7 +76,7 @@ typedef struct {
 static test_stats_t stats = {0};
 
 void print_usage(const char *prog_name) {
-    printf("Usage: %s [OPTIONS]\n\n");
+    printf("Usage: %s [OPTIONS]\n\n", prog_name);
     printf("RDMA Configuration Receiver Test Application\n\n");
     printf("Options:\n");
     printf("  --rdma-provider <prov>     RDMA provider: tcp, verbs (default: %s)\n", rdma_cfg.rdma_provider);

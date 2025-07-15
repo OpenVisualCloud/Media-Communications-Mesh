@@ -92,7 +92,7 @@ typedef struct {
 static group_stats_t stats = {0};
 
 void print_usage(const char *prog_name) {
-    printf("Usage: %s [OPTIONS] [input_file]\n\n");
+    printf("Usage: %s [OPTIONS] [input_file]\n\n", prog_name);
     printf("Multipoint Group Transmitter Test Application\n\n");
     printf("Group Configuration:\n");
     printf("  -g, --group <name>         Group name (default: %s)\n", mp_cfg.group_name);
