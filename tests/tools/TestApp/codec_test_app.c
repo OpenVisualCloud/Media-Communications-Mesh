@@ -14,6 +14,7 @@
 #include <sys/time.h>
 #include <errno.h>
 #include <math.h>
+#include <float.h>
 
 #include "Inc/input.h"
 #include "Inc/mcm.h"
@@ -106,7 +107,7 @@ typedef struct {
 static codec_stats_t stats = {0};
 
 // Video quality test parameters
-static int test_resolutions[][2] = {
+static int resolution_test_data[][2] = {
     {640, 480},    // SD
     {1280, 720},   // HD
     {1920, 1080},  // FHD
@@ -114,7 +115,7 @@ static int test_resolutions[][2] = {
     {3840, 2160}   // UHD
 };
 
-static int test_framerates[] = {24, 25, 30, 50, 60};
+static int framerate_test_data[] = {24, 25, 30, 50, 60};
 static int test_bitrates[] = {1000, 2500, 5000, 10000, 20000}; // kbps
 
 void print_usage(const char *prog_name) {
@@ -570,7 +571,7 @@ int test_resolutions(const char *codec) {
     
     int errors = 0;
     for (int i = 0; i < 5; i++) {
-        errors += test_codec_config(codec, test_resolutions[i][0], test_resolutions[i][1],
+        errors += test_codec_config(codec, resolution_test_data[i][0], resolution_test_data[i][1],
                                    codec_cfg.fps, codec_cfg.bitrate_kbps);
         stats.resolution_tests++;
     }
@@ -585,7 +586,7 @@ int test_framerates(const char *codec) {
     int errors = 0;
     for (int i = 0; i < 5; i++) {
         errors += test_codec_config(codec, codec_cfg.width, codec_cfg.height,
-                                   test_framerates[i], codec_cfg.bitrate_kbps);
+                                   framerate_test_data[i], codec_cfg.bitrate_kbps);
         stats.framerate_tests++;
     }
     
