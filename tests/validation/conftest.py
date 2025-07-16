@@ -12,9 +12,6 @@ from mfd_host import Host
 from mfd_connect.exceptions import ConnectionCalledProcessError, RemoteProcessTimeoutExpired
 import pytest
 
-# Add the path to the 'common' module
-common_path = os.path.join(os.path.expanduser('~'), 'Media-Transport-Library', 'tests', 'validation')
-sys.path.append(common_path)
 from common.nicctl import Nicctl
 from Engine.const import *
 from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
