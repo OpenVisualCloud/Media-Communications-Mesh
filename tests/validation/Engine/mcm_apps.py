@@ -5,7 +5,7 @@ import time
 import threading
 from pathlib import Path
 
-from mcm.Engine.const import *
+from Engine.const import *
 
 logger = logging.getLogger(__name__)
 STOP_GRACEFULLY_PERIOD = 2  # seconds

@@ -2,7 +2,7 @@
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
 
-from mcm.Engine.rx_tx_app_payload import Audio, Video
+from Engine.rx_tx_app_payload import Audio, Video
 
 payload = Video(width=3840, height=2160)
 

@@ -1,1 +1,4 @@
-# TODO
+pytest==8.3.5
+pytest-check==2.5.3
+pytest-mfd-config==3.25.0
+pytest-mfd-logging==1.24.0

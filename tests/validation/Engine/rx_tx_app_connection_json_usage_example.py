@@ -2,10 +2,10 @@
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
 
-from mcm.Engine.rx_tx_app_connection import (ConnectionMode, Rdma, St2110,
+from Engine.rx_tx_app_connection import (ConnectionMode, Rdma, St2110,
                                              TransportType)
-from mcm.Engine.rx_tx_app_connection_json import ConnectionJson
-from mcm.Engine.rx_tx_app_payload import Audio, Video
+from Engine.rx_tx_app_connection_json import ConnectionJson
+from Engine.rx_tx_app_payload import Audio, Video
 
 rx_tx_app_connection_rdma = Rdma(connectionMode=ConnectionMode.UC, maxLatencyNs=30000)
 

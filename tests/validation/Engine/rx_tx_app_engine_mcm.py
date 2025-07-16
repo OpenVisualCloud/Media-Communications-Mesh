@@ -9,16 +9,16 @@ from pathlib import Path
 
 from mfd_connect.exceptions import RemoteProcessInvalidState
 
-import mcm.Engine.rx_tx_app_client_json
-import mcm.Engine.rx_tx_app_connection_json
-from mcm.Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH
-from mcm.Engine.mcm_apps import get_media_proxy_port, output_validator, save_process_log, get_mcm_path
-from mcm.Engine.rx_tx_app_file_validation_utils import validate_file
+import Engine.rx_tx_app_client_json
+import Engine.rx_tx_app_connection_json
+from Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH
+from Engine.mcm_apps import get_media_proxy_port, output_validator, save_process_log, get_mcm_path
+from Engine.rx_tx_app_file_validation_utils import validate_file
 
 logger = logging.getLogger(__name__)
 
 
-def create_client_json(build: str, client: mcm.Engine.rx_tx_app_client_json.ClientJson) -> None:
+def create_client_json(build: str, client: Engine.rx_tx_app_client_json.ClientJson) -> None:
     logger.debug("Client JSON:")
     for line in client.to_json().splitlines():
         logger.debug(line)
@@ -28,7 +28,7 @@ def create_client_json(build: str, client: mcm.Engine.rx_tx_app_client_json.Clie
 
 
 def create_connection_json(
-    build: str, rx_tx_app_connection: mcm.Engine.rx_tx_app_connection_json.ConnectionJson
+    build: str, rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson
 ) -> None:
     logger.debug("Connection JSON:")
     for line in rx_tx_app_connection.to_json().splitlines():
@@ -63,11 +63,11 @@ class AppRunnerBase:
         self.rx_tx_app_connection = rx_tx_app_connection()
         self.payload = payload_type.from_file_info(media_path=self.media_path, file_info=file_dict)
         self.media_proxy_port = get_media_proxy_port(host)
-        self.rx_tx_app_client_json = mcm.Engine.rx_tx_app_client_json.ClientJson(
+        self.rx_tx_app_client_json = Engine.rx_tx_app_client_json.ClientJson(
             host, 
             apiConnectionString=f"Server=127.0.0.1; Port={self.media_proxy_port}"
         )
-        self.rx_tx_app_connection_json = mcm.Engine.rx_tx_app_connection_json.ConnectionJson(
+        self.rx_tx_app_connection_json = Engine.rx_tx_app_connection_json.ConnectionJson(
             host=host, rx_tx_app_connection=self.rx_tx_app_connection, payload=self.payload
         )
         self.app_path = host.connection.path(self.mcm_path, "tests", "tools", "TestApp", "build")
@@ -291,7 +291,7 @@ class LapkaExecutor:
         
         def cleanup(self):
             """Clean up the output file created by the Rx app."""
-            from mcm.Engine.rx_tx_app_file_validation_utils import cleanup_file
+            from Engine.rx_tx_app_file_validation_utils import cleanup_file
             
             if self.output:
                 success = cleanup_file(self.host.connection, str(self.output))

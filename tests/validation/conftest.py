@@ -2,6 +2,7 @@
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
 import logging
+import sys
 import os
 import shutil
 from ipaddress import IPv4Interface
@@ -11,13 +12,15 @@ from mfd_host import Host
 from mfd_connect.exceptions import ConnectionCalledProcessError, RemoteProcessTimeoutExpired
 import pytest
 
+# Add the path to the 'common' module
+common_path = os.path.join(os.path.expanduser('~'), 'Media-Transport-Library', 'tests', 'validation')
+sys.path.append(common_path)
 from common.nicctl import Nicctl
-from mcm.Engine.const import *
-from mcm.Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
+from Engine.const import *
+from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
-
 
 @pytest.fixture(scope="function")
 def media_proxy(hosts, mesh_agent, media_config, log_path):
