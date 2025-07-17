@@ -183,6 +183,4 @@ video_format_matches = {
 
 
 def video_file_format_to_payload_format(pixel_format: str) -> str:
-    return video_format_matches.get(
-        pixel_format, pixel_format
-    )
+    return video_format_matches.get(pixel_format, pixel_format)

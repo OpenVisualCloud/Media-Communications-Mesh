@@ -361,7 +361,7 @@ You can change them by modifying the constants at the beginning of the script.""
             action="store_false",
             dest="delete_file",
             help="Do NOT delete output files after processing",
-        )    
+        )
 
     # Stream mode parser
     stream_help = """Check integrity for video stream (stream saved into files segmented by time)
