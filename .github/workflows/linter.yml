@@ -39,7 +39,7 @@ jobs:
           BASH_SEVERITY: "warning"
           LINTER_RULES_PATH: ".github/configs"
           # Disable GitHub status updates to avoid permission issues
-          GITHUB_ACTIONS_COMMAND_ARGS: "--disable-lock" 
+          GITHUB_ACTIONS_COMMAND_ARGS: "--disable-lock"
           GITHUB_COMMENT_ON_PR: false
           GITHUB_STATUS_UPDATES: false
           VALIDATE_BASH_EXEC: true
