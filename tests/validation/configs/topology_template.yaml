@@ -1,0 +1,33 @@
+---
+metadata:
+  version: '2.4'
+hosts:
+  - name: mesh-agent  # This is the name of the host, it can be anything you want but if you want run mesh-agent in your test you shall name 1 host as mesh-agent
+    instantiate: true  # This means that this host will be instantiated in the topology anc connection will be established
+    role: sut  # sut - system under test, or client
+    network_interfaces: # This is the list of network interfaces that will be used in the test
+        - interface_name: {{ mesh_agent_interface1|default('eth1') }}  # This is the name of the network interface, but you can pick adapter by pci device id or pci address also
+        - interface_name: {{ mesh_agent_interface2|default('eth2') }}  # you can add more adapters if you need
+    connections:  # This is the list of connections that will be used in the test
+      - ip_address: {{ip_address}}
+        connection_type: SSHConnection
+        connection_options:
+          port: {{ port|default(22) }}
+          username: {{username}}
+          password: {{password}}
+    extra_info:  # This is the list of extra information that will be used in the test for each host
+      mtl_path: /opt/intel/mtl  # this is custom path to mtl repo if you want to use different path than default in mcm _build directory
+      nicctl_path: /opt/intel/mtl/script  # this is path for nicctl.sh script if you want to use different path
+      media_proxy:  # st2110 and rdma dev and ips are optional but remember that it overrites the default values and must be set in host
+        st2110: {{ st2110|default(true) }}  # set it to true if you want to use st2110 bridge for media proxy
+        sdk_port: {{ sdk_port|default(8002) }}  # this is the port that will be used for media proxy sdk
+        st2110_dev: {{ st2110_dev }}  # optional; this is the pci device id of the st2110 bridge if you want tu use custom one
+        st2110_ip: {{ st2110_ip }}  # optional; this is the ip address of the st2110 bridge if you want to use custom one
+        rdma: {{ rdma|default(true) }}  # set it to true if you want to use rdma in your test
+        rdma_ports: {{ rdma_ports|default('9100-9999') }}  # option; this is the range of rdma ports that media proxy will use, if you want to use custom range
+        rdma_ip: {{ rdma_ip }}  # optional; this is the ip address of the rdma interface if you want to use custom one
+        #  if not set it will use the default one or the one set in the OS
+      mesh_agent: # it's optional config if you want to overwrite the default values
+        control_port: {{ control_port|default(8100) }}  # control port for mesh-agent, default is 8100
+        proxy_port: {{ proxy_port|default(50051) }}  # proxy port for mesh-agent, default is 50051
+ 
