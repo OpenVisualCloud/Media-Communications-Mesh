@@ -105,7 +105,11 @@ def test_demo_local_ffmpeg_video_integrity(media_proxy, hosts, test_config) -> N
     pixel_format = "yuv422p10le"
     conn_type = McmConnectionType.mpg.value
 
-    input_path = str(tx_host.connection.path(test_config["input_path"], "180fr_1920x1080_yuv422p.yuv"))
+    input_path = str(
+        tx_host.connection.path(
+            test_config["input_path"], "180fr_1920x1080_yuv422p.yuv"
+        )
+    )
 
     # >>>>> MCM Tx
     mcm_tx_inp = FFmpegVideoIO(
@@ -144,7 +148,9 @@ def test_demo_local_ffmpeg_video_integrity(media_proxy, hosts, test_config) -> N
         framerate=frame_rate,
         video_size=video_size,
         pixel_format=pixel_format,
-        output_path=str(tx_host.connection.path(test_config["output_path"], "output_vid.yuv")),
+        output_path=str(
+            tx_host.connection.path(test_config["output_path"], "output_vid.yuv")
+        ),
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=prefix_variables,
@@ -183,8 +189,12 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config) -> None
     tx_host = rx_host = list(hosts.values())[0]
     prefix_variables = test_config.get("prefix_variables", {})
     if tx_host.topology.extra_info.media_proxy.get("no_proxy", None):
-        prefix_variables["NO_PROXY"] = tx_host.topology.extra_info.media_proxy["no_proxy"]
-        prefix_variables["no_proxy"] = tx_host.topology.extra_info.media_proxy["no_proxy"]
+        prefix_variables["NO_PROXY"] = tx_host.topology.extra_info.media_proxy[
+            "no_proxy"
+        ]
+        prefix_variables["no_proxy"] = tx_host.topology.extra_info.media_proxy[
+            "no_proxy"
+        ]
     sdk_port = MEDIA_PROXY_PORT
     if tx_host.name in media_proxy and media_proxy[tx_host.name].p is not None:
         sdk_port = media_proxy[tx_host.name].t
@@ -272,6 +282,8 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config) -> None
     time.sleep(3)  # Ensure the receiver is ready before starting the transmitter
     mcm_tx_executor.start()
     mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
-    mcm_tx_executor.stop(wait=3)  # Tx should stop just after Rx stop so wait timeout can be shorter here
+    mcm_tx_executor.stop(
+        wait=3
+    )  # Tx should stop just after Rx stop so wait timeout can be shorter here
 
     assert integrator.stop_and_verify(timeout=20), "Stream integrity check failed"

@@ -11,7 +11,8 @@ import pytest
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
     FFmpegAudioRate, McmConnectionType, PacketTime,
-    audio_file_format_to_format_dict, audio_channel_number_to_layout)
+    audio_file_format_to_format_dict,
+    audio_channel_number_to_layout,)
 from common.ffmpeg_handler.ffmpeg_io import FFmpegAudioIO
 from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmST2110AudioRx
 from common.ffmpeg_handler.mtl_ffmpeg import FFmpegMtlSt30pTx
