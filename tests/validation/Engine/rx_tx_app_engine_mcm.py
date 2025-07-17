@@ -149,7 +149,6 @@ class AppRunnerBase:
         create_connection_json(self.mcm_path, self.rx_tx_app_connection_json)
         self._ensure_output_directory_exists()
 
-
     def stop(self):
         validation_info = []
         file_validation_passed = True
@@ -293,20 +292,26 @@ class LapkaExecutor:
                 # Generate output filename from input media file
                 input_path = Path(str(self.payload.media_file_path))
                 timestamp = int(time.time())
-                
+
                 # Create a descriptive filename with timestamp and host info
                 output_filename = f"rx_{self.host.name}_{input_path.stem}_{timestamp}{input_path.suffix}"
-                
+
                 # Use the configured output path or default
-                self.output = self.host.connection.path(self.output_path, output_filename)
-                
+                self.output = self.host.connection.path(
+                    self.output_path, output_filename
+                )
+
             logger.debug(f"Generated output path: {self.output}")
 
         def start(self):
             super().start()
-            logger.debug(f"Starting Rx app with payload: {self.payload.payload_type} on {self.host}")
+            logger.debug(
+                f"Starting Rx app with payload: {self.payload.payload_type} on {self.host}"
+            )
             cmd = self._get_app_cmd("Rx")
-            self.process = self.host.connection.start_process(cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path)
+            self.process = self.host.connection.start_process(
+                cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
+            )
 
             # Start background logging thread
             subdir = f"RxTx/{self.host.name}"
@@ -319,16 +324,16 @@ class LapkaExecutor:
                         filename=filename,
                         text=line.rstrip(),
                         cmd=cmd,
-                        log_dir=self.log_path
+                        log_dir=self.log_path,
                     )
 
             threading.Thread(target=log_output, daemon=True).start()
             return self.process
-        
+
         def cleanup(self):
             """Clean up the output file created by the Rx app."""
             from Engine.rx_tx_app_file_validation_utils import cleanup_file
-            
+
             if self.output:
                 success = cleanup_file(self.host.connection, str(self.output))
                 if success:

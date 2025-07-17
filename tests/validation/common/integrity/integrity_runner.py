@@ -120,40 +120,80 @@ class FileVideoIntegrityRunner(VideoIntegrityRunner):
             logger.error(f"Integrity check failed on {self.host.name}: {self.out_name}")
             logger.error(result.stdout)
             return False
-        logger.info(f"Integrity check completed successfully on {self.host.name} for {self.out_name}")
+        logger.info(
+            f"Integrity check completed successfully on {self.host.name} for {self.out_name}"
+        )
         return True
 
+
 class StreamVideoIntegrityRunner(VideoIntegrityRunner):
-    def __init__(self, host, test_repo_path, src_url: str, out_name: str, resolution: str, file_format: str = "yuv422p10le",
-                 out_path: str = "/mnt/ramdisk", delete_file: bool = True, python_path = None, integrity_path = None,
-                 segment_duration: int = 3, workers: int = 5):
-        super().__init__(host, test_repo_path, src_url, out_name, resolution, file_format, out_path, delete_file, python_path, integrity_path)
+    def __init__(
+        self,
+        host,
+        test_repo_path,
+        src_url: str,
+        out_name: str,
+        resolution: str,
+        file_format: str = "yuv422p10le",
+        out_path: str = "/mnt/ramdisk",
+        delete_file: bool = True,
+        python_path=None,
+        integrity_path=None,
+        segment_duration: int = 3,
+        workers: int = 5,
+    ):
+        super().__init__(
+            host,
+            test_repo_path,
+            src_url,
+            out_name,
+            resolution,
+            file_format,
+            out_path,
+            delete_file,
+            python_path,
+            integrity_path,
+        )
         self.segment_duration = segment_duration
         self.workers = workers
         self.process = None
 
     def run(self):
-        cmd = " ".join([self.python_path,
-               self.integrity_path,
-               "stream",
-               self.src_url,
-               self.out_name,
-               self.resolution,
-               self.file_format,
-               "--output_path", self.out_path,
-               "--delete_file" if self.delete_file else "--no_delete_file",
-               "--segment_duration", str(self.segment_duration),
-               "--workers", str(self.workers)
-               ])
-        logger.debug(f"Running stream integrity check on {self.host.name} for {self.out_name} with command: {cmd}")
-        self.process = self.host.connection.start_process(cmd, shell=True, stderr_to_stdout=True)
+        cmd = " ".join(
+            [
+                self.python_path,
+                self.integrity_path,
+                "stream",
+                self.src_url,
+                self.out_name,
+                self.resolution,
+                self.file_format,
+                "--output_path",
+                self.out_path,
+                "--delete_file" if self.delete_file else "--no_delete_file",
+                "--segment_duration",
+                str(self.segment_duration),
+                "--workers",
+                str(self.workers),
+            ]
+        )
+        logger.debug(
+            f"Running stream integrity check on {self.host.name} for {self.out_name} with command: {cmd}"
+        )
+        self.process = self.host.connection.start_process(
+            cmd, shell=True, stderr_to_stdout=True
+        )
 
     def stop(self, timeout: int = 10):
         if self.process:
             self.process.wait(timeout)
-            logger.info(f"Stream integrity check stopped on {self.host.name} for {self.out_name}")
+            logger.info(
+                f"Stream integrity check stopped on {self.host.name} for {self.out_name}"
+            )
         else:
-            logger.warning(f"No active process to stop for {self.out_name} on {self.host.name}")
+            logger.warning(
+                f"No active process to stop for {self.out_name} on {self.host.name}"
+            )
 
     def stop_and_verify(self, timeout: int = 10):
         """
@@ -161,8 +201,12 @@ class StreamVideoIntegrityRunner(VideoIntegrityRunner):
         """
         self.stop(timeout)
         if self.process.return_code != 0:
-            logger.error(f"Stream integrity check failed on {self.host.name} for {self.out_name}")
+            logger.error(
+                f"Stream integrity check failed on {self.host.name} for {self.out_name}"
+            )
             logger.error(f"Process output: {self.process.stdout_text}")
             return False
-        logger.info(f"Stream integrity check completed successfully on {self.host.name} for {self.out_name}")
+        logger.info(
+            f"Stream integrity check completed successfully on {self.host.name} for {self.out_name}"
+        )
         return True

@@ -9,7 +9,10 @@ from ipaddress import IPv4Interface
 from pathlib import Path
 
 from mfd_host import Host
-from mfd_connect.exceptions import ConnectionCalledProcessError, RemoteProcessTimeoutExpired
+from mfd_connect.exceptions import (
+    ConnectionCalledProcessError,
+    RemoteProcessTimeoutExpired,
+)
 import pytest
 
 from common.nicctl import Nicctl
@@ -18,6 +21,7 @@ from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
 
 @pytest.fixture(scope="function")
 def media_proxy(hosts, mesh_agent, media_config, log_path):
@@ -111,12 +115,16 @@ def mesh_agent(hosts, test_config, log_path):
         mesh_ip = test_config.get("mesh_ip", None)
 
         if not mesh_ip:
-            logger.error(f"Host '{mesh_agent_name}' not found in topology.yaml and no mesh_ip provided.")
+            logger.error(
+                f"Host '{mesh_agent_name}' not found in topology.yaml and no mesh_ip provided."
+            )
             raise RuntimeError(
                 f"No mesh-agent name '{mesh_agent_name}' found in hosts and no mesh_ip provided in test_config."
             )
         else:
-            logger.info(f"Assumed that mesh agent is running, getting IP from topology config: {mesh_ip}")
+            logger.info(
+                f"Assumed that mesh agent is running, getting IP from topology config: {mesh_ip}"
+            )
             mesh_agent.external = True
             mesh_agent.mesh_ip = mesh_ip
             mesh_agent.p = test_config.get("mesh_port", mesh_agent.p)
@@ -127,7 +135,10 @@ def mesh_agent(hosts, test_config, log_path):
         c, p = (None, None)
         if hasattr(agent.topology.extra_info, "mesh_agent"):
             agent_topology = agent.topology.extra_info.mesh_agent
-            c, p = (agent_topology.get("control_port", None), agent_topology.get("proxy_port", None))
+            c, p = (
+                agent_topology.get("control_port", None),
+                agent_topology.get("proxy_port", None),
+            )
         mesh_agent.start(c, p)
     yield mesh_agent
     mesh_agent.stop()
@@ -145,7 +156,11 @@ def log_path_dir(test_config: dict) -> str:
     keep_logs = test_config.get("keep_logs", True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir_name = f"log_{timestamp}"
-    log_dir = Path(test_config.get("log_path")) if test_config.get("log_path") else Path(Path.cwd(), LOG_FOLDER)
+    log_dir = (
+        Path(test_config.get("log_path"))
+        if test_config.get("log_path")
+        else Path(Path.cwd(), LOG_FOLDER)
+    )
     if log_dir.exists() and not keep_logs:
         shutil.rmtree(log_dir)
     log_dir = Path(log_dir, log_dir_name)
@@ -183,7 +198,9 @@ def media_config(hosts: dict) -> None:
             if host.topology.extra_info.media_proxy.get("st2110", False):
                 pf_addr = host.network_interfaces[if_idx].pci_address.lspci
                 vfs = nicctl.vfio_list(pf_addr)
-                host.st2110_dev = host.topology.extra_info.media_proxy.get("st2110_dev", None)
+                host.st2110_dev = host.topology.extra_info.media_proxy.get(
+                    "st2110_dev", None
+                )
                 if not host.st2110_dev and not vfs:
                     nicctl.create_vfs(pf_addr)
                     vfs = nicctl.vfio_list(pf_addr)
@@ -198,25 +215,44 @@ def media_config(hosts: dict) -> None:
                         f"Still no VFs on interface {host.network_interfaces[if_idx].pci_address_lspci} even after creating VFs!"
                     )
                 host.vfs = vfs
-                host.st2110_ip = host.topology.extra_info.media_proxy.get("st2110_ip", f"192.168.0.{last_oct}")
+                host.st2110_ip = host.topology.extra_info.media_proxy.get(
+                    "st2110_ip", f"192.168.0.{last_oct}"
+                )
                 if_idx += 1
             if host.topology.extra_info.media_proxy.get("rdma", False):
-                if int(host.network_interfaces[if_idx].virtualization.get_current_vfs()) > 0:
-                    nicctl.disable_vf(str(host.network_interfaces[if_idx].pci_address.lspci))
+                if (
+                    int(
+                        host.network_interfaces[if_idx].virtualization.get_current_vfs()
+                    )
+                    > 0
+                ):
+                    nicctl.disable_vf(
+                        str(host.network_interfaces[if_idx].pci_address.lspci)
+                    )
                 net_adap_ips = host.network_interfaces[if_idx].ip.get_ips().v4
                 rdma_ip = host.topology.extra_info.media_proxy.get("rdma_ip", False)
                 if rdma_ip:
-                    rdma_ip = IPv4Interface(f"{rdma_ip}" if "/" in rdma_ip else f"{rdma_ip}/24")
+                    rdma_ip = IPv4Interface(
+                        f"{rdma_ip}" if "/" in rdma_ip else f"{rdma_ip}/24"
+                    )
                 elif net_adap_ips and not rdma_ip:
                     rdma_ip = net_adap_ips[0]
                 if not rdma_ip or (rdma_ip not in net_adap_ips):
-                    rdma_ip = IPv4Interface(f"192.168.1.{last_oct}/24") if not rdma_ip else rdma_ip
-                    logger.info(f"IP {rdma_ip} not found on RDMA network interface, setting: {rdma_ip}")
+                    rdma_ip = (
+                        IPv4Interface(f"192.168.1.{last_oct}/24")
+                        if not rdma_ip
+                        else rdma_ip
+                    )
+                    logger.info(
+                        f"IP {rdma_ip} not found on RDMA network interface, setting: {rdma_ip}"
+                    )
                     host.network_interfaces[if_idx].ip.add_ip(rdma_ip)
                 host.rdma_ip = str(rdma_ip.ip)
             logger.info(f"VFs on {host.name} are: {host.vfs}")
         except IndexError:
-            raise IndexError(f"Not enough network adapters available for tests! Expected: {if_idx+1}")
+            raise IndexError(
+                f"Not enough network adapters available for tests! Expected: {if_idx+1}"
+            )
         except AttributeError:
             logger.warning(
                 f"Extra info media proxy in topology config for {host.name} is not set, skipping media config setup for this host."
@@ -242,10 +278,16 @@ def cleanup_processes(hosts: dict) -> None:
             try:
                 connection = host.connection
                 # connection.enable_sudo()
-                connection.execute_command(f"pgrep -f '{pattern}'", stderr_to_stdout=True)
-                connection.execute_command(f"pkill -9 -f '{pattern}'", stderr_to_stdout=True)
+                connection.execute_command(
+                    f"pgrep -f '{pattern}'", stderr_to_stdout=True
+                )
+                connection.execute_command(
+                    f"pkill -9 -f '{pattern}'", stderr_to_stdout=True
+                )
             except Exception as e:
-                logger.warning(f"Failed to check/kill processes matching {pattern} on {host.name}: {e}")
+                logger.warning(
+                    f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"
+                )
     logger.info("Cleanup of processes completed.")
 
 
@@ -271,7 +313,9 @@ def check_iommu(hosts: dict[str, Host]) -> None:
     iommu_not_enabled_hosts = []
     for host in hosts.values():
         try:
-            output = host.connection.execute_command("ls -1 /sys/kernel/iommu_groups | wc -l", shell=True, timeout=10)
+            output = host.connection.execute_command(
+                "ls -1 /sys/kernel/iommu_groups | wc -l", shell=True, timeout=10
+            )
             if int(output.stdout.strip()) == 0:
                 logger.error(f"IOMMU is not enabled on host {host.name}.")
                 iommu_not_enabled_hosts.append(host.name)
@@ -279,7 +323,9 @@ def check_iommu(hosts: dict[str, Host]) -> None:
             logger.exception(f"Failed to check IOMMU status on host {host.name}.")
             iommu_not_enabled_hosts.append(host.name)
     if iommu_not_enabled_hosts:
-        pytest.exit(f"IOMMU is not enabled on hosts: {', '.join(iommu_not_enabled_hosts)}. Aborting test session.")
+        pytest.exit(
+            f"IOMMU is not enabled on hosts: {', '.join(iommu_not_enabled_hosts)}. Aborting test session."
+        )
     else:
         logger.info("IOMMU is enabled on all hosts.")
 
@@ -292,14 +338,20 @@ def enable_hugepages(hosts: dict[str, Host]) -> None:
     for host in hosts.values():
         if not _check_hugepages(host):
             try:
-                host.connection.execute_command("sudo sysctl -w vm.nr_hugepages=2048", shell=True, timeout=10)
+                host.connection.execute_command(
+                    "sudo sysctl -w vm.nr_hugepages=2048", shell=True, timeout=10
+                )
                 logger.info(f"Hugepages enabled on host {host.name}.")
             except (RemoteProcessTimeoutExpired, ConnectionCalledProcessError):
                 logger.exception(f"Failed to enable hugepages on host {host.name}.")
-                pytest.exit(f"Failed to enable hugepages on host {host.name}. Aborting test session.")
+                pytest.exit(
+                    f"Failed to enable hugepages on host {host.name}. Aborting test session."
+                )
             if not _check_hugepages(host):
                 logger.error(f"Hugepages could not be enabled on host {host.name}.")
-                pytest.exit(f"Hugepages could not be enabled on host {host.name}. Aborting test session.")
+                pytest.exit(
+                    f"Hugepages could not be enabled on host {host.name}. Aborting test session."
+                )
         else:
             logger.info(f"Hugepages are already enabled on host {host.name}.")
 
@@ -309,7 +361,9 @@ def _check_hugepages(host: Host) -> bool:
     Check if hugepages are enabled on the host.
     """
     try:
-        output = host.connection.execute_command("cat /proc/sys/vm/nr_hugepages", shell=True, timeout=10)
+        output = host.connection.execute_command(
+            "cat /proc/sys/vm/nr_hugepages", shell=True, timeout=10
+        )
         return int(output.stdout.strip()) > 0
     except (RemoteProcessTimeoutExpired, ConnectionCalledProcessError):
         logger.exception(f"Failed to check hugepages status on host {host.name}.")

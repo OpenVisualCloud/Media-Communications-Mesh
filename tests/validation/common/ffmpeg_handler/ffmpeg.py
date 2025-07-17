@@ -83,9 +83,7 @@ class FFmpegExecutor:
         self._processes.append(ffmpeg_process)
         CURRENT_RETRIES = RETRIES
         retries_counter = 0
-        while (
-            not ffmpeg_process.running and retries_counter <= CURRENT_RETRIES
-        ):
+        while not ffmpeg_process.running and retries_counter <= CURRENT_RETRIES:
             retries_counter += 1
             time.sleep(SLEEP_BETWEEN_CHECKS)
         # FIXME: Find a better way to check if the process is running; code below throws an error when the process is actually running sometimes
@@ -141,16 +139,12 @@ class FFmpegExecutor:
                     time.sleep(SLEEP_BETWEEN_CHECKS)
                     elapsed += SLEEP_BETWEEN_CHECKS
                     wait -= SLEEP_BETWEEN_CHECKS
-                while (
-                    process.running and CURRENT_RETRIES >= 0
-                ):
+                while process.running and CURRENT_RETRIES >= 0:
                     process.stop()
                     CURRENT_RETRIES -= 1
                     time.sleep(SLEEP_BETWEEN_CHECKS)
                     elapsed += SLEEP_BETWEEN_CHECKS
-                if (
-                    process.running
-                ):
+                if process.running:
                     process.kill()
             except SSHRemoteProcessEndException as e:
                 logger.warning(
