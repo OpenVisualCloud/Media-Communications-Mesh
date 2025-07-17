@@ -24,12 +24,16 @@ class ClientJson:
 
     def set_client(self, edits: dict) -> None:
         self.apiVersion = edits.get("apiVersion", self.apiVersion)
-        self.apiConnectionString = edits.get("apiConnectionString", self.apiConnectionString)
+        self.apiConnectionString = edits.get(
+            "apiConnectionString", self.apiConnectionString
+        )
         self.apiDefaultTimeoutMicroseconds = edits.get(
             "apiDefaultTimeoutMicroseconds", self.apiDefaultTimeoutMicroseconds
         )
-        self.maxMediaConnections = edits.get("maxMediaConnections", self.maxMediaConnections)
-
+        self.maxMediaConnections = edits.get(
+            "maxMediaConnections", self.maxMediaConnections
+        )    
+        
     def to_json(self) -> str:
         json_dict = {
             "apiVersion": self.apiVersion,

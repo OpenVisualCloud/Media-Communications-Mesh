@@ -2,8 +2,11 @@
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
 
-from Engine.rx_tx_app_connection import (ConnectionMode, Rdma, St2110,
-                                             TransportType)
+from Engine.rx_tx_app_connection import (
+    ConnectionMode, 
+    Rdma, St2110, 
+    TransportType,
+)
 from Engine.rx_tx_app_connection_json import ConnectionJson
 from Engine.rx_tx_app_payload import Audio, Video
 
@@ -42,7 +45,11 @@ print(
 )
 
 print("ConnectionJson:")
-cj = ConnectionJson(bufferQueueCapacity=32, payload=payload, rx_tx_app_connection=rx_tx_app_connection_rdma)
+cj = ConnectionJson(
+    bufferQueueCapacity=32,
+    payload=payload,
+    rx_tx_app_connection=rx_tx_app_connection_rdma,
+)
 
 print(
     f"""Dict:
@@ -94,7 +101,9 @@ print(
 )
 
 print("ConnectionJson:")
-cj = ConnectionJson(maxPayloadSize=1024, payload=pl, rx_tx_app_connection=rx_tx_app_connection_st2110)
+cj = ConnectionJson(
+    maxPayloadSize=1024, payload=pl, rx_tx_app_connection=rx_tx_app_connection_st2110
+)
 
 print(
     f"""Dict:

@@ -1,11 +1,14 @@
 import logging
 import re
 import time
-
 import threading
 from pathlib import Path
 
-from Engine.const import *
+from Engine.const import (
+    LOG_FOLDER,
+    MEDIA_PROXY_ERROR_KEYWORDS,
+    MESH_AGENT_ERROR_KEYWORDS,
+)
 
 logger = logging.getLogger(__name__)
 STOP_GRACEFULLY_PERIOD = 2  # seconds
@@ -51,7 +54,13 @@ def remove_ansi_escape_sequences(text):
     return cleaned_text
 
 
-def save_process_log(subdir: str, filename: str, text: str, cmd: str | None = None, log_dir: str | Path = LOG_FOLDER):
+def save_process_log(
+    subdir: str,
+    filename: str,
+    text: str,
+    cmd: str | None = None,
+    log_dir: str | Path = LOG_FOLDER,
+):
     log_dir = Path(log_dir)
     log_path = Path(log_dir, subdir)
     log_path.mkdir(parents=True, exist_ok=True)
@@ -121,11 +130,19 @@ def output_validator(
             f"{len(phrase_mismatches)} phrase mismatches found."
         )
 
-    result = {"is_pass": is_pass, "errors": errors, "phrase_mismatches": phrase_mismatches}
+    result = {
+        "is_pass": is_pass,
+        "errors": errors,
+        "phrase_mismatches": phrase_mismatches,
+    }
 
     is_pass = not (errors or phrase_mismatches)
 
-    result = {"is_pass": is_pass, "errors": errors, "phrase_mismatches": phrase_mismatches}
+    result = {
+        "is_pass": is_pass,
+        "errors": errors,
+        "phrase_mismatches": phrase_mismatches,
+    }
 
     return result
 
@@ -185,7 +202,9 @@ class MediaProxy:
         self.log_path = log_path
         self.subdir = Path("media_proxy_logs", self.host.name)
         self.filename = "media_proxy.log"
-        self.log_file_path = Path(log_path if log_path else LOG_FOLDER, self.subdir, self.filename)
+        self.log_file_path = Path(
+            log_path if log_path else LOG_FOLDER, self.subdir, self.filename
+        )
 
     def start(self):
         if not self.run_media_proxy_process or not self.run_media_proxy_process.running:
@@ -210,10 +229,14 @@ class MediaProxy:
                 cmd += f" -p {self.p}"
 
             self.cmd = cmd
-            logger.info(f"Starting media proxy on host {self.host.name} with command: {self.cmd}")
+            logger.info(
+                f"Starting media proxy on host {self.host.name} with command: {self.cmd}"
+            )
             try:
                 logger.debug(f"Media proxy command on {self.host.name}: {self.cmd}")
-                self.run_media_proxy_process = connection.start_process(self.cmd, stderr_to_stdout=True)
+                self.run_media_proxy_process = connection.start_process(
+                    self.cmd, stderr_to_stdout=True
+                )
 
                 # Start background logging thread
                 def log_output():
@@ -228,11 +251,17 @@ class MediaProxy:
 
                 threading.Thread(target=log_output, daemon=True).start()
             except Exception as e:
-                logger.error(f"Failed to start media proxy process on host {self.host.name}")
-                raise RuntimeError(f"Failed to start media proxy process on host {self.host.name}: {e}")
+                logger.error(
+                    f"Failed to start media proxy process on host {self.host.name}"
+                )
+                raise RuntimeError(
+                    f"Failed to start media proxy process on host {self.host.name}: {e}"
+                )
             # if self.use_sudo:
             #     connection.disable_sudo()
-            logger.info(f"Media proxy started on host {self.host.name}: {self.run_media_proxy_process.running}")
+            logger.info(
+                f"Media proxy started on host {self.host.name}: {self.run_media_proxy_process.running}"
+            )
 
     def stop(self, log_path=None):
         # Use the provided log_path or the one stored in the object
@@ -296,9 +325,13 @@ class MeshAgent:
         self.is_pass = False
         self.external = False
         self.log_path = log_path
-        self.subdir = Path("mesh_agent_logs", "mesh-agent" if host is None else host.name)
+        self.subdir = Path(
+            "mesh_agent_logs", "mesh-agent" if host is None else host.name
+        )
         self.filename = "mesh_agent.log"
-        self.log_file_path = Path(log_path if log_path else LOG_FOLDER, self.subdir, self.filename)
+        self.log_file_path = Path(
+            log_path if log_path else LOG_FOLDER, self.subdir, self.filename
+        )
 
     def start(self, c=None, p=None):
         if not self.mesh_agent_process or not self.mesh_agent_process.running:
@@ -311,20 +344,30 @@ class MeshAgent:
                 cmd += f" -p {self.p}"
 
             self.cmd = cmd
-            logger.info(f"Starting mesh agent on host {self.host.name} with command: {self.cmd}")
-            self.mesh_agent_process = self.host.connection.start_process(self.cmd, stderr_to_stdout=True)
+            logger.info(
+                f"Starting mesh agent on host {self.host.name} with command: {self.cmd}"
+            )
+            self.mesh_agent_process = self.host.connection.start_process(
+                self.cmd, stderr_to_stdout=True
+            )
 
             # Start background logging thread
             def log_output():
                 for line in self.mesh_agent_process.get_stdout_iter():
                     save_process_log(
-                        subdir=self.subdir, filename=self.filename, text=line.rstrip(), cmd=cmd, log_dir=self.log_path
+                        subdir=self.subdir,
+                        filename=self.filename,
+                        text=line.rstrip(),
+                        cmd=cmd,
+                        log_dir=self.log_path,
                     )
 
             threading.Thread(target=log_output, daemon=True).start()
 
             self.mesh_ip = self.host.connection.ip
-            logger.info(f"Mesh agent started on host {self.host.name}: {self.mesh_agent_process.running}")
+            logger.info(
+                f"Mesh agent started on host {self.host.name}: {self.mesh_agent_process.running}"
+            )
 
     def stop(self, log_path=None):
         # Use the provided log_path or the one stored in the object

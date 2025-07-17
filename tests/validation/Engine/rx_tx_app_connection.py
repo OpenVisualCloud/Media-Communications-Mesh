@@ -5,11 +5,16 @@
 from enum import Enum
 
 from Engine.const import (
-    DEFAULT_REMOTE_IP_ADDR, DEFAULT_REMOTE_PORT, DEFAULT_PACING, 
-    DEFAULT_PAYLOAD_TYPE_ST2110_20, DEFAULT_PIXEL_FORMAT,
-    DEFAULT_MPG_URN, DEFAULT_PAYLOAD_TYPE_ST2110_30,
-    DEFAULT_RDMA_MAX_LATENCY_NS
+    DEFAULT_REMOTE_IP_ADDR,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_PACING,
+    DEFAULT_PAYLOAD_TYPE_ST2110_20,
+    DEFAULT_PIXEL_FORMAT,
+    DEFAULT_MPG_URN,
+    DEFAULT_PAYLOAD_TYPE_ST2110_30,
+    DEFAULT_RDMA_MAX_LATENCY_NS,
 )
+
 
 class RxTxAppConnectionType(Enum):
     NONE = -1
@@ -25,18 +30,19 @@ class RxTxAppConnection:
 
     def __init__(self, rx_tx_app_connection_type=RxTxAppConnectionType.NONE):
         self.rx_tx_app_connection_type = rx_tx_app_connection_type
-        
+
     def __call__(self):
         """Make the instance callable to support AppRunnerBase usage.
-        
+
         This method enables two ways of using connection classes with AppRunnerBase:
         1. Passing a class: AppRunnerBase will instantiate it with default parameters
         2. Passing an instance: AppRunnerBase will call the instance and get it back
-        
+
         For new code, prefer passing fully configured instances rather than classes
         for better explicitness and maintainability.
         """
         return self
+
 
 class MultipointGroup(RxTxAppConnection):
     """Prepares multipoint-group part of connection.json file"""
@@ -145,7 +151,9 @@ class ConnectionMode(Enum):
 class Rdma(RxTxAppConnection):
     """Prepares RDMA part of connection.json file"""
 
-    def __init__(self, connectionMode=ConnectionMode.RC, maxLatencyNs=DEFAULT_RDMA_MAX_LATENCY_NS):
+    def __init__(
+        self, connectionMode=ConnectionMode.RC, maxLatencyNs=DEFAULT_RDMA_MAX_LATENCY_NS
+    ):
         super().__init__(rx_tx_app_connection_type=RxTxAppConnectionType.RDMA)
         self.connectionMode = connectionMode
         self.maxLatencyNs = maxLatencyNs

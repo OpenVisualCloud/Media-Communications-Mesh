@@ -60,7 +60,14 @@ class Payload:
 
 
 class Video(Payload):
-    def __init__(self, width=1920, height=1080, fps=60.0, pixelFormat="yuv422p10le", media_file_path=None):
+    def __init__(
+        self,
+        width=1920,
+        height=1080,
+        fps=60.0,
+        pixelFormat="yuv422p10le",
+        media_file_path=None,
+    ):
         self.width = width
         self.height = height
         self.fps = fps
@@ -95,7 +102,14 @@ class Video(Payload):
 
 
 class Audio(Payload):
-    def __init__(self, channels=2, sampleRate=48000, audio_format="pcm_s24be", packetTime="1ms", media_file_path=None):
+    def __init__(
+        self,
+        channels=2,
+        sampleRate=48000,
+        audio_format="pcm_s24be",
+        packetTime="1ms",
+        media_file_path=None,
+    ):
         self.channels = channels
         self.sampleRate = sampleRate
         self.audio_format = audio_format  # .payload.format (JSON)
