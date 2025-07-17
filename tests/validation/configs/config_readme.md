@@ -48,22 +48,22 @@ hosts:
 ### hosts
 A list of host definitions. Each host can have the following fields:
 
-- **name**: Name of the host. 
-    If you want to run `mesh-agent` in your test, name one host as `mesh-agent`or specify in test_config.yaml name of one of your hosts as `mesh_agent_name: name_of_chosen_host`. This is required for the system to recognize it as the mesh-agent host. 
+- **name**: Name of the host.
+    If you want to run `mesh-agent` in your test, name one host as `mesh-agent`or specify in test_config.yaml name of one of your hosts as `mesh_agent_name: name_of_chosen_host`. This is required for the system to recognize it as the mesh-agent host.
     If you want to use external mesh-agent set its IP address and ports in test_config.yaml.
 - **instantiate**: Set to `true` to instantiate this host and create a connection.
 - **role**: Role of the host (supported only `sut` or `client`).
 - **network_interfaces**: List of network interfaces used in the test.
-  - **interface_name**: Name of the network interface (e.g., `eth1`). You can also specify by PCI device ID or address. Please read MFD Config readme for more details on how to specify the interface. mfd-config repo: https://github.com/intel-innersource/libraries.python.mfd.pytest-mfd-config
+  - **interface_name**: Name of the network interface (e.g., `eth1`). You can also specify by PCI device ID or address. Please read MFD Config readme for more details on how to specify the interface. mfd-config repo: [https://github.com/intel-innersource/libraries.python.mfd.pytest-mfd-config](https://github.com/intel-innersource/libraries.python.mfd.pytest-mfd-config)
 - **connections**: List of connections for the host.
   - **ip_address**: IP address for the connection.
-  - **connection_type**: Type of connection (e.g., `SSHConnection`) please read MFD Connect readme for more details: https://github.com/intel-innersource/libraries.python.mfd.mfd-connect/tree/main/mfd_connect
+  - **connection_type**: Type of connection (e.g., `SSHConnection`) please read MFD Connect readme for more details: [https://github.com/intel-innersource/libraries.python.mfd.mfd-connect/tree/main/mfd_connect](https://github.com/intel-innersource/libraries.python.mfd.mfd-connect/tree/main/mfd_connect)
   - **connection_options**: Options for the connection.
     - **port**: SSH port (default: 22).
     - **username**: SSH username.
     - **password**: SSH password.
 - **extra_info**: Additional configuration for the host.
-  - **integrity_path**: Path for integrity scripts on the host if you want to run integrity tests (optional). 
+  - **integrity_path**: Path for integrity scripts on the host if you want to run integrity tests (optional).
   - **mtl_path**: Custom path to the MTL repo (optional) default is /mcm_path/_build/mtl.
   - **nicctl_path**: Path to `nicctl.sh` script (optional).
   - **media_proxy**: (Optional) Media proxy configuration. DO NOT set this if you don't want to run media proxy process.
@@ -88,7 +88,7 @@ A list of host definitions. Each host can have the following fields:
 
 ---
 
---- 
+---
 ## Test config Structure Overview
 
 ```yaml
