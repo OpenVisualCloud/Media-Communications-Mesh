@@ -31,7 +31,7 @@ jobs:
           ref: "${{ env.INPUT_BRANCH }}"
 
       - name: Lint
-        uses: super-linter/super-linter/slim@e1cb86b6e8d119f789513668b4b30bf17fe1efe4 # v7.2.0 x-release-please-version
+        uses: super-linter/super-linter/slim@85f7611e0f7b53c8573cca84aa0ed4344f6f6a4d # v7.2.1 x-release-please-version
         env:
           DISABLE_ERRORS: false
           VALIDATE_ALL_CODEBASE: false
