@@ -32,8 +32,8 @@ class ClientJson:
         )
         self.maxMediaConnections = edits.get(
             "maxMediaConnections", self.maxMediaConnections
-        )    
-        
+        )
+
     def to_json(self) -> str:
         json_dict = {
             "apiVersion": self.apiVersion,

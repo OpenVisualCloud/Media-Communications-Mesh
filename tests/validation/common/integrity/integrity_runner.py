@@ -11,8 +11,19 @@ logger = logging.getLogger(__name__)
 class VideoIntegrityRunner:
     module_name = "video_integrity.py"
 
-    def __init__(self, host, test_repo_path, src_url: str, out_name: str, resolution: str, file_format: str = "yuv422p10le",
-                out_path: str = "/mnt/ramdisk", delete_file: bool = True, python_path = None, integrity_path = None):
+    def __init__(
+        self,
+        host,
+        test_repo_path,
+        src_url: str,
+        out_name: str,
+        resolution: str,
+        file_format: str = "yuv422p10le",
+        out_path: str = "/mnt/ramdisk",
+        delete_file: bool = True,
+        python_path=None,
+        integrity_path=None,
+    ):
         self.host = host
         self.test_repo_path = test_repo_path
         self.integrity_path = self.get_path(integrity_path)
@@ -31,38 +42,80 @@ class VideoIntegrityRunner:
         """
         if integrity_path:
             return str(self.host.connection.path(integrity_path, self.module_name))
-        return str(self.host.connection.path(self.test_repo_path, "tests", "common", "integrity", self.module_name))
+        return str(
+            self.host.connection.path(
+                self.test_repo_path, "tests", "common", "integrity", self.module_name
+            )
+        )
 
     def setup(self):
         """
         Setup method to prepare the environment for running the integrity check.
         This can include creating directories, checking dependencies, etc.
         """
-        logger.info(f"Setting up integrity check on {self.host.name} for {self.out_name}")
-        self.host.connection.execute_command(f"apt install tesseract-ocr -y", shell=True)
-        reqs = str(self.host.connection.path(self.integrity_path).parents[0] / "requirements.txt")
+        logger.info(
+            f"Setting up integrity check on {self.host.name} for {self.out_name}"
+        )
+        self.host.connection.execute_command(
+            f"apt install tesseract-ocr -y", shell=True
+        )
+        reqs = str(
+            self.host.connection.path(self.integrity_path).parents[0]
+            / "requirements.txt"
+        )
         for library in ["pytesseract", "opencv-python"]:
             cmd = f"{self.python_path} -m pip list | grep {library} || {self.python_path} -m pip install -r {reqs}"
             self.host.connection.execute_command(cmd, shell=True)
 
 
 class FileVideoIntegrityRunner(VideoIntegrityRunner):
-    def __init__(self, host, test_repo_path, src_url: str, out_name: str, resolution: str, file_format: str = "yuv422p10le",
-                 out_path: str = "/mnt/ramdisk", delete_file: bool = True, python_path = None, integrity_path = None):
-        super().__init__(host, test_repo_path, src_url, out_name, resolution, file_format, out_path, delete_file, python_path, integrity_path)
+    def __init__(
+        self,
+        host,
+        test_repo_path,
+        src_url: str,
+        out_name: str,
+        resolution: str,
+        file_format: str = "yuv422p10le",
+        out_path: str = "/mnt/ramdisk",
+        delete_file: bool = True,
+        python_path=None,
+        integrity_path=None,
+    ):
+        super().__init__(
+            host,
+            test_repo_path,
+            src_url,
+            out_name,
+            resolution,
+            file_format,
+            out_path,
+            delete_file,
+            python_path,
+            integrity_path,
+        )
 
     def run(self):
-        cmd = " ".join([self.python_path,
-               self.integrity_path,
-               "file",
-               self.src_url,
-               self.out_name,
-               self.resolution,
-               self.file_format,
-               "--output_path", self.out_path,
-               "--delete_file" if self.delete_file else "--no_delete_file"])
-        logger.debug(f"Running integrity check on {self.host.name} for {self.out_name} with command: {cmd}")
-        result = self.host.connection.execute_command(cmd, shell=True, stderr_to_stdout=True, expected_return_codes=(0, 1))
+        cmd = " ".join(
+            [
+                self.python_path,
+                self.integrity_path,
+                "file",
+                self.src_url,
+                self.out_name,
+                self.resolution,
+                self.file_format,
+                "--output_path",
+                self.out_path,
+                "--delete_file" if self.delete_file else "--no_delete_file",
+            ]
+        )
+        logger.debug(
+            f"Running integrity check on {self.host.name} for {self.out_name} with command: {cmd}"
+        )
+        result = self.host.connection.execute_command(
+            cmd, shell=True, stderr_to_stdout=True, expected_return_codes=(0, 1)
+        )
         if result.return_code > 0:
             logger.error(f"Integrity check failed on {self.host.name}: {self.out_name}")
             logger.error(result.stdout)

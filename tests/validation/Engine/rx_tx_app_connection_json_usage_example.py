@@ -3,8 +3,9 @@
 # Media Communications Mesh
 
 from Engine.rx_tx_app_connection import (
-    ConnectionMode, 
-    Rdma, St2110, 
+    ConnectionMode,
+    Rdma,
+    St2110,
     TransportType,
 )
 from Engine.rx_tx_app_connection_json import ConnectionJson

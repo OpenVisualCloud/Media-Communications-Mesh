@@ -4,9 +4,10 @@
 
 from Engine.rx_tx_app_connection import (
     ConnectionMode,
-    Rdma, St2110,
+    Rdma,
+    St2110,
     TransportType,
-    )
+)
 
 rx_tx_app_connection_rdma = Rdma(connectionMode=ConnectionMode.UC, maxLatencyNs=30000)
 

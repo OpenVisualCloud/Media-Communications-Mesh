@@ -5,8 +5,15 @@
 # https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/ffmpeg-plugin/mcm_audio_rx.c
 # https://github.com/OpenVisualCloud/Media-Communications-Mesh/blob/main/ffmpeg-plugin/mcm_audio_tx.c
 
-from .ffmpeg_enums import McmConnectionType, FFmpegAudioRate, PacketTime, McmFAudioFormat, matching_sample_rates, \
-    McmTransport, McmTransportPixelFormat
+from .ffmpeg_enums import (
+    McmConnectionType,
+    FFmpegAudioRate,
+    PacketTime,
+    McmFAudioFormat,
+    matching_sample_rates,
+    McmTransport,
+    McmTransportPixelFormat,
+)
 from .ffmpeg_io import FFmpegIO
 
 
@@ -23,6 +30,7 @@ class FFmpegMcmMemifAudioIO(FFmpegIO):
         self.channels = channels
         self.sample_rate = sample_rate
         self.f = f
+
 
 class FFmpegMcmMemifVideoIO(FFmpegIO):
     def __init__(
