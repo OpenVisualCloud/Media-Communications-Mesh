@@ -14,19 +14,26 @@ import Engine.rx_tx_app_payload
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
     FFmpegVideoFormat,
-    video_file_format_to_payload_format)
+    video_file_format_to_payload_format,
+)
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
 from common.ffmpeg_handler.mtl_ffmpeg import FFmpegMtlSt20pTx
 from common.nicctl import Nicctl
 from Engine.const import (
-    DEFAULT_REMOTE_IP_ADDR, DEFAULT_REMOTE_PORT, DEFAULT_PACING, 
-    DEFAULT_PAYLOAD_TYPE_ST2110_20, DEFAULT_PIXEL_FORMAT,
-    MCM_ESTABLISH_TIMEOUT, MTL_ESTABLISH_TIMEOUT, MCM_RXTXAPP_RUN_TIMEOUT
+    DEFAULT_REMOTE_IP_ADDR,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_PACING,
+    DEFAULT_PAYLOAD_TYPE_ST2110_20,
+    DEFAULT_PIXEL_FORMAT,
+    MCM_ESTABLISH_TIMEOUT,
+    MTL_ESTABLISH_TIMEOUT,
+    MCM_RXTXAPP_RUN_TIMEOUT,
 )
 from Engine.mcm_apps import get_mtl_path
 from Engine.media_files import video_files_25_03 as yuv_files
 
 logger = logging.getLogger(__name__)
+
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
 def test_st2110_rttxapp_mtl_to_mcm_video(
@@ -46,14 +53,15 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
     tx_mtl_path = get_mtl_path(tx_host)
 
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
+    video_pixel_format = video_file_format_to_payload_format(
+        str(yuv_files[video_type]["file_format"])
+    )
 
     tx_nicctl = Nicctl(
         mtl_path=tx_mtl_path,
         host=tx_host,
     )
     tx_vfs = tx_nicctl.prepare_vfs_for_test(tx_host.network_interfaces[0])
-    
     mtl_tx_inp = FFmpegVideoIO(
         stream_loop=-1,
         input_path=f'{test_config["tx"]["filepath"]}{yuv_files[video_type]["filename"]}',
@@ -79,7 +87,9 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
         yes_overwrite=False,
     )
     logger.debug(f"Tx command executed on {tx_host.name}: {mtl_tx_ff.get_command()}")
-    mtl_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mtl_tx_ff, log_path=log_path)
+    mtl_tx_executor = FFmpegExecutor(
+        tx_host, ffmpeg_instance=mtl_tx_ff, log_path=log_path
+    )
 
     rx_connection = Engine.rx_tx_app_connection.St2110_20(
         remoteIpAddr=test_config.get("broadcast_ip", DEFAULT_REMOTE_IP_ADDR),
@@ -131,5 +141,9 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
     rx_executor_a.cleanup()
     rx_executor_b.cleanup()
 
-    assert rx_executor_a.is_pass, "Receiver A validation failed. Check logs for details."
-    assert rx_executor_b.is_pass, "Receiver B validation failed. Check logs for details."
+    assert (
+        rx_executor_a.is_pass
+    ), "Receiver A validation failed. Check logs for details."
+    assert (
+        rx_executor_b.is_pass
+    ), "Receiver B validation failed. Check logs for details."

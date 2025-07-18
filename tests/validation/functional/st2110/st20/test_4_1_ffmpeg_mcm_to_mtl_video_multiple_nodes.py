@@ -8,21 +8,33 @@ import pytest
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
-    FFmpegVideoFormat, McmConnectionType, McmTransport,
-    video_file_format_to_payload_format)
+    FFmpegVideoFormat,
+    McmConnectionType,
+    McmTransport,
+    video_file_format_to_payload_format,
+)
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
-from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmST2110VideoTx, FFmpegMcmST2110VideoRx
+from common.ffmpeg_handler.mcm_ffmpeg import (
+    FFmpegMcmST2110VideoTx,
+    FFmpegMcmST2110VideoRx,
+)
 from common.ffmpeg_handler.mtl_ffmpeg import FFmpegMtlSt20pRx
 from common.nicctl import Nicctl
 from Engine.const import (
-    DEFAULT_OUTPUT_PATH, MAX_TEST_TIME_DEFAULT, MCM_ESTABLISH_TIMEOUT, MTL_ESTABLISH_TIMEOUT
+    DEFAULT_OUTPUT_PATH,
+    MAX_TEST_TIME_DEFAULT,
+    MCM_ESTABLISH_TIMEOUT,
+    MTL_ESTABLISH_TIMEOUT,
 )
 from Engine.mcm_apps import get_media_proxy_port, get_mtl_path
 from Engine.media_files import video_files_25_03 as yuv_files
 
 logger = logging.getLogger(__name__)
 
-EARLY_STOP_THRESHOLD_PERCENTAGE = 20  # percentage of max_test_time to consider an early stop
+
+EARLY_STOP_THRESHOLD_PERCENTAGE = (
+    20  # percentage of max_test_time to consider an early stop
+)
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys() if "4K" not in k])
 def test_st2110_ffmpeg_mcm_to_mtl_video(
@@ -36,17 +48,19 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
     rx_host_a = host_list[0]
     rx_host_b = host_list[1]
     rx_mtl_host = host_list[0]
-    
+
     tx_prefix_variables = test_config["tx"].get("mcm_prefix_variables", {})
     rx_prefix_variables = test_config["rx"].get("mcm_prefix_variables", {})
     rx_mtl_prefix_variables = test_config["rx"].get("mtl_prefix_variables", {})
     tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = get_media_proxy_port(tx_host)
     rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = get_media_proxy_port(rx_host_b)
     rx_mtl_prefix_variables["MCM_MEDIA_PROXY_PORT"] = get_media_proxy_port(rx_mtl_host)
-    
+
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
+    video_pixel_format = video_file_format_to_payload_format(
+        str(yuv_files[video_type]["file_format"])
+    )
     conn_type = McmConnectionType.st.value
 
     # MCM FFmpeg Tx
@@ -55,7 +69,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
         video_size=video_size,
         pixel_format=video_pixel_format,
         stream_loop=-1,
-        input_path=f'{test_config["tx"]["filepath"]}{yuv_files[video_type]["filename"]}'
+        input_path=f'{test_config["tx"]["filepath"]}{yuv_files[video_type]["filename"]}',
     )
     mcm_tx_outp = FFmpegMcmST2110VideoTx(
         f="mcm",
@@ -86,22 +100,22 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
         host=rx_mtl_host,
     )
     rx_vfs = rx_nicctl.prepare_vfs_for_test(rx_mtl_host.network_interfaces[0])
-    
+
     mtl_rx_inp = FFmpegMtlSt20pRx(
-        video_size = video_size,
-        pixel_format = video_pixel_format,
-        fps = frame_rate,
-        timeout_s = None,
-        init_retry = None,
-        fb_cnt = None,
-        p_rx_ip = test_config["broadcast_ip"],
-        p_port = str(rx_vfs[1]),
-        p_sip = test_config["rx"]["p_sip"],
-        rx_queues = None,
-        tx_queues = None,
-        udp_port = test_config["port"],
-        payload_type = test_config["payload_type"],
-        input_path = "-",
+        video_size=video_size,
+        pixel_format=video_pixel_format,
+        fps=frame_rate,
+        timeout_s=None,
+        init_retry=None,
+        fb_cnt=None,
+        p_rx_ip=test_config["broadcast_ip"],
+        p_port=str(rx_vfs[1]),
+        p_sip=test_config["rx"]["p_sip"],
+        rx_queues=None,
+        tx_queues=None,
+        udp_port=test_config["port"],
+        payload_type=test_config["payload_type"],
+        input_path="-",
     )
     mtl_rx_outp = FFmpegVideoIO(
         video_size = video_size,

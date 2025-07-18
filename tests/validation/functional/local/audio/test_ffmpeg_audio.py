@@ -33,23 +33,31 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str) ->
     tx_host = rx_host = host_list[0]
     tx_prefix_variables = test_config["tx"].get("prefix_variables", None)
     rx_prefix_variables = test_config["rx"].get("prefix_variables", None)
-    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = tx_host.topology.extra_info.media_proxy["sdk_port"]
-    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = rx_host.topology.extra_info.media_proxy["sdk_port"]
+    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+        tx_host.topology.extra_info.media_proxy["sdk_port"]
+    )
+    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+        rx_host.topology.extra_info.media_proxy["sdk_port"]
+    )
 
-    audio_format = audio_file_format_to_format_dict(str(audio_files[audio_type]["format"])) # audio format
+    audio_format = audio_file_format_to_format_dict(
+        str(audio_files[audio_type]["format"])
+    )  # audio format
     audio_channel_layout = audio_files[audio_type].get(
         "channel_layout",
-        audio_channel_number_to_layout(int(audio_files[audio_type]["channels"]))
+        audio_channel_number_to_layout(int(audio_files[audio_type]["channels"])),
     )
 
     if audio_files[audio_type]["sample_rate"] not in [48000, 44100, 96000]:
-        raise Exception(f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!")
+        raise Exception(
+            f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
+        )
 
     # >>>>> MCM Tx
     mcm_tx_inp = FFmpegAudioIO(
-        ar = int(audio_files[audio_type]['sample_rate']),
-        f = audio_format["ffmpeg_f"],
-        ac = int(audio_files[audio_type]["channels"]),
+        f=audio_format["ffmpeg_f"],
+        ac=int(audio_files[audio_type]["channels"]),
+        ar=int(audio_files[audio_type]["sample_rate"]),
         stream_loop = False,
         input_path = f'{test_config["tx"]["filepath"]}{audio_files[audio_type]["filename"]}'
     )
@@ -78,24 +86,24 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str) ->
         input_path = "-",
     )
     mcm_rx_outp = FFmpegAudioIO(
-        f = audio_format["ffmpeg_f"],
-        ac = int(audio_files[audio_type]["channels"]),
-        ar = int(audio_files[audio_type]["sample_rate"]),
-        channel_layout = audio_channel_layout,
-        output_path = f'{test_config["rx"]["filepath"]}test_{audio_files[audio_type]["filename"]}'
+        f=audio_format["ffmpeg_f"],
+        ac=int(audio_files[audio_type]["channels"]),
+        ar=int(audio_files[audio_type]["sample_rate"]),
+        channel_layout=audio_channel_layout,
+        output_path=f'{test_config["rx"]["filepath"]}test_{audio_files[audio_type]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
-        prefix_variables= rx_prefix_variables,
-        ffmpeg_path = test_config["rx"]["ffmpeg_path"],
-        ffmpeg_input = mcm_rx_inp,
-        ffmpeg_output = mcm_rx_outp,
-        yes_overwrite = True,
+        prefix_variables=rx_prefix_variables,
+        ffmpeg_path=test_config["rx"]["ffmpeg_path"],
+        ffmpeg_input=mcm_rx_inp,
+        ffmpeg_output=mcm_rx_outp,
+        yes_overwrite=True,
     )
 
     logger.debug(f"Rx command: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance = mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance=mcm_rx_ff)
 
     mcm_rx_executor.start()
     mcm_tx_executor.start()
-    mcm_rx_executor.stop(wait = test_config.get("test_time_sec", 0.0))
-    mcm_tx_executor.stop(wait = test_config.get("test_time_sec", 0.0))
+    mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
+    mcm_tx_executor.stop(wait=test_config.get("test_time_sec", 0.0))

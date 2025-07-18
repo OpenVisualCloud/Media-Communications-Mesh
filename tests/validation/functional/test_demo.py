@@ -5,7 +5,10 @@ from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import McmConnectionType
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
 from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmMemifVideoIO
-from common.integrity.integrity_runner import FileVideoIntegrityRunner, StreamVideoIntegrityRunner
+from common.integrity.integrity_runner import (
+    FileVideoIntegrityRunner,
+    StreamVideoIntegrityRunner,
+)
 from Engine.mcm_apps import MEDIA_PROXY_PORT
 
 
@@ -29,7 +32,11 @@ def test_ping_command(hosts):
 def test_fixtures_with_extra_data(extra_data):
     """Test using extra_data fixture to validate adapter information."""
     logger.info("Testing extra_data fixture")
-    extra_data["tested_adapter"] = {"family": "CVL", "nvm": "80008812", "driver_version": "1.11.2"}
+    extra_data["tested_adapter"] = {
+        "family": "CVL",
+        "nvm": "80008812",
+        "driver_version": "1.11.2",
+    }
     logger.debug(f"Extra data: {extra_data}")
     assert extra_data["tested_adapter"]["family"] == "CVL"
     assert extra_data["tested_adapter"]["nvm"] == "80008812"
@@ -60,7 +67,9 @@ def test_list_command_on_sut(hosts):
 def test_mesh_agent_lifecycle(mesh_agent):
     """Test starting and stopping the mesh agent."""
     logger.info("Testing mesh_agent lifecycle")
-    assert mesh_agent.mesh_agent_process is not None, "Mesh agent process was not started."
+    assert (
+        mesh_agent.mesh_agent_process is not None
+    ), "Mesh agent process was not started."
     assert mesh_agent.mesh_agent_process.running, "Mesh agent process is not running."
     logger.info("Mesh agent lifecycle test completed successfully.")
 
@@ -113,7 +122,11 @@ def test_demo_local_ffmpeg_video_integrity(media_proxy, hosts, test_config) -> N
 
     # >>>>> MCM Tx
     mcm_tx_inp = FFmpegVideoIO(
-        framerate=frame_rate, video_size=video_size, pixel_format=pixel_format, stream_loop=False, input_path=input_path
+        framerate=frame_rate,
+        video_size=video_size,
+        pixel_format=pixel_format,
+        stream_loop=False,
+        input_path=input_path,
     )
     mcm_tx_outp = FFmpegMcmMemifVideoIO(
         f="mcm",
@@ -205,7 +218,11 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config) -> None
     pixel_format = "yuv422p10le"
     conn_type = McmConnectionType.mpg.value
 
-    input_path = str(tx_host.connection.path(test_config["input_path"], "180fr_1920x1080_yuv422p.yuv"))
+    input_path = str(
+        tx_host.connection.path(
+            test_config["input_path"], "180fr_1920x1080_yuv422p.yuv"
+        )
+    )
 
     # >>>>> MCM Tx
     mcm_tx_inp = FFmpegVideoIO(

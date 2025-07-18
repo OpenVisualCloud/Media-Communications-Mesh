@@ -99,7 +99,7 @@ def test_cluster_ffmpeg_video(hosts, media_proxy, test_config, video_type: str) 
 
     mcm_rx_executor.start()
     mcm_tx_executor.start()
-    mcm_rx_executor.stop(wait = test_config.get("test_time_sec", 0.0))
-    mcm_tx_executor.stop(wait = test_config.get("test_time_sec", 0.0))
+    mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
+    mcm_tx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
 
     # TODO: check if the output file exists and is > 0 bytes

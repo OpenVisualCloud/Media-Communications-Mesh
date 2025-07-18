@@ -13,14 +13,21 @@ import Engine.rx_tx_app_payload
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
     FFmpegVideoFormat,
-    video_file_format_to_payload_format)
+    video_file_format_to_payload_format,
+)
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
 from common.ffmpeg_handler.mtl_ffmpeg import FFmpegMtlSt20pRx
 from common.nicctl import Nicctl
 from Engine.const import (
-    DEFAULT_LOOP_COUNT, DEFAULT_REMOTE_IP_ADDR, DEFAULT_REMOTE_PORT, DEFAULT_PACING, 
-    DEFAULT_PAYLOAD_TYPE_ST2110_20, DEFAULT_PIXEL_FORMAT,
-    MCM_ESTABLISH_TIMEOUT, MTL_ESTABLISH_TIMEOUT, MCM_RXTXAPP_RUN_TIMEOUT
+    DEFAULT_LOOP_COUNT,
+    DEFAULT_REMOTE_IP_ADDR,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_PACING,
+    DEFAULT_PAYLOAD_TYPE_ST2110_20,
+    DEFAULT_PIXEL_FORMAT,
+    MCM_ESTABLISH_TIMEOUT,
+    MTL_ESTABLISH_TIMEOUT,
+    MCM_RXTXAPP_RUN_TIMEOUT,
 )
 from Engine.mcm_apps import get_media_proxy_port, get_mtl_path
 from Engine.media_files import video_files_25_03 as yuv_files
@@ -62,14 +69,15 @@ def test_st2110_rttxapp_mcm_to_mtl_video(
 
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
+    video_pixel_format = video_file_format_to_payload_format(
+        str(yuv_files[video_type]["file_format"])
+    )
 
     rx_nicctl = Nicctl(
         mtl_path=rx_mtl_path,
         host=rx_mtl_host,
     )
     rx_vfs = rx_nicctl.prepare_vfs_for_test(rx_mtl_host.network_interfaces[0])
-    
     mtl_rx_inp = FFmpegMtlSt20pRx(
         video_size = video_size,
         pixel_format = video_pixel_format,

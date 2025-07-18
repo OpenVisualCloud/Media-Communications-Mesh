@@ -14,20 +14,27 @@ import Engine.rx_tx_app_payload
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
     FFmpegVideoFormat,
-    video_file_format_to_payload_format)
+    video_file_format_to_payload_format,
+)
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
 from common.ffmpeg_handler.mtl_ffmpeg import FFmpegMtlSt20pTx
 from common.nicctl import Nicctl
 from Engine.const import (
-    DEFAULT_REMOTE_IP_ADDR, DEFAULT_REMOTE_PORT, DEFAULT_PACING, 
-    DEFAULT_PAYLOAD_TYPE_ST2110_20, DEFAULT_PIXEL_FORMAT,
-    MCM_ESTABLISH_TIMEOUT, MTL_ESTABLISH_TIMEOUT, MCM_RXTXAPP_RUN_TIMEOUT,
-    MAX_TEST_TIME_DEFAULT
+    DEFAULT_REMOTE_IP_ADDR,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_PACING,
+    DEFAULT_PAYLOAD_TYPE_ST2110_20,
+    DEFAULT_PIXEL_FORMAT,
+    MCM_ESTABLISH_TIMEOUT,
+    MTL_ESTABLISH_TIMEOUT,
+    MCM_RXTXAPP_RUN_TIMEOUT,
+    MAX_TEST_TIME_DEFAULT,
 )
 from Engine.mcm_apps import get_mtl_path
 from Engine.media_files import video_files_25_03 as yuv_files
 
 logger = logging.getLogger(__name__)
+
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
 def test_st2110_rttxapp_mtl_to_mcm_video(
@@ -37,7 +44,7 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
     host_list = list(hosts.values())
     if len(host_list) < 2:
         pytest.skip("Dual tests require at least 2 hosts")
-    
+
     tx_host = host_list[0]
     rx_host = host_list[1]
 
@@ -45,7 +52,9 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
     tx_mtl_path = get_mtl_path(tx_host)
 
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
+    video_pixel_format = video_file_format_to_payload_format(
+        str(yuv_files[video_type]["file_format"])
+    )
 
     tx_nicctl = Nicctl(
         host=tx_host,

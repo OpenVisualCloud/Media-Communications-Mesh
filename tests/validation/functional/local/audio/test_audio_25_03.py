@@ -18,14 +18,16 @@ from Engine.media_files import audio_files_25_03
 
 
 @pytest.mark.parametrize("file", audio_files_25_03.keys())
-def test_audio_25_03(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
+def test_audio_25_03(
+    build_TestApp, hosts, media_proxy, media_path, file, log_path
+) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
     tx_host = rx_host = host_list[0]
-    
+
     tx_executor = utils.LapkaExecutor.Tx(
         host=tx_host,
         media_path=media_path,

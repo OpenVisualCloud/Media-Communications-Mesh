@@ -13,13 +13,21 @@ import Engine.rx_tx_app_payload
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
-    FFmpegAudioRate, PacketTime, audio_file_format_to_format_dict)
+    FFmpegAudioRate,
+    PacketTime,
+    audio_file_format_to_format_dict,
+)
 from common.ffmpeg_handler.ffmpeg_io import FFmpegAudioIO
 from common.ffmpeg_handler.mtl_ffmpeg import FFmpegMtlSt30pTx
 from common.nicctl import Nicctl
 from Engine.const import (
-    DEFAULT_REMOTE_IP_ADDR, DEFAULT_REMOTE_PORT, DEFAULT_PAYLOAD_TYPE_ST2110_30,
-    MCM_RXTXAPP_RUN_TIMEOUT, MCM_ESTABLISH_TIMEOUT, MTL_ESTABLISH_TIMEOUT, DEFAULT_PACING
+    DEFAULT_REMOTE_IP_ADDR,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_PAYLOAD_TYPE_ST2110_30,
+    MCM_RXTXAPP_RUN_TIMEOUT,
+    MCM_ESTABLISH_TIMEOUT,
+    MTL_ESTABLISH_TIMEOUT,
+    DEFAULT_PACING,
 )
 from Engine.mcm_apps import get_mtl_path
 from Engine.media_files import audio_files_25_03 as audio_files
@@ -27,8 +35,7 @@ from Engine.media_files import audio_files_25_03 as audio_files
 logger = logging.getLogger(__name__)
 
 @pytest.mark.parametrize(
-    "audio_type",
-    [k for k in audio_files.keys() if "PCM8" not in k]
+    "audio_type", [k for k in audio_files.keys() if "PCM8" not in k]
 )
 def test_st2110_rttxapp_mtl_to_mcm_audio(
     build_TestApp, hosts, media_proxy, media_path, test_config, audio_type, log_path
@@ -43,11 +50,15 @@ def test_st2110_rttxapp_mtl_to_mcm_audio(
     tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
     tx_mtl_path = get_mtl_path(tx_host)
 
-    audio_format = audio_file_format_to_format_dict(str(audio_files[audio_type]["format"]))
+    audio_format = audio_file_format_to_format_dict(
+        str(audio_files[audio_type]["format"])
+    )
 
     audio_sample_rate = int(audio_files[audio_type]["sample_rate"])
     if audio_sample_rate not in [ar.value for ar in FFmpegAudioRate]:
-        raise Exception(f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!")
+        raise Exception(
+            f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
+        )
 
     tx_nicctl = Nicctl(
         host=tx_host,
@@ -84,7 +95,9 @@ def test_st2110_rttxapp_mtl_to_mcm_audio(
         yes_overwrite=False,
     )
     logger.debug(f"Tx command executed on {tx_host.name}: {mtl_tx_ff.get_command()}")
-    mtl_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mtl_tx_ff, log_path=log_path)
+    mtl_tx_executor = FFmpegExecutor(
+        tx_host, ffmpeg_instance=mtl_tx_ff, log_path=log_path
+    )
 
     rx_connection = Engine.rx_tx_app_connection.St2110_30(
         remoteIpAddr=test_config.get("broadcast_ip", DEFAULT_REMOTE_IP_ADDR),

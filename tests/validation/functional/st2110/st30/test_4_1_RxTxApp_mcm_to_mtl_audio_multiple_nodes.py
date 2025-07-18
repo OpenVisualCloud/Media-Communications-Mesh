@@ -13,14 +13,22 @@ import Engine.rx_tx_app_payload
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
-    FFmpegAudioRate, PacketTime, audio_file_format_to_format_dict)
+    FFmpegAudioRate,
+    PacketTime,
+    audio_file_format_to_format_dict,
+)
 from common.ffmpeg_handler.ffmpeg_io import FFmpegAudioIO
 from common.ffmpeg_handler.mtl_ffmpeg import FFmpegMtlSt30pRx
 from common.nicctl import Nicctl
 from Engine.const import (
-    DEFAULT_LOOP_COUNT, DEFAULT_REMOTE_IP_ADDR, DEFAULT_REMOTE_PORT, DEFAULT_PACING, 
+    DEFAULT_LOOP_COUNT,
+    DEFAULT_REMOTE_IP_ADDR,
+    DEFAULT_REMOTE_PORT,
+    DEFAULT_PACING,
     DEFAULT_PAYLOAD_TYPE_ST2110_30,
-    MCM_ESTABLISH_TIMEOUT, MTL_ESTABLISH_TIMEOUT, MCM_RXTXAPP_RUN_TIMEOUT
+    MCM_ESTABLISH_TIMEOUT,
+    MTL_ESTABLISH_TIMEOUT,
+    MCM_RXTXAPP_RUN_TIMEOUT,
 )
 from Engine.mcm_apps import get_mtl_path
 from Engine.media_files import audio_files_25_03 as audio_files
@@ -28,8 +36,7 @@ from Engine.media_files import audio_files_25_03 as audio_files
 logger = logging.getLogger(__name__)
 
 @pytest.mark.parametrize(
-    "audio_type",
-    [k for k in audio_files.keys() if "PCM8" not in k]
+    "audio_type", [k for k in audio_files.keys() if "PCM8" not in k]
 )
 def test_st2110_rttxapp_mcm_to_mtl_audio(
     build_TestApp, hosts, media_proxy, media_path, test_config, audio_type, log_path
@@ -62,11 +69,15 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
     rx_prefix_variables = test_config["rx"].get("prefix_variables", {})
     rx_mtl_path = get_mtl_path(rx_mtl_host)
 
-    audio_format = audio_file_format_to_format_dict(str(audio_files[audio_type]["format"]))
+    audio_format = audio_file_format_to_format_dict(
+        str(audio_files[audio_type]["format"])
+    )
 
     audio_sample_rate = int(audio_files[audio_type]["sample_rate"])
     if audio_sample_rate not in [ar.value for ar in FFmpegAudioRate]:
-        raise Exception(f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!")
+        raise Exception(
+            f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
+        )
 
     rx_nicctl = Nicctl(
         mtl_path=rx_mtl_path,
@@ -104,8 +115,12 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
         ffmpeg_output=mtl_rx_outp,
         yes_overwrite=True,
     )
-    logger.debug(f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}")
-    mtl_rx_executor = FFmpegExecutor(host=rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path)
+    logger.debug(
+        f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}"
+    )
+    mtl_rx_executor = FFmpegExecutor(
+        host=rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path
+    )
 
     rx_executor_a = utils.LapkaExecutor.Rx(
         host=rx_host_a,
@@ -157,5 +172,9 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
     mtl_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
     tx_executor.stop()
 
-    assert rx_executor_a.is_pass, "Receiver A validation failed. Check logs for details."
-    assert rx_executor_b.is_pass, "Receiver B validation failed. Check logs for details."
+    assert (
+        rx_executor_a.is_pass
+    ), "Receiver A validation failed. Check logs for details."
+    assert (
+        rx_executor_b.is_pass
+    ), "Receiver B validation failed. Check logs for details."
