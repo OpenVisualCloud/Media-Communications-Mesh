@@ -33,7 +33,7 @@ from Engine.const import (
 from Engine.mcm_apps import get_mtl_path
 from Engine.media_files import audio_files_25_03 as audio_files
 
-logger = logging.getLogger(__name__)
+logger=logging.getLogger(__name__)
 
 @pytest.mark.parametrize(
     "audio_type", [k for k in audio_files.keys() if "PCM8" not in k]
@@ -42,15 +42,15 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
     build_TestApp, hosts, media_proxy, media_path, test_config, audio_type, log_path
 ) -> None:
     # Get TX and RX hosts
-    host_list = list(hosts.values())
+    host_list=list(hosts.values())
     if len(host_list) < 2:
         pytest.skip("Dual tests require at least 2 hosts")
-    tx_host = host_list[0]
-    rx_host_a = host_list[0]
-    rx_host_b = host_list[1]
-    rx_mtl_host = host_list[0]
+    tx_host=host_list[0]
+    rx_host_a=host_list[0]
+    rx_host_b=host_list[1]
+    rx_mtl_host=host_list[0]
 
-    tx_executor = utils.LapkaExecutor.Tx(
+    tx_executor=utils.LapkaExecutor.Tx(
         host=tx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.St2110_30(
@@ -66,26 +66,26 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
         loop=DEFAULT_LOOP_COUNT,
     )
 
-    rx_prefix_variables = test_config["rx"].get("prefix_variables", {})
-    rx_mtl_path = get_mtl_path(rx_mtl_host)
+    rx_prefix_variables=test_config["rx"].get("prefix_variables", {})
+    rx_mtl_path=get_mtl_path(rx_mtl_host)
 
-    audio_format = audio_file_format_to_format_dict(
+    audio_format=audio_file_format_to_format_dict(
         str(audio_files[audio_type]["format"])
     )
 
-    audio_sample_rate = int(audio_files[audio_type]["sample_rate"])
+    audio_sample_rate=int(audio_files[audio_type]["sample_rate"])
     if audio_sample_rate not in [ar.value for ar in FFmpegAudioRate]:
         raise Exception(
             f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
         )
 
-    rx_nicctl = Nicctl(
+    rx_nicctl=Nicctl(
         mtl_path=rx_mtl_path,
         host=rx_mtl_host,
     )
-    rx_vfs = rx_nicctl.prepare_vfs_for_test(rx_mtl_host.network_interfaces[0])
+    rx_vfs=rx_nicctl.prepare_vfs_for_test(rx_mtl_host.network_interfaces[0])
     
-    mtl_rx_inp = FFmpegMtlSt30pRx(
+    mtl_rx_inp=FFmpegMtlSt30pRx(
         sample_rate=audio_sample_rate,
         channels=int(audio_files[audio_type]["channels"]),
         pcm_fmt=audio_format["mtl_pcm_fmt"],
@@ -102,13 +102,13 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
         payload_type=test_config["payload_type"],
         input_path="-",
     )
-    mtl_rx_outp = FFmpegAudioIO(
+    mtl_rx_outp=FFmpegAudioIO(
         ar=audio_sample_rate,
         f=audio_format["ffmpeg_f"],
         ac=int(audio_files[audio_type]["channels"]),
         output_path=f'{test_config["rx"]["filepath"]}test_{audio_files[audio_type]["filename"]}_{audio_files[audio_type]["channels"]}ch_{audio_files[audio_type]["sample_rate"]}Hz.{audio_format["ffmpeg_f"]}',
     )
-    mtl_rx_ff = FFmpeg(
+    mtl_rx_ff=FFmpeg(
         prefix_variables=rx_prefix_variables,
         ffmpeg_path=test_config["rx"]["ffmpeg_path"],
         ffmpeg_input=mtl_rx_inp,
@@ -118,11 +118,11 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
     logger.debug(
         f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}"
     )
-    mtl_rx_executor = FFmpegExecutor(
+    mtl_rx_executor=FFmpegExecutor(
         host=rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path
     )
 
-    rx_executor_a = utils.LapkaExecutor.Rx(
+    rx_executor_a=utils.LapkaExecutor.Rx(
         host=rx_host_a,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.St2110_30(
@@ -137,7 +137,7 @@ def test_st2110_rttxapp_mcm_to_mtl_audio(
         log_path=log_path,
     )
 
-    rx_executor_b = utils.LapkaExecutor.Rx(
+    rx_executor_b=utils.LapkaExecutor.Rx(
         host=rx_host_b,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.St2110_30(

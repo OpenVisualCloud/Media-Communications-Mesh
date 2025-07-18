@@ -17,7 +17,7 @@ from Engine.const import (
 
 from Engine.media_files import audio_files_25_03
 
-logger = logging.getLogger(__name__)
+logger=logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("file", audio_files_25_03.keys())
@@ -26,13 +26,13 @@ def test_audio_25_03_2_2_standalone(
 ) -> None:
 
     # Get TX and RX hosts
-    host_list = list(hosts.values())
+    host_list=list(hosts.values())
     if len(host_list) < 2:
         pytest.skip("Dual tests require at least 2 hosts")
-    tx_host = host_list[0]
-    rx_host = host_list[1]
+    tx_host=host_list[0]
+    rx_host=host_list[1]
 
-    tx_executor = utils.LapkaExecutor.Tx(
+    tx_executor=utils.LapkaExecutor.Tx(
         host=tx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
@@ -42,7 +42,7 @@ def test_audio_25_03_2_2_standalone(
         log_path=log_path,
         loop=DEFAULT_LOOP_COUNT,
     )
-    rx_executor = utils.LapkaExecutor.Rx(
+    rx_executor=utils.LapkaExecutor.Rx(
         host=rx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,

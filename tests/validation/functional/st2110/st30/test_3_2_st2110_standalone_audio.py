@@ -20,45 +20,45 @@ from Engine.const import *
 from Engine.media_files import audio_files_25_03 as audio_files
 from Engine import rx_tx_app_connection, rx_tx_app_engine_mcm, rx_tx_app_payload
 
-logger = logging.getLogger(__name__)
+logger=logging.getLogger(__name__)
 
 
 @pytest.mark.usefixtures("media_proxy")
 @pytest.mark.parametrize("audio_type", list(audio_files.keys()))
 def test_3_2_st2110_standalone_audio(hosts, test_config, audio_type, log_path):
     try:
-        audio_format = audio_file_format_to_format_dict(
+        audio_format=audio_file_format_to_format_dict(
             str(audio_files[audio_type]["format"])
         )
     except:
         pytest.skip(f"Unsupported audio format: {audio_files[audio_type]['format']}")
 
-    audio_channel_layout = audio_files[audio_type].get(
+    audio_channel_layout=audio_files[audio_type].get(
         "channel_layout",
         audio_channel_number_to_layout(int(audio_files[audio_type]["channels"])),
     )
 
-    audio_sample_rate = int(audio_files[audio_type]["sample_rate"])
+    audio_sample_rate=int(audio_files[audio_type]["sample_rate"])
     if audio_sample_rate not in [ar.value for ar in FFmpegAudioRate]:
         raise Exception(
             f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
         )
 
-    tx_host = hosts["mesh-agent"]
-    rx_host = hosts["client"]
+    tx_host=hosts["mesh-agent"]
+    rx_host=hosts["client"]
 
-    nicctl = Nicctl(
+    nicctl=Nicctl(
         host=rx_host,
         mtl_path=rx_host.topology.extra_info.mtl_path,
     )
-    vfs = nicctl.prepare_vfs_for_test(rx_host.network_interfaces[0])
+    vfs=nicctl.prepare_vfs_for_test(rx_host.network_interfaces[0])
 
     # Tx
 
-    tx_config = test_config["tx"]
-    rx_prefix_variables = test_config["rx"].get("prefix_variables", {})
+    tx_config=test_config["tx"]
+    rx_prefix_variables=test_config["rx"].get("prefix_variables", {})
 
-    tx_executor = rx_tx_app_engine_mcm.LapkaExecutor.Tx(
+    tx_executor=rx_tx_app_engine_mcm.LapkaExecutor.Tx(
         host=tx_host,
         media_path=tx_config["media_path"],
         rx_tx_app_connection=lambda: rx_tx_app_connection.St2110_30(
@@ -76,7 +76,7 @@ def test_3_2_st2110_standalone_audio(hosts, test_config, audio_type, log_path):
 
     # Rx
 
-    rx_ffmpeg_input = FFmpegMtlSt30pRx(
+    rx_ffmpeg_input=FFmpegMtlSt30pRx(
         fb_cnt=None,
         timeout_s=None,
         init_retry=None,
@@ -93,21 +93,21 @@ def test_3_2_st2110_standalone_audio(hosts, test_config, audio_type, log_path):
         p_port=str(vfs[0]),
         p_sip=test_config["rx"]["p_sip"],
     )
-    rx_ffmpeg_output = FFmpegAudioIO(
+    rx_ffmpeg_output=FFmpegAudioIO(
         ar=int(audio_files[audio_type]["sample_rate"]),
         f=audio_format["ffmpeg_f"],
         ac=int(audio_files[audio_type]["channels"]),
         channel_layout=audio_channel_layout,
         output_path=f'{test_config["rx"]["filepath"]}test_{audio_files[audio_type]["filename"]}',
     )
-    rx_ffmpeg = FFmpeg(
+    rx_ffmpeg=FFmpeg(
         prefix_variables=rx_prefix_variables,
         ffmpeg_path=test_config["rx"]["ffmpeg_path"],
         ffmpeg_input=rx_ffmpeg_input,
         ffmpeg_output=rx_ffmpeg_output,
         yes_overwrite=True,
     )
-    rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance=rx_ffmpeg)
+    rx_executor=FFmpegExecutor(rx_host, ffmpeg_instance=rx_ffmpeg)
 
     tx_executor.start()
     sleep(MCM_ESTABLISH_TIMEOUT)
