@@ -271,7 +271,6 @@ class VideoStreamIntegritor(VideoIntegritor):
 
 
 class VideoFileIntegritor(VideoIntegritor):
-
     def __init__(
         self,
         logger: logging.Logger,

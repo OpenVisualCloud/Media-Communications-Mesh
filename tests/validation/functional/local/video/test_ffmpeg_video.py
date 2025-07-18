@@ -32,12 +32,12 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
     tx_host = rx_host = host_list[0]
     tx_prefix_variables = test_config["tx"].get("prefix_variables", None)
     rx_prefix_variables = test_config["rx"].get("prefix_variables", None)
-    tx_prefix_variables[
-        "MCM_MEDIA_PROXY_PORT"
-    ] = tx_host.topology.extra_info.media_proxy["sdk_port"]
-    rx_prefix_variables[
-        "MCM_MEDIA_PROXY_PORT"
-    ] = rx_host.topology.extra_info.media_proxy["sdk_port"]
+    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+        tx_host.topology.extra_info.media_proxy["sdk_port"]
+    )
+    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+        rx_host.topology.extra_info.media_proxy["sdk_port"]
+    )
 
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'

@@ -97,9 +97,11 @@ def test_st2110_rttxapp_mcm_to_mtl_video(
     )
     mtl_rx_outp = FFmpegVideoIO(
         video_size=video_size,
-        pixel_format="yuv422p10le"
-        if video_pixel_format == "yuv422p10rfc4175"
-        else video_pixel_format,
+        pixel_format=(
+            "yuv422p10le"
+            if video_pixel_format == "yuv422p10rfc4175"
+            else video_pixel_format
+        ),
         f=FFmpegVideoFormat.raw.value,
         output_path=f'{test_config["rx"]["filepath"]}test_{yuv_files[video_type]["filename"]}_{video_size}at{yuv_files[video_type]["fps"]}fps.yuv',
         pix_fmt=None,  # this is required to overwrite the default

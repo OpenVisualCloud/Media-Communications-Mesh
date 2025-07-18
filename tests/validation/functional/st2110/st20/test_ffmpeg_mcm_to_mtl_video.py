@@ -40,9 +40,9 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
     tx_host = host_list[0]
     tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
     tx_prefix_variables = no_proxy_to_prefix_variables(tx_host, tx_prefix_variables)
-    tx_prefix_variables[
-        "MCM_MEDIA_PROXY_PORT"
-    ] = tx_host.topology.extra_info.media_proxy.get("sdk_port")
+    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+        tx_host.topology.extra_info.media_proxy.get("sdk_port")
+    )
     logger.debug(f"tx_prefix_variables: {tx_prefix_variables}")
 
     # RX configuration
