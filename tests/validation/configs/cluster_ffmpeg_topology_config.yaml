@@ -1,7 +1,7 @@
 # dual-host ST2110 test from MCM to MCM
 ---
 metadata:
-  version: '2.4'
+  version: "2.4"
 hosts:
   - name: mesh-agent
     instantiate: true
