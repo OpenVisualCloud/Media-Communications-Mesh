@@ -7,8 +7,8 @@ tx:
     HTTPS_PROXY: ""
     http_proxy: ""
     HTTP_PROXY: ""
-    NO_PROXY: {{ tx_no_proxy|default('localhost,127.0.0.1') }},{{ mesh_agent_ip }}
-    no_proxy: {{ tx_no_proxy|default('localhost,127.0.0.1') }},{{ mesh_agent_ip }}
+    NO_PROXY: "{{ tx_no_proxy|default('localhost,127.0.0.1') }},{{ mesh_agent_ip }}"
+    no_proxy: "{{ tx_no_proxy|default('localhost,127.0.0.1') }},{{ mesh_agent_ip }}"
 rx:
   filepath: /opt/intel/received/
   ffmpeg_path: ffmpeg
@@ -17,8 +17,8 @@ rx:
     HTTPS_PROXY: ""
     http_proxy: ""
     HTTP_PROXY: ""
-    NO_PROXY: {{ rx_no_proxy|default('127.0.0.1,localhost') }}
-    no_proxy: {{ rx_no_proxy|default('127.0.0.1,localhost') }}
+    NO_PROXY: "{{ rx_no_proxy|default('127.0.0.1,localhost') }}"
+    no_proxy: "{{ rx_no_proxy|default('127.0.0.1,localhost') }}"
 
 # other
 test_time_sec: 30

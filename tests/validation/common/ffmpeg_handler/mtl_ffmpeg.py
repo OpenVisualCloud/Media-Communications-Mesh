@@ -63,9 +63,9 @@ class FFmpegMtlSt20pRx(FFmpegMtlCommonRx):
         video_size: str = "1920x1080",
         pixel_format: str = "yuv422p10le",
         fps: str = "59.94",
-        timeout_s: int = 0,
-        init_retry: int = 5,
-        fb_cnt: int = 3,
+        timeout_s: int | None = 0,
+        init_retry: int | None = 5,
+        fb_cnt: int | None = 3,
         gpu_direct: bool = False,
         gpu_driver: int = 0,
         gpu_device: int = 0,
@@ -86,7 +86,11 @@ class FFmpegMtlSt20pRx(FFmpegMtlCommonRx):
 
 # https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/ecosystem/ffmpeg_plugin/mtl_st20p_tx.c
 class FFmpegMtlSt20pTx(FFmpegMtlCommonTx):
-    def __init__(self, fb_cnt: int = 3, **kwargs):
+    def __init__(
+        self,
+        fb_cnt: int | None = 3,
+        **kwargs,
+    ):
         super().__init__(**kwargs)
         self.fb_cnt = fb_cnt
         self.f = "mtl_st20p"  # constant
@@ -101,9 +105,9 @@ class FFmpegMtlSt22pRx(FFmpegMtlCommonRx):
         video_size: str = "1920x1080",
         pixel_format: str = "yuv422p10le",
         fps: float = 59.94,
-        timeout_s: int = 0,
-        init_retry: int = 5,
-        fb_cnt: int = 3,
+        timeout_s: int | None = 0,
+        init_retry: int | None = 5,
+        fb_cnt: int | None = 3,
         codec_thread_cnt: int = 0,
         st22_codec: str | None = None,
         **kwargs,
@@ -124,7 +128,7 @@ class FFmpegMtlSt22pRx(FFmpegMtlCommonRx):
 class FFmpegMtlSt22pTx(FFmpegMtlCommonTx):
     def __init__(
         self,
-        fb_cnt: int = 3,
+        fb_cnt: int | None = 3,
         bpp: float = 3.0,
         codec_thread_cnt: int = 0,
         st22_codec: str | None = None,
@@ -144,9 +148,9 @@ class FFmpegMtlSt22pTx(FFmpegMtlCommonTx):
 class FFmpegMtlSt30pRx(FFmpegMtlCommonRx):
     def __init__(
         self,
-        fb_cnt: int = 3,
-        timeout_s: int = 0,
-        init_retry: int = 5,
+        fb_cnt: int | None = 3,
+        timeout_s: int | None = 0,
+        init_retry: int | None = 5,
         sample_rate: int = FFmpegAudioRate.k48.value,
         channels: int = 2,
         pcm_fmt: str = MtlPcmFmt.pcm24.value,
@@ -167,7 +171,7 @@ class FFmpegMtlSt30pRx(FFmpegMtlCommonRx):
 class FFmpegMtlSt30pTx(FFmpegMtlCommonTx):
     def __init__(
         self,
-        fb_cnt: int = 3,
+        fb_cnt: int | None = 3,
         ptime: str = PacketTime.pt_1ms.value,
         f: str = MtlFAudioFormat.pcm24.value,
         **kwargs,
