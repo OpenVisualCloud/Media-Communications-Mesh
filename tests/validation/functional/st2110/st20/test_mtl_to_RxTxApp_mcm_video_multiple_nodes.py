@@ -32,44 +32,44 @@ from Engine.const import (
 from Engine.mcm_apps import get_mtl_path
 from Engine.media_files import video_files_25_03 as yuv_files
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
 def test_st2110_rttxapp_mtl_to_mcm_video(
     build_TestApp, hosts, media_proxy, media_path, test_config, video_type, log_path
 ) -> None:
-    
+
     # Get TX and RX hosts
-    host_list=list(hosts.values())
+    host_list = list(hosts.values())
     if len(host_list) < 2:
         pytest.skip("Dual tests require at least 2 hosts")
 
-    tx_host=host_list[0]
-    rx_host_a=host_list[0]
-    rx_host_b=host_list[1]
+    tx_host = host_list[0]
+    rx_host_a = host_list[0]
+    rx_host_b = host_list[1]
 
-    tx_prefix_variables=test_config["tx"].get("prefix_variables", {})
-    tx_mtl_path=get_mtl_path(tx_host)
+    tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
+    tx_mtl_path = get_mtl_path(tx_host)
 
-    video_size=f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format=video_file_format_to_payload_format(
+    video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
+    video_pixel_format = video_file_format_to_payload_format(
         str(yuv_files[video_type]["file_format"])
     )
 
-    tx_nicctl=Nicctl(
+    tx_nicctl = Nicctl(
         mtl_path=tx_mtl_path,
         host=tx_host,
     )
-    tx_vfs=tx_nicctl.prepare_vfs_for_test(tx_host.network_interfaces[0])
-    mtl_tx_inp=FFmpegVideoIO(
+    tx_vfs = tx_nicctl.prepare_vfs_for_test(tx_host.network_interfaces[0])
+    mtl_tx_inp = FFmpegVideoIO(
         stream_loop=-1,
         input_path=f'{test_config["tx"]["filepath"]}{yuv_files[video_type]["filename"]}',
         video_size=video_size,
         f=FFmpegVideoFormat.raw.value,
         pix_fmt=video_pixel_format,
     )
-    mtl_tx_outp=FFmpegMtlSt20pTx(
+    mtl_tx_outp = FFmpegMtlSt20pTx(
         p_port=str(tx_vfs[1]),
         p_sip=test_config["tx"]["p_sip"],
         p_tx_ip=test_config.get("broadcast_ip", DEFAULT_REMOTE_IP_ADDR),
@@ -79,7 +79,7 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
         rx_queues=None,
         tx_queues=None,
     )
-    mtl_tx_ff=FFmpeg(
+    mtl_tx_ff = FFmpeg(
         prefix_variables=tx_prefix_variables,
         ffmpeg_path=test_config["tx"]["ffmpeg_path"],
         ffmpeg_input=mtl_tx_inp,
@@ -87,19 +87,19 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
         yes_overwrite=False,
     )
     logger.debug(f"Tx command executed on {tx_host.name}: {mtl_tx_ff.get_command()}")
-    mtl_tx_executor=FFmpegExecutor(
+    mtl_tx_executor = FFmpegExecutor(
         tx_host, ffmpeg_instance=mtl_tx_ff, log_path=log_path
     )
 
-    rx_connection=Engine.rx_tx_app_connection.St2110_20(
+    rx_connection = Engine.rx_tx_app_connection.St2110_20(
         remoteIpAddr=test_config.get("broadcast_ip", DEFAULT_REMOTE_IP_ADDR),
         remotePort=test_config.get("port", DEFAULT_REMOTE_PORT),
         pacing=test_config.get("pacing", DEFAULT_PACING),
         payloadType=test_config.get("payload_type", DEFAULT_PAYLOAD_TYPE_ST2110_20),
         transportPixelFormat=test_config.get("pixel_format", DEFAULT_PIXEL_FORMAT),
     )
-    
-    rx_executor_a=utils.LapkaExecutor.Rx(
+
+    rx_executor_a = utils.LapkaExecutor.Rx(
         host=rx_host_a,
         media_path=media_path,
         rx_tx_app_connection=rx_connection,
@@ -108,8 +108,8 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
         file=video_type,
         log_path=log_path,
     )
-    
-    rx_executor_b=utils.LapkaExecutor.Rx(
+
+    rx_executor_b = utils.LapkaExecutor.Rx(
         host=rx_host_b,
         media_path=media_path,
         rx_tx_app_connection=rx_connection,

@@ -25,7 +25,7 @@ from ....Engine.media_files import audio_files
 
 from common.nicctl import Nicctl
 
-logger=logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("audio_type", [k for k in audio_files.keys()])
@@ -34,52 +34,52 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
 ) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
-    host_list=list(hosts.values())
+    host_list = list(hosts.values())
     if len(host_list) < 2:
         pytest.skip("Dual tests require at least 2 hosts")
     # TX configuration
-    tx_host=host_list[0]
-    tx_prefix_variables=test_config["tx"].get("prefix_variables", {})
-    tx_prefix_variables=no_proxy_to_prefix_variables(tx_host, tx_prefix_variables)
-    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"]=(
-        tx_host.topology.extra_info.media_proxy.get("sdk_port")
-    )
+    tx_host = host_list[0]
+    tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
+    tx_prefix_variables = no_proxy_to_prefix_variables(tx_host, tx_prefix_variables)
+    tx_prefix_variables[
+        "MCM_MEDIA_PROXY_PORT"
+    ] = tx_host.topology.extra_info.media_proxy.get("sdk_port")
 
     # RX configuration
-    rx_host=host_list[1]
-    rx_prefix_variables=test_config["rx"].get("prefix_variables", {})
-    rx_prefix_variables=no_proxy_to_prefix_variables(rx_host, rx_prefix_variables)
-    rx_mtl_path=rx_host.topology.extra_info.mtl_path
+    rx_host = host_list[1]
+    rx_prefix_variables = test_config["rx"].get("prefix_variables", {})
+    rx_prefix_variables = no_proxy_to_prefix_variables(rx_host, rx_prefix_variables)
+    rx_mtl_path = rx_host.topology.extra_info.mtl_path
 
     # Audio configuration
-    audio_format=audio_file_format_to_format_dict(
+    audio_format = audio_file_format_to_format_dict(
         str(audio_files[audio_type]["format"])
     )  # audio format
-    audio_channel_layout=audio_files[audio_type].get(
+    audio_channel_layout = audio_files[audio_type].get(
         "channel_layout",
         audio_channel_number_to_layout(int(audio_files[audio_type]["channels"])),
     )
 
     if int(audio_files[audio_type]["sample_rate"]) == 48000:
-        audio_sample_rate=FFmpegAudioRate.k48.value
+        audio_sample_rate = FFmpegAudioRate.k48.value
     elif int(audio_files[audio_type]["sample_rate"]) == 44100:
-        audio_sample_rate=FFmpegAudioRate.k44.value
+        audio_sample_rate = FFmpegAudioRate.k44.value
     elif int(audio_files[audio_type]["sample_rate"]) == 96000:
-        audio_sample_rate=FFmpegAudioRate.k96.value
+        audio_sample_rate = FFmpegAudioRate.k96.value
     else:
         pytest.skip(
             f"Skipping test due to unsupported audio sample rate: {audio_files[audio_type]['sample_rate']}"
         )
 
     # Prepare Rx VFs
-    rx_nicctl=Nicctl(
+    rx_nicctl = Nicctl(
         host=rx_host,
         mtl_path=rx_mtl_path,
     )
-    rx_vfs=rx_nicctl.prepare_vfs_for_test(rx_host.network_interfaces[0])
+    rx_vfs = rx_nicctl.prepare_vfs_for_test(rx_host.network_interfaces[0])
 
     # MCM Tx
-    mcm_tx_inp=FFmpegAudioIO(
+    mcm_tx_inp = FFmpegAudioIO(
         ar=audio_sample_rate,
         f=audio_format["ffmpeg_f"],
         ac=int(audio_files[audio_type]["channels"]),
@@ -87,7 +87,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         stream_loop=-1,
         input_path=f'{test_config["tx"]["filepath"]}{audio_files[audio_type]["filename"]}',
     )
-    mcm_tx_outp=FFmpegMcmST2110AudioTx(  # TODO: Verify the variables
+    mcm_tx_outp = FFmpegMcmST2110AudioTx(  # TODO: Verify the variables
         ip_addr=test_config["broadcast_ip"],  # ? #FFmpegMcmST2110AudioTx
         # FFmpegMcmST2110AudioIO:
         payload_type=test_config["payload_type"],
@@ -101,7 +101,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         port=test_config["port"],
         output_path="-",  # FFmpegIO
     )
-    mcm_tx_ff=FFmpeg(
+    mcm_tx_ff = FFmpeg(
         prefix_variables=tx_prefix_variables,
         ffmpeg_path=test_config["tx"]["ffmpeg_path"],
         ffmpeg_input=mcm_tx_inp,
@@ -109,10 +109,10 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         yes_overwrite=False,
     )
     logger.debug(f"Tx command executed on {tx_host.name}: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor=FFmpegExecutor(tx_host, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mcm_tx_ff)
 
     # MTL Rx
-    mtl_rx_inp=FFmpegMtlSt30pRx(  # TODO: Verify the variables
+    mtl_rx_inp = FFmpegMtlSt30pRx(  # TODO: Verify the variables
         # FFmpegMtlSt30pRx:
         fb_cnt=None,
         timeout_s=None,
@@ -127,13 +127,12 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         payload_type=int(test_config["payload_type"]),
         # FFmpegIO:
         input_path="-",
-
         rx_queues=None,
         tx_queues=None,
         p_port=str(rx_vfs[0]),
         p_sip=test_config["rx"]["p_sip"],
     )
-    mtl_rx_outp=FFmpegAudioIO(
+    mtl_rx_outp = FFmpegAudioIO(
         f=audio_format["ffmpeg_f"],
         ac=int(audio_files[audio_type]["channels"]),
         ar=int(audio_files[audio_type]["sample_rate"]),
@@ -141,7 +140,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         output_path=f'{test_config["rx"]["filepath"]}test_{audio_files[audio_type]["filename"]}',
     )
 
-    mtl_rx_ff=FFmpeg(
+    mtl_rx_ff = FFmpeg(
         prefix_variables=rx_prefix_variables,
         ffmpeg_path=test_config["rx"]["ffmpeg_path"],
         ffmpeg_input=mtl_rx_inp,
@@ -149,7 +148,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         yes_overwrite=True,
     )
     logger.debug(f"Rx command executed on {rx_host.name}: {mtl_rx_ff.get_command()}")
-    mtl_rx_executor=FFmpegExecutor(rx_host, ffmpeg_instance=mtl_rx_ff)
+    mtl_rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance=mtl_rx_ff)
 
     time.sleep(2)  # wait for media_proxy to start
     mtl_rx_executor.start()

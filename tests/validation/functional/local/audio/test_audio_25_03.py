@@ -23,12 +23,12 @@ def test_audio_25_03(
 ) -> None:
 
     # Get TX and RX hosts
-    host_list=list(hosts.values())
+    host_list = list(hosts.values())
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
-    tx_host=rx_host=host_list[0]
+    tx_host = rx_host = host_list[0]
 
-    tx_executor=utils.LapkaExecutor.Tx(
+    tx_executor = utils.LapkaExecutor.Tx(
         host=tx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
@@ -38,7 +38,7 @@ def test_audio_25_03(
         log_path=log_path,
         loop=DEFAULT_LOOP_COUNT,
     )
-    rx_executor=utils.LapkaExecutor.Rx(
+    rx_executor = utils.LapkaExecutor.Rx(
         host=rx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
