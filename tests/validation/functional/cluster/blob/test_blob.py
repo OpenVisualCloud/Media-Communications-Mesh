@@ -52,7 +52,7 @@ def test_blob(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> 
 
     try:
         if rx_executor.process.running:
-            rx_executor.process.wait(timeout=MCM_ESTABLISH_TIMEOUT)
+            rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
     except Exception as e:
         logger.warning(f"RX executor did not finish in time or error occurred: {e}")
 
