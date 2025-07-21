@@ -99,14 +99,6 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
         transportPixelFormat=test_config.get("pixel_format", DEFAULT_PIXEL_FORMAT),
     )
 
-    rx_connection = Engine.rx_tx_app_connection.St2110_20(
-        remoteIpAddr=test_config.get("broadcast_ip", DEFAULT_REMOTE_IP_ADDR),
-        remotePort=test_config.get("port", DEFAULT_REMOTE_PORT),
-        pacing=test_config.get("pacing", DEFAULT_PACING),
-        payloadType=test_config.get("payload_type", DEFAULT_PAYLOAD_TYPE_ST2110_20),
-        transportPixelFormat=test_config.get("pixel_format", DEFAULT_PIXEL_FORMAT),
-    )
-
     rx_executor = utils.LapkaExecutor.Rx(
         host=rx_host,
         media_path=media_path,
