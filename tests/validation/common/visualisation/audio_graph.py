@@ -48,7 +48,7 @@ def read_pcm(
             raise ValueError(
                 f"Unsupported PCM format '{pcm_format}'. Use 8, 16, or 24."
             )
-    
+
     # Reshape the data to separate channels if there are multiple channels
     if num_channels > 1:
         pcm_data = pcm_data.reshape(-1, num_channels)
@@ -242,6 +242,7 @@ def plot_waveforms(
 
     return os.path.abspath(output_file)
 
+
 def plot_single_waveform(
     file_path: str,
     pcm_data: np.ndarray,
@@ -407,6 +408,7 @@ def generate_waveform_plot(
             end_time=end_time,
             num_channels=num_channels1,
         )
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
