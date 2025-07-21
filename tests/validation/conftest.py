@@ -304,6 +304,69 @@ def build_TestApp(hosts, test_config: dict) -> None:
         host.connection.execute_command("make", cwd=path, shell=True, timeout=10)
 
 
+@pytest.fixture(scope="session")
+def build_mcm_ffmpeg(hosts, test_config: dict):
+    """
+    Build and install FFmpeg with the Media Communications Mesh plugin.
+
+    Steps:
+    1. Clone and patch FFmpeg (default version 7.0, can be overridden by test_config).
+    2. Run FFmpeg configuration tool.
+    3. Build and install FFmpeg with the plugin.
+    """
+    if not test_config.get("mcm_ffmpeg_rebuild", False):
+        return True
+    mcm_ffmpeg_version = test_config.get("mcm_ffmpeg_version", DEFAULT_MCM_FFMPEG_VERSION)
+    for host in hosts.values():
+        mcm_path = get_mcm_path(host)
+        ffmpeg_tools_path = host.connection.path(mcm_path, "ffmpeg-plugin")
+        logger.info("Step 1: Clone and patch FFmpeg")
+        clone_patch_script = host.connection.path(ffmpeg_tools_path, "clone-and-patch-ffmpeg.sh")
+        cmd = f"bash {clone_patch_script} {mcm_ffmpeg_version}"
+        res = host.connection.execute_command(
+            cmd,
+            cwd=ffmpeg_tools_path,
+            shell=True,
+            timeout=60,
+            stderr_to_stdout=True
+        )
+        logger.info(f"Command {cmd} output: {res.stdout}")
+        if res.return_code != 0:
+            logger.error(f"Command {cmd} failed with return code {res.return_code}.")
+            return False
+
+        logger.info("Step 2: Run FFmpeg configuration tool")
+        configure_script = host.connection.path(ffmpeg_tools_path, "configure-ffmpeg.sh")
+        cmd = f"{configure_script} {mcm_ffmpeg_version}"
+        res = host.connection.execute_command(
+            cmd,
+            cwd=ffmpeg_tools_path,
+            shell=True,
+            timeout=60,
+            stderr_to_stdout=True
+        )
+        logger.info(f"Command {cmd} output: {res.stdout}")
+        if res.return_code != 0:
+            logger.error(f"Command {cmd} failed with return code {res.return_code}.")
+            return False
+
+        logger.info("Step 3: Build and install FFmpeg with the plugin")
+        build_script = host.connection.path(ffmpeg_tools_path, "build-ffmpeg.sh")
+        cmd = f"{build_script} {mcm_ffmpeg_version}"
+        res = host.connection.execute_command(
+            cmd,
+            cwd=ffmpeg_tools_path,
+            shell=True,
+            timeout=120,
+            stderr_to_stdout=True
+        )
+        logger.info(f"Command {cmd} output: {res.stdout}")
+        if res.return_code != 0:
+            logger.error(f"Command {cmd} failed with return code {res.return_code}.")
+            return False
+    return True
+
+
 @pytest.fixture(scope="session", autouse=True)
 def check_iommu(hosts: dict[str, Host]) -> None:
     """

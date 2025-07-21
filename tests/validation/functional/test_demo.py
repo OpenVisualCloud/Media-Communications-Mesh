@@ -310,3 +310,8 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config) -> None
     )  # Tx should stop just after Rx stop so wait timeout can be shorter here
 
     assert integrator.stop_and_verify(timeout=20), "Stream integrity check failed"
+
+def test_build_mcm_ffmpeg(build_mcm_ffmpeg, hosts):
+    """Test the MCM FFmpeg build process."""
+    logger.info("Testing MCM FFmpeg build process")
+    assert build_mcm_ffmpeg, "MCM FFmpeg build failed"
