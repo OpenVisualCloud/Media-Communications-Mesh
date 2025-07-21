@@ -46,7 +46,7 @@ def test_st2110_rttxapp_mtl_to_mcm_audio(
     if len(host_list) < 2:
         pytest.skip("Dual tests require at least 2 hosts")
     tx_host = host_list[0]
-    rx_host = host_list[0]
+    rx_host = host_list[1]
 
     tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
     tx_mtl_path = get_mtl_path(tx_host)
