@@ -53,4 +53,4 @@ jobs:
           VALIDATE_PROTOBUF: true
           VALIDATE_PYTHON_BLACK: true
           VALIDATE_YAML_PRETTIER: true
-          YAML_PRETTIER_FILTER_REGEX_EXCLUDE: configs/
+          PRETTIER_FILTER_REGEX_EXCLUDE: '^tests/validation/configs/'
