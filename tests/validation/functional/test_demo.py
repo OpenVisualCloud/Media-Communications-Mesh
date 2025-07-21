@@ -311,6 +311,7 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config) -> None
 
     assert integrator.stop_and_verify(timeout=20), "Stream integrity check failed"
 
+
 def test_build_mcm_ffmpeg(build_mcm_ffmpeg, hosts):
     """Test the MCM FFmpeg build process."""
     logger.info("Testing MCM FFmpeg build process")
