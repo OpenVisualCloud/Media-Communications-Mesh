@@ -19,7 +19,7 @@ hosts:
       - ip_address: <ip address>
         connection_type: SSHConnection
         connection_options:
-          port: {{ port|default(22) }}
+          port: {{port|default(22)}}
           username: <username>
           password: <password>
     extra_info:
