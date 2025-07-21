@@ -52,5 +52,5 @@ jobs:
           VALIDATE_MARKDOWN: true
           VALIDATE_PROTOBUF: true
           VALIDATE_PYTHON_BLACK: true
-          FILTER_REGEX_EXCLUDE: ".*(/configs/).*"
+          FILTER_REGEX_EXCLUDE: ".*tests/validation/configs/.*"
           VALIDATE_YAML_PRETTIER: true

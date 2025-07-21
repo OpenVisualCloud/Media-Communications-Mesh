@@ -335,16 +335,16 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     output_path = generate_waveform_plot(
-        args.file_path1, 
+        args.file_path1,
         args.file_path2,
-        args.sample_rate, 
+        args.sample_rate,
         args.output_file,
         args.num_channels1,
         args.num_channels2,
         args.downsample_factor,
         args.start_time,
         args.end_time,
-        args.pcm_format
+        args.pcm_format,
     )
 
     print(f"Waveform saved to {output_path}")
