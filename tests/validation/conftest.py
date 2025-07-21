@@ -156,11 +156,10 @@ def log_path_dir(test_config: dict) -> str:
     keep_logs = test_config.get("keep_logs", True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir_name = f"log_{timestamp}"
-    log_dir = (
-        Path(test_config.get("log_path"))
-        if test_config.get("log_path")
-        else Path(Path.cwd(), LOG_FOLDER)
-    )
+    validation_dir = Path(__file__).parent
+    log_path = test_config.get("log_path")
+    log_dir = Path(log_path) if log_path else Path(validation_dir, LOG_FOLDER)
+
     if log_dir.exists() and not keep_logs:
         shutil.rmtree(log_dir)
     log_dir = Path(log_dir, log_dir_name)
