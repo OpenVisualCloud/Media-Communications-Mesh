@@ -316,3 +316,9 @@ def test_build_mcm_ffmpeg(build_mcm_ffmpeg, hosts):
     """Test the MCM FFmpeg build process."""
     logger.info("Testing MCM FFmpeg build process")
     assert build_mcm_ffmpeg, "MCM FFmpeg build failed"
+
+
+def test_build_mtl_ffmpeg(build_mtl_ffmpeg, hosts):
+    """Test the MTL FFmpeg build process."""
+    logger.info("Testing MTL FFmpeg build process")
+    assert build_mtl_ffmpeg, "MTL FFmpeg build failed"
