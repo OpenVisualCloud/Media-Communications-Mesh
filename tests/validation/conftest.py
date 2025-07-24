@@ -335,7 +335,7 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
             host.connection.execute_command(
                 f"rm -rf {DEFAULT_MCM_FFMPEG_PATH}", shell=True
             )
-        
+
         logger.debug("Step 1: Clone and patch FFmpeg")
         clone_patch_script = f"{ffmpeg_tools_path}/clone-and-patch-ffmpeg.sh"
         cmd = f"bash {clone_patch_script} {mcm_ffmpeg_version}"
@@ -444,7 +444,7 @@ def build_openh264(host: Host, work_dir: str) -> bool:
     host.connection.execute_command(
         f"sudo mkdir -p {DEFAULT_OPENH264_PATH}", shell=True, timeout=10
     )
-    
+
     # Build with custom prefix
     res = host.connection.execute_command(
         f"make -j $(nproc) PREFIX={DEFAULT_OPENH264_PATH} && "
@@ -499,7 +499,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
             host.connection.execute_command(
                 f"rm -rf {DEFAULT_MTL_FFMPEG_PATH}", shell=True
             )
-        
+
         # Step 1: Build openh264
         # logger.info("Step 1: Building openh264 dependency")
         # if not build_openh264(host, DEFAULT_OPENH264_PATH):
@@ -556,7 +556,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
             f'--extra-ldflags="-L{DEFAULT_OPENH264_PATH}/lib" '
             f'--extra-cflags="-I{DEFAULT_OPENH264_PATH}/include"'
         )
-        
+
         # Add GPU direct support if requested
         if enable_gpu_direct:
             configure_options += ' --extra-cflags="-DMTL_GPU_DIRECT_ENABLED"'
