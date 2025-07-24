@@ -22,7 +22,7 @@ DEFAULT_MTL_PATH = "/opt/intel/mtl"  # Default path for Media Transport Library
 DEFAULT_OPENH264_PATH = "/opt/intel/openh264"  # Default path for OpenH264 installation
 
 DEFAULT_MCM_FFMPEG_VERSION = "7.0"
-DEFAULT_MCM_FFMPEG_PATH = f"{DEFAULT_FFMPEG_PATH}/{DEFAULT_MCM_FFMPEG_VERSION.replace('.', '_')}_mcm_build"
+DEFAULT_MCM_FFMPEG_PATH = f"{MCM_PATH}/{DEFAULT_MCM_FFMPEG_VERSION.replace('.', '_')}_mcm_build"
 DEFAULT_MCM_FFMPEG_LD_LIBRARY_PATH = f"{DEFAULT_MCM_FFMPEG_PATH}/lib"
 
 DEFAULT_MTL_FFMPEG_VERSION = "7.0"
