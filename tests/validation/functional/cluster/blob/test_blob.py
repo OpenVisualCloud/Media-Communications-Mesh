@@ -11,26 +11,27 @@ import Engine.rx_tx_app_connection
 import Engine.rx_tx_app_engine_mcm as utils
 import Engine.rx_tx_app_payload
 from Engine.const import DEFAULT_LOOP_COUNT, MCM_ESTABLISH_TIMEOUT
-from Engine.media_files import yuv_files
+from Engine.media_files import blob_files
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("file", [file for file in yuv_files.keys()])
-def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
+@pytest.mark.parametrize("file", [file for file in blob_files.keys()])
+def test_blob(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())
-    if len(host_list) < 1:
-        pytest.skip("Local tests require at least 1 host")
-    tx_host = rx_host = host_list[0]
+    if len(host_list) < 2:
+        pytest.skip("Dual tests require at least 2 hosts")
+    tx_host = host_list[0]
+    rx_host = host_list[1]
 
     tx_executor = utils.LapkaExecutor.Tx(
         host=tx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
-        payload_type=Engine.rx_tx_app_payload.Video,
-        file_dict=yuv_files[file],
+        payload_type=Engine.rx_tx_app_payload.Blob,
+        file_dict=blob_files[file],
         file=file,
         loop=DEFAULT_LOOP_COUNT,
         log_path=log_path,
@@ -39,8 +40,8 @@ def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) ->
         host=rx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
-        payload_type=Engine.rx_tx_app_payload.Video,
-        file_dict=yuv_files[file],
+        payload_type=Engine.rx_tx_app_payload.Blob,
+        file_dict=blob_files[file],
         file=file,
         log_path=log_path,
     )

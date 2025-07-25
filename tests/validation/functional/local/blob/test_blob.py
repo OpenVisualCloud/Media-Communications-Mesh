@@ -11,13 +11,13 @@ import Engine.rx_tx_app_connection
 import Engine.rx_tx_app_engine_mcm as utils
 import Engine.rx_tx_app_payload
 from Engine.const import DEFAULT_LOOP_COUNT, MCM_ESTABLISH_TIMEOUT
-from Engine.media_files import yuv_files
+from Engine.media_files import blob_files
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("file", [file for file in yuv_files.keys()])
-def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
+@pytest.mark.parametrize("file", [file for file in blob_files.keys()])
+def test_blob(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -29,8 +29,8 @@ def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) ->
         host=tx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
-        payload_type=Engine.rx_tx_app_payload.Video,
-        file_dict=yuv_files[file],
+        payload_type=Engine.rx_tx_app_payload.Blob,
+        file_dict=blob_files[file],
         file=file,
         loop=DEFAULT_LOOP_COUNT,
         log_path=log_path,
@@ -39,8 +39,8 @@ def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) ->
         host=rx_host,
         media_path=media_path,
         rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
-        payload_type=Engine.rx_tx_app_payload.Video,
-        file_dict=yuv_files[file],
+        payload_type=Engine.rx_tx_app_payload.Blob,
+        file_dict=blob_files[file],
         file=file,
         log_path=log_path,
     )
@@ -51,7 +51,7 @@ def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) ->
 
     try:
         if rx_executor.process.running:
-            rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
+            rx_executor.process.wait(timeout=MCM_ESTABLISH_TIMEOUT)
     except Exception as e:
         logger.warning(f"RX executor did not finish in time or error occurred: {e}")
 
