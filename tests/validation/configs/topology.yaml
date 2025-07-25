@@ -6,15 +6,15 @@ hosts:
     instantiate: true
     role: sut
     network_interfaces:
-      - interface_name: {{mesh_agent_interface1|default('eth1')}}
-      - interface_name: {{mesh_agent_interface2|default('eth2')}}
+      - interface_name: {{ mesh_agent_interface1|default('eth1') }}
+      - interface_name: {{ mesh_agent_interface2|default('eth2') }}
     connections:
-      - ip_address: {{ip_address}}
+      - ip_address: {{ ip_address }}
         connection_type: SSHConnection
         connection_options:
-          port: {{port|default(22)}}
-          username: {{username}}
-          password: {{password}}
+          port: {{ port|default(22) }}
+          username: {{ username }}
+          password: {{ password }}
     extra_info:
       input_path: /opt/intel/integrity/
       ffmpeg_path: ffmpeg
@@ -23,10 +23,10 @@ hosts:
       mtl_path: /opt/intel/mtl
       nicctl_path: /opt/intel/mtl/script
       media_proxy: # st2110 and rdma dev and ips are optional but remember that it overrites the default values and must be set in host
-        st2110: {{st2110|default(true)}} # set it to true if you want to use st2110
+        st2110: {{ st2110|default(true) }} # set it to true if you want to use st2110
         sdk_port: 8002
-        st2110_dev: {{st2110_dev}}
-        st2110_ip: {{st2110_ip}}
-        rdma: {{rdma|default(true)}} # set it to true if you want to use rdma
-        rdma_ip: {{rdma_ip}}
-        no_proxy: {{no_proxy|default('127.0.0.1')}}
+        st2110_dev: {{ st2110_dev }}
+        st2110_ip: {{ st2110_ip }}
+        rdma: {{ rdma|default(true) }} # set it to true if you want to use rdma
+        rdma_ip: {{ rdma_ip }}
+        no_proxy: {{ no_proxy|default('127.0.0.1') }}

@@ -7,21 +7,21 @@ hosts:
     instantiate: true
     role: sut
     network_interfaces:
-      - interface_name: {{mesh_agent_interface|default('eth1')}}
+      - interface_name: {{ mesh_agent_interface|default('eth1') }}
     connections:
-      - ip_address: {{mesh_agent_ip}}
+      - ip_address: {{ mesh_agent_ip }}
         connection_type: SSHConnection
         connection_options:
-          port: {{port|default(22)}}
-          username: {{username}}
-          password: {{password}}
+          port: {{ port|default(22) }}
+          username: {{ username }}
+          password: {{ password }}
     extra_info:
-      nicctl_path: {{nicctl_path|default('/opt/intel/mtl/script')}}
+      nicctl_path: {{ nicctl_path|default('/opt/intel/mtl/script') }}
       media_proxy:
-        st2110: {{st2110|default(true)}}
-        st2110_ip: {{st2110_ip}}
-        st2110_dev: {{st2110_dev}}
-        sdk_port: {{sdk_port|default(8002)}}
+        st2110: {{ st2110|default(true) }}
+        st2110_ip: {{ st2110_ip }}
+        st2110_dev: {{ st2110_dev }}
+        sdk_port: {{ sdk_port|default(8002) }}
       mesh_agent:
         control_port: 8100
         proxy_port: 50051
@@ -29,14 +29,14 @@ hosts:
     instantiate: true
     role: sut
     network_interfaces:
-      - interface_name: {{client_interface|default('eth1')}}
+      - interface_name: {{ client_interface|default('eth1') }}
     connections:
-      - ip_address: {{client_ip}}
+      - ip_address: {{ client_ip }}
         connection_type: SSHConnection
         connection_options:
-          port: {{client_port|default(22)}}
-          username: {{client_username}}
-          password: {{client_password}}
+          port: {{ client_port|default(22) }}
+          username: {{ client_username }}
+          password: {{ client_password }}
     extra_info:
-      nicctl_path: {{client_nicctl_path|default('/opt/intel/mtl/script')}}
-      mtl_path: {{client_mtl_path|default('/opt/intel/mcm/_build/mtl/')}}
+      nicctl_path: {{ client_nicctl_path|default('/opt/intel/mtl/script') }}
+      mtl_path: {{ client_mtl_path|default('/opt/intel/mcm/_build/mtl/') }}

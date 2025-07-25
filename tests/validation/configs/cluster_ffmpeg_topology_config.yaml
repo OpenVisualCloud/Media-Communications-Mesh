@@ -7,36 +7,36 @@ hosts:
     instantiate: true
     role: sut
     network_interfaces:
-      - interface_name: {{mesh_agent_interface|default('eth1')}}
+      - interface_name: {{ mesh_agent_interface|default('eth1') }}
     connections:
-      - ip_address: {{mesh_agent_ip}}
+      - ip_address: {{ mesh_agent_ip }}
         connection_type: SSHConnection
         connection_options:
-          port: {{port|default(22)}}
-          username: {{username}}
-          password: {{password}}
+          port: {{ port|default(22) }}
+          username: {{ username }}
+          password: {{ password }}
     extra_info:
       media_proxy:
-        sdk_port: {{sdk_port|default(8002)}}
-        rdma: {{rdma_range|default('10000-10999')}}
+        sdk_port: {{ sdk_port|default(8002) }}
+        rdma: {{ rdma_range|default('10000-10999') }}
       mesh_agent:
-        control_port: {{control_port|default(8100)}}
-        proxy_port: {{proxy_port|default(50051)}}
-      no_proxy: {{no_proxy|default('localhost,127.0.0.1')}},{{mesh_agent_ip}}
+        control_port: {{ control_port|default(8100) }}
+        proxy_port: {{ proxy_port|default(50051) }}
+      no_proxy: {{ no_proxy|default('localhost,127.0.0.1') }},{{ mesh_agent_ip }}
   - name: client
     instantiate: true
     role: sut
     network_interfaces:
-      - interface_name: {{client_interface|default('eth1')}}
+      - interface_name: {{ client_interface|default('eth1') }}
     connections:
-      - ip_address: {{client_ip}}
+      - ip_address: {{ client_ip }}
         connection_type: SSHConnection
         connection_options:
-          port: {{client_port|default(22)}}
-          username: {{client_username}}
-          password: {{client_password}}
+          port: {{ client_port|default(22) }}
+          username: {{ client_username }}
+          password: {{ client_password }}
     extra_info:
       media_proxy:
-        sdk_port: {{client_sdk_port|default(8002)}}
-        rdma: {{client_rdma_range|default('9000-9099')}}
-      no_proxy: {{client_no_proxy|default('localhost,127.0.0.1')}},{{mesh_agent_ip}}
+        sdk_port: {{ client_sdk_port|default(8002) }}
+        rdma: {{ client_rdma_range|default('9000-9099') }}
+      no_proxy: {{ client_no_proxy|default('localhost,127.0.0.1') }},{{ mesh_agent_ip }}
