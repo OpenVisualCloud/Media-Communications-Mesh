@@ -139,20 +139,22 @@ class AppRunnerBase:
 
     def _ensure_output_directory_exists(self):
         """Ensure the output directory exists, create if it doesn't."""
-        if self.output and str(self.output) != '/dev/null':
+        if self.output and str(self.output) != "/dev/null":
             # Skip for /dev/null and other special files
-            if '/dev/' in str(self.output):
-                logger.debug(f"Skipping directory creation for special device path: {self.output}")
+            if "/dev/" in str(self.output):
+                logger.debug(
+                    f"Skipping directory creation for special device path: {self.output}"
+                )
                 return
-                
+
             output_dir = self.host.connection.path(self.output).parent
             logger.debug(f"Ensuring output directory exists: {output_dir}")
-            
+
             try:
                 # Check if directory already exists to avoid unnecessary commands
                 check_cmd = f"[ -d {output_dir} ] && echo 'exists' || echo 'not exists'"
                 result = self.host.connection.execute_command(check_cmd, shell=True)
-                if 'not exists' in result.stdout:
+                if "not exists" in result.stdout:
                     logger.debug(f"Creating directory: {output_dir}")
                     mkdir_cmd = f"mkdir -p {output_dir}"
                     self.host.connection.execute_command(mkdir_cmd, shell=True)
@@ -307,11 +309,11 @@ class LapkaExecutor:
             """Generate a proper output file path with improved naming convention."""
             if self.output is None:
                 # If output_path is /dev/null, use it directly without creating a new filename
-                if self.output_path == '/dev/null':
-                    self.output = self.host.connection.path('/dev/null')
+                if self.output_path == "/dev/null":
+                    self.output = self.host.connection.path("/dev/null")
                     logger.debug(f"Using /dev/null as output path")
                     return
-                    
+
                 # Generate output filename from input media file
                 input_path = Path(str(self.payload.media_file_path))
                 timestamp = int(time.time())
