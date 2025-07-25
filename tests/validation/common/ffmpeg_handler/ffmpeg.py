@@ -9,7 +9,7 @@ from mfd_connect.exceptions import (
     SSHRemoteProcessEndException,
     RemoteProcessInvalidState,
 )
-from Engine.const import LOG_FOLDER
+from Engine.const import LOG_FOLDER, TESTCMD_LVL
 from Engine.mcm_apps import save_process_log
 
 from .ffmpeg_io import FFmpegIO
@@ -77,6 +77,7 @@ class FFmpegExecutor:
     def start(self):
         """Starts the FFmpeg process on the host, waits for the process to start."""
         cmd = self.ff.get_command()
+        logger.log(TESTCMD_LVL, f"ffmpeg command: {cmd}")
         ffmpeg_process = self.host.connection.start_process(
             cmd, stderr_to_stdout=True, shell=True
         )

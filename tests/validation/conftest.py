@@ -7,6 +7,7 @@ import os
 import shutil
 from ipaddress import IPv4Interface
 from pathlib import Path
+from typing import Dict
 
 from mfd_host import Host
 from mfd_connect.exceptions import (
@@ -16,6 +17,7 @@ from mfd_connect.exceptions import (
 import pytest
 
 from common.nicctl import Nicctl
+
 from Engine.const import (
     ALLOWED_FFMPEG_VERSIONS,
     DEFAULT_FFMPEG_PATH,
@@ -32,11 +34,35 @@ from Engine.const import (
     MCM_BUILD_PATH,
     MTL_BUILD_PATH,
     OPENH264_VERSION_TAG,
+    TESTCMD_LVL
+)
+from Engine.csv_report import (
+    csv_add_test,
+    csv_write_report,
+    update_compliance_result,
+
 )
 from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
 from datetime import datetime
+from mfd_common_libs.custom_logger import add_logging_level
+from mfd_common_libs.log_levels import TEST_FAIL, TEST_INFO, TEST_PASS
+from pytest_mfd_logging.amber_log_formatter import AmberLogFormatter
+
 
 logger = logging.getLogger(__name__)
+phase_report_key = pytest.StashKey[Dict[str, pytest.CollectReport]]()
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    rep = yield
+
+    # store test results for each phase of a call, which can
+    # be "setup", "call", "teardown"
+    item.stash.setdefault(phase_report_key, {})[rep.when] = rep
+
+    return rep
 
 
 @pytest.fixture(scope="function")
@@ -770,3 +796,89 @@ def log_interface_driver_info(hosts: dict[str, Host]) -> None:
             logger.info(
                 f"Interface {interface.name} on host {host.name} uses driver: {driver_info.driver_name} ({driver_info.driver_version})"
             )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def log_session():
+    add_logging_level("TESTCMD", TESTCMD_LVL)
+
+    today = datetime.today()
+    folder = today.strftime("%Y-%m-%dT%H:%M:%S")
+    path = os.path.join(LOG_FOLDER, folder)
+    path_symlink = os.path.join(LOG_FOLDER, "latest")
+    try:
+        os.remove(path_symlink)
+    except FileNotFoundError:
+        pass
+    os.makedirs(path, exist_ok=True)
+    os.symlink(folder, path_symlink)
+    yield
+    shutil.copy("pytest.log", f"{LOG_FOLDER}/latest/pytest.log")
+    csv_write_report(f"{LOG_FOLDER}/latest/report.csv")
+
+@pytest.fixture(scope="function", autouse=True)
+def log_case(request, caplog: pytest.LogCaptureFixture):
+    case_id = request.node.nodeid
+    case_folder = os.path.dirname(case_id)
+    os.makedirs(os.path.join(LOG_FOLDER, "latest", case_folder), exist_ok=True)
+    logfile = os.path.join(LOG_FOLDER, "latest", f"{case_id}.log")
+    fh = logging.FileHandler(logfile)
+    formatter = request.session.config.pluginmanager.get_plugin(
+        "logging-plugin"
+    ).formatter
+    format = AmberLogFormatter(formatter)
+    fh.setFormatter(format)
+    fh.setLevel(logging.DEBUG)
+    logger = logging.getLogger()
+    logger.addHandler(fh)
+    yield
+    report = request.node.stash[phase_report_key]
+    if report["setup"].failed:
+        logging.log(level=TEST_FAIL, msg=f"Setup failed for {case_id}")
+        os.chmod(logfile, 0o4755)
+        result = "Fail"
+    elif ("call" not in report) or report["call"].failed:
+        logging.log(level=TEST_FAIL, msg=f"Test failed for {case_id}")
+        os.chmod(logfile, 0o4755)
+        result = "Fail"
+    elif report["call"].passed:
+        logging.log(level=TEST_PASS, msg=f"Test passed for {case_id}")
+        os.chmod(logfile, 0o755)
+        result = "Pass"
+    else:
+        logging.log(level=TEST_INFO, msg=f"Test skipped for {case_id}")
+        result = "Skip"
+
+    logger.removeHandler(fh)
+
+    commands = []
+    for record in caplog.get_records("call"):
+        if record.levelno == TESTCMD_LVL:
+            commands.append(record.message)
+
+    csv_add_test(
+        test_case=case_id,
+        commands="\n".join(commands),
+        result=result,
+        issue="n/a",
+        result_note="n/a",
+    )
+
+
+@pytest.fixture(scope="session")
+def compliance_report(request, log_session, test_config):
+    """
+    This function is used for compliance check and report.
+    """
+    # TODO: Implement compliance check logic. When tcpdump pcap is enabled, at the end of the test session all pcaps
+    # shall be send into EBU list.
+    # Pcaps shall be stored in the ramdisk, and then moved to the compliance
+    # folder or send into EBU list after each test finished and remove it from the ramdisk.
+    # Compliance report generation logic goes here after yield. Or in another class / function but triggered here.
+    # AFAIK names of pcaps contains test name so it can be matched with result of each test like in code below.
+    yield
+    if test_config.get("compliance", False):
+        logging.info("Compliance mode enabled, updating compliance results")
+        for item in request.session.items:
+            test_case = item.nodeid
+            update_compliance_result(test_case, "Fail")

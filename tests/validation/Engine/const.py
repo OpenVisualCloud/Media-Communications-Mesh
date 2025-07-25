@@ -7,6 +7,8 @@ DEFAULT_MEDIA_PATH = "/mnt/media/"
 DEFAULT_INPUT_PATH = "/opt/intel/input_path/"
 DEFAULT_OUTPUT_PATH = "/opt/intel/output_path/"
 
+TESTCMD_LVL = 24  # Custom logging level for test commands
+
 # time for establishing connection for example between TX and RX in st2110
 MTL_ESTABLISH_TIMEOUT = 2
 MCM_ESTABLISH_TIMEOUT = 5

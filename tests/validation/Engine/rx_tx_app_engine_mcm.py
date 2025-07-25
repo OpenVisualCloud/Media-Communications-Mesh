@@ -11,7 +11,7 @@ from mfd_connect.exceptions import RemoteProcessInvalidState
 
 import Engine.rx_tx_app_client_json
 import Engine.rx_tx_app_connection_json
-from Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH
+from Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH, TESTCMD_LVL
 from Engine.mcm_apps import (
     get_media_proxy_port,
     output_validator,
@@ -279,6 +279,7 @@ class LapkaExecutor:
                 f"Starting Tx app with payload: {self.payload.payload_type} on {self.host}"
             )
             cmd = self._get_app_cmd("Tx")
+            logger.log(TESTCMD_LVL, f"Tx command: {cmd}")
             self.process = self.host.connection.start_process(
                 cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
             )
@@ -334,6 +335,7 @@ class LapkaExecutor:
                 f"Starting Rx app with payload: {self.payload.payload_type} on {self.host}"
             )
             cmd = self._get_app_cmd("Rx")
+            logger.log(TESTCMD_LVL, f"Rx command: {cmd}")
             self.process = self.host.connection.start_process(
                 cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
             )
