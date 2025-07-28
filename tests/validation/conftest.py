@@ -501,9 +501,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
             )
 
         # Step 1: Build openh264
-        # logger.info("Step 1: Building openh264 dependency")
-        # if not build_openh264(host, DEFAULT_OPENH264_PATH):
-        #     return False
+        logger.info("Step 1: Building openh264 dependency")
+        if not build_openh264(host, DEFAULT_OPENH264_PATH):
+            return False
 
         # Step 2: Clone and patch FFmpeg
         logger.info(f"Step 2: Clone and patch FFmpeg {mtl_ffmpeg_version}")

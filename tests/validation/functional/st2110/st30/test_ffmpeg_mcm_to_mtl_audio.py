@@ -97,7 +97,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         f=audio_format["mcm_f"],
         # FFmpegMcmST2110CommonIO:
         conn_type=McmConnectionType.st.value,
-        urn=None,  # ?!
+        urn=None,  # TODO: Verify whether changing the urn to None is required.
         port=test_config["port"],
         output_path="-",  # FFmpegIO
     )

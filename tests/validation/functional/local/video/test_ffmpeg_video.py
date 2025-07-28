@@ -3,7 +3,6 @@
 # Media Communications Mesh
 
 # 1.1 Scenario: MCM to MCM - Memif (single-node) - Ffmpeg video
-# https://jira.devtools.intel.com/browse/SDBQ-2244
 
 import pytest
 import logging
