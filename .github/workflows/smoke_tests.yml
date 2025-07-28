@@ -15,7 +15,7 @@ permissions:
 
 jobs:
   hello-world-test:
-    runs-on: [Linux, self-hosted]
+    runs-on: [Linux, self-hosted, DPDK]
     timeout-minutes: 15
     steps:
       - name: 'preparation: Harden Runner'
