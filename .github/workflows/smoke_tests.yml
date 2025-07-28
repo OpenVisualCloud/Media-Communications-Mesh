@@ -1,0 +1,71 @@
+name: smoke-tests
+
+on:
+  push:
+    branches:
+      - smoke-tests
+
+env:
+  BUILD_TYPE: 'Release'
+  DPDK_VERSION: '23.11'
+  DPDK_REBUILD: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  hello-world-test:
+    runs-on: [Linux, self-hosted]
+    timeout-minutes: 15
+    steps:
+      - name: 'preparation: Harden Runner'
+        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        with:
+          egress-policy: audit
+
+      - name: 'preparation: Restore valid repository owner and print env'
+        if: always()
+        run: |
+          sudo chown -R "${USER}" "$(pwd)" || true
+          env | grep BUILD_ || true
+          env | grep DPDK_ || true
+
+      - name: 'basic: Check system information'
+        run: |
+          echo "=== Hello World Smoke Test ==="
+          echo "System information:"
+          uname -a
+          echo "Current user: $(whoami)"
+          echo "Current directory: $(pwd)"
+          echo "Date: $(date)"
+
+      - name: 'basic: Test basic commands'
+        run: |
+          echo "Testing basic shell commands..."
+          ls -la
+          echo "PATH: $PATH"
+          which gcc || echo "gcc not found"
+          which python3 || echo "python3 not found"
+          which git || echo "git not found"
+
+      - name: 'basic: Test environment variables'
+        run: |
+          echo "Testing environment variables:"
+          echo "BUILD_TYPE: $BUILD_TYPE"
+          echo "DPDK_VERSION: $DPDK_VERSION"
+          echo "DPDK_REBUILD: $DPDK_REBUILD"
+
+      - name: 'basic: Test file system access'
+        run: |
+          echo "Testing file system operations..."
+          touch /tmp/smoke_test_file
+          echo "Hello from smoke test" > /tmp/smoke_test_file
+          cat /tmp/smoke_test_file
+          rm /tmp/smoke_test_file
+          echo "File system test completed successfully"
+
+      - name: 'basic: Final hello world'
+        run: |
+          echo "🎉 Hello World! Smoke test completed successfully! 🎉"
+          echo "Machine is ready for more complex operations."
+            
