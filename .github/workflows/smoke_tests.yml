@@ -1,9 +1,9 @@
-name: smoke-tests
+name: smoke-tests-bare-metal
 
 on:
   push:
     branches:
-      - smoke-tests
+      - 'smoke-tests'
 
 env:
   BUILD_TYPE: 'Release'
@@ -14,9 +14,11 @@ permissions:
   contents: read
 
 jobs:
-  hello-world-test:
+  validation-build-mcm:
     runs-on: [Linux, self-hosted, DPDK]
-    timeout-minutes: 15
+    timeout-minutes: 60
+    outputs:
+      pipenv-activate: ${{ steps.pipenv-install.outputs.VIRTUAL_ENV }}
     steps:
       - name: 'preparation: Harden Runner'
         uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
@@ -29,43 +31,28 @@ jobs:
           sudo chown -R "${USER}" "$(pwd)" || true
           env | grep BUILD_ || true
           env | grep DPDK_ || true
-
-      - name: 'basic: Check system information'
+      - name: 'installation: Install pipenv environment'
+        working-directory: tests/validation
+        id: pipenv-install
         run: |
-          echo "=== Hello World Smoke Test ==="
-          echo "System information:"
-          uname -a
-          echo "Current user: $(whoami)"
-          echo "Current directory: $(pwd)"
-          echo "Date: $(date)"
-
-      - name: 'basic: Test basic commands'
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          echo "VIRTUAL_ENV=$PWD/venv/bin/activate" >> "$GITHUB_ENV"
+  validation-run-tests:
+    needs: validation-build-mcm
+    runs-on: [Linux, self-hosted, DPDK]
+    timeout-minutes: 60
+    env:
+      PYTEST_RETRIES: '3'
+    steps:
+      - name: 'preparation: Kill pytest routines'
         run: |
-          echo "Testing basic shell commands..."
-          ls -la
-          echo "PATH: $PATH"
-          which gcc || echo "gcc not found"
-          which python3 || echo "python3 not found"
-          which git || echo "git not found"
-
-      - name: 'basic: Test environment variables'
+          sudo killall -SIGINT pipenv || true
+          sudo killall -SIGINT pytest || true
+      - name: 'execution: Run validation-bare-metal tests in virtual environment'
         run: |
-          echo "Testing environment variables:"
-          echo "BUILD_TYPE: $BUILD_TYPE"
-          echo "DPDK_VERSION: $DPDK_VERSION"
-          echo "DPDK_REBUILD: $DPDK_REBUILD"
-
-      - name: 'basic: Test file system access'
-        run: |
-          echo "Testing file system operations..."
-          touch /tmp/smoke_test_file
-          echo "Hello from smoke test" > /tmp/smoke_test_file
-          cat /tmp/smoke_test_file
-          rm /tmp/smoke_test_file
-          echo "File system test completed successfully"
-
-      - name: 'basic: Final hello world'
-        run: |
-          echo "🎉 Hello World! Smoke test completed successfully! 🎉"
-          echo "Machine is ready for more complex operations."
-            
+          sudo tests/validation/venv/bin/python3 -m pytest \
+            --topology_config=tests/validation/configs/topology_config.yaml \
+            --test_config=tests/validation/configs/test_config.yaml -m smoke \
+            --template=html/index.html --report=report.html
