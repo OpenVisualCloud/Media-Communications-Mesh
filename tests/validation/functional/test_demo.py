@@ -10,6 +10,7 @@ from common.integrity.integrity_runner import (
     StreamVideoIntegrityRunner,
 )
 from Engine.mcm_apps import MEDIA_PROXY_PORT
+import pytest
 
 
 logger = logging.getLogger(__name__)
@@ -64,6 +65,7 @@ def test_list_command_on_sut(hosts):
     process.stop()
 
 
+@pytest.mark.smoke
 def test_mesh_agent_lifecycle(mesh_agent):
     """Test starting and stopping the mesh agent."""
     logger.info("Testing mesh_agent lifecycle")
@@ -74,6 +76,7 @@ def test_mesh_agent_lifecycle(mesh_agent):
     logger.info("Mesh agent lifecycle test completed successfully.")
 
 
+@pytest.mark.smoke
 def test_media_proxy(media_proxy):
     """Test starting and stopping the media proxy without sudo."""
     logger.info("Testing media_proxy lifecycle")
