@@ -31,6 +31,19 @@ jobs:
           sudo chown -R "${USER}" "$(pwd)" || true
           env | grep BUILD_ || true
           env | grep DPDK_ || true
+      - name: 'preparation: Add SSH key for user'
+        run: |
+          sudo mkdir -p /home/"${USER}"/.ssh
+          # Copy keys with new names
+          sudo cp ~/.ssh/id_rsa /home/"${USER}"/.ssh/mcm_key
+          sudo cp ~/.ssh/id_rsa.pub /home/"${USER}"/.ssh/mcm_key.pub
+          sudo cp ~/.ssh/id_rsa.pub /home/"${USER}"/.ssh/authorized_keys
+          # Set proper permissions
+          sudo chmod 600 /home/"${USER}"/.ssh/mcm_key
+          sudo chmod 644 /home/"${USER}"/.ssh/mcm_key.pub
+          sudo chmod 600 /home/"${USER}"/.ssh/authorized_keys
+          sudo chmod 700 /home/"${USER}"/.ssh
+          sudo chown -R "${USER}":"${USER}" /home/"${USER}"/.ssh
       - name: 'preparation: Checkout MCM'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
@@ -43,6 +56,11 @@ jobs:
           source venv/bin/activate
           pip install -r requirements.txt
           echo "VIRTUAL_ENV=$PWD/venv/bin/activate" >> "$GITHUB_ENV"
+      - name: 'add user name to environment and config'
+        run: |
+          echo "USER=${USER}" >> "$GITHUB_ENV"
+          sed -i "s/{{ USER }}/${USER}/g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
   validation-run-tests:
     needs: validation-build-mcm
     runs-on: [Linux, self-hosted, DPDK]
