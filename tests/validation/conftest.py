@@ -261,32 +261,24 @@ def media_config(hosts: dict) -> None:
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_processes(hosts: dict) -> None:
     """
-    Kills mesh-agent, media_proxy, ffmpeg, and all Rx*App and Tx*App processes on all hosts before running the tests.
+    Kill mesh-agent, media_proxy, ffmpeg, and all Rx*App/Tx*App processes on all hosts before running tests.
     """
     for host in hosts.values():
+        connection = host.connection
         for proc in ["mesh-agent", "media_proxy", "ffmpeg"]:
             try:
-                connection = host.connection
-                # connection.enable_sudo()
                 connection.execute_command(f"pgrep {proc}", stderr_to_stdout=True)
                 connection.execute_command(f"pkill -9 {proc}", stderr_to_stdout=True)
             except Exception as e:
-                logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
-        # Kill all Rx*App and Tx*App processes (e.g., RxVideoApp, RxAudioApp, RxBlobApp, TxVideoApp, etc.)
+                if not (hasattr(e, "returncode") and e.returncode == 1):
+                    logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
         for pattern in ["^Rx[A-Za-z]+App$", "^Tx[A-Za-z]+App$"]:
             try:
-                connection = host.connection
-                # connection.enable_sudo()
-                connection.execute_command(
-                    f"pgrep -f '{pattern}'", stderr_to_stdout=True
-                )
-                connection.execute_command(
-                    f"pkill -9 -f '{pattern}'", stderr_to_stdout=True
-                )
+                connection.execute_command(f"pgrep -f '{pattern}'", stderr_to_stdout=True)
+                connection.execute_command(f"pkill -9 -f '{pattern}'", stderr_to_stdout=True)
             except Exception as e:
-                logger.warning(
-                    f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"
-                )
+                if not (hasattr(e, "returncode") and e.returncode == 1):
+                    logger.warning(f"Failed to check/kill processes matching {pattern} on {host.name}: {e}")
     logger.info("Cleanup of processes completed.")
 
 
