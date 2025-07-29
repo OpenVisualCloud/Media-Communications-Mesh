@@ -31,6 +31,10 @@ jobs:
           sudo chown -R "${USER}" "$(pwd)" || true
           env | grep BUILD_ || true
           env | grep DPDK_ || true
+      - name: 'preparation: Checkout MCM'
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: 'smoke-tests'
       - name: 'installation: Install pipenv environment'
         working-directory: tests/validation
         id: pipenv-install
