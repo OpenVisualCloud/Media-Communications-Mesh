@@ -63,4 +63,3 @@ class MtlManager:
             logger.info("MtlManager stopped (via pkill).")
         except ConnectionCalledProcessError as e:
             logger.error(f"Failed to stop MtlManager: {e}")
-        pass
