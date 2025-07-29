@@ -108,6 +108,30 @@ int ConnectionConfig::parse_from_json(const char *str)
             conn.rdma.max_latency_ns = rdma.value("maxLatencyNanoseconds", 0);
         }
 
+        if (j.contains("options")) {
+            auto joptions = j["options"];
+
+            if (joptions.contains("rdma")) {
+                auto rdma = joptions["rdma"];
+
+                std::string str = rdma.value("provider", "tcp");
+                if (!str.compare("tcp") || !str.compare("verbs")) {
+                    options.rdma.provider = str;
+                } else {
+                    log::error("rdma: wrong provider: %s", str.c_str());
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }                
+
+                uint32_t num_endpoints = rdma.value("num_endpoints", 1);
+                if (num_endpoints >= 1 && num_endpoints <= 8) {
+                    options.rdma.num_endpoints = num_endpoints;
+                } else {
+                    log::error("rdma: number of endpoints out of range (1..8): %u", num_endpoints);
+                    return -MESH_ERR_CONN_CONFIG_INVAL;
+                }                
+            }
+        }
+
         if (!j.contains("payload")) {
             payload_type = MESH_PAYLOAD_TYPE_BLOB;
         } else {

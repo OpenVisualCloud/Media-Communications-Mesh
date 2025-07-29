@@ -1,0 +1,7 @@
+# main
+input_path: /opt/intel/integrity/
+ffmpeg_path: ffmpeg
+output_path: /home/gta/received/
+
+# other
+test_time_sec: 10

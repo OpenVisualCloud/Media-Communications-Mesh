@@ -156,6 +156,11 @@ public:
             config->set_allocated_rdma(rdma);
         }
 
+        auto options = config->mutable_options();
+        auto options_rdma = options->mutable_rdma();
+        options_rdma->set_provider(cfg.options.rdma.provider);
+        options_rdma->set_num_endpoints(cfg.options.rdma.num_endpoints);
+
         if (cfg.payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
             auto video = new ConfigVideo();
             video->set_width(cfg.payload.video.width);

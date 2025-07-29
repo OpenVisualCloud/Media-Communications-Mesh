@@ -33,11 +33,13 @@ jobs:
       - name: Lint
         uses: super-linter/super-linter/slim@e1cb86b6e8d119f789513668b4b30bf17fe1efe4 # v7.2.0 x-release-please-version
         env:
-          DISABLE_ERRORS: true
+          DISABLE_ERRORS: false
           VALIDATE_ALL_CODEBASE: false
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASH_SEVERITY: "warning"
           LINTER_RULES_PATH: ".github/configs"
+          GITHUB_COMMENT_ON_PR: false
+          GITHUB_STATUS_UPDATES: false
           VALIDATE_BASH_EXEC: true
           VALIDATE_BASH: true
           VALIDATE_CLANG_FORMAT: true
@@ -50,4 +52,5 @@ jobs:
           VALIDATE_MARKDOWN: true
           VALIDATE_PROTOBUF: true
           VALIDATE_PYTHON_BLACK: true
+          FILTER_REGEX_EXCLUDE: ".*tests/validation/configs/.*"
           VALIDATE_YAML_PRETTIER: true

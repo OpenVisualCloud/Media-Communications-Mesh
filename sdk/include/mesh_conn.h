@@ -106,6 +106,13 @@ public:
         } rdma;
     } conn;
 
+    struct {
+        struct {
+            std::string provider = "tcp";
+            uint8_t num_endpoints = 1;
+        } rdma;
+    } options;
+
     // Payload type (Video, Audio).
     // Any value of the MESH_PAYLOAD_TYPE_* constants.
     int payload_type = MESH_PAYLOAD_TYPE_UNINITIALIZED;

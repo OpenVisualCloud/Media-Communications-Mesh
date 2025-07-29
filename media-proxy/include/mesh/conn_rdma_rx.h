@@ -28,6 +28,10 @@ protected:
     // Receive data using RDMA
     void process_buffers_thread(context::Context& ctx);
     void rdma_cq_thread(context::Context& ctx);
+    std::atomic<uint32_t> next_rx_idx;
+    static constexpr size_t REORDER_WINDOW = 256; // > max expected out-of-order
+    std::array<void *, REORDER_WINDOW> reorder_ring{{nullptr}};
+    uint64_t reorder_head = UINT64_MAX;
 };
 
 } // namespace mesh::connection

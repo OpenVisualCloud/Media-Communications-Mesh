@@ -1,0 +1,9 @@
+st2110:
+  sdk: 8002
+rdma:
+  rdma_ports: 9100-9999
+#st2110: True  - this will be enough also to run the ST2110 tests with default parameters
+#rdma: True  - this will be enough also to run the RDMA tests with default parameters
+mesh-agent: # it's optional config
+  control_port: 8100
+  proxy_port: 50051

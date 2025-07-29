@@ -156,6 +156,13 @@ public:
         } rdma;
     } conn;
 
+    struct {
+        struct {
+            std::string provider;
+            uint16_t num_endpoints;
+        } rdma;
+    } options;
+
     PayloadType payload_type;
 
     struct {

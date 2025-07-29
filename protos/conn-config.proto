@@ -37,6 +37,15 @@ message ConfigRDMA {
   uint32 max_latency_ns  = 2;
 }
 
+message ConnectionOptions {
+  ConnectionOptionsRDMA rdma = 1;
+}
+
+message ConnectionOptionsRDMA {
+  string provider      = 1;
+  uint32 num_endpoints = 2;
+}
+
 enum VideoPixelFormat {
   VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE  = 0;
   VIDEO_PIXEL_FORMAT_V210              = 1;
@@ -108,9 +117,10 @@ message ConnectionConfig {
     ConfigST2110 st2110                    = 8;
     ConfigRDMA rdma                        = 9;
   }
+  ConnectionOptions options                = 10;
   oneof payload {
-    ConfigVideo video                      = 10;
-    ConfigAudio audio                      = 11;
-    ConfigBlob blob                        = 12;
+    ConfigVideo video                      = 11;
+    ConfigAudio audio                      = 12;
+    ConfigBlob blob                        = 13;
   } 
 }

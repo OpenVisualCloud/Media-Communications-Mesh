@@ -324,6 +324,10 @@ Follow the [Setup Guide](SetupGuide.md) to navigate through the setup, build, an
 
 For guidance on running Media Communication Mesh, see [Runbook](Runbook.md).
 
+## Data Plane topology
+
+Media Communications Mesh applies specific logic rules to establish the topology. See [Topology](Topology.md) for details.
+
 ## Performance
 See [Performance Notes](PerformanceNotes.md) to learn how to tune the connection configuration for the best performance.
 

@@ -39,6 +39,11 @@ type SDKConfigRDMA struct {
 	MaxLatencyNs   uint32 `json:"maxLatencyNs"`
 }
 
+type SDKConnectionOptionsRDMA struct {
+	Provider     string `json:"provider,omitempty"`
+	NumEndpoints uint8  `json:"numEndpoints,omitempty"`
+}
+
 type SDKConfigVideo struct {
 	Width          uint32               `json:"width"`
 	Height         uint32               `json:"height"`
@@ -73,6 +78,10 @@ type SDKConnectionConfig struct {
 		ST2110          *SDKConfigST2110          `json:"st2110,omitempty"`
 		RDMA            *SDKConfigRDMA            `json:"rdma,omitempty"`
 	} `json:"conn"`
+
+	Options struct {
+		RDMA SDKConnectionOptionsRDMA `json:"rdma"`
+	} `json:"options"`
 
 	Payload struct {
 		Video *SDKConfigVideo `json:"video,omitempty"`
@@ -178,6 +187,11 @@ func (s *SDKConnectionConfig) AssignFromPb(cfg *sdk.ConnectionConfig) error {
 		return errors.New("unknown sdk conn cfg type")
 	}
 
+	if cfg.Options != nil && cfg.Options.Rdma != nil {
+		s.Options.RDMA.Provider = cfg.Options.Rdma.Provider
+		s.Options.RDMA.NumEndpoints = uint8(cfg.Options.Rdma.NumEndpoints)
+	}
+
 	switch payload := cfg.Payload.(type) {
 	case *sdk.ConnectionConfig_Video:
 		s.Payload.Video = &SDKConfigVideo{
@@ -251,6 +265,13 @@ func (s *SDKConnectionConfig) AssignToPb(cfg *sdk.ConnectionConfig) {
 		}
 	}
 
+	cfg.Options = &sdk.ConnectionOptions{
+		Rdma: &sdk.ConnectionOptionsRDMA{
+			Provider:     s.Options.RDMA.Provider,
+			NumEndpoints: uint32(s.Options.RDMA.NumEndpoints),
+		},
+	}
+
 	switch {
 	case s.Payload.Video != nil:
 		cfg.Payload = &sdk.ConnectionConfig_Video{
@@ -309,6 +330,13 @@ func (s *SDKConnectionConfig) CheckPayloadCompatibility(c *SDKConnectionConfig) 
 		if s.Conn.ST2110.PayloadType != c.Conn.ST2110.PayloadType {
 			return fmt.Errorf("incompatible st2110 payload type: %v vs. %v", s.Conn.ST2110.PayloadType, c.Conn.ST2110.PayloadType)
 		}
+	}
+
+	if s.Options.RDMA.Provider != c.Options.RDMA.Provider {
+		return fmt.Errorf("incompatible rdma provider: %v vs. %v", s.Options.RDMA.Provider, c.Options.RDMA.Provider)
+	}
+	if s.Options.RDMA.NumEndpoints != c.Options.RDMA.NumEndpoints {
+		return fmt.Errorf("incompatible rdma number of endpoints: %v vs. %v", s.Options.RDMA.NumEndpoints, c.Options.RDMA.NumEndpoints)
 	}
 
 	switch {

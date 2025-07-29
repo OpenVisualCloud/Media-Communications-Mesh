@@ -9,13 +9,21 @@ export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
 export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
 export PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
 
-VERSIONS_FILE_PATH="$(readlink -f "${VERSIONS_FILE:-${REPO_DIR}/versions.env}")"
-export VERSIONS_FILE_PATH
+MCM_VERSIONS_FILE_PATH="$(readlink -f "${MCM_VERSIONS_FILE:-${REPO_DIR}/versions.env}")"
+export MCM_VERSIONS_FILE_PATH
 
 # shellcheck source="versions.env"
-. "${VERSIONS_FILE_PATH}"
+. "${MCM_VERSIONS_FILE_PATH}"
 
 export MTL_DIR="${BUILD_DIR}/mtl"
+MTL_VERSIONS_FILE_PATH="${MTL_VERSIONS_FILE:-${MTL_DIR}/versions.env}"
+
+if [[ -f "${MTL_VERSIONS_FILE_PATH}" ]]; then
+    MTL_VERSIONS_FILE_PATH="$(readlink -f "${MTL_VERSIONS_FILE_PATH}")"
+    export MTL_VERSIONS_FILE_PATH
+    . "${MTL_VERSIONS_FILE_PATH}"    
+fi
+
 export DPDK_DIR="${BUILD_DIR}/dpdk"
 export XDP_DIR="${BUILD_DIR}/xdp"
 export BPF_DIR="${XDP_DIR}/lib/libbpf"
