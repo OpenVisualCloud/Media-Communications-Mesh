@@ -17,3 +17,6 @@ hosts:
         proxy_port: 50051
       media_proxy:
         sdk_port: 8002
+        st2110: true
+        rdma: true
+        rdma_ports: '9100-9999'
