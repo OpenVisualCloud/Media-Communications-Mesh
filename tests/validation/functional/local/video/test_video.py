@@ -16,7 +16,19 @@ from Engine.media_files import yuv_files
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("file", [file for file in yuv_files.keys()])
+@pytest.mark.parametrize(
+    "file",
+    [
+        "i720p25",
+        "i720p30", 
+        pytest.param("i1080p25", marks=pytest.mark.smoke),
+        pytest.param("i1080p30", marks=pytest.mark.smoke),
+        "i1080p50",
+        "i1080p60", 
+        "i2160p25",
+        "i2160p30",
+    ]
+)
 def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts

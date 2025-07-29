@@ -21,7 +21,17 @@ from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmMemifVideoIO
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
+@pytest.mark.parametrize(
+    "video_type", 
+    [
+        "i720p25",
+        "i720p30",
+        pytest.param("i1080p25", marks=pytest.mark.smoke),
+        "i1080p50",
+        "i1080p60",
+        "i2160p30",
+    ]
+)
 def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
