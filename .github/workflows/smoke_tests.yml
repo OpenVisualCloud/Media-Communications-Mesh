@@ -115,5 +115,5 @@ jobs:
             --topology_config=tests/validation/configs/topology_config_workflow.yaml \
             --test_config=tests/validation/configs/test_config_workflow.yaml \
             ./tests/validation/functional/ \
-            --template=html/index.html --report=report.html" \
+            --template=html/index.html --report=report.html \
             -m "${{ env.MARKERS }}"
