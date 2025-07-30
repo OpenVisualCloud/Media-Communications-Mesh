@@ -63,26 +63,6 @@ jobs:
           sudo chown -R "${USER}" "$(pwd)" || true
           env | grep BUILD_ || true
           env | grep DPDK_ || true
-      - name: 'preparation: Generate and configure SSH keys'
-        run: |
-          # Create .ssh directory
-          sudo mkdir -p /home/"${USER}"/.ssh
-          
-          # Generate new SSH key pair directly in the target location
-          sudo ssh-keygen -t rsa -N "" -f /home/"${USER}"/.ssh/mcm_key
-          
-          # Copy public key to authorized_keys
-          sudo cp /home/"${USER}"/.ssh/mcm_key.pub /home/"${USER}"/.ssh/authorized_keys
-          
-          # Set proper permissions
-          sudo chmod 600 /home/"${USER}"/.ssh/mcm_key
-          sudo chmod 644 /home/"${USER}"/.ssh/mcm_key.pub
-          sudo chmod 600 /home/"${USER}"/.ssh/authorized_keys
-          sudo chmod 700 /home/"${USER}"/.ssh
-          sudo chown -R "${USER}":"${USER}" /home/"${USER}"/.ssh
-          
-          # Add localhost to known_hosts to avoid prompts
-          sudo -u "${USER}" ssh-keyscan -H localhost >> /home/"${USER}"/.ssh/known_hosts
       - name: 'preparation: Checkout MCM'
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
