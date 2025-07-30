@@ -7,6 +7,8 @@
 import pytest
 import logging
 
+from tests.validation.Engine.rx_tx_app_file_validation_utils import cleanup_file
+
 from ....Engine.media_files import yuv_files
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
@@ -113,3 +115,9 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
     mcm_tx_executor.start()
     mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
     mcm_tx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
+
+    success = cleanup_file(rx_host.connection, str(mcm_rx_outp.output_path))
+    if success:
+        logger.debug(f"Cleaned up Rx output file: {mcm_rx_outp.output_path}")
+    else:
+        logger.warning(f"Failed to clean up Rx output file: {mcm_rx_outp.output_path}")
