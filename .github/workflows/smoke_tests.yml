@@ -27,26 +27,19 @@ env:
   BUILD_TYPE: 'Release'
   DPDK_VERSION: '23.11'
   DPDK_REBUILD: 'false'
+  MEDIA_PATH: '/mnt/media'
+  BUILD_DIR: "${{ github.workspace }}/_build"
   MCM_BINARIES_DIR: './mcm-binaries'
   MEDIA_PROXY: './mcm-binaries/media_proxy'
   MESH_AGENT: './mcm-binaries/mesh-agent'
-  MCM_FFMPEG_6: './mcm-binaries/ffmpeg-6-1/ffmpeg'
-  MCM_FFMPEG_7: './mcm-binaries/ffmpeg-7-0/ffmpeg'
-  MTL__FFMPEG_6: './mtl-binaries/ffmpeg-6-1/ffmpeg'
-  MTL__FFMPEG_7: './mtl-binaries/ffmpeg-7-0/ffmpeg'
+  MCM_FFMPEG_7_0: ./mcm-binaries/ffmpeg-7-0/ffmpeg
+  MTL_FFMPEG_7_0: ./mtl-binaries/ffmpeg-7-0/ffmpeg
+  MCM_FFMPEG_6_1: ./mcm-binaries/ffmpeg-6-1/ffmpeg
+  MTL_FFMPEG_6_1: ./mtl-binaries/ffmpeg-6-1/ffmpeg
 permissions:
   contents: read
 jobs:
-  mtl-ffmpeg-build:
-    runs-on: [Linux, self-hosted, DPDK]
-    timeout-minutes: 60
-    steps:
-      - name: 'preparation: Harden Runner'
-        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
-        with:
-          egress-policy: audit
-      # download mtl ffmpeg binaries or build locally
-  validation-build-mcm:
+  validation-prepare-setup-mcm:
     runs-on: [Linux, self-hosted, DPDK]
     timeout-minutes: 60
     outputs:
@@ -56,7 +49,6 @@ jobs:
         uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
         with:
           egress-policy: audit
-
       - name: 'preparation: Restore valid repository owner and print env'
         if: always()
         run: |
@@ -67,16 +59,53 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: 'smoke-tests'
-      # - name: 'Download build artifacts'
-      #   uses: actions/download-artifact@eaceaf801fd36c7dee90939fad912460b18a1ffe # v4.1.2
-      #   with:
-      #     name: mcm-build
-      #     path: ./mcm-binaries
-      # - name: 'Make binaries executable'
-      #   run: |
-      #     chmod +x ./mcm-binaries/media_proxy
-      #     chmod +x ./mcm-binaries/mesh-agent
-      #     chmod +x ./mcm-binaries/ffmpeg*
+      - name: 'install dependencies'
+        run: |
+          eval 'source scripts/setup_build_env.sh'
+      - name: 'Check local dependencies build cache'
+        id: load-local-dependencies-cache
+        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+        with:
+          path: ${{ env.BUILD_DIR }}
+          key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
+      - name: 'Download, unpack and patch build dependencies'
+        if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+        run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
+
+      - name: 'Clone and patch ffmpeg 6.1 and 7.0'
+        if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+        run: |
+          ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
+          ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
+      - name: 'Build MCM SDK and Media Proxy'
+        run: |
+          ./build.sh
+      - name: 'Build FFmpeg 6.1 with MCM plugin'
+        working-directory: ${{ github.workspace }}/ffmpeg-plugin
+        run: |
+          ./configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
+          ./build-ffmpeg.sh "6.1"
+
+      - name: 'Build FFmpeg 7.0 with MCM plugin'
+        working-directory: ${{ github.workspace }}/ffmpeg-plugin
+        run: |
+          ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
+          ./build-ffmpeg.sh "7.0"
+      - name: 'build RxTxApp'
+        working-directory: ${{ github.workspace }}/tests/tools/TestApp
+        run: |
+          mkdir build && cd build && \
+          cmake .. && \
+          make
+      - name: 'clone FFMPEG repository'
+        run: |
+          echo "Cloning FFMPEG repository"
+      - name: 'clone MTL repository'
+        run: |
+          echo "Cloning MTL repository"
+      - name: 'build MTL FFMPEG'
+        run: |
+          echo "Building MTL FFMPEG"
       - name: 'installation: Install pipenv environment'
         working-directory: tests/validation
         id: pipenv-install
@@ -91,7 +120,7 @@ jobs:
           sed -i "s/{{ USER }}/${USER}/g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
   validation-run-tests:
-    needs: validation-build-mcm
+    needs: validation-prepare-setup-mcm
     runs-on: [Linux, self-hosted, DPDK]
     timeout-minutes: 60
     env:
