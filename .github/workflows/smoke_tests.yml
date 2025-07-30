@@ -59,15 +59,16 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: 'smoke-tests'
-      - name: 'install dependencies'
-        run: |
-          eval 'source scripts/setup_build_env.sh'
+      - name: 'Install OS level dependencies'
+        run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
+
       - name: 'Check local dependencies build cache'
         id: load-local-dependencies-cache
         uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ${{ env.BUILD_DIR }}
           key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
+
       - name: 'Download, unpack and patch build dependencies'
         if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
         run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
@@ -77,9 +78,31 @@ jobs:
         run: |
           ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
           ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
+
+      - name: 'Build and Install xdp and libbpf'
+        run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
+
+      - name: 'Build and Install libfabric'
+        run: eval 'source scripts/setup_build_env.sh && lib_install_fabrics'
+
+      - name: 'Build and Install the DPDK'
+        run: eval 'source scripts/setup_build_env.sh && lib_install_dpdk'
+
+      - name: 'Build and Install the MTL'
+        run: eval 'source scripts/setup_build_env.sh && lib_install_mtl'
+
+      - name: 'Build and Install JPEG XS'
+        run: eval 'source scripts/setup_build_env.sh && lib_install_jpeg_xs'
+
+      - name: 'Build and Install JPEG XS ffmpeg plugin'
+        run: eval 'source scripts/setup_build_env.sh && lib_install_mtl_jpeg_xs_plugin'
+
+      - name: 'Build gRPC and dependencies'
+        run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
+
       - name: 'Build MCM SDK and Media Proxy'
-        run: |
-          ./build.sh
+        run: eval 'source scripts/common.sh && ./build.sh "${PREFIX_DIR}"'
+
       - name: 'Build FFmpeg 6.1 with MCM plugin'
         working-directory: ${{ github.workspace }}/ffmpeg-plugin
         run: |
