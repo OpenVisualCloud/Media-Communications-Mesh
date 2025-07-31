@@ -421,21 +421,23 @@ def build_openh264(host: Host, work_dir: str) -> bool:
         timeout=10,
     ).stdout.strip()
 
-    if tag_check != "openh264v2.4.0":
+OPENH264_VERSION_TAG = "openh264v2.4.0"
+# ...
+    if tag_check != OPENH264_VERSION_TAG:
         # Reset any changes and checkout the specific tag
-        logger.info("Checking out openh264v2.4.0 tag")
+        logger.info(f"Checking out {OPENH264_VERSION_TAG} tag")
         res = host.connection.execute_command(
-            "git reset --hard && git checkout -f openh264v2.4.0",
+            f"git reset --hard && git checkout -f {OPENH264_VERSION_TAG}",
             cwd=openh264_dir,
             shell=True,
             timeout=30,
             stderr_to_stdout=True,
         )
         if res.return_code != 0:
-            logger.error("Failed to checkout openh264v2.4.0 tag.")
+            logger.error(f"Failed to checkout {OPENH264_VERSION_TAG} tag.")
             return False
     else:
-        logger.info("Already on openh264v2.4.0 tag")
+        logger.info(f"Already on {OPENH264_VERSION_TAG} tag")
 
     # Build and install to DEFAULT_OPENH264_PATH
     logger.info(f"Building and installing openh264 to {DEFAULT_OPENH264_PATH}")
