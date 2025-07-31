@@ -16,7 +16,17 @@ from mfd_connect.exceptions import (
 import pytest
 
 from common.nicctl import Nicctl
-from Engine.const import ALLOWED_FFMPEG_VERSIONS, DEFAULT_FFMPEG_PATH, DEFAULT_MCM_FFMPEG_PATH, DEFAULT_MCM_FFMPEG_VERSION, DEFAULT_MTL_FFMPEG_PATH, DEFAULT_MTL_FFMPEG_VERSION, DEFAULT_OPENH264_PATH, LOG_FOLDER, OPENH264_VERSION_TAG
+from Engine.const import ( 
+    ALLOWED_FFMPEG_VERSIONS,
+    DEFAULT_FFMPEG_PATH,
+    DEFAULT_MCM_FFMPEG_PATH,
+    DEFAULT_MCM_FFMPEG_VERSION,
+    DEFAULT_MTL_FFMPEG_PATH,
+    DEFAULT_MTL_FFMPEG_VERSION,
+    DEFAULT_OPENH264_PATH,
+    LOG_FOLDER,
+    OPENH264_VERSION_TAG
+)
 from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
 from datetime import datetime
 
@@ -322,8 +332,8 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
         "mcm_ffmpeg_version", DEFAULT_MCM_FFMPEG_VERSION
     )
     if not mcm_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
-            logger.error(f"Invalid mcm_ffmpeg_version: {mcm_ffmpeg_version}")
-            return False
+        logger.error(f"Invalid mcm_ffmpeg_version: {mcm_ffmpeg_version}")
+        return False
     for host in hosts.values():
         mcm_path = get_mcm_path(host)
         ffmpeg_tools_path = f"{mcm_path}/ffmpeg-plugin"
@@ -486,8 +496,8 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
         "mtl_ffmpeg_version", DEFAULT_MTL_FFMPEG_VERSION
     )
     if not mtl_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
-            logger.error(f"Invalid mtl_ffmpeg_version: {mtl_ffmpeg_version}")
-            return False
+        logger.error(f"Invalid mtl_ffmpeg_version: {mtl_ffmpeg_version}")
+        return False
     enable_gpu_direct = test_config.get("mtl_ffmpeg_gpu_direct", False)
 
     for host in hosts.values():
