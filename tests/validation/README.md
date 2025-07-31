@@ -27,7 +27,6 @@ Project uses flake8, black, isort and markdownlint as linters. All of these are 
 - setup.cfg - flake8 configuration
 - settings.json - example settings for VSCode, to be copied to .vscode/settings.json
 
-
 ## Folder structure
 
 > **Note:** Some of the folders mentioned below may be unavailable in the current version of the repository.
@@ -51,7 +50,6 @@ Project uses flake8, black, isort and markdownlint as linters. All of these are 
     - `st22` – compressed video (ST 2110-22)
     - `st30` – raw audio (ST 2110-30)
 
-
 ## Development setup
 
 ```bash
@@ -61,7 +59,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-#### Example: Manual Test Run
+### Example: Manual Test Run
 
 To manually run the `test_blob_25_03` test from `test_blob_25_03.py` with the parameter `file = random_bin_100M`, use:
 
@@ -84,7 +82,7 @@ sudo .venv/bin/python3 -m pytest --collect-only --quiet ./functional/ -m smoke
 - Copy the contents of `tests/validation/settings.json` to `.vscode/settings.json`
 - Configure your settings as needed, following the instructions in [configs/config_readme.md](./configs/config_readme.md)
 - Example test configuration arguments:
-  ```yml
+  ```yaml
   --test_config=./tests/validation/configs/test_config.yaml
   --topology_config=./tests/validation/configs/topology_config.yaml
   ```
@@ -129,7 +127,7 @@ This directory contains the main components and dependencies for Media Communica
 
 This directory is typically used as a mount point for media files required during validation and testing. It may contain large video/audio files or test vectors.
 
-```
+```text
 /mnt/media/
 └── [media files and test assets]
 ```
