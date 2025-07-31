@@ -409,7 +409,7 @@ def build_openh264(host: Host, work_dir: str) -> bool:
 
     if check_dir == "not exists":
         logger.warning(
-            f"openh264 repository not found at {openh264_dir}. Please clone it manually."
+            f"OpenH264 repository not found at {openh264_dir}. Please clone it manually."
         )
         return False
 
