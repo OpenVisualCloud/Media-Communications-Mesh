@@ -94,6 +94,7 @@ jobs:
           echo "USER=${USER}" >> "$GITHUB_ENV"
           sed -i "s/{{ USER }}/${USER}/g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
   validation-run-tests:
     needs: validation-prepare-setup-mcm
     runs-on: [Linux, self-hosted, DPDK]
