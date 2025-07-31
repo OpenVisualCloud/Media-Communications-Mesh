@@ -22,15 +22,16 @@ type Bridge struct {
 }
 
 type BridgeST2110Config struct {
-	RemoteIP    string              `json:"remoteIp"`
-	Port        uint16              `json:"port"`
-	Transport   sdk.ST2110Transport `json:"-"`
-	PayloadType uint8               `json:"payloadType"`
+	IPAddr       string              `json:"remoteIp"`
+	Port         uint16              `json:"port"`
+	McastSipAddr string              `json:"mcastSipAddr,omitempty"`
+	Transport    sdk.ST2110Transport `json:"-"`
+	PayloadType  uint8               `json:"payloadType"`
 }
 
 type BridgeRDMAConfig struct {
-	RemoteIP string `json:"remoteIp"`
-	Port     uint16 `json:"port"`
+	RemoteIPAddr string `json:"remoteIp"`
+	Port         uint16 `json:"port"`
 }
 
 type BridgeConfig struct {
@@ -58,8 +59,8 @@ func (b *Bridge) ValidateConfig() error {
 		if b.Config.ST2110 == nil {
 			return errors.New("st2110 bridge config is nil")
 		}
-		if b.Config.ST2110.RemoteIP == "" {
-			return errors.New("bad st2110 bridge remote ip")
+		if b.Config.ST2110.IPAddr == "" {
+			return errors.New("bad st2110 bridge ip addr")
 		}
 		if b.Config.ST2110.Port == 0 {
 			return errors.New("bad st2110 bridge port")
@@ -75,8 +76,8 @@ func (b *Bridge) ValidateConfig() error {
 		if b.Config.RDMA == nil {
 			return errors.New("rdma bridge config is nil")
 		}
-		if b.Config.RDMA.RemoteIP == "" {
-			return errors.New("bad rdma bridge remote ip")
+		if b.Config.RDMA.RemoteIPAddr == "" {
+			return errors.New("bad rdma bridge remote ip addr")
 		}
 		if b.Config.RDMA.Port == 0 {
 			return errors.New("bad rdma bridge port")

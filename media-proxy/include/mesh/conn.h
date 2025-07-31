@@ -140,8 +140,9 @@ public:
         } multipoint_group;
 
         struct {
-            std::string remote_ip_addr;
-            uint16_t remote_port;
+            std::string ip_addr;
+            uint16_t port;
+            std::string mcast_sip_addr;
 
             sdk::ST2110Transport transport;
 
@@ -154,6 +155,13 @@ public:
             uint32_t max_latency_ns;
         } rdma;
     } conn;
+
+    struct {
+        struct {
+            std::string provider;
+            uint16_t num_endpoints;
+        } rdma;
+    } options;
 
     PayloadType payload_type;
 

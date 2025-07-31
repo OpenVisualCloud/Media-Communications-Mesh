@@ -87,8 +87,9 @@ public:
         } multipoint_group;
 
         struct {
-            std::string remote_ip_addr;
-            uint16_t remote_port;
+            std::string ip_addr;
+            uint16_t port;
+            std::string mcast_sip_addr;
 
             // SMPTE ST2110-xx transport type.
             // Any value of the MESH_CONN_TRANSPORT_ST2110_* constants.
@@ -104,6 +105,13 @@ public:
             uint32_t max_latency_ns;
         } rdma;
     } conn;
+
+    struct {
+        struct {
+            std::string provider = "tcp";
+            uint8_t num_endpoints = 1;
+        } rdma;
+    } options;
 
     // Payload type (Video, Audio).
     // Any value of the MESH_PAYLOAD_TYPE_* constants.

@@ -24,16 +24,26 @@ enum ST2110Transport {
 }
 
 message ConfigST2110 {
-  string remote_ip_addr     = 1;
-  uint32 remote_port        = 2;
-  ST2110Transport transport = 3;
-  string pacing             = 4;
-  uint32 payload_type       = 5;
+  string ip_addr            = 1;
+  uint32 port               = 2;
+  string mcast_sip_addr     = 3;
+  ST2110Transport transport = 4;
+  string pacing             = 5;
+  uint32 payload_type       = 6;
 }
 
 message ConfigRDMA {
   string connection_mode = 1;
   uint32 max_latency_ns  = 2;
+}
+
+message ConnectionOptions {
+  ConnectionOptionsRDMA rdma = 1;
+}
+
+message ConnectionOptionsRDMA {
+  string provider      = 1;
+  uint32 num_endpoints = 2;
 }
 
 enum VideoPixelFormat {
@@ -107,9 +117,10 @@ message ConnectionConfig {
     ConfigST2110 st2110                    = 8;
     ConfigRDMA rdma                        = 9;
   }
+  ConnectionOptions options                = 10;
   oneof payload {
-    ConfigVideo video                      = 10;
-    ConfigAudio audio                      = 11;
-    ConfigBlob blob                        = 12;
+    ConfigVideo video                      = 11;
+    ConfigAudio audio                      = 12;
+    ConfigBlob blob                        = 13;
   } 
 }

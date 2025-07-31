@@ -95,15 +95,16 @@ message MultipointGroup {
 }
 
 message BridgeST2110 {
-  string remote_ip              = 1;
+  string ip_addr                = 1;
   uint32 port                   = 2;
-  sdk.ST2110Transport transport = 3;
-  uint32 payload_type           = 4;
+  string mcast_sip_addr         = 3;
+  sdk.ST2110Transport transport = 4;
+  uint32 payload_type           = 5;
 }
 
 message BridgeRDMA {
-  string remote_ip = 1;
-  uint32 port      = 2;
+  string remote_ip_addr = 1;
+  uint32 port           = 2;
 }
 
 message Bridge {

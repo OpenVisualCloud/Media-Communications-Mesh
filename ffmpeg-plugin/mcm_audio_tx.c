@@ -31,6 +31,9 @@ typedef struct McmAudioMuxerContext {
     int sample_rate;
     char* ptime;
 
+    char *rdma_provider;
+    int rdma_num_endpoints;
+
     MeshClient *mc;
     MeshConnection *conn;
     MeshBuffer *unsent_buf;
@@ -69,14 +72,16 @@ static int mcm_audio_write_header(AVFormatContext* avctx)
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_multipoint_group_audio_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->urn, s->channels, s->sample_rate,
+                     s->urn, s->rdma_provider, s->rdma_num_endpoints,
+                     s->channels, s->sample_rate,
                      avcodec_get_name(codecpar->codec_id), s->ptime);
                      
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_audio_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->ip_addr, s->port, s->payload_type,
+                     s->ip_addr, s->port, "", s->payload_type,
+                     s->rdma_provider, s->rdma_num_endpoints,
                      s->channels, s->sample_rate,
                      avcodec_get_name(codecpar->codec_id), s->ptime);
     } else {
@@ -119,15 +124,17 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         if (!s->unsent_buf) {
             err = mesh_get_buffer(s->conn, &s->unsent_buf);
 
+            if (mcm_shutdown_requested()) {
+                mesh_put_buffer(&s->unsent_buf);
+                return AVERROR_EXIT;
+            }
+        
             if (err) {
                 av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
                        mesh_err2str(err), err);
                 return AVERROR(EIO);
             }
         }
-
-        if (mcm_shutdown_requested())
-            return AVERROR_EOF;
 
         max_len = s->unsent_buf->payload_len;
         len = FFMIN(max_len, size + s->unsent_len);
@@ -151,6 +158,10 @@ static int mcm_audio_write_packet(AVFormatContext* avctx, AVPacket* pkt)
         size -= len;
 
         err = mesh_put_buffer(&s->unsent_buf);
+
+        if (mcm_shutdown_requested())
+            return AVERROR_EXIT;
+
         if (err) {
             av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
                    mesh_err2str(err), err);
@@ -207,6 +218,8 @@ static const AVOption mcm_audio_tx_options[] = {
     { "channels", "number of audio channels", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, ENC },
     { "sample_rate", "audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 48000}, 1, INT_MAX, ENC },
     { "ptime", "audio packet time", OFFSET(ptime), AV_OPT_TYPE_STRING, {.str = "1ms"}, .flags = ENC },
+    { "rdma_provider", "optional: set RDMA provider type ('tcp' or 'verbs')", OFFSET(rdma_provider), AV_OPT_TYPE_STRING, {.str = "tcp"}, .flags = ENC },
+    { "rdma_num_endpoints", "optional: set number of RDMA endpoints, range 1..8", OFFSET(rdma_num_endpoints), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 8, ENC },
     { NULL },
 };
 

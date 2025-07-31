@@ -1,11 +1,13 @@
 #include "conn_rdma_rx.h"
 #include <stdexcept>
 #include <queue>
+#include <immintrin.h>
 
 namespace mesh::connection {
 
 RdmaRx::RdmaRx() : Rdma() {
     _kind = Kind::receiver; // Set the Kind in the constructor
+    next_rx_idx = 0; // Initialize the next receive index
 }
 
 RdmaRx::~RdmaRx()
@@ -61,34 +63,51 @@ Result RdmaRx::start_threads(context::Context& ctx) {
  */
 void RdmaRx::process_buffers_thread(context::Context& ctx)
 {
-
     while (!ctx.cancelled()) {
         void *buf = nullptr;
 
-        // Process all available buffers in the queue
+        // Drain all currently queued buffers
         while (!ctx.cancelled()) {
             Result res = consume_from_queue(ctx, &buf);
-            if (res == Result::success && buf != nullptr) {
-                int err = libfabric_ep_ops.ep_recv_buf(ep_ctx, buf, trx_sz, buf);
+            if (res == Result::success && buf) {
+                // Round-robin receive postings across the two QPs
+                uint32_t idx = next_rx_idx.fetch_add(1, std::memory_order_relaxed)
+                             % ep_ctxs.size();
+                ep_ctx_t* chosen = ep_ctxs[idx];
+                if (!chosen) {
+                    log::error("RDMA rx endpoint #%u is null, skipping buffer")
+                        ("idx", idx)("kind", kind2str(_kind));
+                    // Return buffer so it isn't lost
+                    add_to_queue(buf);
+                    break;
+                }
+
+                int err = libfabric_ep_ops.ep_recv_buf(chosen, buf, trx_sz + TRAILER, buf);
                 if (err) {
-                    log::error("Failed to pass empty buffer to RDMA rx to receive into")
-                              ("buffer_address", buf)("error", fi_strerror(-err))
-                              ("kind", kind2str(_kind));
+                    log::error("Failed to post recv buffer to RDMA rx")
+                        ("buffer_address", buf)
+                        ("error", fi_strerror(-err))
+                        ("kind", kind2str(_kind));
+                    // On error, put the buffer back on the queue
                     res = add_to_queue(buf);
                     if (res != Result::success) {
-                        log::error("Failed to add buffer to RDMA rx queue")("error", result2str(res))
-                                  ("kind", kind2str(_kind));
+                        log::error("Failed to re-queue buffer after recv error")
+                            ("error", result2str(res))
+                            ("kind", kind2str(_kind));
                         break;
                     }
                 }
             } else {
-                break; // Exit the loop to avoid spinning on errors
+                // No more buffers available right now
+                break;
             }
         }
-        // Wait for the buffer to become available
+
+        // Wait until new buffers are added
         wait_buf_available();
     }
 }
+
 
 /**
  * @brief Handles the RDMA completion queue (CQ) events in a dedicated thread.
@@ -110,73 +129,181 @@ void RdmaRx::process_buffers_thread(context::Context& ctx)
  * @param ctx The context for managing thread cancellation and operations.
  */
 void RdmaRx::rdma_cq_thread(context::Context& ctx) {
-    constexpr int CQ_RETRY_DELAY_US = 100;        // Retry delay for EAGAIN
-    struct fi_cq_entry cq_entries[CQ_BATCH_SIZE]; // Array to hold batch of CQ entries
+    constexpr int CQ_RETRY_DELAY_US = 100;
+    struct fi_cq_entry cq_entries[CQ_BATCH_SIZE];
 
     while (!ctx.cancelled()) {
-        // Read a batch of completion events
-        int ret = fi_cq_read(ep_ctx->cq_ctx.cq, cq_entries, CQ_BATCH_SIZE);
-        if (ret > 0) {
-            for (int i = 0; i < ret; ++i) {
-                void *buf = cq_entries[i].op_context;
-                if (buf == nullptr) {
-                    log::error("RDMA rx null buffer context, skipping...")
-                              ("batch_index",i)("kind", kind2str(_kind));
-                    continue;
-                }
+        bool did_work = false;
 
-                // Process the buffer (e.g., transmit or handle)
-                Result res = transmit(ctx, buf, trx_sz);
-                if (res != Result::success) {
-                    log::error("RDMA rx failed to transmit buffer")("buffer_address", buf)
-                              ("size", trx_sz)("kind", kind2str(_kind));
-                    continue;
-                }
+        // Poll each *unique* CQ only once
+        struct fid_cq *last_cq = nullptr;
+        for (auto* ep : ep_ctxs) {
+            if (!ep) continue;
 
-                // Add the buffer back to the queue
-                res = add_to_queue(buf);
-                if (res == Result::success) {
-                    // Notify that a buffer is available
-                    notify_buf_available();
-                } else {
-                    log::error("Failed to add buffer back to the RDMA rx queue")
-                              ("buffer_address", buf)("kind", kind2str(_kind));
+            struct fid_cq *cq = ep->cq_ctx.cq;
+            if (cq == last_cq)           // duplicate of the one we just handled
+                continue;
+            last_cq = cq;
+
+            int ret = fi_cq_read(cq, cq_entries, CQ_BATCH_SIZE);
+            if (ret > 0) {
+                did_work = true;
+
+                for (int i = 0; i < ret; ++i) {
+                    void* buf = cq_entries[i].op_context;
+                    if (!buf) {
+                        log::error("RDMA rx null buffer context, skipping...")
+                            ("batch_index", i)
+                            ("kind", kind2str(_kind));
+                        continue;
+                    }
+
+                    // Read 64-bit trailer after payload
+                    auto* trailer_ptr = reinterpret_cast<uint64_t*>(
+                        reinterpret_cast<char*>(buf) + trx_sz);
+                    uint64_t seq = *trailer_ptr;
+
+                    if (reorder_head == UINT64_MAX) {
+                        reorder_head = seq;
+                    }
+                    // Slot into ring buffer
+                    size_t idx = seq & (REORDER_WINDOW - 1);
+                    reorder_ring[idx] = buf;
+
+                    // Flush any in-order entries
+                    while (true) {
+                        size_t head_idx = reorder_head & (REORDER_WINDOW - 1);
+                        void* ready = reorder_ring[head_idx];
+                        if (!ready) break;
+                        reorder_ring[head_idx] = nullptr;
+
+                        // Deliver payload (exclude trailer)
+                        Result r = transmit(ctx, ready, trx_sz);
+                        if (r != Result::success) {
+                            log::error("RDMA rx failed to transmit buffer")
+                                ("buffer_address", ready)
+                                ("size", trx_sz)
+                                ("kind", kind2str(_kind));
+                        }
+
+                        // Recycle buffer
+                        r = add_to_queue(ready);
+                        if (r == Result::success) {
+                            notify_buf_available();
+                        } else {
+                            log::error("Failed to recycle buffer to queue")
+                                ("buffer_address", ready)
+                                ("kind", kind2str(_kind));
+                        }
+                        ++reorder_head;
+                    }
                 }
             }
-        } else if (ret == -EAGAIN) {
-            // No events to process, yield CPU briefly to avoid busy looping
-            std::this_thread::sleep_for(std::chrono::microseconds(CQ_RETRY_DELAY_US));
-        } else if (ret == -FI_EAVAIL) {
-            // Read the error details
-            struct fi_cq_err_entry err_entry;
-            int err_ret = fi_cq_readerr(ep_ctx->cq_ctx.cq, &err_entry, 0);
-            if (err_ret >= 0) {
-                if (err_entry.err == -FI_ECONNRESET || err_entry.err == -FI_ENOTCONN) {
-                    log::warn("RDMA connection reset or endpoint not connected. Waiting for new connection.")
-                             ("error", fi_strerror(err_entry.err))("kind",kind2str(_kind));
-                    thread::Sleep(ctx, std::chrono::milliseconds(1000)); // Pause before retrying
+            else if (ret == -FI_EAVAIL) {
+                fi_cq_err_entry err_entry {};
+                int err_ret = fi_cq_readerr(ep->cq_ctx.cq, &err_entry, 0);
+                if (err_ret >= 0) {
+                    int err = err_entry.err;
+
+                    /* human-friendly diagnostics */
+                    if (err == -FI_ECANCELED) {
+                        log::warn("RDMA rx operation canceled")
+                            ("error", fi_strerror(err))("kind", kind2str(_kind));
+                    } else if (err == -FI_ECONNRESET || err == -FI_ENOTCONN) {
+                        log::warn("RDMA connection reset/not connected; retrying")
+                            ("error", fi_strerror(err))("kind", kind2str(_kind));
+                        thread::Sleep(ctx, std::chrono::milliseconds(1000));
+                    } else if (err == -FI_ECONNABORTED) {
+                        log::warn("RDMA rx connection aborted")
+                            ("error", fi_strerror(err))("kind", kind2str(_kind));
+                    } else {
+                        log::error("RDMA rx encountered CQ error")
+                            ("error", fi_strerror(err))("kind", kind2str(_kind));
+                    }
+
+                    /* recycle the buffer that was canceled / errored */
+                    if (err_entry.op_context) {
+                        if (add_to_queue(err_entry.op_context) == Result::success)
+                            notify_buf_available();
+                        else
+                            log::error("Failed to recycle buffer after CQ error")
+                                ("buffer_address", err_entry.op_context)
+                                ("kind", kind2str(_kind));
+                    }
+
+                    /* ---- if it was ECANCELED, repost done:  keep reorder_head,
+                       just try to flush any packet that became in-order now ---- */
+                    if (err == -FI_ECANCELED) {
+                        std::size_t flushed = 0;
+                        while (true) {
+                            size_t head_idx = reorder_head & (REORDER_WINDOW - 1);
+                            void*  ready    = reorder_ring[head_idx];
+                            if (!ready) break;   // next frame not here yet
+                            reorder_ring[head_idx] = nullptr;
+
+                            Result r = transmit(ctx, ready, trx_sz);
+                            if (r != Result::success)
+                                log::error("RDMA rx failed to transmit buffer")
+                                    ("buffer_address", ready)("size", trx_sz)
+                                    ("kind", kind2str(_kind));
+
+                            if (add_to_queue(ready) == Result::success)
+                                notify_buf_available();
+                            else
+                                log::error("Failed to recycle buffer to queue")
+                                    ("buffer_address", ready)("kind", kind2str(_kind));				
+                            ++reorder_head;
+                            ++flushed;
+                        }
+                        log::debug("RX ECANCELED: flushed %zu frame%s waiting in ring",
+                                   flushed, flushed == 1 ? "" : "s")
+                            ("kind", kind2str(_kind));
+                    }
+
+                    did_work = true;         // we handled something – no sleep
                 } else {
-                    log::error("RDMA rx encountered an error in CQ")(
-                        "error", fi_strerror(err_entry.err))("kind", kind2str(_kind));
+                    log::error("RDMA rx failed to read CQ error entry")
+                        ("error", fi_strerror(-err_ret))("kind", kind2str(_kind));
                 }
+            }
+            else if (ret != -EAGAIN && ret != -FI_ENOTCONN) {
+                // Fatal CQ read error
+                log::error("RDMA rx cq read failed")
+                    ("error", fi_strerror(-ret))
+                    ("kind", kind2str(_kind));
+                goto shutdown;
+            }
+            // else: -EAGAIN or -FI_ENOTCONN → retry
+        }
+
+        /* ---------- hybrid back-off when no CQ work was done ---------- */
+        static constexpr int SPIN_LIMIT  =  50;   // ≈ 1–2 µs of busy-wait
+        static constexpr int YIELD_LIMIT = 200;   // then ~200 sched_yield() calls
+        static thread_local int idle_cycles = 0;  // per-thread counter
+
+        if (!did_work) {
+            if (idle_cycles < SPIN_LIMIT) {
+                /* short spin: cheapest path at high packet rate */
+                _mm_pause();             // pause instruction = 40–100 ns
+            } else if (idle_cycles < SPIN_LIMIT + YIELD_LIMIT) {
+                /* medium wait: let other threads run */
+                std::this_thread::yield();
             } else {
-                log::error("RDMA rx failed to read CQ error entry")
-                          ("error", fi_strerror(-err_ret))("kind", kind2str(_kind));
+                /* long wait: nothing for a while – real sleep */
+                std::this_thread::sleep_for(
+                    std::chrono::microseconds(CQ_RETRY_DELAY_US));
             }
-        } else if (ret == -FI_ENOTCONN) {
-            // Handle disconnection (Transport endpoint is not connected)
-            log::warn("Transport endpoint is not connected. Waiting for new connection.")(
-                "error", fi_strerror(ret))("kind", kind2str(_kind));
-            thread::Sleep(ctx, std::chrono::milliseconds(1000)); // Pause before retrying
+            ++idle_cycles;               // back-off gets longer
         } else {
-            // Handle CQ read error
-            log::error("RDMA rx cq read failed")("error", fi_strerror(-ret))
-                      ("kind", kind2str(_kind));
-            break;
+            idle_cycles = 0;             // reset after we did useful work
         }
     }
 
-    ep_ctx->stop_flag = true; // Set the stop flag
+shutdown:
+    // Signal all endpoints to stop
+    for (auto* ep : ep_ctxs) {
+        if (ep) ep->stop_flag = true;
+    }
     log::info("RDMA RX CQ thread stopped.")("kind", kind2str(_kind));
 }
 

@@ -115,11 +115,34 @@ extern "C" {
         }                                                                                          \
     } while (0)
 
+/**
+ * Kind
+ * 
+ * Definition of connection kinds.
+ */
+typedef enum {
+    FI_KIND_UNDEFINED = 0,
+    FI_KIND_TRANSMITTER,
+    FI_KIND_RECEIVER,
+} conn_kind;
 typedef struct {
     struct fid_fabric *fabric;
     struct fid_domain *domain;
     struct fi_info *info;
+    conn_kind kind;
+    const char *local_ip;
+    const char *remote_ip;
+    const char *local_port;
+    const char *remote_port;
+    bool is_initialized;       // Indicates if context is fully initialized
+    int ep_attr_type;          // Store EP type for endpoint creation
+    int addr_format;           // Store address format for endpoint creation
+    const char *provider_name; // Provider name (e.g., "tcp", "verbs")
 } libfabric_ctx;
+
+static void rdma_free_res(libfabric_ctx *rdma_ctx);
+static void rdma_freehints(struct fi_info *hints);
+static int  rdma_init_fabric(libfabric_ctx *rdma_ctx, struct fi_info *hints);
 
 #ifdef UNIT_TESTS_ENABLED
 int rdma_init(libfabric_ctx **ctx);

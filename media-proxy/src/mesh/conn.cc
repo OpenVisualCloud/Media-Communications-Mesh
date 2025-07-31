@@ -89,8 +89,9 @@ void Connection::set_config(const Config& cfg)
         break;
     case CONN_TYPE_ST2110:
         log::debug("[SDK] ST2110 config")
-                  ("remote_ip_addr", config.conn.st2110.remote_ip_addr)
-                  ("remote_port", config.conn.st2110.remote_port)
+                  ("ip_addr", config.conn.st2110.ip_addr)
+                  ("port", config.conn.st2110.port)
+                  ("mcast_sip_addr", config.conn.st2110.mcast_sip_addr)
                   ("transport", config.st2110_transport2str())
                   ("pacing", config.conn.st2110.pacing)
                   ("payload_type", config.conn.st2110.payload_type);
@@ -568,8 +569,9 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
     } else if (config.has_st2110()) {
         conn_type = ConnectionType::CONN_TYPE_ST2110;
         const sdk::ConfigST2110& st2110 = config.st2110();
-        conn.st2110.remote_ip_addr = st2110.remote_ip_addr();
-        conn.st2110.remote_port    = st2110.remote_port();
+        conn.st2110.ip_addr        = st2110.ip_addr();
+        conn.st2110.port           = st2110.port();
+        conn.st2110.mcast_sip_addr = st2110.mcast_sip_addr();
         conn.st2110.transport      = st2110.transport();
         conn.st2110.pacing         = st2110.pacing();
         conn.st2110.payload_type   = st2110.payload_type();
@@ -580,6 +582,15 @@ Result Config::assign_from_pb(const sdk::ConnectionConfig& config)
         conn.rdma.max_latency_ns  = rdma.max_latency_ns();
     } else {
         return Result::error_conn_config_invalid;
+    }
+
+    if (config.has_options()) {
+        const sdk::ConnectionOptions& conn_options = config.options();
+        if (conn_options.has_rdma()) {
+            const sdk::ConnectionOptionsRDMA& options_rdma = conn_options.rdma();
+            options.rdma.provider = options_rdma.provider();
+            options.rdma.num_endpoints = options_rdma.num_endpoints();
+        }
     }
 
     if (config.has_video()) {
@@ -634,8 +645,9 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
         config.set_allocated_multipoint_group(group);
     } else if (conn_type == ConnectionType::CONN_TYPE_ST2110) {
         auto st2110 = new sdk::ConfigST2110();
-        st2110->set_remote_ip_addr(conn.st2110.remote_ip_addr);
-        st2110->set_remote_port(conn.st2110.remote_port);
+        st2110->set_ip_addr(conn.st2110.ip_addr);
+        st2110->set_port(conn.st2110.port);
+        st2110->set_mcast_sip_addr(conn.st2110.mcast_sip_addr);
         st2110->set_transport(conn.st2110.transport);
         st2110->set_pacing(conn.st2110.pacing);
         st2110->set_payload_type(conn.st2110.payload_type);
@@ -646,6 +658,12 @@ void Config::assign_to_pb(sdk::ConnectionConfig& config) const
         rdma->set_max_latency_ns(conn.rdma.max_latency_ns);
         config.set_allocated_rdma(rdma);
     }
+
+    auto conn_options = config.mutable_options();
+    auto options_rdma = new sdk::ConnectionOptionsRDMA();
+    options_rdma->set_provider(options.rdma.provider);
+    options_rdma->set_num_endpoints(options.rdma.num_endpoints);
+    conn_options->set_allocated_rdma(options_rdma);
 
     if (payload_type == PayloadType::PAYLOAD_TYPE_VIDEO) {
         auto video = new sdk::ConfigVideo();

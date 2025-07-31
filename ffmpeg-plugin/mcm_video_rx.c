@@ -26,6 +26,7 @@ typedef struct McmVideoDemuxerContext {
     char *urn;
     char *ip_addr;
     int port;
+    char *mcast_sip_addr;
     char *transport;
     int payload_type;
     char *transport_pixel_format;
@@ -36,6 +37,9 @@ typedef struct McmVideoDemuxerContext {
     int height;
     enum AVPixelFormat pixel_format;
     AVRational frame_rate;
+
+    char *rdma_provider;
+    int rdma_num_endpoints;
 
     MeshClient *mc;
     MeshConnection *conn;
@@ -60,14 +64,17 @@ static int mcm_video_read_header(AVFormatContext* avctx)
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_multipoint_group_video_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->urn, s->width, s->height, av_q2d(s->frame_rate),
+                     s->urn, s->rdma_provider, s->rdma_num_endpoints,
+                     s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else if (!strcmp(s->conn_type, "st2110")) {
         n = snprintf(json_config, sizeof(json_config),
                      mcm_json_config_st2110_video_format,
                      s->buf_queue_cap, s->conn_delay,
-                     s->ip_addr, s->port, s->transport, s->payload_type,
+                     s->ip_addr, s->port, s->mcast_sip_addr,
+                     s->transport, s->payload_type,
                      s->transport_pixel_format,
+                     s->rdma_provider, s->rdma_num_endpoints,
                      s->width, s->height, av_q2d(s->frame_rate),
                      av_get_pix_fmt_name(s->pixel_format));
     } else {
@@ -131,14 +138,18 @@ static int mcm_video_read_packet(AVFormatContext* avctx, AVPacket* pkt)
         goto error_close_conn;
     }
     if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
-               mesh_err2str(err), err);
-        ret = AVERROR(EIO);
+        if (mcm_shutdown_requested()) {
+            ret = AVERROR_EXIT;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
+                   mesh_err2str(err), err);
+            ret = AVERROR(EIO);
+        }
         goto error_close_conn;
     }
 
     if (mcm_shutdown_requested()) {
-        ret = AVERROR_EOF;
+        ret = AVERROR_EXIT;
         goto error_put_buf;
     }
 
@@ -165,10 +176,7 @@ error_put_buf:
     mesh_put_buffer(&buf);
 
 error_close_conn:
-    err = mesh_delete_connection(&s->conn);
-    if (err)
-        av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
-            mesh_err2str(err), err);
+    mesh_delete_connection(&s->conn);
 
     return ret;
 }
@@ -199,8 +207,9 @@ static const AVOption mcm_video_rx_options[] = {
     { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
     { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },
     { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = DEC },
-    { "ip_addr", "set ST2110 remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
+    { "ip_addr", "set ST2110 multicast IP address or unicast remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "239.168.68.190"}, .flags = DEC },
     { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, DEC },
+    { "mcast_sip_addr", "set ST2110 multicast source filter IP address", OFFSET(mcast_sip_addr), AV_OPT_TYPE_STRING, {.str = ""}, .flags = DEC },
     { "transport", "set ST2110 transport type", OFFSET(transport), AV_OPT_TYPE_STRING, {.str = "st2110-20"}, .flags = DEC },
     { "payload_type", "set ST2110 payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.i64 = 112}, 0, 127, DEC },
     { "transport_pixel_format", "set st2110-20 transport pixel format", OFFSET(transport_pixel_format), AV_OPT_TYPE_STRING, {.str = "yuv422p10rfc4175"}, .flags = DEC },
@@ -209,6 +218,8 @@ static const AVOption mcm_video_rx_options[] = {
     { "video_size", "set video frame size given a string such as 640x480 or hd720", OFFSET(width), AV_OPT_TYPE_IMAGE_SIZE, {.str = "1920x1080"}, 0, 0, DEC },
     { "pixel_format", "set video pixel format", OFFSET(pixel_format), AV_OPT_TYPE_PIXEL_FMT, {.i64 = AV_PIX_FMT_YUV422P10LE}, AV_PIX_FMT_NONE, INT_MAX, DEC },
     { "frame_rate", "set video frame rate", OFFSET(frame_rate), AV_OPT_TYPE_VIDEO_RATE, {.str = "25"}, 0, INT_MAX, DEC },
+    { "rdma_provider", "optional: set RDMA provider type ('tcp' or 'verbs')", OFFSET(rdma_provider), AV_OPT_TYPE_STRING, {.str = "tcp"}, .flags = DEC },
+    { "rdma_num_endpoints", "optional: set number of RDMA endpoints, range 1..8", OFFSET(rdma_num_endpoints), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 8, DEC },
     { NULL },
 };
 

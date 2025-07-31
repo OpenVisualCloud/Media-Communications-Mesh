@@ -74,12 +74,19 @@ Creates a transmitter connection with the provided JSON configuration.
   "connection": {
     "st2110": {
       "transport": "st2110-20",
-      "remoteIpAddr": "224.0.0.1",
-      "remotePort": 9002,
+      "ipAddr": "224.0.0.1",
+      "port": 9002,
+      "multicastSourceIpAddr": "192.168.95.10",
       "pacing": "narrow",
       "payloadType": 112,
       "transportPixelFormat": "yuv422p10rfc4175"
     },
+  },
+  "options": {
+    "rdma": {
+      "provider": "tcp",
+      "numEndpoints": 2,
+    }
   },
   "payload": {
     "video": {
@@ -110,12 +117,23 @@ to setup various connection and payload options. The examples correspond to the 
 "connection": {
   "st2110": {
     "transport": "st2110-22",
-    "remoteIpAddr": "192.168.95.2",
-    "remotePort": 9002,
+    "ipAddr": "224.0.0.1",
+    "multicastSourceIpAddr": "192.168.95.10",
+    "port": 9002,
     "pacing": "narrow",
     "payloadType": 112
   }
 }
+```
+
+### Configure connection options
+```json
+"options": {
+  "rdma": {
+    "provider": "tcp",
+    "numEndpoints": 2,
+  }
+},
 ```
 
 ### Configure payload – Video
@@ -169,15 +187,22 @@ The above `maxPayloadSize` is set explicitly to define the buffer size for the B
       * `"transport"` – SMPTE ST 2110 connection type.
          * `"st2110-20"` – Uncompressed video.
          * `"st2110-22"` – Compressed video (JPEG XS).
-         * `"st2110-30"` – Audio.
-      * `"remoteIpAddr"` – Remote device/host IP address.
-      * `"remotePort"` – **Tx connection**: remote device/host port number, **Rx connection**: local host port number.
+         * `"st2110-30"` – Uncompressed audio (PCM).
+      * `"ipAddr"` – **Tx connection**: destination IP address. **Rx connection**: multicast IP address or unicast source IP address.
+      * `"port"` – **Tx connection**: destination port number. **Rx connection**: local port number.
+      * `"multicastSourceIpAddr"` – **Rx connection only**: optional multicast source filter IP address.
       * `"pacing"`
          * `"narrow"`
       * `"payloadType"` – Default 112.
       * `"transportPixelFormat"` – Required only for the `"st2110-20"` transport type, default "yuv422p10rfc4175".
    1. `"multipointGroup"` – Multipoint Group connection.
       * `"urn"` – Uniform Resource Name (URN) of the multipoint group, e.g. "ipv4:224.0.0.1:9003".
+* `"options"` – Connection options
+   * `"rdma"` – RDMA bridge related parameters
+      * `"provider"` – Default "tcp".
+         * `"tcp"`
+         * `"verbs"`
+      * `"numEndpoints"` – Integer number of RDMA endpoints between 1-8, default 1.
 * `"payload"` – Payload type, options 1-3 are the following:
    1. `"video"` – Video payload.
       * `"width"` – Integer frame width, e.g. 1920.

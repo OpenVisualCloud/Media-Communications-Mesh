@@ -14,6 +14,7 @@
 #include <cstddef>
 #include <atomic>
 #include <queue>
+#include <array>
 
 #ifndef RDMA_DEFAULT_TIMEOUT
 #define RDMA_DEFAULT_TIMEOUT 1
@@ -26,6 +27,9 @@
 #endif
 #ifndef PAGE_SIZE
 #define PAGE_SIZE 4096
+#endif
+#ifndef RDMA_NUM_EPS
+#define RDMA_NUM_EPS  1
 #endif
 
 namespace mesh::connection {
@@ -79,13 +83,20 @@ protected:
 
     // RDMA-specific members
     libfabric_ctx *m_dev_handle;                // RDMA device handle
-    ep_ctx_t *ep_ctx;                           // RDMA endpoint context
+    // Configurable number of RDMA endpoints (default RDMA_NUM_EPS)
+    size_t               rdma_num_eps  = RDMA_NUM_EPS;
+    // Configurable provider: "tcp" or "verbs"
+    std::string          rdma_provider = "verbs"; // Default provider
+    // Endpoint contexts (one pointer per EP)
+    std::vector<ep_ctx_t*> ep_ctxs;
     ep_cfg_t ep_cfg;                            // RDMA endpoint configuration
     size_t trx_sz;                              // Data transfer size
     bool init;                                  // Indicates if RDMA is initialized
     void *buffer_block;                         // Pointer to the allocated buffer block
     int queue_size;                             // Number of buffers in the queue
     static std::atomic<int> active_connections; // Number of active RDMA connections
+
+    static constexpr size_t TRAILER = sizeof(uint64_t); // Size of the trailer for sequence number
 
     // Queue for managing buffers
     std::queue<void *> buffer_queue;      // Queue holding available buffers

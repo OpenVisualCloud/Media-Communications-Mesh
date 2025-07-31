@@ -142,8 +142,9 @@ public:
             config->set_allocated_multipoint_group(group);
         } else if (cfg.conn_type == MESH_CONN_TYPE_ST2110) {
             auto st2110 = new ConfigST2110();
-            st2110->set_remote_ip_addr(cfg.conn.st2110.remote_ip_addr);
-            st2110->set_remote_port(cfg.conn.st2110.remote_port);
+            st2110->set_ip_addr(cfg.conn.st2110.ip_addr);
+            st2110->set_port(cfg.conn.st2110.port);
+            st2110->set_mcast_sip_addr(cfg.conn.st2110.mcast_sip_addr);
             st2110->set_transport((ST2110Transport)cfg.conn.st2110.transport);
             st2110->set_pacing(cfg.conn.st2110.pacing);
             st2110->set_payload_type(cfg.conn.st2110.payload_type);
@@ -154,6 +155,11 @@ public:
             rdma->set_max_latency_ns(cfg.conn.rdma.max_latency_ns);
             config->set_allocated_rdma(rdma);
         }
+
+        auto options = config->mutable_options();
+        auto options_rdma = options->mutable_rdma();
+        options_rdma->set_provider(cfg.options.rdma.provider);
+        options_rdma->set_num_endpoints(cfg.options.rdma.num_endpoints);
 
         if (cfg.payload_type == MESH_PAYLOAD_TYPE_VIDEO) {
             auto video = new ConfigVideo();

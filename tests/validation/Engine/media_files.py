@@ -15,6 +15,137 @@ jxs_files = dict(
     }
 )
 
+# Media Connection Mesh 25.03 Test plan
+
+video_files_25_03 = {
+    "FullHD_59.94": {
+        "filename": "HDR_BBC_v4_008_Penguin1_1920x1080_10bit_25Hz_P422_180frames.yuv",
+        "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
+        "width": 1920,
+        "height": 1080,
+        "fps": 59.94,
+    },
+    "FullHD_60": {
+        "filename": "HDR_BBC_v4_008_Penguin1_1920x1080_10bit_25Hz_P422_180frames.yuv",
+        "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
+        "width": 1920,
+        "height": 1080,
+        "fps": 60,
+    },
+    "4K_59.94": {
+        "filename": "HDR_BBC_v4_008_Penguin1_3840x2160_10bit_25Hz_P422_180frames.yuv",
+        "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
+        "width": 3840,
+        "height": 2160,
+        "fps": 59.94,
+    },
+    "4K_60": {
+        "filename": "HDR_BBC_v4_008_Penguin1_3840x2160_10bit_25Hz_P422_180frames.yuv",
+        "format": "YUV_422_10bit",
+        "file_format": "YUV422PLANAR10LE",
+        "width": 3840,
+        "height": 2160,
+        "fps": 60,
+    },
+}
+
+audio_files_25_03 = {
+    "PCM8_48000_Mono": {
+        "filename": "voice_48000monoPCM8.pcm",
+        "format": "pcm_s8",
+        "channels": 1,
+        "sample_rate": 48000,
+        "packet_time": "1ms",
+    },
+    "PCM8_48000_Stereo": {
+        "filename": "voice_48000stereoPCM8.pcm",
+        "format": "pcm_s8",
+        "channels": 2,
+        "sample_rate": 48000,
+        "packet_time": "1ms",
+    },
+    "PCM16_48000_Mono": {
+        "filename": "voice_48000monoPCM16.pcm",
+        "format": "pcm_s16be",
+        "channels": 1,
+        "sample_rate": 48000,
+        "packet_time": "1ms",
+    },
+    "PCM16_48000_Stereo": {
+        "filename": "voice_48000stereoPCM16.pcm",
+        "format": "pcm_s16be",
+        "channels": 2,
+        "sample_rate": 48000,
+        "packet_time": "1ms",
+    },
+    "PCM24_48000_Mono": {
+        "filename": "voice_48000monoPCM24.pcm",
+        "format": "pcm_s24be",
+        "channels": 1,
+        "sample_rate": 48000,
+        "packet_time": "1ms",
+    },
+    "PCM24_48000_Stereo": {
+        "filename": "voice_48000stereoPCM24.pcm",
+        "format": "pcm_s24be",
+        "channels": 2,
+        "sample_rate": 48000,
+        "packet_time": "1ms",
+    },
+    "PCM8_96000_Mono": {
+        "filename": "voice_96000monoPCM8.pcm",
+        "format": "pcm_s8",
+        "channels": 1,
+        "sample_rate": 96000,
+        "packet_time": "1ms",
+    },
+    "PCM8_96000_Stereo": {
+        "filename": "voice_96000stereoPCM8.pcm",
+        "format": "pcm_s8",
+        "channels": 2,
+        "sample_rate": 96000,
+        "packet_time": "1ms",
+    },
+    "PCM16_96000_Mono": {
+        "filename": "voice_96000monoPCM16.pcm",
+        "format": "pcm_s16be",
+        "channels": 1,
+        "sample_rate": 96000,
+        "packet_time": "1ms",
+    },
+    "PCM16_96000_Stereo": {
+        "filename": "voice_96000stereoPCM16.pcm",
+        "format": "pcm_s16be",
+        "channels": 2,
+        "sample_rate": 96000,
+        "packet_time": "1ms",
+    },
+    "PCM24_96000_Mono": {
+        "filename": "voice_96000monoPCM24.pcm",
+        "format": "pcm_s24be",
+        "channels": 1,
+        "sample_rate": 96000,
+        "packet_time": "1ms",
+    },
+    "PCM24_96000_Stereo": {
+        "filename": "voice_96000stereoPCM24.pcm",
+        "format": "pcm_s24be",
+        "channels": 2,
+        "sample_rate": 96000,
+        "packet_time": "1ms",
+    },
+}
+
+blob_files_25_03 = dict(
+    random_bin_100M={
+        "filename": "random_data.bin",
+        "max_payload_size": 102400,
+    },
+)
+
 yuv_files = dict(
     i720p23={
         "filename": "HDR_BBC_v4_008_Penguin1_1280x720_10bit_25Hz_P422_180frames.yuv",
@@ -177,7 +308,7 @@ yuv_files = dict(
         "fps": 120,
     },
     i2160p23={
-        "filename": "test_3840x2160_for_25fps.yuv", # shows up as random pixels
+        "filename": "test_3840x2160_for_25fps.yuv",  # shows up as random pixels
         "format": "YUV_422_10bit",
         "file_format": "YUV422RFC4175PG2BE10",
         "width": 3840,
@@ -249,7 +380,7 @@ yuv_files = dict(
         "fps": 119,
     },
     i4320p23={
-        "filename": "test_8k.yuv", # single frame?
+        "filename": "test_8k.yuv",  # single frame?
         "format": "YUV_422_10bit",
         "file_format": "YUV422RFC4175PG2BE10",
         "width": 7680,
@@ -323,7 +454,7 @@ yuv_files = dict(
     i480i59={
         "filename": "Netflix_Crosswalk_720x480_interlace_10bit_60Hz_P422.yuv",
         "format": "YUV_422_10bit",
-        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
+        "file_format": "YUV422RFC4175PG2BE10",  # although the file name suggests otherwise
         "width": 720,
         "height": 480,
         "fps": 59,
@@ -331,7 +462,7 @@ yuv_files = dict(
     i576i50={
         "filename": "ParkJoy_720x576_interlace_10bit_50Hz_P422.yuv",
         "format": "YUV_422_10bit",
-        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
+        "file_format": "YUV422RFC4175PG2BE10",  # although the file name suggests otherwise
         "width": 720,
         "height": 576,
         "fps": 50,
@@ -339,7 +470,7 @@ yuv_files = dict(
     i1080i50={
         "filename": "ParkJoy_1920x1080_interlace_10bit_50Hz_P422.yuv",
         "format": "YUV_422_10bit",
-        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
+        "file_format": "YUV422RFC4175PG2BE10",  # although the file name suggests otherwise
         "width": 1920,
         "height": 1080,
         "fps": 50,
@@ -347,7 +478,7 @@ yuv_files = dict(
     i1080i59={
         "filename": "Netflix_Crosswalk_1920x1080_interlace_10bit_60Hz_P422.yuv",
         "format": "YUV_422_10bit",
-        "file_format": "YUV422RFC4175PG2BE10", # although the file name suggests otherwise
+        "file_format": "YUV422RFC4175PG2BE10",  # although the file name suggests otherwise
         "width": 1920,
         "height": 1080,
         "fps": 59,
@@ -536,6 +667,13 @@ anc_files = dict(
     text_p59={
         "filename": "test.txt",
         "fps": "p59",
+    },
+)
+
+blob_files = dict(
+    random_bin_100M={
+        "filename": "random_data.bin",
+        "max_payload_size": 102400,
     },
 )
 

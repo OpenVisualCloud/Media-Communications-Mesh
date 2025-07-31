@@ -1,35 +1,64 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
-import os
+import logging
+from time import sleep
 
-import Engine.client_json
-import Engine.connection
-import Engine.connection_json
-import Engine.engine_mcm as utils
-import Engine.execute
-import Engine.payload
 import pytest
+
+import Engine.rx_tx_app_connection
+import Engine.rx_tx_app_engine_mcm as utils
+import Engine.rx_tx_app_payload
+from Engine.const import DEFAULT_LOOP_COUNT, MCM_ESTABLISH_TIMEOUT
 from Engine.media_files import audio_files
 
+logger = logging.getLogger(__name__)
 
-@pytest.mark.parametrize("file", audio_files.values())
-def test_audio(build: str, media: str, file: dict):
-    client = Engine.client_json.ClientJson()
-    conn_mpg = Engine.connection.Rdma()
-    payload = Engine.payload.Audio(
-        channels=file["channels"],
-        sampleRate=file["sample_rate"],
-        audio_format=file["format"],
+
+@pytest.mark.parametrize("file", audio_files.keys())
+def test_audio(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
+
+    # Get TX and RX hosts
+    host_list = list(hosts.values())
+    if len(host_list) < 2:
+        pytest.skip("Dual tests require at least 2 hosts")
+    tx_host = host_list[0]
+    rx_host = host_list[1]
+
+    tx_executor = utils.LapkaExecutor.Tx(
+        host=tx_host,
+        media_path=media_path,
+        rx_tx_app_connection=Engine.rx_tx_app_connection.Rdma,
+        payload_type=Engine.rx_tx_app_payload.Audio,
+        file_dict=audio_files[file],
+        file=file,
+        log_path=log_path,
+        loop=DEFAULT_LOOP_COUNT,
     )
-    connection = Engine.connection_json.ConnectionJson(
-        connection=conn_mpg, payload=payload
+    rx_executor = utils.LapkaExecutor.Rx(
+        host=rx_host,
+        media_path=media_path,
+        rx_tx_app_connection=Engine.rx_tx_app_connection.Rdma,
+        payload_type=Engine.rx_tx_app_payload.Audio,
+        file_dict=audio_files[file],
+        file=file,
+        log_path=log_path,
     )
 
-    utils.create_client_json(build, client)
-    utils.create_connection_json(build, connection)
+    rx_executor.start()
+    sleep(MCM_ESTABLISH_TIMEOUT)
+    tx_executor.start()
 
-    media_file = file["filename"]
-    media_file_path = os.path.join(media, media_file)
+    try:
+        if rx_executor.process.running:
+            rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
+    except Exception as e:
+        logger.warning(f"RX executor did not finish in time or error occurred: {e}")
 
-    utils.run_rx_tx_with_file(file_path=media_file_path, build=build)
+    tx_executor.stop()
+    rx_executor.stop()
+
+    assert tx_executor.is_pass is True, "TX process did not pass"
+    assert rx_executor.is_pass is True, "RX process did not pass"
+
+    # TODO add validate() function to check if the output file is correct
