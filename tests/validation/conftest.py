@@ -19,13 +19,19 @@ from common.nicctl import Nicctl
 from Engine.const import ( 
     ALLOWED_FFMPEG_VERSIONS,
     DEFAULT_FFMPEG_PATH,
+    DEFAULT_INPUT_PATH,
     DEFAULT_MCM_FFMPEG_PATH,
     DEFAULT_MCM_FFMPEG_VERSION,
+    DEFAULT_MEDIA_PATH,
     DEFAULT_MTL_FFMPEG_PATH,
     DEFAULT_MTL_FFMPEG_VERSION,
     DEFAULT_OPENH264_PATH,
+    DEFAULT_OUTPUT_PATH,
+    INTEL_BASE_PATH,
     LOG_FOLDER,
-    OPENH264_VERSION_TAG
+    MCM_BUILD_PATH,
+    MTL_BUILD_PATH,
+    OPENH264_VERSION_TAG,
 )
 from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
 from datetime import datetime
@@ -158,7 +164,13 @@ def mesh_agent(hosts, test_config, log_path):
 
 @pytest.fixture(scope="session")
 def media_path(test_config: dict) -> str:
-    return test_config.get("media_path", "/mnt/media/")
+    """
+    Returns the path to the media files used for testing.
+
+    :param test_config: The test configuration dictionary.
+    :return: Path to the media files.
+    """
+    return test_config.get("media_path", DEFAULT_MEDIA_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -323,6 +335,9 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
     1. Clone and patch FFmpeg (default version 7.0, can be overridden by test_config).
     2. Run FFmpeg configuration tool.
     3. Build and install FFmpeg with the plugin.
+
+    The FFmpeg binaries and libraries will be installed to:
+    /opt/intel/_build/ffmpeg-{version}/ffmpeg-{version}_mcm_build/
     """
     if not test_config.get("mcm_ffmpeg_rebuild", False):
         return True
@@ -334,9 +349,14 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
     if not mcm_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
         logger.error(f"Invalid mcm_ffmpeg_version: {mcm_ffmpeg_version}")
         return False
+
     for host in hosts.values():
         mcm_path = get_mcm_path(host)
         ffmpeg_tools_path = f"{mcm_path}/ffmpeg-plugin"
+
+        # Ensure the directory structure exists
+        build_dir = Path(DEFAULT_MCM_FFMPEG_PATH).parent
+        host.connection.execute_command(f"mkdir -p {build_dir}", shell=True, timeout=10)
 
         # Check and remove mcm_ffmpeg_build_path if it exists
         check_dir = host.connection.execute_command(
@@ -381,6 +401,10 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
         if res.return_code != 0:
             logger.error(f"Command {cmd} failed with return code {res.return_code}.")
             return False
+            
+        logger.info(
+            f"Successfully built MCM FFmpeg {mcm_ffmpeg_version} at {DEFAULT_MCM_FFMPEG_PATH}"
+        )
     return True
 
 
@@ -395,11 +419,12 @@ def build_openh264(host: Host, work_dir: str) -> bool:
     :return: True if the build was successful, False otherwise.
     :rtype: bool
     """
-    openh264_dir = DEFAULT_OPENH264_PATH
+    openh264_repo_dir = f"{INTEL_BASE_PATH}/openh264"  # Repository directory
+    openh264_install_dir = DEFAULT_OPENH264_PATH  # Installation directory
 
-    # Check if openh264 is already installed at DEFAULT_OPENH264_PATH
+    # Check if openh264 is already installed
     check_install = host.connection.execute_command(
-        f"[ -d {DEFAULT_OPENH264_PATH} ] && echo 'exists' || echo 'not exists'",
+        f"[ -d {openh264_install_dir}/lib ] && echo 'exists' || echo 'not exists'",
         shell=True,
     ).stdout.strip()
 
@@ -412,24 +437,33 @@ def build_openh264(host: Host, work_dir: str) -> bool:
         ).stdout.strip()
 
         if lib_check == "installed":
-            logger.info(f"OpenH264 is already installed at {DEFAULT_OPENH264_PATH}")
+            logger.info(f"OpenH264 is already installed at {openh264_install_dir}")
             return True
 
-    # Check if directory exists - assumes repo is already cloned
+    # Check if repository directory exists
     check_dir = host.connection.execute_command(
-        f"[ -d {openh264_dir} ] && echo 'exists' || echo 'not exists'", shell=True
+        f"[ -d {openh264_repo_dir} ] && echo 'exists' || echo 'not exists'", shell=True
     ).stdout.strip()
 
     if check_dir == "not exists":
-        logger.warning(
-            f"OpenH264 repository not found at {openh264_dir}. Please clone it manually."
+        # Try to clone the repository
+        logger.info(
+            f"OpenH264 repository not found at {openh264_repo_dir}. Attempting to clone..."
         )
-        return False
+        res = host.connection.execute_command(
+            f"git clone https://github.com/cisco/openh264.git {openh264_repo_dir}",
+            shell=True,
+            timeout=60,
+            stderr_to_stdout=True,
+        )
+        if res.return_code != 0:
+            logger.error(f"Failed to clone OpenH264 repository to {openh264_repo_dir}")
+            return False
 
     # Check if we need to checkout the specified version
     tag_check = host.connection.execute_command(
         "git describe --exact-match --tags 2>/dev/null || echo 'wrong tag'",
-        cwd=openh264_dir,
+        cwd=openh264_repo_dir,
         shell=True,
         timeout=10,
     ).stdout.strip()
@@ -439,7 +473,7 @@ def build_openh264(host: Host, work_dir: str) -> bool:
         logger.info(f"Checking out {OPENH264_VERSION_TAG} tag")
         res = host.connection.execute_command(
             f"git reset --hard && git checkout -f {OPENH264_VERSION_TAG}",
-            cwd=openh264_dir,
+            cwd=openh264_repo_dir,
             shell=True,
             timeout=30,
             stderr_to_stdout=True,
@@ -450,20 +484,20 @@ def build_openh264(host: Host, work_dir: str) -> bool:
     else:
         logger.info(f"Already on {OPENH264_VERSION_TAG} tag")
 
-    # Build and install to DEFAULT_OPENH264_PATH
-    logger.info(f"Building and installing openh264 to {DEFAULT_OPENH264_PATH}")
+    # Build and install to openh264_install_dir
+    logger.info(f"Building and installing openh264 to {openh264_install_dir}")
 
     # Create install directory if it doesn't exist
     host.connection.execute_command(
-        f"sudo mkdir -p {DEFAULT_OPENH264_PATH}", shell=True, timeout=10
+        f"sudo mkdir -p {openh264_install_dir}", shell=True, timeout=10
     )
 
     # Build with custom prefix
     res = host.connection.execute_command(
-        f"make -j $(nproc) PREFIX={DEFAULT_OPENH264_PATH} && "
-        f"sudo make install PREFIX={DEFAULT_OPENH264_PATH} && "
+        f"make -j $(nproc) PREFIX={openh264_install_dir} && "
+        f"sudo make install PREFIX={openh264_install_dir} && "
         "sudo ldconfig",
-        cwd=openh264_dir,
+        cwd=openh264_repo_dir,
         shell=True,
         timeout=300,
         stderr_to_stdout=True,
@@ -488,6 +522,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
 
     This fixture enables testing of ST20P (raw video), ST22 (compressed video),
     ST30P (audio), and GPU direct features with FFmpeg.
+
+    The FFmpeg binaries and libraries will be installed to:
+    /opt/intel/_build/ffmpeg-{version}/ffmpeg-{version}_mtl_build/
     """
     if not test_config.get("mtl_ffmpeg_rebuild", False):
         return True
@@ -505,6 +542,10 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
         if not mtl_path:
             logger.error(f"MTL path not found on host {host.name}.")
             return False
+
+        # Ensure the directory structure exists
+        build_dir = Path(DEFAULT_MTL_FFMPEG_PATH).parent
+        host.connection.execute_command(f"mkdir -p {build_dir}", shell=True, timeout=10)
 
         check_dir = host.connection.execute_command(
             f"[ -d {DEFAULT_MTL_FFMPEG_PATH} ] && echo 'exists' || echo 'not exists'",
@@ -525,7 +566,17 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
         logger.info(f"Step 2: Clone and patch FFmpeg {mtl_ffmpeg_version}")
         ffmpeg_dir = DEFAULT_FFMPEG_PATH
 
-        # clean all previous changes
+        # Make sure the FFmpeg repo directory exists
+        check_ffmpeg_dir = host.connection.execute_command(
+            f"[ -d {ffmpeg_dir} ] && echo 'exists' || echo 'not exists'",
+            shell=True,
+        ).stdout.strip()
+
+        if check_ffmpeg_dir != "exists":
+            logger.error(f"FFmpeg repository not found at {ffmpeg_dir}")
+            return False
+
+        # Clean all previous changes
         host.connection.execute_command(
             f"rm -rf .git/rebase-apply && git clean -fd && git reset --hard origin/release/{mtl_ffmpeg_version}",
             cwd=ffmpeg_dir,
@@ -536,7 +587,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
 
         # Apply MTL patches
         res = host.connection.execute_command(
-            f"git am /opt/intel/mtl/ecosystem/ffmpeg_plugin/{mtl_ffmpeg_version}/*.patch",
+            f"git am {mtl_path}/ecosystem/ffmpeg_plugin/{mtl_ffmpeg_version}/*.patch",
             cwd=ffmpeg_dir,
             shell=True,
             timeout=30,
@@ -604,7 +655,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
             return False
 
         logger.info(
-            f"Successfully built FFmpeg {mtl_ffmpeg_version} with MTL support on host {host.name}"
+            f"Successfully built FFmpeg {mtl_ffmpeg_version} with MTL support at {DEFAULT_MTL_FFMPEG_PATH}"
         )
 
     return True
