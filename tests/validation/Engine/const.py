@@ -13,6 +13,7 @@ MCM_RXTXAPP_RUN_TIMEOUT = MCM_ESTABLISH_TIMEOUT * DEFAULT_LOOP_COUNT
 MAX_TEST_TIME_DEFAULT = 60
 STOP_GRACEFULLY_PERIOD = 2  # seconds
 
+BUILD_DIR = "_build"
 MCM_PATH = "/opt/intel/mcm"  # Default path for MCM installation
 MTL_PATH = f"{MCM_PATH}/_build/mtl"  # Default path for Media Transport Library
 MEDIA_PROXY_PORT = 8002  # Default port for Media Proxy
@@ -21,6 +22,9 @@ DEFAULT_FFMPEG_PATH = "/opt/intel/ffmpeg"  # Default path for FFmpeg installatio
 DEFAULT_MTL_PATH = "/opt/intel/mtl"  # Default path for Media Transport Library
 DEFAULT_OPENH264_PATH = "/opt/intel/openh264"  # Default path for OpenH264 installation
 
+OPENH264_VERSION_TAG = "openh264v2.4.0"
+
+ALLOWED_FFMPEG_VERSIONS = ["6.0", "7.0", "7.1"]
 DEFAULT_MCM_FFMPEG_VERSION = "7.0"
 DEFAULT_MCM_FFMPEG_PATH = (
     f"{MCM_PATH}/{DEFAULT_MCM_FFMPEG_VERSION.replace('.', '_')}_mcm_build"

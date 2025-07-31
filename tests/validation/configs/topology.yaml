@@ -6,15 +6,15 @@ hosts:
     instantiate: true
     role: sut
     network_interfaces:
-      - interface_name: {{ mesh_agent_interface1|default('eth1') }}
-      - interface_name: {{ mesh_agent_interface2|default('eth2') }}
+      - pci_device: 8086:1592
+        all_interfaces: true 
     connections:
-      - ip_address: {{ ip_address }}
+      - ip_address: 10.123.232.220
         connection_type: SSHConnection
         connection_options:
-          port: {{ port|default(22) }}
-          username: {{ username }}
-          password: {{ password }}
+          port: 22
+          username: root
+          password: gta
     extra_info:
       input_path: /opt/intel/integrity/
       ffmpeg_path: ffmpeg
@@ -22,11 +22,11 @@ hosts:
       integrity_path: /opt/intel/val_tests/validation/common/integrity
       mtl_path: /opt/intel/mtl
       nicctl_path: /opt/intel/mtl/script
-      media_proxy: # st2110 and rdma dev and ips are optional but remember that it overrites the default values and must be set in host
-        st2110: {{ st2110|default(true) }} # set it to true if you want to use st2110
+      mesh_agent:
+        control_port: 8100
+        proxy_port: 50051
+      media_proxy:
         sdk_port: 8002
-        st2110_dev: {{ st2110_dev }}
-        st2110_ip: {{ st2110_ip }}
-        rdma: {{ rdma|default(true) }} # set it to true if you want to use rdma
-        rdma_ip: {{ rdma_ip }}
-        no_proxy: {{ no_proxy|default('127.0.0.1') }}
+        st2110: true
+        rdma: true
+        rdma_ports: '9100-9999'
