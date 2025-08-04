@@ -38,3 +38,13 @@ flowchart LR
     proxy3 --> rxC1
     proxy3 --> rxC2
 ```
+
+### Payload Options
+
+* Blob
+* Video – Uncompressed
+* Audio
+
+### Test Cases
+
+For detailed test cases, refer to the centralized [Test Cases documentation](../SCENARIO.md#test-cases).

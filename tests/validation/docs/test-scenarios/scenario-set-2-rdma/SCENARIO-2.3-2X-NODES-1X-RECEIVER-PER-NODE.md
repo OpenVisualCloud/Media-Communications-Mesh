@@ -27,9 +27,17 @@ flowchart LR
     sw --> proxy2
 ```
 
+### Payload Options
+
+* Blob
+* Video – Uncompressed
+* Audio
+
 ### Test Cases
 
-#### 2.2.1 Standalone
+For detailed test cases, refer to the centralized [Test Cases documentation](../SCENARIO.md#test-cases).
+
+#### Standalone
 #### Node A
 
 ```bash
@@ -71,11 +79,11 @@ sudo media_proxy -r <IP_A> -p 9300-9399 -t 8003
 ```
 
 ```bash
-sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxApp client_rx.json connection_rx.json output_new.yuv
+sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxVideoApp client_rx.json connection_rx.json output_new.yuv
 ```
 
 ```bash
-sudo MCM_MEDIA_PROXY_PORT=8003 ./TxApp client_tx.json connection_tx.json .input_video.yuv
+sudo MCM_MEDIA_PROXY_PORT=8003 ./TxVideoApp client_tx.json connection_tx.json .input_video.yuv
 ```
 
 #### Node B
@@ -118,12 +126,10 @@ sudo NO_PROXY=<IP_A> media_proxy -r <IP_B> -p 9300-9399 -t 8003 --agent=<IP_A>:5
 ```
 
 ```bash
-sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxApp client_rx.json connection_rx.json output_new.yuv
+sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxVideoApp client_rx.json connection_rx.json output_new.yuv
 ```
 
-##### 2.2.1.1 
-
-#### 2.2.2 FFmpeg
+#### FFmpeg
 
 #### Node A
 ```bash
@@ -145,4 +151,3 @@ sudo NO_PROXY=$NO_PROXY,<IP_A> media_proxy -r <IP_B> -p 9300-9399 -t 8003 --agen
 sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -f mcm -conn_type multipoint-group -frame_rate 60 -video_size 1280x720 -pixel_format yuv422p10le -i - ./out_video.yuv -y
 ```
 
-##### 2.2.2.1 Default

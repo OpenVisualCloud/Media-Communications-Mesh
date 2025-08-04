@@ -25,9 +25,17 @@ flowchart LR
     sw --> proxy2
 ```
 
+### Payload Options
+
+* Blob
+* Video – Uncompressed
+* Audio
+
 ### Test Cases
 
-#### 2.2.1 Standalone
+For detailed test cases, refer to the centralized [Test Cases documentation](../SCENARIO.md#test-cases).
+
+#### Standalone
 
 #### Blob
 
@@ -66,13 +74,14 @@ flowchart LR
         "payload": {
             "blob": {}
         },
-        "maxPayloadSize": 2097152
+        "maxPayloadSize": 102400,
+        "connCreationDelayMilliseconds": 100
     }
     ```
 
 5. Start the transmitter application:
     ```bash
-    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxApp client_tx.json connection_tx.json input_video.yuv
+    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxBlobApp client_tx.json connection_tx.json /mnt/media/random_data.bin
     ```
 
 #### Node B
@@ -105,15 +114,15 @@ flowchart LR
         "payload": {
             "blob": {}
         },
-        "maxPayloadSize": 2097152
+        "maxPayloadSize": 102400,
+        "connCreationDelayMilliseconds": 100
     }
     ```
 
 4. Start the receiver application:
     ```bash
-    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxApp client_rx.json connection_rx.json output_new.yuv
+    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxBlobApp client_rx.json connection_rx.json ./output.bin
     ```
-
 
 #### Video
 
@@ -162,7 +171,7 @@ flowchart LR
 
 5. Start the transmitter application:
     ```bash
-    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxApp client_tx.json connection_tx.json input_video.yuv
+    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxVideoApp client_tx.json connection_tx.json input_video.yuv
     ```
 
 #### Node B
@@ -205,7 +214,7 @@ flowchart LR
 
 4. Start the receiver application:
     ```bash
-    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxApp client_rx.json connection_rx.json output_new.yuv
+    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxVideoApp client_rx.json connection_rx.json output_new.yuv
     ```
 
 #### Audio
@@ -255,7 +264,7 @@ flowchart LR
 
 5. Start the transmitter application:
     ```bash
-    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxApp client_tx.json connection_tx.json input_video.yuv
+    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxAudioApp client_tx.json connection_tx.json input_video.yuv
     ```
 
 #### Node B
@@ -298,64 +307,10 @@ flowchart LR
 
 4. Start the receiver application:
     ```bash
-    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxApp client_rx.json connection_rx.json output_new.yuv
+    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxAudioApp client_rx.json connection_rx.json output_new.yuv
     ```
 
-#### Blob
-
-| Test Case | Data Size | Data Source  | Notes |
-|-----------|-----------|--------------|-------|
-| 2.2.1.1   | 100 MB    | /dev/random  | Test transmission of random binary data block |
-
-#### Video
-
-| Test Case | Resolution | Framerate (FPS)  | Color Format            | Interlace   | Packing | Pacing | Notes                       |
-|-----------|------------|------------------|-------------------------|-------------|---------|--------|-----------------------------|
-| 2.2.1.2   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Default configuration       |
-| 2.2.1.3   | 1920x1080  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Test different framerate    |
-| 2.2.1.4   | 3840x2160  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Test higher resolution      |
-| 2.2.1.5   | 3840x2160  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | gpm     | Wide   | Test higher res & framerate |
-| 2.2.1.6   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | bpm     | Wide   | Test different packing      |
-| 2.2.1.7   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm_sl  | Wide   | Test different packing      |
-| 2.2.1.8   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Narrow | Test different pacing       |
-| 2.2.1.9   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | gpm     | Linear | Test different pacing       |
-
-Json parameters:
-
-| Test Case | WIDTH | HEIGHT | FPS  | PIXEL_FORMAT    |
-|-----------|-------|--------|------|-----------------|
-| 2.2.1.2   | 1920  | 1080   | 60   | yuv422p10le     |
-| 2.2.1.3   | 1920  | 1080   | 59.94| yuv422p10le     |
-| 2.2.1.4   | 3840  | 2160   | 60   | yuv422p10le     |
-| 2.2.1.5   | 3840  | 2160   | 59.94| yuv422p10le     |
-| 2.2.1.6   | 1920  | 1080   | 60   | yuv422p10le     |
-| 2.2.1.7   | 1920  | 1080   | 60   | yuv422p10le     |
-| 2.2.1.8   | 1920  | 1080   | 60   | yuv422p10le     |
-| 2.2.1.9   | 1920  | 1080   | 60   | yuv422p10le     |
-
-
-#### Audio
-
-| Test Case | Audio Format           | Sample Rate | Number of Channels | packetTime | Notes                                       |
-|-----------|------------------------|-------------|--------------------|------------|---------------------------------------------|
-| 2.2.1.10  | PCM 8-bit Big-Endian   | 44100 Hz    | Mono               | 1.09ms     | Default configuration for basic audio test  |
-| 2.2.1.11  | PCM 16-bit Big-Endian  | 48000 Hz    | Stereo             | 1ms        | Common configuration for high-quality audio |
-| 2.2.1.12  | PCM 24-bit Big-Endian  | 96000 Hz    | Mono               | 1ms        | High sample rate for professional audio     |
-| 2.2.1.13  | PCM 16-bit Big-Endian  | 44100 Hz    | Stereo             | 1ms        | Test lower sample rate with stereo          |
-| 2.2.1.14  | PCM 24-bit Big-Endian  | 48000 Hz    | Mono               | 1ms        | Test high bit depth with standard sample rate |
-
-Json parameters:
-
-| Test Case | CHANNELS | SAMPLE_RATE | AUDIO_ENCODING | PACKET_TIME |
-|-----------|----------|-------------|----------------|-------------|
-| 2.2.1.10  | 1        | 44100       | pcm_s8         | 1.09ms      |
-| 2.2.1.11  | 2        | 48000       | pcm_s16be      | 1ms         |
-| 2.2.1.12  | 1        | 96000       | pcm_s24be      | 1ms         |
-| 2.2.1.13  | 2        | 44100       | pcm_s16be      | 1.09ms      |
-| 2.2.1.14  | 1        | 48000       | pcm_s24be      | 1ms         |
-
-
-#### 2.2.2 FFmpeg
+#### FFmpeg
 
 #### Blob
 
@@ -425,25 +380,3 @@ sudo MCM_MEDIA_PROXY_PORT=8003 ffmpeg -f mcm_audio_pcm<AUDIO_ENCODING> \
     -i - \
     <AUDIO_OUTPUT_FILE_PATH> -y
 ```
-
-#### Blob
-
-Not supported
-
-#### Video
-| Test Case | Resolution | Framerates (FPS) | Color Format            | Interlace   | Notes                       |
-|-----------|------------|------------------|-------------------------|-------------|-----------------------------|
-| 2.2.2.1   | 1920x1080  | 60               | YUV 4:2:2 10-bit planar | Progressive | Default configuration       |
-| 2.2.2.2   | 1920x1080  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test different framerate    |
-| 2.2.2.3   | 3840x2160  | 60               | YUV 4:2:2 10-bit planar | Progressive | Test higher resolution      |
-| 2.2.2.4   | 3840x2160  | 59.94            | YUV 4:2:2 10-bit planar | Progressive | Test higher res & framerate |
-
-
-#### Audio
-
-| Test Case | Audio Format           | Sample Rate | Number of Channels | Notes                                       |
-|-----------|------------------------|-------------|--------------------|---------------------------------------------|
-| 2.2.2.5   | PCM 16-bit Big-Endian  | 48000 Hz   | Mono               | Default configuration for FFmpeg audio test |
-| 2.2.2.6   | PCM 24-bit Big-Endian  | 96000 Hz   | Stereo             | High-quality audio configuration            |
-| 2.2.2.7   | PCM 16-bit Big-Endian  | 96000 Hz   | Stereo             | Test high sample rate with stereo           |
-| 2.2.2.8   | PCM 24-bit Big-Endian  | 48000 Hz   | Mono               | Test high bit depth with standard sample rate |
