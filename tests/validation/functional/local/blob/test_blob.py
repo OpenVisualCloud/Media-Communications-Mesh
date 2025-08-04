@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "file", 
+    "file",
     [
         pytest.param("random_bin_100M", marks=pytest.mark.smoke),
-    ]
+    ],
 )
 def test_blob(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
@@ -64,9 +64,8 @@ def test_blob(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> 
     rx_executor.stop()
 
     # TODO add validate() function to check if the output file is correct
-    
+
     rx_executor.cleanup()
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-

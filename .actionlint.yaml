@@ -1,0 +1,2 @@
+runner-label:
+  - DPDK  # Custom label for DPDK-enabled runners

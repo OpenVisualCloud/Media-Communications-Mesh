@@ -20,14 +20,14 @@ logger = logging.getLogger(__name__)
     "file",
     [
         "i720p25",
-        "i720p30", 
+        "i720p30",
         pytest.param("i1080p25", marks=pytest.mark.smoke),
         pytest.param("i1080p30", marks=pytest.mark.smoke),
         "i1080p50",
-        "i1080p60", 
+        "i1080p60",
         "i2160p25",
         "i2160p30",
-    ]
+    ],
 )
 def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
@@ -76,4 +76,3 @@ def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) ->
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-

@@ -274,11 +274,17 @@ def cleanup_processes(hosts: dict) -> None:
                     logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
         for pattern in ["^Rx[A-Za-z]+App$", "^Tx[A-Za-z]+App$"]:
             try:
-                connection.execute_command(f"pgrep -f '{pattern}'", stderr_to_stdout=True)
-                connection.execute_command(f"pkill -9 -f '{pattern}'", stderr_to_stdout=True)
+                connection.execute_command(
+                    f"pgrep -f '{pattern}'", stderr_to_stdout=True
+                )
+                connection.execute_command(
+                    f"pkill -9 -f '{pattern}'", stderr_to_stdout=True
+                )
             except Exception as e:
                 if not (hasattr(e, "returncode") and e.returncode == 1):
-                    logger.warning(f"Failed to check/kill processes matching {pattern} on {host.name}: {e}")
+                    logger.warning(
+                        f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"
+                    )
     logger.info("Cleanup of processes completed.")
 
 
