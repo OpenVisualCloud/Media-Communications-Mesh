@@ -314,7 +314,7 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config) -> None
 
 def test_build_mcm_ffmpeg(build_mcm_ffmpeg, hosts, test_config):
     """
-    Test the MCM FFmpeg build process. 
+    Test the MCM FFmpeg build process.
     mcm_ffmpeg_rebuild needs to be set to True.
     """
     logger.info("Testing MCM FFmpeg build process")

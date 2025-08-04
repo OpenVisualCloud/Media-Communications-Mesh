@@ -524,7 +524,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
     if not mtl_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
         logger.error(f"Invalid mtl_ffmpeg_version: {mtl_ffmpeg_version}")
         return False
-    
+
     enable_gpu_direct = test_config.get("mtl_ffmpeg_gpu_direct", False)
 
     for host in hosts.values():
@@ -617,7 +617,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
             "--enable-encoder=libopenh264",
             "--enable-mtl",
             f'--extra-ldflags="-L{DEFAULT_OPENH264_PATH}/lib"',
-            f'--extra-cflags="-I{DEFAULT_OPENH264_PATH}/include -I{mtl_path}/include"'
+            f'--extra-cflags="-I{DEFAULT_OPENH264_PATH}/include -I{mtl_path}/include"',
         ]
 
         # Add GPU direct support only if explicitly enabled and headers exist
@@ -625,9 +625,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
             # Check both possible GPU header locations
             gpu_header_paths = [
                 f"{mtl_path}/include/mtl_gpu_direct",
-                f"{mtl_path}/include/gpu"
+                f"{mtl_path}/include/gpu",
             ]
-            
+
             gpu_headers_found = False
             for gpu_path in gpu_header_paths:
                 try:
@@ -635,11 +635,13 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
                         f"test -d {gpu_path}",
                         shell=True,
                         stderr_to_stdout=True,
-                        expected_return_codes={0, 1}  # Allow both success and failure
+                        expected_return_codes={0, 1},  # Allow both success and failure
                     )
                     if res.return_code == 0:
                         logger.info(f"Found GPU headers at {gpu_path}")
-                        configure_options.append(f'--extra-cflags="-DMTL_GPU_DIRECT_ENABLED -I{gpu_path}"')
+                        configure_options.append(
+                            f'--extra-cflags="-DMTL_GPU_DIRECT_ENABLED -I{gpu_path}"'
+                        )
                         gpu_headers_found = True
                         break
                 except Exception as e:
@@ -647,7 +649,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
                     continue
 
             if not gpu_headers_found:
-                logger.warning("GPU direct support requested but headers not found. Continuing without GPU support.")
+                logger.warning(
+                    "GPU direct support requested but headers not found. Continuing without GPU support."
+                )
                 enable_gpu_direct = False
 
         # Join configure options and continue with build
@@ -670,7 +674,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
             "make clean",
             f"make -j$(nproc)",
             "sudo make install",
-            "sudo ldconfig"
+            "sudo ldconfig",
         ]
 
         for cmd in build_commands:
