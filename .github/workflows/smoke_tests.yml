@@ -2,8 +2,9 @@ name: smoke-tests-bare-metal
 
 on:
   push:
-    branches:
-      - 'smoke-tests'
+    branches: ["main", "smoke-tests"]
+  pull_request:
+    branches: [ "main" ]
   workflow_dispatch:
     inputs:
       branch-to-checkout:
@@ -36,15 +37,21 @@ env:
   MTL_FFMPEG_7_0: ./mtl-binaries/ffmpeg-7-0/ffmpeg
   MCM_FFMPEG_6_1: ./mcm-binaries/ffmpeg-6-1/ffmpeg
   MTL_FFMPEG_6_1: ./mtl-binaries/ffmpeg-6-1/ffmpeg
+
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   call-base-build:
     uses: ./.github/workflows/base_build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
   validation-prepare-setup-mcm:
-    runs-on: [Linux, self-hosted, DPDK]
+    runs-on: [Linux, self-hosted]
     needs: call-base-build
     timeout-minutes: 60
     outputs:
@@ -97,7 +104,7 @@ jobs:
           sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
   validation-run-tests:
     needs: validation-prepare-setup-mcm
-    runs-on: [Linux, self-hosted, DPDK]
+    runs-on: [Linux, self-hosted]
     timeout-minutes: 60
     env:
       PYTEST_RETRIES: '3'
