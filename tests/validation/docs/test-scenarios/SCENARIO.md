@@ -1,6 +1,8 @@
+# Test Scenario Documentation
+
 > **Note:** This document provides generic information for all scenarios in the `/Media-Communications-Mesh/tests/validation/docs/test-scenarios/` directory. Provided test cases may not cover all supported parameters.
 
-# Transmission Modes
+## Transmission Modes
 
 * standalone - with user application built on API
 * FFmpeg - using FFmpeg plugin
@@ -98,7 +100,7 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 |                    | 2 (ST - Stereo)     | 2 (ST - Stereo)       |
 | Test mode          | frame               | frame                 |
 
-*1 ms Packet Time is not available for 44100 Hz sample rate. It would require a non-natural number of samples (since 44100 samples/second * 0.001 seconds = 44.1 samples), which is not possible. Adjust the packet time to 1.09ms for 44100 Hz (48 samples per packet).
+*1 ms Packet Time is not available for 44100 Hz sample rate. It would require a non-natural number of samples (since 44100 samples/second *0.001 seconds = 44.1 samples*), which is not possible. Adjust the packet time to 1.09ms for 44100 Hz (48 samples per packet).
 
 
 # Test Cases
@@ -182,7 +184,7 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 
 2. Start `media_proxy` for the transmitter and receiver (always only a single instance per node):
    
-   Receiver side:
+Receiver side:
    ```bash
    sudo media_proxy        \
         -d <pci_device>    \
@@ -192,7 +194,7 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
         -t 8002
    ```
    
-   Transmitter side:
+Transmitter side:
    ```bash
    sudo media_proxy        \
         -d <pci_device>    \
