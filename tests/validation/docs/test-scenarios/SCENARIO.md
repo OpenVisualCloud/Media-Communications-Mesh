@@ -151,19 +151,19 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 
 ## Tested Parameters and Metrics
 
-#### Configuration Parameters
+### Configuration Parameters
 * **Buffer Size**: Size of memory buffers allocated for media transmission
 * **Metadata Size**: Maximum size of metadata attached to each frame
 * **Queue Capacity**: Number of buffers in allocated queue (configurable with `bufferQueueCapacity` parameter)
 * **Connection Delay**: Time between connection establishment and first frame transmission (configurable with `connCreationDelayMilliseconds`)
 
-#### Performance Metrics
+### Performance Metrics
 * **Frame Rate Accuracy**: Verifying that transmitted frames per second (fps) match the configured rate
 * **Reception Rate**: Confirming that received fps keeps up with sent fps without drops
 * **Frame Integrity**: Ensuring the number of frames received closely matches the number of frames sent
 * **Latency**: Measuring end-to-end delay between transmission and reception
 
-#### Testing Tools
+### Testing Tools
 * Built-in logging and statistics from Media Proxy
 * FFmpeg stats output (`-stats` option)
 * Custom test applications in the `tests/` directory
