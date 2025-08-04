@@ -1,12 +1,14 @@
+# Test Scenario Documentation
+
 > **Note:** This document provides generic information for all scenarios in the `/Media-Communications-Mesh/tests/validation/docs/test-scenarios/` directory. Provided test cases may not cover all supported parameters.
 
-# Transmission Modes
+## Transmission Modes
 
 * standalone - with user application built on API
 * FFmpeg - using FFmpeg plugin
 
 
-# Payload Options
+## Payload Options
 
 * Blob (random binary block)
 * Video – uncompressed (raw)
@@ -98,12 +100,12 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 |                    | 2 (ST - Stereo)     | 2 (ST - Stereo)       |
 | Test mode          | frame               | frame                 |
 
-*1 ms Packet Time is not available for 44100 Hz sample rate. It would require a non-natural number of samples (since 44100 samples/second * 0.001 seconds = 44.1 samples), which is not possible. Adjust the packet time to 1.09ms for 44100 Hz (48 samples per packet).
+*1 ms Packet Time is not available for 44100 Hz sample rate. It would require a non-natural number of samples (since 44100 samples/second *0.001 seconds = 44.1 samples*), which is not possible. Adjust the packet time to 1.09ms for 44100 Hz (48 samples per packet).
 
 
-# Test Cases
+## Test Cases
 
-## Video Test Cases
+### Video Test Cases
 
 | # | Standalone / FFmpeg | Resolution | Framerate |
 |---|---------------------|------------|-----------|
@@ -147,15 +149,17 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 | 25 | FFmpeg | PCM 24-bit Big-Endian (pcm_s24be) | 96000 Hz | 1 ms | 1 (M - Mono) |
 | 26 | FFmpeg | PCM 24-bit Big-Endian (pcm_s24be) | 96000 Hz | 1 ms | 2 (S - Stereo) |
 
+## Tested Parameters and Metrics
+
 ## Blob Test Cases
 
 | # | Standalone / FFmpeg | Data size | Packet size |
 |---|---------------------|-----------|-------------|
 | 1 | Standalone | 100 MB | 100 kB |
 
-# Tested Parameters and Metrics
+## Tested Parameters and Metrics
 
-## Configuration Parameters
+### Configuration Parameters
 * **Buffer Size**: Size of memory buffers allocated for media transmission
 * **Metadata Size**: Maximum size of metadata attached to each frame
 * **Queue Capacity**: Number of buffers in allocated queue (configurable with `bufferQueueCapacity` parameter)
@@ -173,7 +177,7 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 * Custom test applications in the `tests/` directory
 
 
-# Manual test execution
+## Manual Test Execution
 
 1. Start one `mesh-agent` per cluster:
    ```bash
@@ -181,8 +185,8 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
    ```
 
 2. Start `media_proxy` for the transmitter and receiver (always only a single instance per node):
-   
-   Receiver side:
+
+Receiver side:
    ```bash
    sudo media_proxy        \
         -d <pci_device>    \
@@ -191,8 +195,8 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
         -p 9200-9299       \
         -t 8002
    ```
-   
-   Transmitter side:
+
+Transmitter side:
    ```bash
    sudo media_proxy        \
         -d <pci_device>    \
@@ -230,7 +234,7 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 This sequence ensures that the receiver is ready to receive the data as soon as possible. Even then, there is a connection initialization delay, resulting in a few packets missing at the beginning of the transmission. Such behavior should be considered normal, except when that delay is longer than usual (more than a few frames).
 
 
-# JT-NM Compliance Testing
+## JT-NM Compliance Testing
 
 Media transmitted with SMPTE ST 2110 protocols is received on a test system with a `tcpdump` session capturing network traffic to a `*.pcap` file. This compliance capture is performed separately from the main tests to avoid performance issues that might affect the measurements.
 
