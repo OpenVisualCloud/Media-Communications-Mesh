@@ -514,17 +514,6 @@ def build_openh264(host: Host, work_dir: str) -> bool:
 def build_mtl_ffmpeg(hosts, test_config: dict):
     """
     Build and install FFmpeg with the Media Transport Library (MTL) plugin.
-
-    Steps:
-    1. Build openh264 (dependency)
-    2. Clone and patch FFmpeg with MTL-specific patches
-    3. Configure and build FFmpeg with MTL support
-
-    This fixture enables testing of ST20P (raw video), ST22 (compressed video),
-    ST30P (audio), and GPU direct features with FFmpeg.
-
-    The FFmpeg binaries and libraries will be installed to:
-    /opt/intel/_build/ffmpeg-{version}/ffmpeg-{version}_mtl_build/
     """
     if not test_config.get("mtl_ffmpeg_rebuild", False):
         return True
@@ -535,6 +524,7 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
     if not mtl_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
         logger.error(f"Invalid mtl_ffmpeg_version: {mtl_ffmpeg_version}")
         return False
+    
     enable_gpu_direct = test_config.get("mtl_ffmpeg_gpu_direct", False)
 
     for host in hosts.values():
@@ -615,48 +605,87 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
         # Step 3: Configure and build FFmpeg with MTL support
         logger.info("Step 3: Configure and build FFmpeg with MTL support")
 
-        # Base configure options with the openh264 path
-        configure_options = (
-            f"--prefix={DEFAULT_MTL_FFMPEG_PATH} --enable-shared --disable-static "
-            f"--enable-nonfree --enable-pic --enable-gpl "
-            f"--enable-libopenh264 --enable-encoder=libopenh264 --enable-mtl "
-            f'--extra-ldflags="-L{DEFAULT_OPENH264_PATH}/lib" '
-            f'--extra-cflags="-I{DEFAULT_OPENH264_PATH}/include"'
-        )
+        # Base configure options
+        configure_options = [
+            f"--prefix={DEFAULT_MTL_FFMPEG_PATH}",
+            "--enable-shared",
+            "--disable-static",
+            "--enable-nonfree",
+            "--enable-pic",
+            "--enable-gpl",
+            "--enable-libopenh264",
+            "--enable-encoder=libopenh264",
+            "--enable-mtl",
+            f'--extra-ldflags="-L{DEFAULT_OPENH264_PATH}/lib"',
+            f'--extra-cflags="-I{DEFAULT_OPENH264_PATH}/include -I{mtl_path}/include"'
+        ]
 
-        # Add GPU direct support if requested
+        # Add GPU direct support only if explicitly enabled and headers exist
         if enable_gpu_direct:
-            configure_options += ' --extra-cflags="-DMTL_GPU_DIRECT_ENABLED"'
+            # Check both possible GPU header locations
+            gpu_header_paths = [
+                f"{mtl_path}/include/mtl_gpu_direct",
+                f"{mtl_path}/include/gpu"
+            ]
+            
+            gpu_headers_found = False
+            for gpu_path in gpu_header_paths:
+                try:
+                    res = host.connection.execute_command(
+                        f"test -d {gpu_path}",
+                        shell=True,
+                        stderr_to_stdout=True,
+                        expected_return_codes={0, 1}  # Allow both success and failure
+                    )
+                    if res.return_code == 0:
+                        logger.info(f"Found GPU headers at {gpu_path}")
+                        configure_options.append(f'--extra-cflags="-DMTL_GPU_DIRECT_ENABLED -I{gpu_path}"')
+                        gpu_headers_found = True
+                        break
+                except Exception as e:
+                    logger.warning(f"Error checking GPU headers at {gpu_path}: {e}")
+                    continue
 
-        # Run configure with options
+            if not gpu_headers_found:
+                logger.warning("GPU direct support requested but headers not found. Continuing without GPU support.")
+                enable_gpu_direct = False
+
+        # Join configure options and continue with build
+        configure_command = "./configure " + " ".join(configure_options)
+
+        # Run configure
         res = host.connection.execute_command(
-            f"./configure {configure_options}",
-            cwd=ffmpeg_dir,
+            configure_command,
+            cwd=DEFAULT_FFMPEG_PATH,
             shell=True,
             timeout=120,
             stderr_to_stdout=True,
         )
-        logger.info(f"FFmpeg configure output: {res.stdout}")
         if res.return_code != 0:
             logger.error("Failed to configure FFmpeg with MTL support.")
             return False
 
-        # Build and install
-        res = host.connection.execute_command(
-            "make -j $(nproc) && sudo make install && sudo ldconfig",
-            cwd=ffmpeg_dir,
-            shell=True,
-            timeout=300,
-            stderr_to_stdout=True,
-        )
-        logger.info(f"FFmpeg build and install output: {res.stdout}")
-        if res.return_code != 0:
-            logger.error("Failed to build and install FFmpeg with MTL support.")
-            return False
+        # Build and install with better error handling
+        build_commands = [
+            "make clean",
+            f"make -j$(nproc)",
+            "sudo make install",
+            "sudo ldconfig"
+        ]
 
-        logger.info(
-            f"Successfully built FFmpeg {mtl_ffmpeg_version} with MTL support at {DEFAULT_MTL_FFMPEG_PATH}"
-        )
+        for cmd in build_commands:
+            res = host.connection.execute_command(
+                cmd,
+                cwd=DEFAULT_FFMPEG_PATH,
+                shell=True,
+                timeout=300,
+                stderr_to_stdout=True,
+            )
+            if res.return_code != 0:
+                logger.error(f"Failed to execute '{cmd}'")
+                return False
+
+        logger.info(f"Successfully built FFmpeg {mtl_ffmpeg_version} with MTL support")
 
     return True
 
