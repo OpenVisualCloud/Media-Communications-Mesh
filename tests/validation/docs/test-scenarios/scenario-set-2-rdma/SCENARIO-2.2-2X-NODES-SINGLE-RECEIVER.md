@@ -264,7 +264,7 @@ For detailed test cases, refer to the centralized [Test Cases documentation](../
 
 5. Start the transmitter application:
     ```bash
-    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxAudioApp client_tx.json connection_tx.json input_video.yuv
+    sudo MCM_MEDIA_PROXY_PORT=8003 ./TxAudioApp client_tx.json connection_tx.json input_audio.pcm
     ```
 
 #### Node B
@@ -307,7 +307,7 @@ For detailed test cases, refer to the centralized [Test Cases documentation](../
 
 4. Start the receiver application:
     ```bash
-    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxAudioApp client_rx.json connection_rx.json output_new.yuv
+    sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxAudioApp client_rx.json connection_rx.json output_audio.pcm
     ```
 
 #### FFmpeg

@@ -83,7 +83,7 @@ sudo NO_PROXY=<IP_A> MCM_MEDIA_PROXY_PORT=8003 ./RxVideoApp client_rx.json conne
 ```
 
 ```bash
-sudo MCM_MEDIA_PROXY_PORT=8003 ./TxVideoApp client_tx.json connection_tx.json .input_video.yuv
+sudo MCM_MEDIA_PROXY_PORT=8003 ./TxVideoApp client_tx.json connection_tx.json input_video.yuv
 ```
 
 #### Node B
