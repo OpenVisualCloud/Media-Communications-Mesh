@@ -7,13 +7,11 @@
 * standalone - with user application built on API
 * FFmpeg - using FFmpeg plugin
 
-
-# Payload Options
+## Payload Options
 
 * Blob (random binary block)
 * Video – uncompressed (raw)
 * Audio
-
 
 ## Blob (random binary block) format
 
@@ -23,7 +21,6 @@ Generation command example using `dd` tool:
 ```bash
 dd if=/dev/random of=random_data.bin bs=1 count=100000000
 ```
-
 
 ## Uncompressed video formats
 
@@ -43,7 +40,7 @@ dd if=/dev/random of=random_data.bin bs=1 count=100000000
 |                 | linear               | *cannot be set in FFmpeg plugin* |
 
 <!-- Note: The FFmpeg plugin uses "narrow" pacing as the default according to the SDK API examples.
-     Packing mode is not directly configurable in the FFmpeg plugin as it uses the SDK's default behavior. -->
+   Packing mode is not directly configurable in the FFmpeg plugin as it uses the SDK's default behavior. -->
 
 ## Analyzing Media Files
 
@@ -65,7 +62,6 @@ To verify audio file parameters:
 ffprobe -v quiet -print_format json -show_streams -select_streams a:0 <audio_file>
 ```
 
-
 ### Information about video transmission parameters
 
 Parameters provided in brackets refer to SDP (Session Description Protocol) values.
@@ -84,7 +80,6 @@ Note: When using FFmpeg plugin with MCM, the pacing is set to "narrow" by defaul
 
 This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.tv/download/technical_recommendations/VSF_TR-05_2018-06-23.pdf) ([CC-BY-ND](https://creativecommons.org/licenses/by-nd/4.0/)), accessed on 2025-03-03.
 
-
 ## Audio formats
 
 | Parameter          | Standalone          | FFmpeg                |
@@ -102,10 +97,9 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 
 *1 ms Packet Time is not available for 44100 Hz sample rate. It would require a non-natural number of samples (since 44100 samples/second *0.001 seconds = 44.1 samples*), which is not possible. Adjust the packet time to 1.09ms for 44100 Hz (48 samples per packet).
 
+## Test Cases
 
-# Test Cases
-
-## Video Test Cases
+### Video Test Cases
 
 | # | Standalone / FFmpeg | Resolution | Framerate |
 |---|---------------------|------------|-----------|
@@ -118,7 +112,7 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 | 7 | FFmpeg | 3840x2160 (4k) | 59.94 (60000/1001) |
 | 8 | FFmpeg | 3840x2160 (4k) | 60 |
 
-## Audio Test Cases
+### Audio Test Cases
 
 | # | Standalone / FFmpeg | Sample depth | Samplerate | Packettime | Channels |
 |---|---------------------|--------------|------------|------------|----------|
@@ -149,33 +143,32 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 | 25 | FFmpeg | PCM 24-bit Big-Endian (pcm_s24be) | 96000 Hz | 1 ms | 1 (M - Mono) |
 | 26 | FFmpeg | PCM 24-bit Big-Endian (pcm_s24be) | 96000 Hz | 1 ms | 2 (S - Stereo) |
 
-## Blob Test Cases
+### Blob Test Cases
 
 | # | Standalone / FFmpeg | Data size | Packet size |
 |---|---------------------|-----------|-------------|
 | 1 | Standalone | 100 MB | 100 kB |
 
-# Tested Parameters and Metrics
+## Tested Parameters and Metrics
 
-## Configuration Parameters
+#### Configuration Parameters
 * **Buffer Size**: Size of memory buffers allocated for media transmission
 * **Metadata Size**: Maximum size of metadata attached to each frame
 * **Queue Capacity**: Number of buffers in allocated queue (configurable with `bufferQueueCapacity` parameter)
 * **Connection Delay**: Time between connection establishment and first frame transmission (configurable with `connCreationDelayMilliseconds`)
 
-## Performance Metrics
+#### Performance Metrics
 * **Frame Rate Accuracy**: Verifying that transmitted frames per second (fps) match the configured rate
 * **Reception Rate**: Confirming that received fps keeps up with sent fps without drops
 * **Frame Integrity**: Ensuring the number of frames received closely matches the number of frames sent
 * **Latency**: Measuring end-to-end delay between transmission and reception
 
-## Testing Tools
+#### Testing Tools
 * Built-in logging and statistics from Media Proxy
 * FFmpeg stats output (`-stats` option)
 * Custom test applications in the `tests/` directory
 
-
-# Manual test execution
+## Manual Test Execution
 
 1. Start one `mesh-agent` per cluster:
    ```bash
@@ -183,56 +176,55 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
    ```
 
 2. Start `media_proxy` for the transmitter and receiver (always only a single instance per node):
-   
+
 Receiver side:
    ```bash
    sudo media_proxy        \
-        -d <pci_device>    \
-        -i <st2110_ip>     \
-        -r <rdma_ip>       \
-        -p 9200-9299       \
-        -t 8002
+      -d <pci_device>    \
+      -i <st2110_ip>     \
+      -r <rdma_ip>       \
+      -p 9200-9299       \
+      -t 8002
    ```
-   
+
 Transmitter side:
    ```bash
    sudo media_proxy        \
-        -d <pci_device>    \
-        -i <st2110_ip>     \
-        -r <rdma_ip>       \
-        -p 9100-9199       \
-        -t 8001
+      -d <pci_device>    \
+      -i <st2110_ip>     \
+      -r <rdma_ip>       \
+      -p 9100-9199       \
+      -t 8001
    ```
 
 3. Start the receivers (e.g., using FFmpeg for video reception):
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8002 ffmpeg -f mcm                      \
-      -conn_type st2110                                              \
-      -transport st2110-20                                           \
-      -ip_addr <source_ip>                                           \
-      -port <port>                                                   \
-      -frame_rate <frame_rate>                                       \
-      -video_size <width>x<height>                                   \
-      -pixel_format <pixel_format>                                   \
-      -i - -f <output_format> <output_destination>
+    -conn_type st2110                                              \
+    -transport st2110-20                                           \
+    -ip_addr <source_ip>                                           \
+    -port <port>                                                   \
+    -frame_rate <frame_rate>                                       \
+    -video_size <width>x<height>                                   \
+    -pixel_format <pixel_format>                                   \
+    -i - -f <output_format> <output_destination>
    ```
 
 4. Start the transmitter (e.g., using FFmpeg for video transmission):
    ```bash
    sudo MCM_MEDIA_PROXY_PORT=8001 ffmpeg -i <input_file> -f mcm      \
-      -conn_type st2110                                              \
-      -transport st2110-20                                           \
-      -ip_addr <destination_ip>                                      \
-      -port <port>                                                   \
-      -frame_rate <frame_rate>                                       \
-      -video_size <width>x<height>                                   \
-      -pixel_format <pixel_format> -
+    -conn_type st2110                                              \
+    -transport st2110-20                                           \
+    -ip_addr <destination_ip>                                      \
+    -port <port>                                                   \
+    -frame_rate <frame_rate>                                       \
+    -video_size <width>x<height>                                   \
+    -pixel_format <pixel_format> -
    ```
 
 This sequence ensures that the receiver is ready to receive the data as soon as possible. Even then, there is a connection initialization delay, resulting in a few packets missing at the beginning of the transmission. Such behavior should be considered normal, except when that delay is longer than usual (more than a few frames).
 
-
-# JT-NM Compliance Testing
+## JT-NM Compliance Testing
 
 Media transmitted with SMPTE ST 2110 protocols is received on a test system with a `tcpdump` session capturing network traffic to a `*.pcap` file. This compliance capture is performed separately from the main tests to avoid performance issues that might affect the measurements.
 
