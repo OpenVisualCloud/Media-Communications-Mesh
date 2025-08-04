@@ -16,7 +16,7 @@ from mfd_connect.exceptions import (
 import pytest
 
 from common.nicctl import Nicctl
-from Engine.const import ( 
+from Engine.const import (
     ALLOWED_FFMPEG_VERSIONS,
     DEFAULT_FFMPEG_PATH,
     DEFAULT_INPUT_PATH,
@@ -401,7 +401,7 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
         if res.return_code != 0:
             logger.error(f"Command {cmd} failed with return code {res.return_code}.")
             return False
-            
+
         logger.info(
             f"Successfully built MCM FFmpeg {mcm_ffmpeg_version} at {DEFAULT_MCM_FFMPEG_PATH}"
         )
