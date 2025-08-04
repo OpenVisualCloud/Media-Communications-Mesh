@@ -4,35 +4,35 @@ on:
   push:
     branches: ["main", "smoke-tests"]
   pull_request:
-    branches: [ "main" ]
+    branches: ["main"]
   workflow_dispatch:
     inputs:
       branch-to-checkout:
         type: string
-        default: 'main'
+        default: "main"
         required: false
-        description: 'Branch name to use'
+        description: "Branch name to use"
       list_tests:
         type: choice
         required: false
-        description: 'List all tests before running'
+        description: "List all tests before running"
         options:
           - "true"
           - "false"
       markers:
         type: string
-        default: 'smoke'
+        default: "smoke"
         required: false
-        description: 'Markers to use for pytest'
+        description: "Markers to use for pytest"
 env:
-  BUILD_TYPE: 'Release'
-  DPDK_VERSION: '23.11'
-  DPDK_REBUILD: 'false'
-  MEDIA_PATH: '/mnt/media'
+  BUILD_TYPE: "Release"
+  DPDK_VERSION: "23.11"
+  DPDK_REBUILD: "false"
+  MEDIA_PATH: "/mnt/media"
   BUILD_DIR: "${{ github.workspace }}/_build"
-  MCM_BINARIES_DIR: './mcm-binaries'
-  MEDIA_PROXY: './mcm-binaries/media_proxy'
-  MESH_AGENT: './mcm-binaries/mesh-agent'
+  MCM_BINARIES_DIR: "./mcm-binaries"
+  MEDIA_PROXY: "./mcm-binaries/media_proxy"
+  MESH_AGENT: "./mcm-binaries/mesh-agent"
   MCM_FFMPEG_7_0: ./mcm-binaries/ffmpeg-7-0/ffmpeg
   MTL_FFMPEG_7_0: ./mtl-binaries/ffmpeg-7-0/ffmpeg
   MCM_FFMPEG_6_1: ./mcm-binaries/ffmpeg-6-1/ffmpeg
@@ -41,54 +41,57 @@ env:
 permissions:
   contents: read
 
-concurrency:
-  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
-  cancel-in-progress: true
-
 jobs:
   call-base-build:
     uses: ./.github/workflows/base_build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
+    concurrency:
+      group: build-${{ github.head_ref || github.run_id }}
+      cancel-in-progress: true
+
   validation-prepare-setup-mcm:
     runs-on: [Linux, self-hosted]
     needs: call-base-build
     timeout-minutes: 60
     outputs:
       pipenv-activate: ${{ steps.pipenv-install.outputs.VIRTUAL_ENV }}
+    concurrency:
+      group: setup-${{ github.head_ref || github.run_id }}
+      cancel-in-progress: true
     steps:
-      - name: 'preparation: Harden Runner'
+      - name: "preparation: Harden Runner"
         uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
         with:
           egress-policy: audit
-      - name: 'preparation: Restore valid repository owner and print env'
+      - name: "preparation: Restore valid repository owner and print env"
         if: always()
         run: |
           sudo chown -R "${USER}" "$(pwd)" || true
           env | grep BUILD_ || true
           env | grep DPDK_ || true
-      - name: 'preparation: Checkout MCM'
+      - name: "preparation: Checkout MCM"
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
           ref: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       - name: Install RxTxApp dependencies
         run: sudo apt-get update && sudo apt-get install -y libjansson-dev
-      - name: 'build RxTxApp'
+      - name: "build RxTxApp"
         working-directory: ${{ github.workspace }}/tests/tools/TestApp
         run: |
           mkdir build && cd build && \
           cmake .. && \
           make
-      - name: 'clone FFMPEG repository'
+      - name: "clone FFMPEG repository"
         run: |
           echo "Cloning FFMPEG repository"
-      - name: 'clone MTL repository'
+      - name: "clone MTL repository"
         run: |
           echo "Cloning MTL repository"
-      - name: 'build MTL FFMPEG'
+      - name: "build MTL FFMPEG"
         run: |
           echo "Building MTL FFMPEG"
-      - name: 'installation: Install pipenv environment'
+      - name: "installation: Install pipenv environment"
         working-directory: tests/validation
         id: pipenv-install
         run: |
@@ -96,7 +99,7 @@ jobs:
           source venv/bin/activate
           pip install -r requirements.txt
           echo "VIRTUAL_ENV=$PWD/venv/bin/activate" >> "$GITHUB_ENV"
-      - name: 'add user name to environment and config'
+      - name: "add user name to environment and config"
         run: |
           echo "USER=${USER}" >> "$GITHUB_ENV"
           sed -i "s/{{ USER }}/${USER}/g" tests/validation/configs/topology_config_workflow.yaml
@@ -107,21 +110,21 @@ jobs:
     runs-on: [Linux, self-hosted]
     timeout-minutes: 60
     env:
-      PYTEST_RETRIES: '3'
+      PYTEST_RETRIES: "3"
       MARKERS: ${{ github.event.inputs.markers || 'smoke' }}
       LIST_TESTS: ${{ github.event.inputs.list_tests || 'true' }}
     steps:
-      - name: 'preparation: Kill pytest routines'
+      - name: "preparation: Kill pytest routines"
         run: |
           sudo killall -SIGINT pipenv || true
           sudo killall -SIGINT pytest || true
-      - name: 'list all tests marked with ${{ env.MARKERS }}'
+      - name: "list all tests marked with ${{ env.MARKERS }}"
         if: ${{ env.LIST_TESTS == 'true' }}
         run: |
           sudo tests/validation/venv/bin/python3 -m pytest \
             --collect-only --quiet ./tests/validation/functional/ \
             -m "${{ env.MARKERS }}"
-      - name: 'execution: Run validation-bare-metal tests in virtual environment'
+      - name: "execution: Run validation-bare-metal tests in virtual environment"
         run: |
           sudo tests/validation/venv/bin/python3 -m pytest \
             --topology_config=tests/validation/configs/topology_config_workflow.yaml \
