@@ -7,9 +7,9 @@
 import pytest
 import logging
 
-from tests.validation.Engine.rx_tx_app_file_validation_utils import cleanup_file
+from Engine.rx_tx_app_file_validation_utils import cleanup_file
 
-from ....Engine.media_files import yuv_files
+from Engine.media_files import video_files_25_03
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
@@ -24,17 +24,13 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "video_type",
+    "file", 
     [
-        "i720p25",
-        "i720p30",
-        pytest.param("i1080p25", marks=pytest.mark.smoke),
-        "i1080p50",
-        "i1080p60",
-        "i2160p30",
-    ],
+        pytest.param("FullHD_59.94", marks=pytest.mark.smoke),
+        *[f for f in video_files_25_03.keys() if f != "FullHD_59.94"]
+    ]
 )
-def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) -> None:
+def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -50,10 +46,10 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
         rx_host.topology.extra_info.media_proxy["sdk_port"]
     )
 
-    frame_rate = str(yuv_files[video_type]["fps"])
-    video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
+    frame_rate = str(video_files_25_03[file]["fps"])
+    video_size = f'{video_files_25_03[file]["width"]}x{video_files_25_03[file]["height"]}'
     pixel_format = video_file_format_to_payload_format(
-        str(yuv_files[video_type]["file_format"])
+        str(video_files_25_03[file]["file_format"])
     )
     conn_type = McmConnectionType.mpg.value
 
@@ -63,7 +59,7 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
         video_size=video_size,
         pixel_format=pixel_format,
         stream_loop=False,
-        input_path=f'{test_config["tx"]["filepath"]}{yuv_files[video_type]["filename"]}',
+        input_path=f'{test_config["tx"]["filepath"]}{video_files_25_03[file]["filename"]}',
     )
     mcm_tx_outp = FFmpegMcmMemifVideoIO(
         f="mcm",
@@ -98,7 +94,7 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
         framerate=frame_rate,
         video_size=video_size,
         pixel_format=pixel_format,
-        output_path=f'{test_config["rx"]["filepath"]}test_{yuv_files[video_type]["filename"]}',
+        output_path=f'{test_config["rx"]["filepath"]}test_{video_files_25_03[file]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=rx_prefix_variables,
@@ -115,6 +111,8 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
     mcm_tx_executor.start()
     mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
     mcm_tx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
+
+    # TODO add validate() function to check if the output file is correct
 
     success = cleanup_file(rx_host.connection, str(mcm_rx_outp.output_path))
     if success:

@@ -37,6 +37,7 @@ env:
   MTL_FFMPEG_7_0: ./mtl-binaries/ffmpeg-7-0/ffmpeg
   MCM_FFMPEG_6_1: ./mcm-binaries/ffmpeg-6-1/ffmpeg
   MTL_FFMPEG_6_1: ./mtl-binaries/ffmpeg-6-1/ffmpeg
+  LOG_DIR: "${{ github.workspace }}/logs"
 
 permissions:
   contents: read
@@ -105,6 +106,7 @@ jobs:
           sed -i "s/{{ USER }}/${USER}/g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
   validation-run-tests:
     needs: validation-prepare-setup-mcm
     runs-on: [Linux, self-hosted]
@@ -132,3 +134,39 @@ jobs:
             ./tests/validation/functional/ \
             --template=html/index.html --report=report.html \
             -m "${{ env.MARKERS }}"
+      - name: "upload logs and reports"
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: smoke-tests-logs
+          path: |
+            report.html
+            ${{ env.LOG_DIR }}/*
+      - name: "Add report to summary"
+        if: always()
+        run: |
+          echo "## Smoke Tests Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check if report exists
+          if [ -f "report.html" ]; then
+            # Extract relevant parts from the HTML report
+            echo "### Test Results Summary" >> $GITHUB_STEP_SUMMARY
+            
+            # Extract pass/fail counts (adjust the grep patterns based on your HTML structure)
+            PASSED=$(grep -o "passed=[0-9]*" report.html | cut -d= -f2)
+            FAILED=$(grep -o "failed=[0-9]*" report.html | cut -d= -f2)
+            SKIPPED=$(grep -o "skipped=[0-9]*" report.html | cut -d= -f2)
+            
+            # Add summary stats
+            echo "| Status | Count |" >> $GITHUB_STEP_SUMMARY
+            echo "| ------ | ----- |" >> $GITHUB_STEP_SUMMARY
+            echo "| ✅ Passed | ${PASSED:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ❌ Failed | ${FAILED:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "| ⏭️ Skipped | ${SKIPPED:-0} |" >> $GITHUB_STEP_SUMMARY
+            echo "" >> $GITHUB_STEP_SUMMARY
+            
+            # Add link to full report artifact
+            echo "📄 [View Full HTML Report](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ No report.html file was generated" >> $GITHUB_STEP_SUMMARY
+          fi

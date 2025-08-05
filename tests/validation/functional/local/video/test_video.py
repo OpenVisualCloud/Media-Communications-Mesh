@@ -10,25 +10,13 @@ import pytest
 import Engine.rx_tx_app_connection
 import Engine.rx_tx_app_engine_mcm as utils
 import Engine.rx_tx_app_payload
-from Engine.const import DEFAULT_LOOP_COUNT, MCM_ESTABLISH_TIMEOUT
+from Engine.const import DEFAULT_LOOP_COUNT, MCM_ESTABLISH_TIMEOUT, MCM_RXTXAPP_RUN_TIMEOUT
 from Engine.media_files import yuv_files
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize(
-    "file",
-    [
-        "i720p25",
-        "i720p30",
-        pytest.param("i1080p25", marks=pytest.mark.smoke),
-        pytest.param("i1080p30", marks=pytest.mark.smoke),
-        "i1080p50",
-        "i1080p60",
-        "i2160p25",
-        "i2160p30",
-    ],
-)
+@pytest.mark.parametrize("file", [file for file in yuv_files.keys()])
 def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts

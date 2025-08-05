@@ -153,6 +153,17 @@ def media_path(test_config: dict) -> str:
 
 @pytest.fixture(scope="session")
 def log_path_dir(test_config: dict) -> str:
+    """
+    Creates and returns the main log directory path for the test session.
+
+    The directory is created under either the path specified in test_config['log_path']
+    or under the default LOG_FOLDER in the validation directory. If keep_logs is False,
+    the existing log directory is removed before creating a new one.
+
+    :param test_config: Dictionary containing test configuration.
+    :return: Path to the main log directory for the session.
+    :rtype: str
+    """
     keep_logs = test_config.get("keep_logs", True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir_name = f"log_{timestamp}"

@@ -7,7 +7,7 @@
 import pytest
 import logging
 
-from ....Engine.media_files import audio_files
+from Engine.media_files import audio_files_25_03
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
@@ -17,12 +17,20 @@ from common.ffmpeg_handler.ffmpeg_enums import (
 
 from common.ffmpeg_handler.ffmpeg_io import FFmpegAudioIO
 from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmMemifAudioIO
+from Engine.rx_tx_app_file_validation_utils import cleanup_file
 
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("audio_type", [k for k in audio_files.keys()])
+# @pytest.mark.parametrize("audio_type", [k for k in audio_files_25_03.keys()])
+@pytest.mark.parametrize(
+    "audio_type", 
+    [
+        pytest.param("PCM16_48000_Stereo", marks=pytest.mark.smoke),
+        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"]
+    ]
+)
 def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
@@ -40,29 +48,29 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str) ->
     )
 
     audio_format = audio_file_format_to_format_dict(
-        str(audio_files[audio_type]["format"])
+        str(audio_files_25_03[audio_type]["format"])
     )  # audio format
-    audio_channel_layout = audio_files[audio_type].get(
+    audio_channel_layout = audio_files_25_03[audio_type].get(
         "channel_layout",
-        audio_channel_number_to_layout(int(audio_files[audio_type]["channels"])),
+        audio_channel_number_to_layout(int(audio_files_25_03[audio_type]["channels"])),
     )
 
-    if audio_files[audio_type]["sample_rate"] not in [48000, 44100, 96000]:
+    if audio_files_25_03[audio_type]["sample_rate"] not in [48000, 44100, 96000]:
         raise Exception(
-            f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
+            f"Not expected audio sample rate of {audio_files_25_03[audio_type]['sample_rate']}!"
         )
 
     # >>>>> MCM Tx
     mcm_tx_inp = FFmpegAudioIO(
         f=audio_format["ffmpeg_f"],
-        ac=int(audio_files[audio_type]["channels"]),
-        ar=int(audio_files[audio_type]["sample_rate"]),
+        ac=int(audio_files_25_03[audio_type]["channels"]),
+        ar=int(audio_files_25_03[audio_type]["sample_rate"]),
         stream_loop=False,
-        input_path=f'{test_config["tx"]["filepath"]}{audio_files[audio_type]["filename"]}',
+        input_path=f'{test_config["tx"]["filepath"]}{audio_files_25_03[audio_type]["filename"]}',
     )
     mcm_tx_outp = FFmpegMcmMemifAudioIO(
-        channels=int(audio_files[audio_type]["channels"]),
-        sample_rate=int(audio_files[audio_type]["sample_rate"]),
+        channels=int(audio_files_25_03[audio_type]["channels"]),
+        sample_rate=int(audio_files_25_03[audio_type]["sample_rate"]),
         f=audio_format["mcm_f"],
         output_path="-",
     )
@@ -79,17 +87,17 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str) ->
 
     # >>>>> MCM Rx
     mcm_rx_inp = FFmpegMcmMemifAudioIO(
-        channels=int(audio_files[audio_type]["channels"]),
-        sample_rate=int(audio_files[audio_type]["sample_rate"]),
+        channels=int(audio_files_25_03[audio_type]["channels"]),
+        sample_rate=int(audio_files_25_03[audio_type]["sample_rate"]),
         f=audio_format["mcm_f"],
         input_path="-",
     )
     mcm_rx_outp = FFmpegAudioIO(
         f=audio_format["ffmpeg_f"],
-        ac=int(audio_files[audio_type]["channels"]),
-        ar=int(audio_files[audio_type]["sample_rate"]),
+        ac=int(audio_files_25_03[audio_type]["channels"]),
+        ar=int(audio_files_25_03[audio_type]["sample_rate"]),
         channel_layout=audio_channel_layout,
-        output_path=f'{test_config["rx"]["filepath"]}test_{audio_files[audio_type]["filename"]}',
+        output_path=f'{test_config["rx"]["filepath"]}test_{audio_files_25_03[audio_type]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=rx_prefix_variables,
@@ -106,3 +114,11 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str) ->
     mcm_tx_executor.start()
     mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
     mcm_tx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
+
+    # TODO add validate() function to check if the output file is correct
+
+    success = cleanup_file(rx_host.connection, str(mcm_rx_outp.output_path))
+    if success:
+        logger.debug(f"Cleaned up Rx output file: {mcm_rx_outp.output_path}")
+    else:
+        logger.warning(f"Failed to clean up Rx output file: {mcm_rx_outp.output_path}")

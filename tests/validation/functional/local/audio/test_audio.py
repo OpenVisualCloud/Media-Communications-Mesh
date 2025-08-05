@@ -19,15 +19,7 @@ from Engine.media_files import audio_files
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize(
-    "file",
-    [
-        pytest.param("PCM16_48000_Mono", marks=pytest.mark.smoke),
-        "PCM16_48000_Stereo",
-        "PCM24_48000_Mono",
-        "PCM24_48000_Stereo",
-    ],
-)
+@pytest.mark.parametrize("file", audio_files.keys())
 def test_audio(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts
