@@ -17,12 +17,13 @@ from Engine.const import (
 )
 from Engine.media_files import video_files_25_03
 
+
 @pytest.mark.parametrize(
-    "file", 
+    "file",
     [
         pytest.param("FullHD_60", marks=pytest.mark.smoke),
-        *[f for f in video_files_25_03.keys() if f != "FullHD_60"]
-    ]
+        *[f for f in video_files_25_03.keys() if f != "FullHD_60"],
+    ],
 )
 def test_video_25_03(
     build_TestApp, hosts, media_proxy, media_path, file, log_path
@@ -68,9 +69,8 @@ def test_video_25_03(
     rx_executor.stop()
 
     # TODO add validate() function to check if the output file is correct
-    
+
     rx_executor.cleanup()
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-

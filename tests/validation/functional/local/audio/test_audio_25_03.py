@@ -16,12 +16,13 @@ from Engine.const import (
 )
 from Engine.media_files import audio_files_25_03
 
+
 @pytest.mark.parametrize(
-    "file", 
+    "file",
     [
         pytest.param("PCM16_48000_Mono", marks=pytest.mark.smoke),
-        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Mono"]
-    ]
+        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Mono"],
+    ],
 )
 def test_audio_25_03(
     build_TestApp, hosts, media_proxy, media_path, file, log_path
@@ -72,4 +73,3 @@ def test_audio_25_03(
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-

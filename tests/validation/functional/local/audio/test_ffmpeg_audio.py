@@ -25,11 +25,11 @@ logger = logging.getLogger(__name__)
 
 # @pytest.mark.parametrize("audio_type", [k for k in audio_files_25_03.keys()])
 @pytest.mark.parametrize(
-    "audio_type", 
+    "audio_type",
     [
         pytest.param("PCM16_48000_Stereo", marks=pytest.mark.smoke),
-        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"]
-    ]
+        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"],
+    ],
 )
 def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running

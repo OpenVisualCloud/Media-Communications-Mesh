@@ -24,11 +24,11 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize(
-    "file", 
+    "file",
     [
         pytest.param("FullHD_59.94", marks=pytest.mark.smoke),
-        *[f for f in video_files_25_03.keys() if f != "FullHD_59.94"]
-    ]
+        *[f for f in video_files_25_03.keys() if f != "FullHD_59.94"],
+    ],
 )
 def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
@@ -47,7 +47,9 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str) -> None:
     )
 
     frame_rate = str(video_files_25_03[file]["fps"])
-    video_size = f'{video_files_25_03[file]["width"]}x{video_files_25_03[file]["height"]}'
+    video_size = (
+        f'{video_files_25_03[file]["width"]}x{video_files_25_03[file]["height"]}'
+    )
     pixel_format = video_file_format_to_payload_format(
         str(video_files_25_03[file]["file_format"])
     )
