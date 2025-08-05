@@ -1,4 +1,4 @@
-# Test Scenario Documentation
+# Test Scenarios Documentation
 
 > **Note:** This document provides generic information for all scenarios in the `/Media-Communications-Mesh/tests/validation/docs/test-scenarios/` directory. Provided test cases may not cover all supported parameters.
 
