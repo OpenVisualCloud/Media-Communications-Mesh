@@ -30,6 +30,12 @@ on:
         default: "smoke"
         required: false
         description: "Markers to use for pytest"
+
+# Add workflow-level concurrency to prevent duplicated runs
+concurrency:
+  group: smoke-tests-${{ github.workflow }}-${{ github.ref_name || github.head_ref }}
+  cancel-in-progress: true
+
 env:
   BUILD_TYPE: "Release"
   DPDK_VERSION: "23.11"
@@ -53,19 +59,15 @@ jobs:
     uses: ./.github/workflows/base_build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
-    concurrency:
-      group: build-${{ github.head_ref || github.run_id }}
-      cancel-in-progress: true
-
+    # Remove job-level concurrency as it's now handled at the workflow level
+    
   validation-prepare-setup-mcm:
     runs-on: [Linux, self-hosted]
     needs: call-base-build
     timeout-minutes: 60
     outputs:
       pipenv-activate: ${{ steps.pipenv-install.outputs.VIRTUAL_ENV }}
-    concurrency:
-      group: setup-${{ github.head_ref || github.run_id }}
-      cancel-in-progress: true
+    # Remove job-level concurrency as it's now handled at the workflow level
     steps:
       - name: "preparation: Harden Runner"
         uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
@@ -109,7 +111,7 @@ jobs:
       - name: "add user name to environment and config"
         run: |
           echo "USER=${USER}" >> "$GITHUB_ENV"
-          sed -i "s/{{ USER }}/${USER}/g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s/{{ USER }}/root/g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
