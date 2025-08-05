@@ -4,13 +4,13 @@ on:
   push:
     branches: ["main", "smoke-tests"]
     paths-ignore:
-      - '**.md'
-      - 'docs/**'
+      - "**.md"
+      - "docs/**"
   pull_request:
     branches: ["main"]
     paths-ignore:
-      - '**.md'
-      - 'docs/**'
+      - "**.md"
+      - "docs/**"
   workflow_dispatch:
     inputs:
       branch-to-checkout:
@@ -162,7 +162,7 @@ jobs:
           {
             echo "## Smoke Tests Report"
             echo ""
-      
+
             # Check if report exists
             if [ -f "report.html" ]; then
               # Extract relevant parts from the HTML report

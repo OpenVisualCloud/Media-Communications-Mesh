@@ -184,8 +184,8 @@ def sanitize_name(test_name):
     Sanitizes a test name by replacing invalid characters with underscores,
     collapsing multiple underscores into one, and removing leading/trailing underscores.
     """
-    sanitized_name = re.sub(r'[|<>:"*?\r\n\[\]]| = |_{2,}', '_', test_name)
-    sanitized_name = re.sub(r'_{2,}', '_', sanitized_name).strip('_')
+    sanitized_name = re.sub(r'[|<>:"*?\r\n\[\]]| = |_{2,}', "_", test_name)
+    sanitized_name = re.sub(r"_{2,}", "_", sanitized_name).strip("_")
     return sanitized_name
 
 
