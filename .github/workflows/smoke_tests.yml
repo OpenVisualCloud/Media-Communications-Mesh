@@ -60,7 +60,7 @@ jobs:
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
     # Remove job-level concurrency as it's now handled at the workflow level
-    
+
   validation-prepare-setup-mcm:
     runs-on: [Linux, self-hosted]
     needs: call-base-build
