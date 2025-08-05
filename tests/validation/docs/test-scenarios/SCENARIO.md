@@ -114,7 +114,7 @@ This section is partially based on [*VSF TR-05 Version 1.0*](https://static.vsf.
 
 ### Audio Test Cases
 
-| # | Standalone / FFmpeg | Sample depth | Samplerate | Packettime | Channels |
+| # | Standalone / FFmpeg | Sample depth | Sample rate | Packet time | Channels |
 |---|---------------------|--------------|------------|------------|----------|
 | 1 | Standalone | PCM 8-bit Big-Endian (pcm_s8be) | 44100 Hz | 1.09 ms | 1 (M - Mono) |
 | 2 | Standalone | PCM 8-bit Big-Endian (pcm_s8be) | 44100 Hz | 1.09 ms | 2 (S - Stereo) |
