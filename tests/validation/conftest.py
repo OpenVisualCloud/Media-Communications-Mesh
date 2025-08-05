@@ -19,6 +19,7 @@ from common.nicctl import Nicctl
 from Engine.const import *
 from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
 from datetime import datetime
+import re
 
 logger = logging.getLogger(__name__)
 
@@ -178,19 +179,31 @@ def log_path_dir(test_config: dict) -> str:
     return str(log_dir)
 
 
+def sanitize_name(test_name):
+    """
+    Sanitizes a test name by replacing invalid characters with underscores,
+    collapsing multiple underscores into one, and removing leading/trailing underscores.
+    """
+    sanitized_name = re.sub(r'[|<>:"*?\r\n\[\]]| = |_{2,}', '_', test_name)
+    sanitized_name = re.sub(r'_{2,}', '_', sanitized_name).strip('_')
+    return sanitized_name
+
+
 @pytest.fixture(scope="function")
 def log_path(log_path_dir: str, request) -> str:
     """
     Create a test-specific subdirectory within the main log directory.
+    Sanitizes test names to ensure valid directory names by replacing invalid characters.
 
-    :param log_path: The main log directory path from the log_path fixture.
-    :type log_path: str
+    :param log_path_dir: The main log directory path from the log_path_dir fixture.
+    :type log_path_dir: str
     :param request: Pytest request object to get test name.
     :return: Path to test-specific log subdirectory.
     :rtype: str
     """
     test_name = request.node.name
-    test_log_path = Path(log_path_dir, test_name)
+    sanitized_name = sanitize_name(test_name)
+    test_log_path = Path(log_path_dir, sanitized_name)
     test_log_path.mkdir(parents=True, exist_ok=True)
     return str(test_log_path)
 
