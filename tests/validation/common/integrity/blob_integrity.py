@@ -12,7 +12,9 @@ from pathlib import Path
 
 
 DEFAULT_CHUNK_SIZE = 1024 * 1024  # 1MB chunks for processing
-SEGMENT_DURATION_GRACE_PERIOD = 1  # Grace period in seconds to allow for late-arriving files
+SEGMENT_DURATION_GRACE_PERIOD = (
+    1  # Grace period in seconds to allow for late-arriving files
+)
 
 
 def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
