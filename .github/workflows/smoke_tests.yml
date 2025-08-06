@@ -111,10 +111,10 @@ jobs:
 
           # Copy the public key to root's authorized_keys
           if [ -f "/home/${USER}/.ssh/mcm_key.pub" ]; then
-            sudo cp /home/${USER}/.ssh/mcm_key.pub /root/.ssh/authorized_keys
+            sudo cp "/home/${USER}/.ssh/mcm_key.pub" /root/.ssh/authorized_keys
           elif [ -f "/home/${USER}/.ssh/mcm_key" ]; then
             # Generate public key from private key if public key doesn't exist
-            ssh-keygen -y -f /home/${USER}/.ssh/mcm_key | sudo tee /root/.ssh/authorized_keys
+            ssh-keygen -y -f "/home/${USER}/.ssh/mcm_key" | sudo tee /root/.ssh/authorized_keys
           fi
 
           # Set proper permissions
@@ -122,7 +122,7 @@ jobs:
           sudo chown root:root /root/.ssh/authorized_keys
 
           # Ensure the private key has correct permissions for gta user
-          chmod 600 /home/${USER}/.ssh/mcm_key
+          chmod 600 "/home/${USER}/.ssh/mcm_key"
 
       - name: "add user name to environment and config"
         run: |
