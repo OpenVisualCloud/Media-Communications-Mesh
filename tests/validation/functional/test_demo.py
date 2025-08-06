@@ -11,7 +11,6 @@ from common.integrity.integrity_runner import (
     FileVideoIntegrityRunner,
     StreamVideoIntegrityRunner,
     FileBlobIntegrityRunner,
-    StreamBlobIntegrityRunner,
 )
 from Engine.mcm_apps import MEDIA_PROXY_PORT
 import Engine.rx_tx_app_connection
