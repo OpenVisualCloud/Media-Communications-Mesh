@@ -149,7 +149,8 @@ class BlobStreamIntegritor(BlobIntegritor):
         list_processed = []
         out_files = []
 
-        while (self.segment_duration + 1 > start) or waiting_for_files:
+        # Add a grace period to segment duration to allow for late-arriving files
+        while (self.segment_duration + self.SEGMENT_DURATION_GRACE_PERIOD > start) or waiting_for_files:
             gb = list(Path(self.out_path).glob(f"{self.out_name}*"))
             out_files = list(filter(lambda x: x not in list_processed, gb))
             self.logger.debug(f"Received files: {out_files}")
