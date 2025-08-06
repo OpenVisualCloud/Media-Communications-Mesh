@@ -147,6 +147,7 @@ jobs:
           path: |
             ${{ env.LOG_DIR }}/*
       - name: "upload report"
+        id: upload-report
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
         with:
           name: smoke-tests-report
@@ -162,10 +163,10 @@ jobs:
             # Check if JSON report exists
             if [ -f "report.json" ]; then
               # Parse JSON report
-              PASSED=$(jq '.summary.passed' report.json)
-              FAILED=$(jq '.summary.failed' report.json)
-              SKIPPED=$(jq '.summary.skipped' report.json)
-              ERROR=$(jq '.summary.errors' report.json)
+                PASSED=$(jq '.summary.passed // 0' report.json)
+                FAILED=$(jq '.summary.failed // 0' report.json)
+                SKIPPED=$(jq '.summary.skipped // 0' report.json)
+                ERROR=$(jq '.summary.errors // 0' report.json)
 
               # Add summary stats
               echo "| Status | Count |"
@@ -188,7 +189,7 @@ jobs:
               echo ""
 
               # Add link to full report artifact
-              echo "📄 [Download Full HTML Report](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts)"
+              echo "📄 [Download Full HTML Report](https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts/${{ steps.upload-report.outputs.artifact-id }})"
             else
               echo "❌ No report.json file was generated"
             fi
