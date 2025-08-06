@@ -386,8 +386,8 @@ def test_demo_local_blob_integrity(
     output_exists = (
         rx_host.connection.execute_command(
             f"test -f {rx_executor.output}", shell=True
-            ).return_code
-            == 0
+        ).return_code
+        == 0
     )
     logger.info(f"Output file exists: {output_exists}")
 
