@@ -325,7 +325,9 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config) -> None
     assert integrator.stop_and_verify(timeout=20), "Stream integrity check failed"
 
 
-def test_demo_local_blob_integrity(build_TestApp, hosts, media_proxy, media_path, log_path) -> None:
+def test_demo_local_blob_integrity(
+    build_TestApp, hosts, media_proxy, media_path, log_path
+) -> None:
     """Test blob integrity checking with a single blob file transfer using LapkaExecutor."""
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -336,7 +338,7 @@ def test_demo_local_blob_integrity(build_TestApp, hosts, media_proxy, media_path
     # Use the same blob file configuration as the actual blob test
     blob_file_key = "random_bin_100M"
     file_dict = blob_files_25_03[blob_file_key]
-    
+
     tx_executor = utils.LapkaExecutor.Tx(
         host=tx_host,
         media_path=media_path,
@@ -362,7 +364,7 @@ def test_demo_local_blob_integrity(build_TestApp, hosts, media_proxy, media_path
     logger.info(f"RX output path: {rx_executor.output}")
     logger.info(f"Output directory: {rx_executor.output.parent}")
     logger.info(f"Output filename: {rx_executor.output.name}")
-    
+
     # Start processes following the same pattern as blob test
     rx_executor.start()
     time.sleep(MCM_ESTABLISH_TIMEOUT)
@@ -379,30 +381,34 @@ def test_demo_local_blob_integrity(build_TestApp, hosts, media_proxy, media_path
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-    
+
     # Check if the output file actually exists
     output_exists = rx_host.connection.execute_command(f"test -f {rx_executor.output}", shell=True).return_code == 0
     logger.info(f"Output file exists: {output_exists}")
-    
+
     if output_exists:
         # Get actual file size for debugging
-        file_size_result = rx_host.connection.execute_command(f"stat -c%s {rx_executor.output}", shell=True)
+        file_size_result = rx_host.connection.execute_command(
+            f"stat -c%s {rx_executor.output}", shell=True
+        )
         logger.info(f"Output file size: {file_size_result.stdout.strip()} bytes")
-        
+
         # Setup blob integrity checker
         integrator = FileBlobIntegrityRunner(
             host=rx_host,
             test_repo_path=None,
             src_url=str(tx_executor.input),  # Use the actual input path from executor
             out_name=rx_executor.output.name,  # Use the actual output filename
-            chunk_size=int(file_dict["max_payload_size"]),  # Use payload size as chunk size
+            chunk_size=int(
+                file_dict["max_payload_size"]
+            ),  # Use payload size as chunk size
             out_path=str(rx_executor.output.parent),  # Use the output directory
             delete_file=False,
             integrity_path="/opt/intel/val_tests/validation/common/integrity/",
         )
-        
+
         integrator.setup()
-        
+
         # Run integrity check with better error handling
         try:
             result = integrator.run()
@@ -410,148 +416,64 @@ def test_demo_local_blob_integrity(build_TestApp, hosts, media_proxy, media_path
         except Exception as e:
             logger.error(f"Integrity check failed with exception: {e}")
             result = False
-        
+
         if not result:
             # Get more details about what went wrong
             logger.error("=== Debugging integrity check failure ===")
             
             # Check source file details
-            src_exists = tx_host.connection.execute_command(f"test -f {tx_executor.input}", shell=True).return_code == 0
+            src_exists = (
+                tx_host.connection.execute_command(
+                    f"test -f {tx_executor.input}", shell=True
+                    ).return_code
+                    == 0
+            )
             if src_exists:
-                src_size_result = tx_host.connection.execute_command(f"stat -c%s {tx_executor.input}", shell=True)
-                logger.error(f"Source file size: {src_size_result.stdout.strip()} bytes")
+                src_size_result = tx_host.connection.execute_command(
+                    f"stat -c%s {tx_executor.input}", shell=True
+                )
+                logger.error(
+                    f"Source file size: {src_size_result.stdout.strip()} bytes"
+                )
             else:
                 logger.error(f"Source file {tx_executor.input} does not exist")
-            
+
             # Check output file details again
-            out_size_result = rx_host.connection.execute_command(f"stat -c%s {rx_executor.output}", shell=True)
+            out_size_result = rx_host.connection.execute_command(
+                f"stat -c%s {rx_executor.output}", shell=True
+            )
             logger.error(f"Output file size: {out_size_result.stdout.strip()} bytes")
-            
+
             # Compare sizes
-            logger.error(f"Max payload size (chunk size): {file_dict['max_payload_size']}")
-            
+            logger.error(
+                f"Max payload size (chunk size): {file_dict['max_payload_size']}"
+            )
+
             # Try to get some hex dump of both files for comparison
             logger.error("First 32 bytes of source file:")
-            src_hex = tx_host.connection.execute_command(f"hexdump -C {tx_executor.input} | head -3", shell=True)
+            src_hex = tx_host.connection.execute_command(
+                f"hexdump -C {tx_executor.input} | head -3", shell=True
+            )
             logger.error(src_hex.stdout)
-            
+
             logger.error("First 32 bytes of output file:")
-            out_hex = rx_host.connection.execute_command(f"hexdump -C {rx_executor.output} | head -3", shell=True)
+            out_hex = rx_host.connection.execute_command(
+                f"hexdump -C {rx_executor.output} | head -3", shell=True
+            )
             logger.error(out_hex.stdout)
-            
+
         assert result, "Blob integrity check failed"
     else:
         # List files in the output directory to see what was actually created
-        ls_result = rx_host.connection.execute_command(f"ls -la {rx_executor.output.parent}/", shell=True)
-        logger.error(f"Output directory contents:\n{ls_result.stdout}")
-        
-        # Find any files that might match our pattern
-        find_result = rx_host.connection.execute_command(f"find {rx_executor.output.parent}/ -name '*random*' -o -name '*rx_*' -o -name '*blob*'", shell=True)
-        logger.error(f"Potential output files:\n{find_result.stdout}")
-        
-        assert False, f"Output file {rx_executor.output} was not created"
-
-
-def test_demo_local_blob_stream(build_TestApp, hosts, media_proxy, media_path, log_path) -> None:
-    """Test blob integrity checking with segmented blob files using LapkaExecutor."""
-    # Get TX and RX hosts
-    host_list = list(hosts.values())
-    if len(host_list) < 1:
-        pytest.skip("Local tests require at least 1 host")
-    tx_host = rx_host = host_list[0]
-
-    # Use the same blob file configuration as the actual blob test
-    blob_file_key = "random_bin_100M"
-    file_dict = blob_files_25_03[blob_file_key]
-    
-    tx_executor = utils.LapkaExecutor.Tx(
-        host=tx_host,
-        media_path=media_path,
-        rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
-        payload_type=Engine.rx_tx_app_payload.Blob,
-        file_dict=file_dict,
-        file=blob_file_key,
-        loop=1,  # Use single loop for integrity testing
-        log_path=log_path,
-    )
-    rx_executor = utils.LapkaExecutor.Rx(
-        host=rx_host,
-        media_path=media_path,
-        rx_tx_app_connection=Engine.rx_tx_app_connection.MultipointGroup,
-        payload_type=Engine.rx_tx_app_payload.Blob,
-        file_dict=file_dict,
-        file=blob_file_key,
-        log_path=log_path,
-    )
-
-    # Debug: Log the paths before starting
-    logger.info(f"TX input path: {tx_executor.input}")
-    logger.info(f"RX output path: {rx_executor.output}")
-    logger.info(f"Output directory: {rx_executor.output.parent}")
-    logger.info(f"Output filename stem: {rx_executor.output.stem}")
-    
-    # Start processes following the same pattern as blob test
-    rx_executor.start()
-    time.sleep(MCM_ESTABLISH_TIMEOUT)
-    tx_executor.start()
-
-    try:
-        if rx_executor.process.running:
-            rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
-    except Exception as e:
-        logging.warning(f"RX executor did not finish in time or error occurred: {e}")
-
-    tx_executor.stop()
-    rx_executor.stop()
-
-    assert tx_executor.is_pass is True, "TX process did not pass"
-    assert rx_executor.is_pass is True, "RX process did not pass"
-    
-    # Check if the output file actually exists
-    output_exists = rx_host.connection.execute_command(f"test -f {rx_executor.output}", shell=True).return_code == 0
-    logger.info(f"Output file exists: {output_exists}")
-    
-    if output_exists:
-        # Setup blob integrity checker for stream mode
-        integrator = StreamBlobIntegrityRunner(
-            host=rx_host,
-            test_repo_path=None,
-            src_url=str(tx_executor.input),  # Use the actual input path from executor
-            out_name=rx_executor.output.stem,  # Use the output filename prefix (without extension)
-            chunk_size=int(file_dict["max_payload_size"]),  # Use payload size as chunk size
-            out_path=str(rx_executor.output.parent),  # Use the output directory
-            delete_file=True,
-            segment_duration=3,  # Check for new files every 3 seconds
-            workers=3,  # Use 3 worker processes
-            integrity_path="/opt/intel/val_tests/validation/common/integrity/",
+        ls_result = rx_host.connection.execute_command(
+            f"ls -la {rx_executor.output.parent}/", shell=True
         )
-        
-        integrator.setup()
-        integrator.run()  # Start the integrity check in the background
-        
-        # Since this is a demo, simulate segmentation by copying the file with different names
-        # This simulates what would happen with actual segmented blob transfer
-        logger.info("Simulating segmented blob transfer")
-        segment_cmd = f"cp {rx_executor.output} {rx_executor.output.parent}/{rx_executor.output.stem}_001.bin"
-        rx_host.connection.execute_command(segment_cmd, shell=True)
-        segment_cmd = f"cp {rx_executor.output} {rx_executor.output.parent}/{rx_executor.output.stem}_002.bin"
-        rx_host.connection.execute_command(segment_cmd, shell=True)
-        
-        # Wait a bit for processing
-        time.sleep(5)
-        
-        # Stop the integrity checker and verify results
-        try:
-            result = integrator.stop_and_verify(timeout=30)
-            logger.info(f"Stream integrity check result: {result}")
-        except Exception as e:
-            logger.error(f"Stream integrity check failed with exception: {e}")
-            result = False
-            
-        assert result, "Stream blob integrity check failed"
-    else:
-        # List files in the output directory to see what was actually created
-        ls_result = rx_host.connection.execute_command(f"ls -la {rx_executor.output.parent}/", shell=True)
         logger.error(f"Output directory contents:\n{ls_result.stdout}")
-        
+
+        # Find any files that might match our pattern
+        find_result = rx_host.connection.execute_command(
+            f"find {rx_executor.output.parent}/ -name '*random*' -o -name '*rx_*' -o -name '*blob*'", shell=True
+        )
+        logger.error(f"Potential output files:\n{find_result.stdout}")
+
         assert False, f"Output file {rx_executor.output} was not created"

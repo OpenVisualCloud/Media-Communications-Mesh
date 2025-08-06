@@ -67,21 +67,21 @@ class BlobIntegritor:
         """Check integrity of a single output file against source."""
         out_chunk_sums = calculate_chunk_hashes(out_url, self.chunk_size)
         out_file_hash = calculate_file_hash(out_url)
-        
+
         # First check if file hashes match (quick check)
         if out_file_hash == self.src_file_hash:
             self.logger.info(f"File hash matches for {out_url}")
             return True
-        
+
         # If file hashes don't match, check chunk by chunk for detailed analysis
         bad_chunks = 0
         min_chunks = min(len(out_chunk_sums), len(self.src_chunk_sums))
-        
+
         for ids in range(min_chunks):
             if out_chunk_sums[ids] != self.src_chunk_sums[ids]:
                 self.logger.error(f"Received bad chunk number {ids} in {out_url}.")
                 bad_chunks += 1
-        
+
         # Check for size mismatches
         if len(out_chunk_sums) != len(self.src_chunk_sums):
             self.logger.error(
@@ -89,14 +89,14 @@ class BlobIntegritor:
                 f"output has {len(out_chunk_sums)} chunks"
             )
             bad_chunks += abs(len(out_chunk_sums) - len(self.src_chunk_sums))
-        
+
         if bad_chunks:
             self.bad_chunks_total += bad_chunks
             self.logger.error(
                 f"Received {bad_chunks} bad chunks out of {len(out_chunk_sums)} total chunks."
             )
             return False
-        
+
         self.logger.info(f"All {len(out_chunk_sums)} chunks in {out_url} are correct.")
         return True
 
@@ -132,9 +132,7 @@ class BlobStreamIntegritor(BlobIntegritor):
         workers_count=5,
         delete_file: bool = True,
     ):
-        super().__init__(
-            logger, src_url, out_name, chunk_size, out_path, delete_file
-        )
+        super().__init__(logger, src_url, out_name, chunk_size, out_path, delete_file)
         self.logger.info(
             f"Output path {out_path}, segment duration: {segment_duration}"
         )
@@ -220,9 +218,7 @@ class BlobFileIntegritor(BlobIntegritor):
         out_path: str = "/mnt/ramdisk",
         delete_file: bool = True,
     ):
-        super().__init__(
-            logger, src_url, out_name, chunk_size, out_path, delete_file
-        )
+        super().__init__(logger, src_url, out_name, chunk_size, out_path, delete_file)
         self.logger = logging.getLogger(__name__)
 
     def get_out_file(self):
@@ -369,7 +365,7 @@ It performs chunk-by-chunk integrity checking using MD5 checksums."""
     else:
         parser.print_help()
         return
-    
+
     result = integrator.check_blob_integrity()
     if result:
         logging.info("Blob integrity check passed")
