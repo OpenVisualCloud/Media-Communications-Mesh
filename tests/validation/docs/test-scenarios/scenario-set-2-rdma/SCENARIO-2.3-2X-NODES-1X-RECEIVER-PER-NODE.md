@@ -6,25 +6,22 @@
 
 ```mermaid
 flowchart LR
-    subgraph Node A
-        meshAgent[mesh-agent]
-        rxA1((Rx App 1))
-        tx((Tx App))
-        proxy1(Media Proxy A)
-        meshAgent <--> proxy1
-    end
     subgraph Node B
         rxB1((Rx App 2))
         proxy2(Media Proxy B)
     end
-    sw(["Network Switch"])
+    subgraph Node A
+        rxA1((Rx App 1))
+        tx((Tx App))
+        proxy1(Media Proxy A)
+    end
+    sw(["Network
+        Switch"])
     tx --> proxy1
     proxy1 --> rxA1
-    proxy1 -->|RDMA| sw
+    proxy1 -- RDMA ----> sw
     sw -- RDMA --> proxy2
     proxy2 --> rxB1
-    meshAgent <--> sw
-    sw --> proxy2
 ```
 
 ### Payload Options
