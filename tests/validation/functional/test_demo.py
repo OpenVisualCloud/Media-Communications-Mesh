@@ -383,7 +383,12 @@ def test_demo_local_blob_integrity(
     assert rx_executor.is_pass is True, "RX process did not pass"
 
     # Check if the output file actually exists
-    output_exists = rx_host.connection.execute_command(f"test -f {rx_executor.output}", shell=True).return_code == 0
+    output_exists = (
+        rx_host.connection.execute_command(
+            f"test -f {rx_executor.output}", shell=True
+            ).return_code
+            == 0
+    )
     logger.info(f"Output file exists: {output_exists}")
 
     if output_exists:
@@ -420,13 +425,13 @@ def test_demo_local_blob_integrity(
         if not result:
             # Get more details about what went wrong
             logger.error("=== Debugging integrity check failure ===")
-            
+
             # Check source file details
             src_exists = (
                 tx_host.connection.execute_command(
                     f"test -f {tx_executor.input}", shell=True
-                    ).return_code
-                    == 0
+                ).return_code
+                == 0
             )
             if src_exists:
                 src_size_result = tx_host.connection.execute_command(
@@ -472,7 +477,8 @@ def test_demo_local_blob_integrity(
 
         # Find any files that might match our pattern
         find_result = rx_host.connection.execute_command(
-            f"find {rx_executor.output.parent}/ -name '*random*' -o -name '*rx_*' -o -name '*blob*'", shell=True
+            f"find {rx_executor.output.parent}/ -name '*random*' -o -name '*rx_*' -o -name '*blob*'",
+            shell=True,
         )
         logger.error(f"Potential output files:\n{find_result.stdout}")
 
