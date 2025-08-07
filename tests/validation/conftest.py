@@ -259,7 +259,7 @@ def media_config(hosts: dict) -> None:
             )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="session", autouse=True)
 def mtl_manager(hosts):
     """
     Automatically start MtlManager on all hosts at the beginning of the test session,
