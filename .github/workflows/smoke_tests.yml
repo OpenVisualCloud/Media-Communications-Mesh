@@ -18,6 +18,10 @@ on:
         default: "main"
         required: false
         description: "Branch name to use"
+      tag-to-checkout: # added tag input
+        type: string
+        required: false
+        description: "Tag name to use"
       list_tests:
         type: choice
         required: false
@@ -45,6 +49,7 @@ env:
   MCM_FFMPEG_6_1: ./mcm-binaries/ffmpeg-6-1/ffmpeg
   MTL_FFMPEG_6_1: ./mtl-binaries/ffmpeg-6-1/ffmpeg
   LOG_DIR: "${{ github.workspace }}/logs"
+  TAG_TO_CHECKOUT: "25.03" # Hardcoded tag for testing
 
 permissions:
   contents: read
@@ -55,6 +60,7 @@ jobs:
     uses: ./.github/workflows/base_build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
+      tag: ${{ github.event.inputs.tag-to-checkout || '25.03' }} # added tag input
 
   validation-prepare-setup-mcm:
     runs-on: [Linux, self-hosted]
@@ -74,10 +80,11 @@ jobs:
           sudo chown -R "${USER}" "$(pwd)" || true
           env | grep BUILD_ || true
           env | grep DPDK_ || true
-      - name: "preparation: Checkout MCM"
+      - name: "preparation: Checkout MCM at tag"
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          ref: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
+          repository: ${{ github.repository }}
+          ref: ${{ github.event.inputs.tag-to-checkout || env.TAG_TO_CHECKOUT }}
       - name: Install RxTxApp dependencies
         run: sudo apt-get update && sudo apt-get install -y libjansson-dev
       - name: "build RxTxApp"
@@ -131,6 +138,10 @@ jobs:
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
+      - name: "Checkout back to original branch"
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          ref: ${{ github.ref_name }}
 
   validation-run-tests:
     needs: validation-prepare-setup-mcm

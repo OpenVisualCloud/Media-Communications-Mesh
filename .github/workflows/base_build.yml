@@ -13,6 +13,10 @@ on:
         type: string
         default: "main"
         description: "Branch to checkout"
+      tag: # Add tag input
+        required: false
+        type: string
+        description: "Tag to checkout"
 
 env:
   BUILD_TYPE: Release
@@ -45,7 +49,7 @@ jobs:
       - name: "Checkout repository"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
-          ref: ${{ inputs.branch }}
+          ref: ${{ inputs.tag || inputs.branch }} # Use tag if provided, otherwise use branch
 
       - name: "Install OS level dependencies"
         run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
