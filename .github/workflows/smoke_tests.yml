@@ -80,11 +80,10 @@ jobs:
           sudo chown -R "${USER}" "$(pwd)" || true
           env | grep BUILD_ || true
           env | grep DPDK_ || true
-      - name: "preparation: Checkout MCM at tag"
+      - name: "Checkout back to ${{ github.ref_name }} branch"
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
         with:
-          repository: ${{ github.repository }}
-          ref: ${{ github.event.inputs.tag-to-checkout || env.TAG_TO_CHECKOUT }}
+          ref: ${{ github.ref_name }}
       - name: Install RxTxApp dependencies
         run: sudo apt-get update && sudo apt-get install -y libjansson-dev
       - name: "build RxTxApp"
@@ -138,10 +137,6 @@ jobs:
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
-      - name: "Checkout back to original branch"
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ github.ref_name }}
 
   validation-run-tests:
     needs: validation-prepare-setup-mcm
