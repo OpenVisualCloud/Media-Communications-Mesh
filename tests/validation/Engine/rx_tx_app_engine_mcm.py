@@ -11,7 +11,7 @@ from mfd_connect.exceptions import RemoteProcessInvalidState
 
 import Engine.rx_tx_app_client_json
 import Engine.rx_tx_app_connection_json
-from Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH
+from Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH, RX_REQUIRED_LOG_PHRASES, TX_REQUIRED_LOG_PHRASES
 from Engine.mcm_apps import (
     get_media_proxy_port,
     output_validator,
@@ -171,6 +171,8 @@ class AppRunnerBase:
     def stop(self):
         validation_info = []
         file_validation_passed = True
+        app_log_validation_status = False
+        app_log_error_count = 0
 
         if self.process:
             try:
@@ -183,37 +185,78 @@ class AppRunnerBase:
                 logger.info("Process has already finished (nothing to stop).")
             logger.info(f"{self.direction} app stopped.")
 
-            log_dir = self.log_path if self.log_path else LOG_FOLDER
+            log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             subdir = f"RxTx/{self.host.name}"
             filename = f"{self.direction.lower()}.log"
             log_file_path = os.path.join(log_dir, subdir, filename)
 
-            result = output_validator(
-                log_file_path=log_file_path,
-                error_keywords=RX_TX_APP_ERROR_KEYWORDS,
-            )
-            if result["errors"]:
-                logger.warning(f"Errors found: {result['errors']}")
+            app_log_validation_status = False
+            app_log_error_count = 0
 
-            self.is_pass = result["is_pass"]
+            # Custom Rx log validation: check for required phrases in order, ignoring timestamps
+            def check_phrases_in_order(log_path, phrases):
+                found_indices = []
+                missing_phrases = []
+                with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+                    lines = [line.strip() for line in f]
+                idx = 0
+                for phrase in phrases:
+                    found = False
+                    phrase_stripped = phrase.strip()
+                    while idx < len(lines):
+                        line_stripped = lines[idx].strip()
+                        if phrase_stripped in line_stripped:
+                            found_indices.append(idx)
+                            found = True
+                            idx += 1
+                            break
+                        idx += 1
+                    if not found:
+                        missing_phrases.append(phrase)
+                return len(missing_phrases) == 0, missing_phrases
 
-            # Collect log validation info
-            validation_info.append(f"=== {self.direction} App Log Validation ===")
-            validation_info.append(f"Log file: {log_file_path}")
-            validation_info.append(
-                f"Validation result: {'PASS' if result['is_pass'] else 'FAIL'}"
-            )
-            validation_info.append(f"Errors found: {len(result['errors'])}")
-            if result["errors"]:
-                validation_info.append("Error details:")
-                for error in result["errors"]:
-                    validation_info.append(f"  - {error}")
-            if result["phrase_mismatches"]:
-                validation_info.append("Phrase mismatches:")
-                for phrase, found, expected in result["phrase_mismatches"]:
-                    validation_info.append(
-                        f"  - {phrase}: found '{found}', expected '{expected}'"
-                    )
+            if self.direction in ("Rx", "Tx"):
+                required_phrases = RX_REQUIRED_LOG_PHRASES if self.direction == "Rx" else TX_REQUIRED_LOG_PHRASES
+                log_pass, missing = check_phrases_in_order(log_file_path, required_phrases)
+                self.is_pass = log_pass
+                app_log_validation_status = log_pass
+                app_log_error_count = len(missing)
+                validation_info.append(f"=== {self.direction} App Log Validation ===")
+                validation_info.append(f"Log file: {log_file_path}")
+                validation_info.append(f"Validation result: {'PASS' if log_pass else 'FAIL'}")
+                validation_info.append(f"Errors found: {app_log_error_count}")
+                if not log_pass:
+                    validation_info.append(f"Missing or out-of-order phrases:")
+                    for phrase in missing:
+                        validation_info.append(f"  - {phrase}")
+                    if missing:
+                        print(f"{self.direction} process did not pass. First missing phrase: {missing[0]}")
+            else:
+                result = output_validator(
+                    log_file_path=log_file_path,
+                    error_keywords=RX_TX_APP_ERROR_KEYWORDS,
+                )
+                if result["errors"]:
+                    logger.warning(f"Errors found: {result['errors']}")
+                self.is_pass = result["is_pass"]
+                app_log_validation_status = result["is_pass"]
+                app_log_error_count = len(result["errors"])
+                validation_info.append(f"=== {self.direction} App Log Validation ===")
+                validation_info.append(f"Log file: {log_file_path}")
+                validation_info.append(
+                    f"Validation result: {'PASS' if result['is_pass'] else 'FAIL'}"
+                )
+                validation_info.append(f"Errors found: {len(result['errors'])}")
+                if result["errors"]:
+                    validation_info.append("Error details:")
+                    for error in result["errors"]:
+                        validation_info.append(f"  - {error}")
+                if result["phrase_mismatches"]:
+                    validation_info.append("Phrase mismatches:")
+                    for phrase, found, expected in result["phrase_mismatches"]:
+                        validation_info.append(
+                            f"  - {phrase}: found '{found}', expected '{expected}'"
+                        )
 
         # File validation for Rx only run if output path isn't "/dev/null"
         if self.direction == "Rx" and self.output and self.output_path != "/dev/null":
@@ -234,7 +277,7 @@ class AppRunnerBase:
             )
             validation_info.append(f"Overall validation: {overall_status}")
             validation_info.append(
-                f"App log validation: {'PASS' if result['is_pass'] else 'FAIL'}"
+                f"App log validation: {'PASS' if app_log_validation_status else 'FAIL'}"
             )
             if self.direction == "Rx":
                 file_status = "PASS" if file_validation_passed else "FAIL"
@@ -245,8 +288,7 @@ class AppRunnerBase:
                         "Note: Overall validation fails if either app log or file validation fails"
                     )
 
-            # Save to validation report file
-            log_dir = self.log_path if self.log_path else LOG_FOLDER
+            log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             subdir = f"RxTx/{self.host.name}"
             validation_filename = f"{self.direction.lower()}_validation.log"
 
@@ -288,13 +330,14 @@ class LapkaExecutor:
             filename = "tx.log"
 
             def log_output():
+                log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
                 for line in self.process.get_stdout_iter():
                     save_process_log(
                         subdir=subdir,
                         filename=filename,
                         text=line.rstrip(),
                         cmd=cmd,
-                        log_dir=self.log_path,
+                        log_dir=log_dir,
                     )
 
             threading.Thread(target=log_output, daemon=True).start()
@@ -343,13 +386,14 @@ class LapkaExecutor:
             filename = "rx.log"
 
             def log_output():
+                log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
                 for line in self.process.get_stdout_iter():
                     save_process_log(
                         subdir=subdir,
                         filename=filename,
                         text=line.rstrip(),
                         cmd=cmd,
-                        log_dir=self.log_path,
+                        log_dir=log_dir,
                     )
 
             threading.Thread(target=log_output, daemon=True).start()
