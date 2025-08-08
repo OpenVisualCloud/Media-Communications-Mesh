@@ -168,14 +168,17 @@ jobs:
             --show-capture=no \
             -m "${{ env.MARKERS }}"
       - name: "upload logs"
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: smoke-tests-logs
           path: |
             ${{ env.LOG_DIR }}/*
+      
       - name: "upload report"
+        if: always()
         id: upload-report
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882
         with:
           name: smoke-tests-report
           path: |
