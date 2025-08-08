@@ -23,7 +23,6 @@ from Engine.rx_tx_app_file_validation_utils import cleanup_file
 logger = logging.getLogger(__name__)
 
 
-# @pytest.mark.parametrize("audio_type", [k for k in audio_files_25_03.keys()])
 @pytest.mark.parametrize(
     "audio_type",
     [
