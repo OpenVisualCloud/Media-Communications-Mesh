@@ -188,10 +188,12 @@ function get_download_unpack_dependencies()
 # Download, build and install cmake from source code
 function lib_build_and_install_cmake()
 {
-    git_download_strip_unpack "kitware/cmake" "refs/tags/${CMAKE_VER}" "${CMAKE_DIR}"
-    "${CMAKE_DIR}/bootstrap" --prefix=/usr/local
-    make -j "${NPROC}" -C "${CMAKE_DIR}"
-    as_root make -j "${NPROC}" -C "${CMAKE_DIR}" install
+    git_download_strip_unpack "kitware/cmake" "refs/tags/${CMAKE_VER}" "${CMAKE_DIR}" && \
+    pushd "${CMAKE_DIR}" && \
+    "${CMAKE_DIR}/bootstrap" --prefix=/usr/local && \
+    make -j "${NPROC}" -C "${CMAKE_DIR}" && \
+    as_root make -j "${NPROC}" -C "${CMAKE_DIR}" install && \
+    popd
 }
 
 # Download and install rpm repo for nasm
