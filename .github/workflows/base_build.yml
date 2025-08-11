@@ -58,8 +58,8 @@ jobs:
 
       - name: "Install CMake via pip"
         run: |
-          pip install --upgrade pip
-          pip install cmake
+          pip install --break-system-packages --upgrade pip
+          pip install --break-system-packages cmake
           cmake --version
 
       - name: "Install OS level dependencies"
