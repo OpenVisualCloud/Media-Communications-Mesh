@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         description: "Tag to checkout"
+      use_self_hosted:
+        required: false
+        type: boolean
+        default: false
+        description: "Whether to use self-hosted runners"
 
 env:
   BUILD_TYPE: Release
@@ -38,7 +43,7 @@ concurrency:
 
 jobs:
   build-baremetal-ubuntu:
-    runs-on: "ubuntu-22.04"
+    runs-on: ${{ inputs.use_self_hosted && fromJSON('["Linux", "self-hosted"]') || 'ubuntu-22.04' }}
     timeout-minutes: 120
     steps:
       - name: "Harden Runner"
