@@ -53,7 +53,6 @@ function install_ubuntu_package_dependencies()
         build-essential \
         ca-certificates \
         clang \
-        cmake>=3.16 \
         curl \
         dracut \
         gcc-multilib \
@@ -86,6 +85,7 @@ function install_ubuntu_package_dependencies()
         zlib1g-dev \
         "${APT_LINUX_HEADERS}" \
         "${APT_LINUX_MOD_EXTRA}" && \
+    lib_build_and_install_cmake && \
     lib_build_and_install_golang && \
     return 0 || return 1
 }
@@ -104,7 +104,6 @@ function install_yum_package_dependencies()
         curl-minimal \
         ca-certificates \
         clang \
-        cmake=3.22.1-1ubuntu1 \
         dracut \
         dtc \
         elfutils-libelf-devel \
@@ -146,6 +145,7 @@ function install_yum_package_dependencies()
         wget \
         zlib-devel && \
     python3 -m pip install meson ninja && \
+    lib_build_and_install_cmake && \
     lib_install_nasm_from_rpm && \
     lib_build_and_install_libfdt && \
     lib_build_and_install_jsonc && \
@@ -183,6 +183,15 @@ function get_download_unpack_dependencies()
     git_download_strip_unpack "dpdk/dpdk" "refs/tags/v${DPDK_VER}" "${DPDK_DIR}"
     git_download_strip_unpack "OpenVisualCloud/SVT-JPEG-XS" "${JPEGXS_VER}" "${JPEGXS_DIR}"
     apply_dpdk_patches
+}
+
+# Download, build and install cmake from source code
+function lib_build_and_install_cmake()
+{
+    git_download_strip_unpack "kitware/cmake" "refs/tags/${CMAKE_VER}" "${CMAKE_DIR}"
+    "${CMAKE_DIR}/bootstrap" --prefix=/usr/local
+    make -j "${NPROC}"
+    as_root make -j "${NPROC}" install
 }
 
 # Download and install rpm repo for nasm
