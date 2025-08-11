@@ -56,14 +56,28 @@ jobs:
         with:
           ref: ${{ inputs.tag || inputs.branch }} # Use tag if provided, otherwise use branch
 
-      - name: "Install CMake via pip"
+      - name: "Install CMake from Kitware"
         run: |
-          pip install --break-system-packages --upgrade pip
-          pip install --break-system-packages cmake
+          # Remove any existing CMake installations to avoid conflicts
+          sudo apt-get remove --purge -y cmake cmake-data
+          sudo rm -rf /usr/local/share/cmake-*
+          
+          # Download and install CMake 3.22.6
+          wget https://github.com/Kitware/CMake/releases/download/v3.22.6/cmake-3.22.6-linux-x86_64.sh
+          chmod +x cmake-3.22.6-linux-x86_64.sh
+          sudo ./cmake-3.22.6-linux-x86_64.sh --skip-license --prefix=/usr/local
+          
+          # Ensure the new CMake is in the PATH and update the GitHub ENV
+          export PATH=/usr/local/bin:$PATH
+          echo "PATH=/usr/local/bin:$PATH" >> $GITHUB_ENV
+          hash -r
           cmake --version
 
       - name: "Install OS level dependencies"
-        run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
+        run: |
+          # Create a symbolic link to make apt think cmake is already installed
+          sudo ln -sf /usr/local/bin/cmake /usr/bin/cmake
+          eval 'source scripts/setup_build_env.sh && install_package_dependencies'
 
       - name: "Check local dependencies build cache"
         id: load-local-dependencies-cache
