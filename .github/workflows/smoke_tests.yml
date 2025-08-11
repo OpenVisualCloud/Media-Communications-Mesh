@@ -174,7 +174,7 @@ jobs:
           name: smoke-tests-logs
           path: |
             ${{ env.LOG_DIR }}/*
-      
+
       - name: "upload report"
         if: always()
         id: upload-report

@@ -16,12 +16,7 @@ from Engine.media_files import blob_files
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize(
-    "file",
-    [
-        pytest.param("random_bin_100M", marks=pytest.mark.smoke),
-    ],
-)
+@pytest.mark.parametrize("file", [file for file in blob_files.keys()])
 def test_blob(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts

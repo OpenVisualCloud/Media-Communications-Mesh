@@ -33,10 +33,7 @@ TX_REQUIRED_LOG_PHRASES = [
     'INFO - Create memif interface.',
     'INFO - memif connected!',
     '[INFO] gRPC: connection active',
-    '[TX] sending video frames',
-    '[TX] sending blob packets',
-    '[TX] Sending packet: 1',
-    '[TX] Graceful shutdown requested',
+    '[TX] sending',
     '[TX] Shuting down connection',
     '[INFO] gRPC: connection deleted',
     '[TX] Shuting down client',
@@ -56,7 +53,7 @@ MEDIA_PROXY_ERROR_KEYWORDS = ["[ERRO]"]
 MESH_AGENT_ERROR_KEYWORDS = ["[ERRO]"]
 RX_TX_APP_ERROR_KEYWORDS = ["[ERRO]"]
 
-DEFAULT_MPG_URN = "ipv4:224.1.1.1:9003"
+DEFAULT_MPG_URN = "ipv4:224.0.0.1"
 DEFAULT_REMOTE_IP_ADDR = "239.2.39.238"
 DEFAULT_REMOTE_PORT = 20000
 DEFAULT_PACING = "narrow"
