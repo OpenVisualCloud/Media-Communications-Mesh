@@ -190,8 +190,8 @@ function lib_build_and_install_cmake()
 {
     git_download_strip_unpack "kitware/cmake" "refs/tags/${CMAKE_VER}" "${CMAKE_DIR}"
     "${CMAKE_DIR}/bootstrap" --prefix=/usr/local
-    make -j "${NPROC}"
-    as_root make -j "${NPROC}" install
+    make -j "${NPROC}" -C "${CMAKE_DIR}"
+    as_root make -j "${NPROC}" -C "${CMAKE_DIR}" install
 }
 
 # Download and install rpm repo for nasm
