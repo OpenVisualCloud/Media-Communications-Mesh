@@ -21,6 +21,7 @@ MTL_VERSIONS_FILE_PATH="${MTL_VERSIONS_FILE:-${MTL_DIR}/versions.env}"
 if [[ -f "${MTL_VERSIONS_FILE_PATH}" ]]; then
     MTL_VERSIONS_FILE_PATH="$(readlink -f "${MTL_VERSIONS_FILE_PATH}")"
     export MTL_VERSIONS_FILE_PATH
+# shellcheck source=/dev/null
     . "${MTL_VERSIONS_FILE_PATH}"    
 fi
 
