@@ -72,7 +72,7 @@ def save_process_log(
             write_cmd = True
     with open(log_file, "a") as f:
         if write_cmd:
-            f.write(cmd + "\n\n")
+            f.write((cmd if cmd is not None else "") + "\n\n")
         f.write(cleaned_text + "\n")
 
 

@@ -24,7 +24,7 @@ logger = logging.getLogger(__name__)
 
 
 def create_client_json(
-    build: str, client: Engine.rx_tx_app_client_json.ClientJson
+    build: str, client: Engine.rx_tx_app_client_json.ClientJson, log_path: str = ""
 ) -> None:
     logger.debug("Client JSON:")
     for line in client.to_json().splitlines():
@@ -32,10 +32,13 @@ def create_client_json(
     output_path = str(Path(build, "tests", "tools", "TestApp", "build", "client.json"))
     logger.debug(f"Client JSON path: {output_path}")
     client.prepare_and_save_json(output_path=output_path)
+    # Use provided log_path or default to LOG_FOLDER
+    log_dir = log_path if log_path else LOG_FOLDER
+    client.copy_json_to_logs(log_path=log_dir)
 
 
 def create_connection_json(
-    build: str, rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson
+    build: str, rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson, log_path: str = ""
 ) -> None:
     logger.debug("Connection JSON:")
     for line in rx_tx_app_connection.to_json().splitlines():
@@ -45,6 +48,9 @@ def create_connection_json(
     )
     logger.debug(f"Connection JSON path: {output_path}")
     rx_tx_app_connection.prepare_and_save_json(output_path=output_path)
+    # Use provided log_path or default to LOG_FOLDER
+    log_dir = log_path if log_path else LOG_FOLDER
+    rx_tx_app_connection.copy_json_to_logs(log_path=log_dir)
 
 
 class AppRunnerBase:
@@ -164,8 +170,10 @@ class AppRunnerBase:
                 logger.warning(f"Error creating directory {output_dir}: {str(e)}")
 
     def start(self):
-        create_client_json(self.mcm_path, self.rx_tx_app_client_json)
-        create_connection_json(self.mcm_path, self.rx_tx_app_connection_json)
+        # Use self.log_path for consistent logging across the application
+        log_dir = self.log_path if self.log_path else LOG_FOLDER
+        create_client_json(self.mcm_path, self.rx_tx_app_client_json, log_path=log_dir)
+        create_connection_json(self.mcm_path, self.rx_tx_app_connection_json, log_path=log_dir)
         self._ensure_output_directory_exists()
 
     def stop(self):
