@@ -56,6 +56,12 @@ jobs:
         with:
           ref: ${{ inputs.tag || inputs.branch }} # Use tag if provided, otherwise use branch
 
+      - name: "Install CMake from Kitware"
+        run: |
+          wget https://github.com/Kitware/CMake/releases/download/v3.22.6/cmake-3.22.6-linux-x86_64.sh
+          sudo sh cmake-3.22.6-linux-x86_64.sh --skip-license --prefix=/usr/local
+          cmake --version
+
       - name: "Install OS level dependencies"
         run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
 
