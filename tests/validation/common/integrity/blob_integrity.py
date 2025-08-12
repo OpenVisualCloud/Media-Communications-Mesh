@@ -100,7 +100,7 @@ class BlobIntegritor:
             )
             return False
 
-        self.logger.info(f"All {len(out_chunk_sums)} chunks in {out_url} are correct.")
+        self.logger.info(f"All {no_out_chunks} chunks in {out_url} are correct.")
         return True
 
     def _worker(self, wkr_id, request_queue, result_queue, shared):
