@@ -21,6 +21,7 @@ MTL_VERSIONS_FILE_PATH="${MTL_VERSIONS_FILE:-${MTL_DIR}/versions.env}"
 if [[ -f "${MTL_VERSIONS_FILE_PATH}" ]]; then
     MTL_VERSIONS_FILE_PATH="$(readlink -f "${MTL_VERSIONS_FILE_PATH}")"
     export MTL_VERSIONS_FILE_PATH
+# shellcheck source=/dev/null
     . "${MTL_VERSIONS_FILE_PATH}"    
 fi
 
@@ -32,6 +33,7 @@ export JPEGXS_DIR="${BUILD_DIR}/jpegxs"
 export LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
 export LIBFDT_DIR="${BUILD_DIR}/libfdt"
 export JSONC_DIR="${BUILD_DIR}/json-c"
+export CMAKE_DIR="${BUILD_DIR}/cmake"
 export NASM_DIR="${BUILD_DIR}/nasm"
 
 export ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
