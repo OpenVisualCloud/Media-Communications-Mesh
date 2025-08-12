@@ -86,12 +86,14 @@ class BlobIntegritor:
                 bad_chunks += 1
 
         # Check for size mismatches
-        if len(out_chunk_sums) != len(self.src_chunk_sums):
+        no_out_chunks = len(out_chunk_sums)
+        no_src_chunks = len(self.src_chunk_sums)
+        if no_out_chunks != no_src_chunks:
             self.logger.error(
-                f"Chunk count mismatch: source has {len(self.src_chunk_sums)} chunks, "
-                f"output has {len(out_chunk_sums)} chunks"
+                f"Chunk count mismatch: source has {no_src_chunks} chunks, "
+                f"output has {no_out_chunks} chunks"
             )
-            bad_chunks += abs(len(out_chunk_sums) - len(self.src_chunk_sums))
+            bad_chunks += abs(no_out_chunks - no_src_chunks)
 
         if bad_chunks:
             self.bad_chunks_total += bad_chunks
