@@ -96,7 +96,7 @@ class BlobIntegritor:
         if bad_chunks:
             self.bad_chunks_total += bad_chunks
             self.logger.error(
-                f"Received {bad_chunks} bad chunks out of {len(out_chunk_sums)} total chunks."
+                f"Received {bad_chunks} bad chunks out of {no_out_chunks} total chunks."
             )
             return False
 
