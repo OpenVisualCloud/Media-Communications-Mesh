@@ -17,7 +17,7 @@ SEGMENT_DURATION_GRACE_PERIOD = (
 )
 
 
-def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
+def calculate_chunk_hashes(file_url: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> list:
     """Calculate MD5 hash for each chunk of the file."""
     chunk_sums = []
     with open(file_url, "rb") as f:
