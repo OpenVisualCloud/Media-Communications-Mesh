@@ -15,6 +15,7 @@ DEFAULT_CHUNK_SIZE = 1024 * 1024  # 1MB chunks for processing
 SEGMENT_DURATION_GRACE_PERIOD = (
     1  # Grace period in seconds to allow for late-arriving files
 )
+FILE_HASH_CHUNK_SIZE = 4096  # 4KB is optimal for file hashing (balances memory usage and disk I/O)
 
 
 def calculate_chunk_hashes(file_url: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> list:
@@ -37,7 +38,7 @@ def calculate_file_hash(file_url: str) -> str:
     """Calculate MD5 hash of the entire file."""
     hash_md5 = hashlib.md5()
     with open(file_url, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
+        for chunk in iter(lambda: f.read(FILE_HASH_CHUNK_SIZE), b""):
             hash_md5.update(chunk)
     return hash_md5.hexdigest()
 
