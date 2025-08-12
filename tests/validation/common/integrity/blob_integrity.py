@@ -15,7 +15,9 @@ DEFAULT_CHUNK_SIZE = 1024 * 1024  # 1MB chunks for processing
 SEGMENT_DURATION_GRACE_PERIOD = (
     1  # Grace period in seconds to allow for late-arriving files
 )
-FILE_HASH_CHUNK_SIZE = 4096  # 4KB is optimal for file hashing (balances memory usage and disk I/O)
+FILE_HASH_CHUNK_SIZE = (
+    4096  # 4KB is optimal for file hashing (balances memory usage and disk I/O)
+)
 
 
 def calculate_chunk_hashes(file_url: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> list:
