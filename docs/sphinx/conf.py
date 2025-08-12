@@ -15,7 +15,7 @@ import os
 import sys
 
 project = "Media Communications Mesh"
-copyright = "2023-2024, Intel Corporation"
+copyright = "2023-2025, Intel Corporation"
 author = "Intel Corporation"
 
 extensions = [
