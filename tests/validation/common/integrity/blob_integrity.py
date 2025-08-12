@@ -45,7 +45,7 @@ def calculate_file_hash(file_url: str) -> str:
     return hash_md5.hexdigest()
 
 
-class BlobIntegritor:
+class BlobIntegrator:
     def __init__(
         self,
         logger: logging.Logger,
@@ -126,7 +126,7 @@ class BlobIntegritor:
         result_queue.put(self.bad_chunks_total)
 
 
-class BlobStreamIntegritor(BlobIntegritor):
+class BlobStreamIntegrator(BlobIntegrator):
     """Class to check integrity of blob data saved into files divided by segments."""
 
     def __init__(
@@ -217,7 +217,7 @@ class BlobStreamIntegritor(BlobIntegritor):
         return True if shared_data.get("error_file", None) is None else False
 
 
-class BlobFileIntegritor(BlobIntegritor):
+class BlobFileIntegrator(BlobIntegrator):
     """Class to check integrity of a single blob file."""
 
     def __init__(
@@ -354,7 +354,7 @@ It performs chunk-by-chunk integrity checking using MD5 checksums."""
 
     # Execute based on mode
     if args.mode == "stream":
-        integrator = BlobStreamIntegritor(
+        integrator = BlobStreamIntegrator(
             logger,
             args.src,
             args.out,
@@ -365,7 +365,7 @@ It performs chunk-by-chunk integrity checking using MD5 checksums."""
             args.delete_file,
         )
     elif args.mode == "file":
-        integrator = BlobFileIntegritor(
+        integrator = BlobFileIntegrator(
             logger,
             args.src,
             args.out,

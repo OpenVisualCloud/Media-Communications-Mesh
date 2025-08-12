@@ -85,11 +85,11 @@ success = runner.stop_and_verify()
 
 ```python
 import logging
-from blob_integrity import BlobFileIntegritor
+from blob_integrity import BlobFileIntegrator
 
 logger = logging.getLogger(__name__)
 
-integrator = BlobFileIntegritor(
+integrator = BlobFileIntegrator(
     logger=logger,
     src_url="/path/to/source.bin",
     out_name="output.bin",

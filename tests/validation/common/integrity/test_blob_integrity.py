@@ -16,7 +16,7 @@ import tempfile
 from pathlib import Path
 
 # Import the blob integrity classes
-from blob_integrity import BlobFileIntegritor, BlobStreamIntegritor
+from blob_integrity import BlobFileIntegrator, BlobStreamIntegrator
 
 
 def generate_test_blob(file_path: str, size_mb: int = 10):
@@ -57,7 +57,7 @@ def test_file_integrity():
         logger = logging.getLogger("test_file")
 
         # Test integrity check
-        integrator = BlobFileIntegritor(
+        integrator = BlobFileIntegrator(
             logger=logger,
             src_url=src_path,
             out_name="output.bin",
@@ -93,7 +93,7 @@ def test_corrupted_file_integrity():
         logger = logging.getLogger("test_corrupted")
 
         # Test integrity check
-        integrator = BlobFileIntegritor(
+        integrator = BlobFileIntegrator(
             logger=logger,
             src_url=src_path,
             out_name="corrupted.bin",
