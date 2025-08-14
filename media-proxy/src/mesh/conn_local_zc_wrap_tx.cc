@@ -11,9 +11,9 @@
 namespace mesh::connection {
 
 Result ZeroCopyWrapperLocalTx::set_link(context::Context& ctx, Connection *new_link,
-                                 Connection *requester)
+                                        Connection *requester)
 {
-    log::debug("set_link ZC LocalTx %p %p", new_link, requester);
+    log::debug("set_link ZC wrapper LocalTx %p %p", new_link, requester);
 
     auto res = Connection::set_link(ctx, new_link, requester);
     if (res != Result::success)

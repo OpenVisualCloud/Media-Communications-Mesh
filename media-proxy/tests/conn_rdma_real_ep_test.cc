@@ -7,7 +7,7 @@
 #include <atomic>
 #include <mutex>
 #include <condition_variable>
-#include "mesh/concurrency.h"
+#include "concurrency.h"
 #include <iomanip>
 
 using namespace mesh::log;

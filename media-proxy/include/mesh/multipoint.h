@@ -19,7 +19,7 @@ namespace mesh::multipoint {
 class Group : public Connection {
 public:
     Group(const std::string& id);
-    ~Group() {}
+    virtual ~Group() override {}
 
     void configure(context::Context& ctx);
 

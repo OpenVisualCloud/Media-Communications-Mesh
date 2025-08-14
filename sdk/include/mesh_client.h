@@ -10,7 +10,7 @@
 #include <mutex>
 #include <string>
 #include "mesh_dp.h"
-#include "mesh_concurrency.h"
+#include "concurrency.h"
 
 namespace mesh {
 
@@ -34,8 +34,8 @@ class ClientContext {
 public:
     ClientContext();
 
-    int init(const char *cfg);
-    int create_conn(MeshConnection **conn, int kind);
+    int init(const char *json_cfg);
+    int create_connection(MeshConnection **conn, int kind, const char *json_cfg);
     int shutdown();
 
     ClientConfig cfg;
@@ -43,7 +43,7 @@ public:
     std::list<ConnectionContext *> conns;
     std::mutex mx;
 
-    void *grpc_client = nullptr;
+    void *proxy_client = nullptr;
 };
 
 /**

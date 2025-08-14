@@ -40,7 +40,7 @@ namespace mesh::connection {
 class Rdma : public Connection {
 public:
     Rdma();
-    virtual ~Rdma();
+    virtual ~Rdma() override;
     // Deinitialize RDMA if no active connections
     static void deinit_rdma_if_needed(libfabric_ctx *m_dev_handle);
 

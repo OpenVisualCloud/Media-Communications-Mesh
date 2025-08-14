@@ -21,6 +21,7 @@ public:
 
     Result configure(context::Context& ctx, const BridgeConfig& cfg);
 
+    State state() override;
     Result set_link(context::Context& ctx, Connection *new_link,
                     Connection *requester = nullptr) override;
 
@@ -30,6 +31,8 @@ private:
 
     Result on_receive(context::Context& ctx, void *ptr, uint32_t sz,
                       uint32_t& sent) override;
+
+    void collect(telemetry::Metric& metric, const int64_t& timestamp_ms) override;
 
     Connection *bridge;
     GatewayRx gw;

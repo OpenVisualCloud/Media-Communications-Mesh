@@ -16,7 +16,7 @@ namespace mesh::connection {
 class RdmaRx : public Rdma {
 public:
     RdmaRx();
-    ~RdmaRx();
+    ~RdmaRx() override;
 
     // Configure the RDMA Receive session
     Result configure(context::Context& ctx, const mcm_conn_param& request,

@@ -41,6 +41,9 @@ private:
 
 extern Registry registry;
 
+inline constexpr uint32_t METRICS_COLLECT_INTERVAL_MS = 1000;
+inline constexpr uint32_t METRICS_SDK_REPORT_BEFORE_COLLECTING_MS = 50;
+
 } // namespace mesh::telemetry
 
 #endif // METRICS_COLLECTOR_H

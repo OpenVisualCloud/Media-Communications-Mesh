@@ -17,22 +17,28 @@
 #include "mesh_logger.h"
 #include "mcm-version.h"
 #include "mesh_dp_legacy.h"
-#include "mesh_concurrency.h"
+#include "concurrency.h"
+#include "mesh_conn_zc.h"
 
 using grpc::Channel;
 using grpc::Status;
 using sdk::SDKAPI;
 using sdk::CreateConnectionRequest;
 using sdk::CreateConnectionResponse;
+using sdk::CreateConnectionZeroCopyResponse;
 using sdk::ActivateConnectionRequest;
 using sdk::ActivateConnectionResponse;
 using sdk::DeleteConnectionRequest;
 using sdk::DeleteConnectionResponse;
 using sdk::RegisterRequest;
 using sdk::Event;
+using sdk::SendMetricsRequest;
+using sdk::ConnectionMetrics;
+using sdk::SendMetricsResponse;
 using sdk::BufferPartition;
 using sdk::BufferPartitions;
 using sdk::ConnectionKind;
+using sdk::ConnectionConfig;
 using sdk::ConfigMultipointGroup;
 using sdk::ConfigST2110;
 using sdk::ConfigRDMA;
@@ -49,77 +55,24 @@ extern "C" void mcm_cancel_poll_event_memif(void *pctx);
 
 using namespace mesh;
 
-class SDKAPIClient {
+class SDKAPIClient;
+
+class ProxyConn {
 public:
-    SDKAPIClient(std::shared_ptr<Channel> channel, mesh::ClientContext *parent)
-        : stub_(SDKAPI::NewStub(channel)), parent(parent) {}
+    // This declaration must go first to allow proper type casting.
+    mcm_conn_context *handle;
 
-    int CreateConnection(std::string& conn_id, mcm_conn_param *param,
-                         memif_conn_param *memif_param) {
-        if (!param || !memif_param)
-            return -1;
+    SDKAPIClient *client;
+    std::string conn_id;
+};
 
-        CreateConnectionRequest req;
-        req.set_client_id(client_id);
+class SDKAPIClient {
+private:
+    void assign_pb_from_conn_cfg(sdk::ConnectionConfig *config,
+                                 const mesh::ConnectionConfig& cfg) {
+        if (!config)
+            return;
 
-        std::string param_str(reinterpret_cast<const char *>(param),
-                              sizeof(mcm_conn_param));
-        req.set_mcm_conn_param(param_str);
-
-        CreateConnectionResponse resp;
-        grpc::ClientContext context;
-        context.set_deadline(std::chrono::system_clock::now() +
-                             std::chrono::seconds(5));
-
-        Status status = stub_->CreateConnection(&context, req, &resp);
-
-        if (status.ok()) {
-            conn_id = resp.conn_id();
-
-            int sz = resp.memif_conn_param().size();
-            if (sz != sizeof(memif_conn_param)) {
-                log::error("Param size (%d) not equal to memif_conn_param (%ld)",
-                           sz, sizeof(memif_conn_param));
-                return -1;
-            }
-
-            memcpy(memif_param, resp.memif_conn_param().data(), sz);
-
-            return 0;
-        } else {
-            log::error("CreateConnection RPC failed: %s",
-                       status.error_message().c_str());
-            return -1;
-        }
-    }
-
-    int CreateConnectionJson(std::string& conn_id, const ConnectionConfig& cfg,
-                             memif_conn_param *memif_param) {
-        if (!memif_param)
-            return -1;
-
-        CreateConnectionRequest req;
-        req.set_client_id(client_id);
-        req.set_name(cfg.name);
-
-        // mcm_conn_param param = {
-        //     .type = is_rx,
-        //     .local_addr = {
-        //         .port = "9001",
-        //     },
-        //     .remote_addr = {
-        //         .ip = "192.168.96.10",
-        //     },
-        //     .width = 640,
-        //     .height = 360,
-        //     .fps = 60,
-        //     .pix_fmt = PIX_FMT_YUV422P_10BIT_LE,
-        // };
-        // std::string param_str(reinterpret_cast<const char *>(&param),
-        //                       sizeof(mcm_conn_param));
-        // req.set_mcm_conn_param(param_str);
-
-        auto config = req.mutable_config();
         config->set_buf_queue_capacity(cfg.buf_queue_capacity);
         config->set_max_payload_size(cfg.max_payload_size);
         config->set_max_metadata_size(cfg.max_metadata_size);
@@ -186,6 +139,23 @@ public:
             auto blob = new ConfigBlob();
             config->set_allocated_blob(blob);
         }
+    }
+
+public:
+    SDKAPIClient(std::shared_ptr<Channel> channel, mesh::ClientContext *parent)
+        : stub_(SDKAPI::NewStub(channel)), parent(parent) {}
+
+    int CreateConnection(std::string& conn_id, const mesh::ConnectionConfig& cfg,
+                         memif_conn_param *memif_param) {
+        if (!memif_param)
+            return -1;
+
+        CreateConnectionRequest req;
+        req.set_client_id(client_id);
+        req.set_name(cfg.name);
+
+        auto config = req.mutable_config();
+        assign_pb_from_conn_cfg(config, cfg);
 
         CreateConnectionResponse resp;
         grpc::ClientContext context;
@@ -193,25 +163,52 @@ public:
                              std::chrono::seconds(20));
 
         Status status = stub_->CreateConnection(&context, req, &resp);
-
-        if (status.ok()) {
-            conn_id = resp.conn_id();
-
-            int sz = resp.memif_conn_param().size();
-            if (sz != sizeof(memif_conn_param)) {
-                log::error("Param size (%d) not equal to memif_conn_param (%ld)",
-                           sz, sizeof(memif_conn_param));
-                return -1;
-            }
-
-            memcpy(memif_param, resp.memif_conn_param().data(), sz);
-
-            return 0;
-        } else {
-            log::error("CreateConnectionJson RPC failed: %s",
+        if (!status.ok()) {
+            log::error("CreateConnection RPC failed: %s",
                        status.error_message().c_str());
             return -1;
         }
+
+        conn_id = resp.conn_id();
+
+        int sz = resp.memif_conn_param().size();
+        if (sz != sizeof(memif_conn_param)) {
+            log::error("Param size (%d) not equal to memif_conn_param (%ld)",
+                        sz, sizeof(memif_conn_param));
+            return -1;
+        }
+
+        memcpy(memif_param, resp.memif_conn_param().data(), sz);
+
+        return 0;
+    }
+
+    int CreateConnectionZeroCopy(std::string& conn_id, const mesh::ConnectionConfig& cfg,
+                                 const std::string& temporary_id) {
+
+        CreateConnectionRequest req;
+        req.set_client_id(client_id);
+        req.set_name(cfg.name);
+        req.set_temporary_id(temporary_id);
+
+        auto config = req.mutable_config();
+        assign_pb_from_conn_cfg(config, cfg);
+
+        CreateConnectionZeroCopyResponse resp;
+        grpc::ClientContext context;
+        context.set_deadline(std::chrono::system_clock::now() +
+                             std::chrono::seconds(20));
+
+        Status status = stub_->CreateConnectionZeroCopy(&context, req, &resp);
+        if (!status.ok()) {
+            log::error("CreateConnectionZeroCopy RPC failed: %s",
+                       status.error_message().c_str());
+            return -1;
+        }
+
+        conn_id = resp.conn_id();
+
+        return 0;
     }
 
     int ActivateConnection(std::string& conn_id) {
@@ -226,16 +223,16 @@ public:
 
         Status status = stub_->ActivateConnection(&context, req, &resp);
 
-        if (status.ok()) {
-            if (!resp.linked())
-                return -EAGAIN;
-            else
-                return 0;
-        } else {
+        if (!status.ok()) {
             log::error("ActivateConnection RPC failed: %s",
                        status.error_message().c_str());
             return -1;
         }
+
+        if (!resp.linked())
+            return -EAGAIN;
+
+        return 0;
     }
 
     int DeleteConnection(const std::string& conn_id) {
@@ -250,12 +247,49 @@ public:
 
         Status status = stub_->DeleteConnection(&context, req, &resp);
 
-        if (status.ok()) {
-            return 0;
-        } else {
+        if (!status.ok()) {
             log::error("DeleteConnection RPC failed: %s",
                        status.error_message().c_str());
             return -1;
+        }
+
+        return 0;
+    }
+
+    void ReportMetrics() {
+        SendMetricsRequest req;
+        req.set_client_id(client_id);
+
+        if (parent) {
+            std::lock_guard<std::mutex> lk(parent->mx);
+            for (const auto conn : parent->conns) {
+                if (!dynamic_cast<ZeroCopyConnectionContext *>(conn))
+                    continue;
+
+                auto proxy_conn = static_cast<ProxyConn *>(conn->proxy_conn);
+                if (!proxy_conn)
+                    continue;
+
+                ConnectionMetrics *metric = req.add_conn_metrics();
+                metric->set_conn_id(proxy_conn->conn_id);
+                metric->set_inbound_bytes(conn->metrics.inbound_bytes);
+                metric->set_outbound_bytes(conn->metrics.outbound_bytes);
+                metric->set_transactions_succeeded(conn->metrics.transactions_succeeded);
+                metric->set_transactions_failed(conn->metrics.transactions_failed);
+                metric->set_errors(conn->metrics.errors);
+            }
+        }
+
+        SendMetricsResponse resp;
+        grpc::ClientContext context;
+        context.set_deadline(std::chrono::system_clock::now() +
+                             std::chrono::seconds(5));
+
+        Status status = stub_->SendMetrics(&context, req, &resp);
+
+        if (!status.ok()) {
+            log::error("SendMetrics RPC failed: %s",
+                       status.error_message().c_str());
         }
     }
 
@@ -264,11 +298,20 @@ public:
     
         grpc::ClientContext context;
 
-        std::jthread shutdown_thread([&]() {
-            ctx.done();
+        thread::Channel<bool> report_metrics_ch;
+
+        std::jthread aux_th([&]() {
+            while (!ctx.cancelled()) {
+                auto v = report_metrics_ch.receive(ctx);
+                if (!v.has_value())
+                    continue;
+
+                if (v.value())
+                    ReportMetrics();
+            }
             context.TryCancel();
         });
-    
+
         thread::Defer d([&]{ ctx.cancel(); });
 
         std::unique_ptr<grpc::ClientReader<Event>> reader(
@@ -286,16 +329,43 @@ public:
                 if (parent) {
                     std::lock_guard<std::mutex> lk(parent->mx);
                     for (const auto conn : parent->conns) {
+                        // TODO: close by conn_id, not all connections!!!
+
                         conn->ctx.cancel();
-                        if (conn->grpc_conn) {
-                            auto handle = *(mcm_conn_context **)conn->grpc_conn;
+                        if (conn->proxy_conn) {
+                            auto handle = *(mcm_conn_context **)conn->proxy_conn;
                             if (handle)
                                 mcm_cancel_poll_event_memif(handle->priv);
                         }
                     }
                 }
-            } else if (event.has_logger_config_changed()) {
-                log::debug("[EVENT] Logger config changed");
+            } else if (event.has_conn_zero_copy_config()) {
+                auto zc_config = event.conn_zero_copy_config();
+                auto conn_id = zc_config.conn_id();
+                auto temporary_id = zc_config.temporary_id();
+                auto sysv_key = zc_config.sysv_key();
+                auto mem_region_sz = zc_config.mem_region_sz();
+                log::debug("[EVENT] Conn ZC config")("id", conn_id)
+                                                    ("temporary_id", temporary_id)
+                                                    ("sysv_key", sysv_key)
+                                                    ("mem_region_sz", mem_region_sz);
+
+                if (parent) {
+                    std::lock_guard<std::mutex> lk(parent->mx);
+                    for (const auto conn : parent->conns) {
+                        auto zc_conn = dynamic_cast<ZeroCopyConnectionContext *>(conn);
+                        if (zc_conn && !zc_conn->temporary_id.compare(temporary_id)) {
+                            auto zc_cfg = zerocopy::Config{
+                                .sysv_key = sysv_key,
+                                .mem_region_sz = mem_region_sz,
+                            };
+                            zc_conn->zero_copy_config_ch.send(ctx, zc_cfg);
+                            break;
+                        }
+                    }
+                }
+            } else if (event.has_report_metrics_triggered()) {
+                report_metrics_ch.try_send(true);
             } else {
                 log::info("Received unknown event type");
             }
@@ -352,10 +422,6 @@ public:
     std::string client_id;
 
 private:
-    // void BackgroundProcess() {
-    //     thread::Sleep(ctx, std::chrono::milliseconds(1000));
-    // }
-
     std::unique_ptr<SDKAPI::Stub> stub_;
     std::jthread th;
     thread::Channel<bool> registered_ch;
@@ -363,31 +429,10 @@ private:
     mesh::ClientContext *parent = nullptr;
 };
 
-// DEBUG
-extern "C" int get_media_proxy_addr(mcm_dp_addr* proxy_addr);
-// DEBUG
+namespace mesh {
 
-void * mesh_grpc_create_client()
+void * create_proxy_client(const std::string& endpoint, mesh::ClientContext *parent)
 {
-    // DEBUG
-    std::string sdk_port("50050");
-
-    mcm_dp_addr media_proxy_addr = {};
-    auto err = get_media_proxy_addr(&media_proxy_addr);
-    if (!err) {
-        sdk_port = std::string(media_proxy_addr.port);
-    }
-    // DEBUG
-
-    auto client = new(std::nothrow)
-        SDKAPIClient(grpc::CreateChannel("localhost:" + sdk_port, // gRPC default 50051
-                     grpc::InsecureChannelCredentials()), nullptr);
-    return client;
-}
-
-void * mesh_grpc_create_client_json(const std::string& endpoint,
-                                    mesh::ClientContext *parent) {
-
     log::info("Media Communications Mesh SDK version %s #%s", VERSION_TAG, VERSION_HASH)
              ("endpoint", endpoint);
 
@@ -406,7 +451,7 @@ void * mesh_grpc_create_client_json(const std::string& endpoint,
     return client;
 }
 
-void mesh_grpc_destroy_client(void *client)
+void destroy_proxy_client(void *client)
 {
     if (client) {
         auto cli = static_cast<SDKAPIClient *>(client);
@@ -415,34 +460,25 @@ void mesh_grpc_destroy_client(void *client)
     }
 }
 
-class GrpcConn {
-public:
-    // This declaration must go first to allow proper type casting.
-    mcm_conn_context *handle;
-
-    SDKAPIClient *client;
-    std::string conn_id;
-};
-
 // Can't include the entire header file due to the C/C++ atomics incompatibility.
 extern "C"
 mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args,
                                               memif_conn_param* memif_args);
 
-void * mesh_grpc_create_conn(void *client, mcm_conn_param *param)
+void * create_proxy_conn(void *client, const mesh::ConnectionConfig& cfg)
 {
     if (!client)
         return NULL;
 
     auto cli = static_cast<SDKAPIClient *>(client);
 
-    auto conn = new(std::nothrow) GrpcConn();
+    auto conn = new(std::nothrow) ProxyConn();
     if (!conn)
         return NULL;
 
     memif_conn_param memif_param = {};
 
-    int err = cli->CreateConnection(conn->conn_id, param, &memif_param);
+    int err = cli->CreateConnection(conn->conn_id, cfg, &memif_param);
     if (err) {
         delete conn;
         log::error("Create gRPC connection failed (%d)", err);
@@ -453,61 +489,6 @@ void * mesh_grpc_create_conn(void *client, mcm_conn_param *param)
                                          ("client_id", cli->client_id);
 
     conn->client = cli;
-
-    // Connect memif connection
-    // TODO: Propagate the main context to enable cancellation.
-    conn->handle = mcm_create_connection_memif(param, &memif_param);
-    if (!conn->handle) {
-        delete conn;
-        log::error("gRPC: failed to create memif interface");
-        return NULL;
-    }
-
-    return conn;
-}
-
-void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cfg)
-{
-    if (!client)
-        return NULL;
-
-    auto cli = static_cast<SDKAPIClient *>(client);
-
-    auto conn = new(std::nothrow) GrpcConn();
-    if (!conn)
-        return NULL;
-
-    memif_conn_param memif_param = {};
-
-    int err = cli->CreateConnectionJson(conn->conn_id, cfg, &memif_param);
-    if (err) {
-        delete conn;
-        log::error("Create gRPC connection failed (%d)", err);
-        return NULL;
-    }
-
-    log::info("gRPC: connection created")("id", conn->conn_id)
-                                         ("client_id", cli->client_id);
-
-    conn->client = cli;
-
-    // DEBUG
-    // mcm_conn_param param = {
-    //     .type = is_rx,
-    //     .width = 640,
-    //     .height = 360,
-    //     .fps = 60,
-    //     .pix_fmt = PIX_FMT_YUV422P_10BIT_LE,
-    // };
-    // DEBUG
-    // mcm_conn_param param = {
-    //     .type = cfg.kind == MESH_CONN_KIND_SENDER ? is_tx : is_rx,
-    //     .width = cfg.payload.video.width,
-    //     .height = cfg.payload.video.height,
-    //     .fps = cfg.payload.video.fps,
-    //     .pix_fmt = PIX_FMT_YUV422P_10BIT_LE,
-    // };
-    // DEBUG
 
     mcm_conn_param param = {
         .type = cfg.kind == MESH_CONN_KIND_SENDER ? is_tx : is_rx,
@@ -535,7 +516,7 @@ void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cf
 
     if (err) {
         log::error("Activate gRPC connection failed (%d)", err);
-        mesh_grpc_destroy_conn(conn);
+        destroy_proxy_conn(conn);
         return NULL;
     }
 
@@ -554,12 +535,12 @@ void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cf
     return conn;
 }
 
-void mesh_grpc_destroy_conn(void *conn_ptr)
+void destroy_proxy_conn(void *conn_ptr)
 {
     if (!conn_ptr)
         return;
 
-    auto conn = static_cast<GrpcConn *>(conn_ptr);
+    auto conn = static_cast<ProxyConn *>(conn_ptr);
 
     int err = conn->client->DeleteConnection(conn->conn_id);
     if (err)
@@ -570,3 +551,129 @@ void mesh_grpc_destroy_conn(void *conn_ptr)
     delete conn;
 }
 
+void * create_proxy_conn_zero_copy(void *client, const mesh::ConnectionConfig& cfg,
+                                   const std::string& temporary_id)
+{
+    if (!client)
+        return NULL;
+
+    auto cli = static_cast<SDKAPIClient *>(client);
+
+    auto conn = new(std::nothrow) ProxyConn();
+    if (!conn)
+        return NULL;
+
+    int err = cli->CreateConnectionZeroCopy(conn->conn_id, cfg, temporary_id);
+    if (err) {
+        delete conn;
+        log::error("Create gRPC connection ZC failed (%d)", err);
+        return NULL;
+    }
+
+    log::info("gRPC: ZC connection created")("id", conn->conn_id)
+                                            ("temporary_id", temporary_id)
+                                            ("client_id", cli->client_id);
+
+    conn->client = cli;
+
+    return conn;
+}
+
+int configure_proxy_conn_zero_copy(void *conn_ptr)
+{
+    if (!conn_ptr)
+        return -EINVAL;
+
+    auto conn = static_cast<ZeroCopyConnectionContext *>(conn_ptr);
+    auto proxy_conn = static_cast<ProxyConn *>(conn->proxy_conn);
+
+    log::debug("CONFIG ZC")("conn_id", proxy_conn->conn_id);
+
+    // TODO: take timeout interval from the client configuration.
+    auto tctx = context::WithTimeout(gctx, std::chrono::milliseconds(15000));
+    auto config = conn->zero_copy_config_ch.receive(tctx);
+    if (!config.has_value()) {
+        if (tctx.cancelled() && !gctx.cancelled())
+            log::error("SDK conn ZC config timeout");
+        return -EIO;
+    }
+
+    conn->zc_config.sysv_key = config.value().sysv_key;
+    conn->zc_config.mem_region_sz = config.value().mem_region_sz;
+
+    log::debug("SDK conn ZC config received")
+              ("sysv_key", conn->zc_config.sysv_key)
+              ("mem_region_sz", conn->zc_config.mem_region_sz);
+
+    if (conn->cfg.kind == MESH_CONN_KIND_RECEIVER) {
+        auto ret = conn->gw.init(gctx, &conn->zc_config);
+        if (ret != zerocopy::gateway::Result::success)
+            return -1;
+
+        conn->gw.set_tx_callback([conn](context::Context& ctx, void *ptr, uint32_t sz,
+                                uint32_t& sent) -> zerocopy::gateway::Result {
+            ZeroCopyRxEvent evt = {
+                .ptr = ptr,
+                .sz = sz,
+                .err = 0,
+            };
+
+            auto res = conn->zero_copy_rx_ch.try_send(std::move(evt));
+
+            return zerocopy::gateway::Result::success;
+        });
+    } else {
+        auto ret = conn->gw_rx.init(gctx, &conn->zc_config);
+        if (ret != zerocopy::gateway::Result::success)
+            return -1;
+    }
+
+    int err = 0;
+    auto cli = static_cast<SDKAPIClient *>(proxy_conn->client);
+
+    while (!gctx.cancelled()) {
+        err = cli->ActivateConnection(proxy_conn->conn_id);
+        if (err == -EAGAIN) {
+            // Repeat after a small delay
+            thread::Sleep(gctx, std::chrono::milliseconds(50));
+            continue;
+        }
+        break;
+    }
+
+    if (err) {
+        log::error("Activate gRPC ZC connection failed (%d)", err);
+        destroy_proxy_conn_zero_copy(conn);
+        return err;
+    }
+
+    log::info("gRPC: connection active")("id", proxy_conn->conn_id)
+                                        ("client_id", cli->client_id);
+
+    return 0;
+}
+
+void destroy_proxy_conn_zero_copy(void *conn_ptr)
+{
+    if (!conn_ptr)
+        return;
+
+    auto conn = static_cast<ZeroCopyConnectionContext *>(conn_ptr);
+    auto proxy_conn = static_cast<ProxyConn *>(conn->proxy_conn);
+
+    int err = proxy_conn->client->DeleteConnection(proxy_conn->conn_id);
+    if (err)
+        log::error("Delete gRPC ZC connection failed (%d)", err);
+
+    log::info("gRPC: ZC connection deleted")("id", proxy_conn->conn_id);
+
+    if (conn->cfg.kind == MESH_CONN_KIND_RECEIVER) {
+        conn->gw.shutdown(gctx);
+    } else {
+        conn->gw_rx.shutdown(gctx);
+    }
+
+    delete proxy_conn;
+}
+
+} // namespace mesh

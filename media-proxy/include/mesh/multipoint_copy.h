@@ -18,6 +18,7 @@ namespace mesh::multipoint {
 class CopyGroup : public Group {
 public:
     CopyGroup(const std::string& id) : Group(id) {}
+    ~CopyGroup() override {}
 
 private:
     sync::DataplaneAtomicPtr outputs_ptr;

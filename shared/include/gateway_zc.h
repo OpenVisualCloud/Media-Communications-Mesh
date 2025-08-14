@@ -8,7 +8,12 @@
 #define GATEWAY_ZC_H
 
 #include "concurrency.h"
+
+#ifdef SDK_BUILD
+#include "mesh_logger.h"
+#else // SDK_BUILD
 #include "logger.h"
+#endif // SDK_BUILD
 
 namespace mesh::zerocopy {
 
@@ -43,7 +48,7 @@ enum class Result {
 class Gateway {
 public:
     Gateway() {}
-    ~Gateway() {}
+    virtual ~Gateway() {}
 
     State state();
 
@@ -76,6 +81,7 @@ const char * gw_result2str(Result res);
 class GatewayTx : public Gateway {
 public:
     GatewayTx() : Gateway() {}
+    ~GatewayTx() override {}
 
     Result set_tx_callback(std::function<Result(context::Context& ctx, void *ptr,
                                                 uint32_t sz, uint32_t& sent)> cb);

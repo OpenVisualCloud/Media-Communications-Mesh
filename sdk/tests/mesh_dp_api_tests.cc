@@ -95,32 +95,32 @@ int mock_enqueue_buf(mcm_conn_context *pctx, mcm_buffer *buf)
     return 0;
 }
 
-void * mock_grpc_create_client()
+void * mock_create_client(const std::string& endpoint, mesh::ClientContext *parent)
 {
     return NULL;
 }
 
-void * mock_grpc_create_client_json(const std::string& endpoint,
-                                    mesh::ClientContext *parent)
+void mock_destroy_client(void *client)
+{
+}
+
+void * mock_create_conn(void *client, const mesh::ConnectionConfig& cfg)
 {
     return NULL;
 }
 
-void mock_grpc_destroy_client(void *client)
-{
-}
-
-void * mock_grpc_create_conn(void *client, mcm_conn_param *param)
+void * mock_create_conn_zero_copy(void *client, const mesh::ConnectionConfig& cfg,
+                                  const std::string& temporary_id)
 {
     return NULL;
 }
 
-void * mock_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cfg)
+int mock_configure_conn_zero_copy(void *conn)
 {
-    return NULL;
+    return 0;
 }
 
-void mock_grpc_destroy_conn(void *conn)
+void mock_destroy_conn(void *conn)
 {
 }
 
@@ -129,17 +129,15 @@ void mock_grpc_destroy_conn(void *conn)
  */
 void APITests_Setup()
 {
-    mesh_internal_ops.create_conn = mock_create_connection;
-    mesh_internal_ops.destroy_conn = mock_destroy_connection;
-    mesh_internal_ops.dequeue_buf = mock_dequeue_buf;
-    mesh_internal_ops.enqueue_buf = mock_enqueue_buf;
-
-    mesh_internal_ops.grpc_create_client = mock_grpc_create_client;
-    mesh_internal_ops.grpc_create_client_json = mock_grpc_create_client_json;
-    mesh_internal_ops.grpc_destroy_client = mock_grpc_destroy_client;
-    mesh_internal_ops.grpc_create_conn = mock_grpc_create_conn;
-    mesh_internal_ops.grpc_create_conn_json = mock_grpc_create_conn_json;
-    mesh_internal_ops.grpc_destroy_conn = mock_grpc_destroy_conn;
+    mesh_internal_ops.create_client            = mock_create_client;
+    mesh_internal_ops.destroy_client           = mock_destroy_client;
+    mesh_internal_ops.create_conn              = mock_create_conn;
+    mesh_internal_ops.destroy_conn             = mock_destroy_conn;
+    mesh_internal_ops.create_conn_zero_copy    = mock_create_conn_zero_copy;
+    mesh_internal_ops.configure_conn_zero_copy = mock_configure_conn_zero_copy;
+    mesh_internal_ops.destroy_conn_zero_copy   = mock_destroy_conn;
+    mesh_internal_ops.dequeue_buf              = mock_dequeue_buf;
+    mesh_internal_ops.enqueue_buf              = mock_enqueue_buf;
 }
 
 // /**

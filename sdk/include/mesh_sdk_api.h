@@ -11,12 +11,19 @@
 #include <string>
 #include "mesh_conn.h"
 
-void * mesh_grpc_create_client();
-void * mesh_grpc_create_client_json(const std::string& endpoint,
-                                    mesh::ClientContext *parent);
-void   mesh_grpc_destroy_client(void *client);
-void * mesh_grpc_create_conn(void *client, mcm_conn_param *param);
-void * mesh_grpc_create_conn_json(void *client, const mesh::ConnectionConfig& cfg);
-void   mesh_grpc_destroy_conn(void *conn);
+namespace mesh {
+
+void * create_proxy_client(const std::string& endpoint, mesh::ClientContext *parent);
+void   destroy_proxy_client(void *client);
+
+void * create_proxy_conn(void *client, const mesh::ConnectionConfig& cfg);
+void   destroy_proxy_conn(void *conn);
+
+void * create_proxy_conn_zero_copy(void *client, const mesh::ConnectionConfig& cfg,
+                                   const std::string& temporary_id);
+int    configure_proxy_conn_zero_copy(void *conn_ptr);
+void   destroy_proxy_conn_zero_copy(void *conn);
+
+} // namespace mesh
 
 #endif // MESH_SDK_API_H

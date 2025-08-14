@@ -7,24 +7,21 @@
 #define MESH_BUF_H
 
 #include "mesh_dp.h"
-#include "mcm_dp.h"
 
 namespace mesh {
 
 class ConnectionContext;
 
 /**
- * Mesh connection buffer structure
+ * Mesh connection base buffer class
  */
 class BufferContext {
 public:
     BufferContext(ConnectionContext *conn);
 
-    int dequeue(int timeout_ms);
-    int enqueue(int timeout_ms);
+    int put(int timeout_ms);
     int setPayloadLen(size_t size);
     int setMetadataLen(size_t size);
-
 
     /**
      * NOTE: The __public structure is directly mapped in the memory to the
@@ -32,11 +29,6 @@ public:
      * Therefore, the __public structure _MUST_ be placed first here.
      */
     MeshBuffer __public = {};
-
-    /**
-     * NOTE: All declarations below this point are hidden from the user.
-     */
-    mcm_buffer *buf = nullptr;
 };
 
 /**

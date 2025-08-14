@@ -212,7 +212,8 @@ Result GroupManager::reconcile_config(context::Context& ctx,
         }
 
         unregister_group(group);
-        // delete group; -- Deletion should be done in a separate thread.
+        group->shutdown(ctx);
+        delete group;
     }
 
     // Delete some connections and bridges in existing groups
@@ -244,6 +245,9 @@ Result GroupManager::reconcile_config(context::Context& ctx,
         }
 
         for (const auto& bridge_id : cfg.deleted_bridge_ids) {
+            log::info("[RECONCILE] Delete bridge")("group_id", cfg.group_id)
+                                                  ("bridge_id", bridge_id);
+
             auto err = bridges_manager.delete_bridge(ctx, bridge_id);
             if (err)
                 log::error("[RECONCILE] Update group del bridge: not found")
@@ -404,50 +408,12 @@ Result GroupManager::associate(context::Context& ctx, Group *group,
         return Result::error_bad_argument;
     }
 
-    if (dynamic_cast<Local *>(conn)) {
-        std::unique_lock lk(mx);
-        associations[conn->id] = group->id;
-        log::warn("Added to associations");
-    }
-
     return Result::success;
 };
 
-void GroupManager::unassociate_conn(const std::string& conn_id)
-{
-    associations.erase(conn_id);
-}
-
 void GroupManager::run(context::Context& ctx)
 {
-    while (!ctx.cancelled()) {
-        mx.lock();
-
-        std::unordered_set<std::string> associated_group_ids;
-        for (const auto& [_, group_id] : associations) {
-            associated_group_ids.insert(group_id);
-            log::debug("associated_group")("group_id", group_id);
-        }
-
-        log::debug("associated_group_ids")("size", associated_group_ids.size())("deleted_groups", deleted_groups.size());
-
-        std::unordered_set<std::string> group_ids_to_erase;
-        for (const auto& [group_id, group] : deleted_groups) {
-            if (!associated_group_ids.contains(group_id)) {
-                group->shutdown(ctx);
-                delete group;
-                group_ids_to_erase.insert(group_id);
-                log::debug("Group finally deleted")("group_id", group_id);
-            }
-        }
-
-        for (const auto& group_id : group_ids_to_erase)
-            deleted_groups.erase(group_id);
-
-        mx.unlock();
-
-        thread::Sleep(ctx, std::chrono::milliseconds(1000));
-    }
+    ctx.done();
 
     auto tctx = context::WithTimeout(context::Background(), std::chrono::seconds(15));
     for (const auto& [group_id, group] : groups) {

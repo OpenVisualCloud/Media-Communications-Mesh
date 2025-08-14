@@ -126,16 +126,9 @@ Result GatewayTx::on_init(context::Context& ctx)
                     }
                 }
                 thread::Sleep(th_ctx, std::chrono::milliseconds(5));
-
-                // if (tx_callback) {
-                //     uint32_t sent = 0;
-                //     char str[] = "1234567890";
-                //     tx_callback(th_ctx, str, sizeof(str), sent);
-                //     thread::Sleep(th_ctx, std::chrono::milliseconds(100));
-                // }
             }
 
-            log::debug("EXIT gw tx thread");
+            // log::debug("EXIT gw tx thread");
         });
     }
     catch (const std::system_error& e) {
@@ -149,7 +142,8 @@ Result GatewayTx::on_init(context::Context& ctx)
 Result GatewayTx::on_shutdown(context::Context& ctx)
 {
     th_ctx.cancel();
-    th.join();
+    if (th.joinable())
+        th.join();
 
     shmdt(mem_region_ptr);
     return Result::success;

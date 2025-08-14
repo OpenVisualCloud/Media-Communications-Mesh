@@ -15,6 +15,7 @@
 #include <cmath>
 #include "conn_local_zc_wrap_rx.h"
 #include "conn_local_zc_wrap_tx.h"
+#include "conn_local_zc.h"
 
 namespace mesh::connection {
 
@@ -56,15 +57,11 @@ Result LocalManager::make_connection(context::Context& ctx, const Config& cfg,
 
 int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
                                         const std::string& client_id,
-                                        mcm_conn_param *param,
-                                        memif_conn_param *memif_param,
+                                        memif_conn_param& memif_param,
                                         const Config& conn_config,
                                         const std::string& name,
                                         std::string& err_str)
 {
-    if (!param)
-        return -1;
-
     bool found = false;
     for (int i = 0; i < 5; i++) {
         id = generate_uuid_v4();
@@ -128,7 +125,91 @@ int LocalManager::create_connection_sdk(context::Context& ctx, std::string& id,
         return -1;
     }
 
-    memif_conn->get_params_memif(memif_param);
+    memif_conn->get_params_memif(&memif_param);
+
+    // Assign id accessed by metrics collector.
+    conn->assign_id(agent_assigned_id);
+
+    // TODO: Rethink the flow to avoid using two registries with different ids.
+    registry_sdk.replace(id, conn);
+    registry.add(agent_assigned_id, conn);
+
+    conn->legacy_sdk_id = id; // Remember the id generated in Media Proxy.
+    id = agent_assigned_id;   // Let SDK use the Agent provided id.
+
+    return 0;
+}
+
+int LocalManager::create_connection_zc_sdk(context::Context& ctx, std::string& id,
+                                           const std::string& client_id,
+                                           const Config& conn_config,
+                                           const std::string& name,
+                                           const std::string& temporary_id,
+                                           std::string& err_str)
+{
+    bool found = false;
+    for (int i = 0; i < 5; i++) {
+        id = generate_uuid_v4();
+        int err = registry_sdk.add(id, nullptr);
+        if (!err) {
+            found = true;
+            break;
+        }
+    }
+    if (!found) {
+        log::error("Registry contains UUID, max attempts.");
+        return -1;
+    }
+
+    auto zc_conn = new(std::nothrow) ZeroCopyLocal;
+    if (!zc_conn) {
+        registry_sdk.remove(id);
+        return -ENOMEM;
+    }
+
+    zc_conn->sdk_temporary_id = temporary_id;
+
+    zc_conn->set_config(conn_config);
+    auto res = zc_conn->configure(ctx);
+    if (res != Result::success) {
+        registry_sdk.remove(id);
+        delete zc_conn;
+        return -EINVAL;
+    }
+
+    Connection *conn = zc_conn;
+
+    conn->log_dump_config();
+
+    conn->set_parent(client_id);
+    conn->set_name(name);
+
+    // Prepare parameters to register in Media Proxy
+    std::string kind = conn_config.kind == sdk::CONN_KIND_TRANSMITTER ? "rx" : "tx";
+
+    lock();
+    thread::Defer d([this]{ unlock(); });
+
+    // Register local connection in Media Proxy
+    std::string agent_assigned_id;
+    int err = proxyApiClient->RegisterConnection(agent_assigned_id, kind,
+                                                 conn_config, name, err_str);
+    if (err) {
+        registry_sdk.remove(id);
+        delete conn;
+        return -1;
+    }
+
+    res = conn->establish(ctx);
+    if (res != Result::success) {
+        log::error("Local ZC conn establish failed: %s", result2str(res))
+                  ("conn_id", agent_assigned_id);
+        registry_sdk.remove(id);
+        delete conn;
+        return -1;
+    }
+
+    // memif_conn->get_params_memif(&memif_param);
 
     // Assign id accessed by metrics collector.
     conn->assign_id(agent_assigned_id);

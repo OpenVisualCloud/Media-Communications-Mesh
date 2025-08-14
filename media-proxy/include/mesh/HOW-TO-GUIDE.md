@@ -24,7 +24,7 @@ process_user_data(tctx, user_data);
 ...
 ```
 ```cpp
-void process_user_data(context::Context ctx, void *data)
+void process_user_data(context::Context& ctx, void *data)
 {
     process_stage_1(data);
     if (ctx.cancelled())

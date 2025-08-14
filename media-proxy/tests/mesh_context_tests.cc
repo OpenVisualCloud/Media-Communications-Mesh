@@ -1,5 +1,5 @@
 #include <gtest/gtest.h>
-#include "mesh/concurrency.h"
+#include "concurrency.h"
 
 using namespace mesh;
 

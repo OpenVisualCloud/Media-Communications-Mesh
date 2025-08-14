@@ -370,9 +370,7 @@ int BridgesManager::delete_bridge(context::Context& ctx, const std::string& id)
         registry.remove(id);
     }
 
-    auto res = bridge->shutdown_async(ctx, [id]() {
-        multipoint::group_manager.unassociate_conn(id);
-    });
+    auto res = bridge->shutdown_async(ctx, []() {});
     // delete bridge; // The instance is deleted in a thread in shutdown_async()
 
     return 0;

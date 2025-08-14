@@ -42,7 +42,7 @@ set(MEMIF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libmemif)
 set(NLOHMANN_JSON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/nlohmann)
 set(MCMDP_SAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/samples)
 set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC -Wnon-virtual-dtor")
 
 add_subdirectory(${MEMIF_DIR})
 
@@ -127,10 +127,21 @@ foreach(proto_file ${PROTO_FILES})
 endforeach()
 
 aux_source_directory(${MCMDP_SRC_DIR} sdk_srcs)
+
+# Add shared source files
+list(APPEND sdk_srcs
+    "${SHARED_SOURCE_DIR}/concurrency.cc"
+    "${SHARED_SOURCE_DIR}/gateway_zc.cc"
+    "${SHARED_SOURCE_DIR}/uuid.cc"
+)
+
 add_library(mcm_dp SHARED ${sdk_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS} ${GRPC_HDRS})
 set_target_properties(mcm_dp PROPERTIES VERSION ${VERSION})
 set_target_properties(mcm_dp PROPERTIES POSITION_INDEPENDENT_CODE ON)
 # set_target_properties(mcm_dp PROPERTIES C_VISIBILITY_PRESET hidden)
+
+# Define macro to impact shared source files (shared/**)
+target_compile_definitions(mcm_dp PRIVATE SDK_BUILD)
 
 target_include_directories(mcm_dp PUBLIC
     ${MCMDP_INCLUDE_DIR}
@@ -139,6 +150,7 @@ target_include_directories(mcm_dp PUBLIC
     ${gRPC_INCLUDE_DIRS}
     ${PROTO_SRC_DIR}
     ${NLOHMANN_JSON_DIR}
+    ${SHARED_INCLUDE_DIR}
 )
 target_link_libraries(mcm_dp PUBLIC memif gRPC::grpc++ protobuf::libprotobuf)
 

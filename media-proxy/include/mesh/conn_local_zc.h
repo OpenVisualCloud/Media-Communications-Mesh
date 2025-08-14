@@ -4,37 +4,32 @@
  * SPDX-License-Identifier: BSD-3-Clause
  */
 
-#ifndef BRIDGE_ZC_WRAP_TX_H
-#define BRIDGE_ZC_WRAP_TX_H
+#ifndef CONN_LOCAL_ZC_H
+#define CONN_LOCAL_ZC_H
 
-#include "conn.h"
+#include "conn_local_tx.h"
 #include "gateway_zc.h"
-#include "manager_bridges.h"
 
 namespace mesh::connection {
 
 using namespace zerocopy::gateway;
 
-class ZeroCopyWrapperBridgeTx : public Connection {
+class ZeroCopyLocal : public Connection {
 public:
-    ZeroCopyWrapperBridgeTx() : Connection() { _kind = Kind::transmitter; }
+    ZeroCopyLocal() : Connection() {}
 
-    Result configure(context::Context& ctx, const BridgeConfig& cfg);
+    Result configure(context::Context& ctx);
 
-    State state() override;
     Result set_link(context::Context& ctx, Connection *new_link,
                     Connection *requester = nullptr) override;
+
+    std::string sdk_temporary_id;
 
 private:
     Result on_establish(context::Context& ctx) override;
     Result on_shutdown(context::Context& ctx) override;
-
-    void collect(telemetry::Metric& metric, const int64_t& timestamp_ms) override;
-    
-    Connection *bridge;
-    GatewayTx gw;
 };
 
 } // namespace mesh::connection
 
-#endif // BRIDGE_ZC_WRAP_TX_H
+#endif // CONN_LOCAL_ZC_H

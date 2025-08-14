@@ -18,10 +18,16 @@ namespace mesh::connection {
 class LocalManager {
 public:
     int create_connection_sdk(context::Context& ctx, std::string& id,
-                              const std::string& client_id, mcm_conn_param *param,
-                              memif_conn_param *memif_param,
+                              const std::string& client_id,
+                              memif_conn_param& memif_param,
                               const Config& conn_config, const std::string& name,
                               std::string& err_str);
+
+    int create_connection_zc_sdk(context::Context& ctx, std::string& id,
+                                 const std::string& client_id,
+                                 const Config& conn_config, const std::string& name,
+                                 const std::string& temporary_id,
+                                 std::string& err_str);
 
     Result activate_connection_sdk(context::Context& ctx, const std::string& id);
 

@@ -5,8 +5,6 @@
  */
 #include "mesh_buf.h"
 #include "mesh_conn.h"
-#include "mesh_logger.h"
-#include "mesh_dp_legacy.h"
 
 namespace mesh {
 
@@ -15,79 +13,13 @@ BufferContext::BufferContext(ConnectionContext *conn)
     *(MeshConnection **)&__public.conn = (MeshConnection *)conn;
 }
 
-int BufferContext::dequeue(int timeout_ms)
+int BufferContext::put(int timeout_ms)
 {
     ConnectionContext *conn = (ConnectionContext *)__public.conn;
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
 
-    if (conn->ctx.cancelled())
-        return -MESH_ERR_CONN_CLOSED;
-
-    int err;
-    buf = mesh_internal_ops.dequeue_buf(conn->handle, timeout_ms, &err);
-    if (!buf) {
-        if (!err ||
-            err == MEMIF_ERR_POLL_CANCEL ||
-            err == MEMIF_ERR_DISCONNECT ||
-            err == MEMIF_ERR_DISCONNECTED)
-            return -MESH_ERR_CONN_CLOSED;
-        else
-            return err;
-    }
-
-    if (buf->len != conn->cfg.buf_parts.total_size()) {
-        mesh_internal_ops.enqueue_buf(conn->handle, buf);
-        return -MESH_ERR_BAD_BUF_LEN;
-    }
-
-    auto base_ptr = (char *)buf->data;
-    auto sysdata = (BufferSysData *)(base_ptr + conn->cfg.buf_parts.sysdata.offset);
-    auto payload_ptr = (void *)(base_ptr + conn->cfg.buf_parts.payload.offset);
-    auto metadata_ptr = (void *)(base_ptr + conn->cfg.buf_parts.metadata.offset);
-
-    if (conn->cfg.kind == MESH_CONN_KIND_SENDER) {
-        sysdata->payload_len = conn->cfg.calculated_payload_size;
-        sysdata->metadata_len = 0;
-    } else {
-        if (sysdata->payload_len > conn->cfg.buf_parts.payload.size)
-            sysdata->payload_len = conn->cfg.buf_parts.payload.size;
-        if (sysdata->metadata_len > conn->cfg.buf_parts.metadata.size)
-            sysdata->metadata_len = conn->cfg.buf_parts.metadata.size;
-    }
-
-    *(void **)&__public.payload_ptr = payload_ptr;
-    *(size_t *)&__public.payload_len = sysdata->payload_len;
-    *(void **)&__public.metadata_ptr = metadata_ptr;
-    *(size_t *)&__public.metadata_len = sysdata->metadata_len;
-
-    return 0;
-}
-
-int BufferContext::enqueue(int timeout_ms)
-{
-    ConnectionContext *conn = (ConnectionContext *)__public.conn;
-    if (!conn)
-        return -MESH_ERR_BAD_CONN_PTR;
-
-    if (conn->ctx.cancelled())
-        return -MESH_ERR_CONN_CLOSED;
-
-    if (conn->cfg.kind == MESH_CONN_KIND_SENDER) {
-        auto base_ptr = (char *)buf->data;
-        auto sysdata = (BufferSysData *)(base_ptr + conn->cfg.buf_parts.sysdata.offset);
-
-        sysdata->payload_len = __public.payload_len;
-        sysdata->metadata_len = __public.metadata_len;
-        sysdata->seq = 0;          // TODO: Implement incremental seq numbers
-        sysdata->timestamp_ms = 0; // TODO: Implement timestamping
-    }
-
-    /**
-     * TODO: Add timeout handling
-     */
-
-    return mesh_internal_ops.enqueue_buf(conn->handle, buf);
+    return conn->put_buffer((MeshBuffer *)this, timeout_ms);
 }
 
 int BufferContext::setPayloadLen(size_t size)

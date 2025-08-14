@@ -49,7 +49,6 @@ public:
                             std::vector<GroupChangeConfig> added_groups,
                             std::vector<GroupChangeConfig> deleted_groups,
                             std::vector<GroupChangeConfig> updated_groups);
-    void unassociate_conn(const std::string& conn_id);
     void run(context::Context& ctx);
 
 private:
@@ -66,7 +65,6 @@ private:
 
     bool unregister_group(Group *group) {
         std::unique_lock lk(mx);
-        deleted_groups[group->id] = group;
         return groups.erase(group->id) > 0;
     }
 
@@ -82,8 +80,6 @@ private:
     Config cfg;
 
     std::unordered_map<std::string, Group *> groups;
-    std::unordered_map<std::string, Group *> deleted_groups;
-    std::unordered_map<std::string, std::string> associations;
     std::shared_mutex mx;
 };
 

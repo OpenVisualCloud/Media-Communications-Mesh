@@ -206,7 +206,8 @@ Result Local::on_shutdown(context::Context& ctx)
         metrics.errors++;
     }
 
-    th.join();
+    if (th.joinable())
+        th.join();
 
     // Free-up resources
     memif_delete(&memif_conn);

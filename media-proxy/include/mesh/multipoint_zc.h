@@ -18,6 +18,7 @@ namespace mesh::multipoint {
 class ZeroCopyGroup : public Group {
 public:
     ZeroCopyGroup(const std::string& id) : Group(id) {}
+    ~ZeroCopyGroup() override {}
 
     Result on_establish(context::Context& ctx) override;
     Result on_shutdown(context::Context& ctx) override;

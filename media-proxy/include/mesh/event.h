@@ -20,6 +20,8 @@ namespace mesh::event {
 enum class Type {
     empty_event,
     conn_unlink_requested,
+    conn_zero_copy_config,
+    report_metrics_triggered,
 };
 
 typedef void (* Handler)(const Type& type);
@@ -78,7 +80,7 @@ public:
 
             auto evt = v.value();
             for (const auto& [ch, id] : channels) {
-                if (id == evt.consumer_id) {
+                if (evt.consumer_id.empty() || id == evt.consumer_id) {
                     auto tctx = context::WithTimeout(ctx, std::chrono::milliseconds(3000));
                     if (ctx.cancelled())
                         return;

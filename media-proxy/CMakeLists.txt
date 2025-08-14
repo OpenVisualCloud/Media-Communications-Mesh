@@ -113,6 +113,13 @@ file(GLOB_RECURSE proxy_srcs "src/*")
 # Exclude media_proxy.cc from proxy_srcs
 list(REMOVE_ITEM proxy_srcs "${CMAKE_CURRENT_SOURCE_DIR}/src/media_proxy.cc")
 
+# Add shared source files
+list(APPEND proxy_srcs
+    "${SHARED_SOURCE_DIR}/concurrency.cc"
+    "${SHARED_SOURCE_DIR}/gateway_zc.cc"
+    "${SHARED_SOURCE_DIR}/uuid.cc"
+)
+
 add_definitions(-DHAVE_MEMFD_CREATE)
 
 # Find the libfabric library
@@ -135,6 +142,7 @@ include_directories(
     ${gRPC_INCLUDE_DIRS}
     ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
     ${CMAKE_CURRENT_SOURCE_DIR}/../sdk/3rdparty/libmemif/src
+    ${SHARED_INCLUDE_DIR}
 )
 
 add_library(media_proxy_lib STATIC ${proxy_srcs} ${PROTO_SRCS} ${PROTO_HDRS} ${GRPC_SRCS}

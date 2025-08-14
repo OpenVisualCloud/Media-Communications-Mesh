@@ -16,7 +16,7 @@ flowchart
     subgraph sdk [SDK]
         direction TB
         a2("parse_from_json()")
-        a3("CreateConnectionJson()")
+        a3("CreateConnection()")
     end
 
     subgraph proxy [Media Proxy]
@@ -50,7 +50,7 @@ flowchart
     * Structure `mesh::ConnectionConfig`.
     * Method `parse_from_json()`
     * Proto file `conn-config.proto` – Add/Modify/Remove fields.
-    * Method `CreateConnectionJson()`.
+    * Method `CreateConnection()`.
 1. Adjust the Media Proxy code
     * Structure `connection::Config`.
     * Method `connection::Config.assign_from_pb()`.

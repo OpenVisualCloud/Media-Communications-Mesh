@@ -16,7 +16,7 @@ namespace mesh::connection {
 class RdmaTx : public Rdma {
 public:
     RdmaTx();
-    ~RdmaTx();
+    ~RdmaTx() override;
 
     // Configure the RDMA Transmit session
     Result configure(context::Context& ctx, const mcm_conn_param& request,

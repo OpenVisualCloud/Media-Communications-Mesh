@@ -470,7 +470,8 @@ void ProxyAPIClient::Shutdown()
 {
     UnregisterMediaProxy();
 
-    th.join();
+    if (th.joinable())
+        th.join();
 }
 
 void ProxyAPIClient::SetProxyId(const std::string& id)

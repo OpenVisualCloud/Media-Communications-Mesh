@@ -204,13 +204,14 @@ class Connection : public telemetry::MetricsProvider {
 
 public:
     Connection();
-    virtual ~Connection();
+    virtual ~Connection() override;
 
     Kind kind();
-    State state();
     Status status();
+    const std::string& parent();
     const std::string& name();
 
+    virtual State state();
     virtual Result set_link(context::Context& ctx, Connection *new_link,
                             Connection *requester = nullptr);
     Connection * link();
@@ -246,24 +247,6 @@ public:
     Config config;
     std::string legacy_sdk_id;
 
-protected:
-    void set_state(context::Context& ctx, State new_state);
-    void set_status(context::Context& ctx, Status new_status);
-    Result set_result(Result res);
-
-    Result transmit(context::Context& ctx, void *ptr, uint32_t sz);
-
-    virtual Result on_establish(context::Context& ctx) = 0;
-    virtual Result on_shutdown(context::Context& ctx) = 0;
-    virtual Result on_resume(context::Context& ctx);
-    virtual Result on_receive(context::Context& ctx, void *ptr, uint32_t sz,
-                              uint32_t& sent);
-    virtual void on_delete(context::Context& ctx) {}
-
-    Kind _kind = Kind::undefined; // must be properly set in the derived class ctor
-
-    sync::DataplaneAtomicPtr dp_link;
-
     struct {
         std::atomic<uint64_t> inbound_bytes;
         std::atomic<uint64_t> outbound_bytes;
@@ -278,16 +261,34 @@ protected:
         uint32_t prev_transactions_succeeded;
     } metrics;
 
-private:
-    virtual void collect(telemetry::Metric& metric, const int64_t& timestamp_ms);
+protected:
+    void set_state(context::Context& ctx, State new_state);
+    void set_status(context::Context& ctx, Status new_status);
+    Result set_result(Result res);
 
+    Result transmit(context::Context& ctx, void *ptr, uint32_t sz);
+
+    virtual Result on_establish(context::Context& ctx) = 0;
+    virtual Result on_shutdown(context::Context& ctx) = 0;
+    virtual Result on_resume(context::Context& ctx);
+    virtual Result on_receive(context::Context& ctx, void *ptr, uint32_t sz,
+                              uint32_t& sent);
+    virtual void on_delete(context::Context& ctx) {}
+
+    virtual void collect(telemetry::Metric& metric, const int64_t& timestamp_ms) override;
+
+    Kind _kind = Kind::undefined; // must be properly set in the derived class ctor
+
+    sync::DataplaneAtomicPtr dp_link;
+
+private:
     std::atomic<State> _state = State::not_configured;
     std::atomic<Status> _status = Status::initial;
 
     context::Context establish_ctx = context::WithCancel(context::Background());
     std::jthread establish_th;
     std::jthread shutdown_th;
-    std::string parent_id;
+    std::string _parent_id;
     std::string _name;
 };
 

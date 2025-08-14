@@ -92,7 +92,7 @@ flowchart LR
     style tx-gateway4 fill:green
 ```
 
-### Case 1.2 – Receive external ST2110 media stream
+### Case 1.2 – Receive external ST 2110 media stream
 
 ```mermaid
 flowchart LR
@@ -149,7 +149,7 @@ flowchart LR
 
 ## Development Phase 2 – Add Zero-Copy Support in SDK
 
-### Case 2.1 – Receive external ST2110 media stream
+### Case 2.1 – Receive external ST 2110 media stream
 
 ```mermaid
 flowchart LR
@@ -250,7 +250,7 @@ flowchart LR
 
 ## Development Phase 3 – Add Zero-Copy Support in Ingress Bridges
 
-### Case 3.1 – Receive external ST2110 media stream
+### Case 3.1 – Receive external ST 2110 media stream
 
 ```mermaid
 flowchart LR

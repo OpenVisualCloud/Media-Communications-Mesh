@@ -7,6 +7,8 @@
 #include <string.h>
 #include <signal.h>
 #include "mesh_conn.h"
+#include "mesh_conn_memif.h"
+#include "mesh_conn_zc.h"
 #include "mesh_logger.h"
 #include "json.hpp"
 #include "mesh_dp_legacy.h"
@@ -150,29 +152,30 @@ int ClientContext::shutdown()
      * TODO: Shutdown and deallocate connections here
      */
 
-    mesh_internal_ops.grpc_destroy_client(grpc_client);
-    grpc_client = NULL;
+    mesh_internal_ops.destroy_client(proxy_client);
+    proxy_client = NULL;
 
     return 0;
 }
 
-int ClientContext::init(const char *config)
+int ClientContext::init(const char *json_cfg)
 {
-    log::debug("JSON client config: %s", config);
+    log::debug("JSON client config: %s", json_cfg);
 
-    int err = cfg.parse_from_json(config);
+    int err = cfg.parse_from_json(json_cfg);
     if (err)
         return err;
 
     std::string endpoint = cfg.proxy_ip + ":" + cfg.proxy_port;
-    grpc_client = mesh_internal_ops.grpc_create_client_json(endpoint, this);
-    if (!grpc_client)
+    proxy_client = mesh_internal_ops.create_client(endpoint, this);
+    if (!proxy_client)
         return -MESH_ERR_CLIENT_FAILED;
 
     return 0;
 }
 
-int ClientContext::create_conn(MeshConnection **conn, int kind)
+int ClientContext::create_connection(MeshConnection **conn, int kind,
+                                     const char *json_cfg)
 {
     if (!conn)
         return -MESH_ERR_BAD_CONN_PTR;
@@ -185,11 +188,26 @@ int ClientContext::create_conn(MeshConnection **conn, int kind)
     if ((long int)conns.size() >= cfg.max_conn_num)
         return -MESH_ERR_MAX_CONN;
 
-    ConnectionContext *conn_ctx = new(std::nothrow) ConnectionContext(this);
+    ConnectionConfig config;
+    auto err = config.apply_json_config(json_cfg);
+    if (err)
+        return err;
+
+    ConnectionContext *conn_ctx = nullptr;
+
+    if (!config.options.engine.compare("zero-copy"))
+        conn_ctx = new(std::nothrow) ZeroCopyConnectionContext(this);
+    else
+        conn_ctx = new(std::nothrow) MemifConnectionContext(this);
+
     if (!conn_ctx)
         return -ENOMEM;
 
+    conn_ctx->cfg = std::move(config);
     conn_ctx->cfg.kind = kind;
+
+    *(size_t *)&conn_ctx->__public.payload_size = conn_ctx->cfg.buf_parts.payload.size;
+    *(size_t *)&conn_ctx->__public.metadata_size = conn_ctx->cfg.buf_parts.metadata.size;
 
     try {
         conns.push_back(conn_ctx);

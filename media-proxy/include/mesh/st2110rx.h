@@ -74,7 +74,8 @@ class ST2110Rx : public ST2110<FRAME, HANDLE, OPS> {
             return res;
         }
 
-        frame_thread_handle.join();
+        if (frame_thread_handle.joinable())
+            frame_thread_handle.join();
 
         this->set_state(ctx, State::closed);
         return this->set_result(Result::success);

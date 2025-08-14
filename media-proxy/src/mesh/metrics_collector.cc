@@ -8,6 +8,7 @@
 #include "proxy_api.h"
 #include "logger.h"
 #include "manager_local.h"
+#include "event.h"
 
 namespace mesh::telemetry {
 
@@ -79,7 +80,14 @@ void MetricsCollector::run(context::Context& ctx)
 
         metrics.clear();
 
-        thread::Sleep(ctx, std::chrono::milliseconds(1000));
+        assert(METRICS_COLLECT_INTERVAL_MS > METRICS_SDK_REPORT_BEFORE_COLLECTING_MS);
+
+        thread::Sleep(ctx, std::chrono::milliseconds(METRICS_COLLECT_INTERVAL_MS -
+                                                     METRICS_SDK_REPORT_BEFORE_COLLECTING_MS));
+
+        event::broker.send(ctx, "", event::Type::report_metrics_triggered, {});
+
+        thread::Sleep(ctx, std::chrono::milliseconds(METRICS_SDK_REPORT_BEFORE_COLLECTING_MS));
     }
 }
 

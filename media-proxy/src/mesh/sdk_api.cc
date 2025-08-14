@@ -31,12 +31,16 @@ using ::grpc::StatusCode;
 using ::sdk::SDKAPI;
 using ::sdk::CreateConnectionRequest;
 using ::sdk::CreateConnectionResponse;
+using ::sdk::CreateConnectionZeroCopyResponse;
 using ::sdk::ActivateConnectionRequest;
 using ::sdk::ActivateConnectionResponse;
 using ::sdk::DeleteConnectionRequest;
 using ::sdk::DeleteConnectionResponse;
 using ::sdk::RegisterRequest;
 using ::sdk::Event;
+using ::sdk::SendMetricsRequest;
+using ::sdk::ConnectionMetrics;
+using ::sdk::SendMetricsResponse;
 using ::sdk::ConnectionConfig;
 using ::sdk::ConfigMultipointGroup;
 using ::sdk::ConfigST2110;
@@ -58,11 +62,6 @@ public:
         if (!client)
             return Status(StatusCode::INVALID_ARGUMENT, "client not registered");
 
-        memif_conn_param memif_param = {};
-        mcm_conn_param param = {};
-
-        // log::debug("Has config?")("yes", req->has_config());
-
         std::string name = req->name();
 
         if (!req->has_config()) {
@@ -77,22 +76,14 @@ public:
             return Status(StatusCode::INVALID_ARGUMENT, connection::result2str(res));
         }
 
-        int sz = req->mcm_conn_param().size();
-        if (sz != sizeof(mcm_conn_param)) {
-            log::debug("Param size (%d) not equal to mcm_conn_param (%ld)",
-                       sz, sizeof(mcm_conn_param));
-            // return Status(StatusCode::INVALID_ARGUMENT,
-            //               "Wrong size of mcm_conn_param");
-        }
-        memcpy(&param, req->mcm_conn_param().data(), sz);
-
         auto ctx = context::WithCancel(context::Background());
         std::string conn_id;
         std::string err_str;
 
+        memif_conn_param memif_param = {};
         auto& mgr = connection::local_manager;
-        int err = mgr.create_connection_sdk(ctx, conn_id, client_id, &param,
-                                            &memif_param, conn_config, name, err_str);
+        int err = mgr.create_connection_sdk(ctx, conn_id, client_id, memif_param,
+                                            conn_config, name, err_str);
         if (err) {
             log::error("create_connection_sdk() failed (%d)", err);
             if (err_str.empty())
@@ -110,6 +101,53 @@ public:
 
         log::info("[SDK] Connection created")("id", resp->conn_id())
                                              ("client_id", client_id);
+        return Status::OK;
+    }
+
+    Status CreateConnectionZeroCopy(ServerContext* sctx, const CreateConnectionRequest* req,
+                                    CreateConnectionZeroCopyResponse* resp) override {
+        const auto& client_id = req->client_id();
+        auto client = client::registry.get(client_id);
+        if (!client)
+            return Status(StatusCode::INVALID_ARGUMENT, "client not registered");
+
+        std::string name = req->name();
+
+        if (!req->has_config()) {
+            log::error("SDK: no config provided");
+            return Status(StatusCode::INVALID_ARGUMENT, "no config provided");
+        }
+
+        connection::Config conn_config;
+        auto res = conn_config.assign_from_pb(req->config());
+        if (res != connection::Result::success) {
+            log::error("SDK: parse err: %s", connection::result2str(res));
+            return Status(StatusCode::INVALID_ARGUMENT, connection::result2str(res));
+        }
+
+        auto ctx = context::WithCancel(context::Background());
+        std::string conn_id;
+        std::string err_str;
+
+        const auto& temporary_id = req->temporary_id();
+
+        auto& mgr = connection::local_manager;
+        int err = mgr.create_connection_zc_sdk(ctx, conn_id, client_id,
+                                               conn_config, name, temporary_id,
+                                               err_str);
+        if (err) {
+            log::error("create_connection_zc_sdk() failed (%d)", err);
+            if (err_str.empty())
+                return Status(StatusCode::INTERNAL, "create_connection_zc_sdk() failed");
+            else
+                return Status(StatusCode::INTERNAL, err_str);
+        }
+
+        resp->set_conn_id(conn_id);
+
+        log::info("[SDK] Connection ZC created")("id", conn_id)
+                                                ("temporary_id", temporary_id)
+                                                ("client_id", client_id);
         return Status::OK;
     }
 
@@ -159,11 +197,51 @@ public:
             log::info("[SDK] Connection deleted")("id", conn_id)
                                                  ("client_id", client_id);
 
-        multipoint::group_manager.unassociate_conn(conn_id);
-
         return Status::OK;
     }
 
+    Status SendMetrics(ServerContext* sctx, const SendMetricsRequest* req,
+                       SendMetricsResponse* resp) override {
+        const auto& client_id = req->client_id();
+
+        auto client = client::registry.get(client_id);
+        if (!client)
+            return Status(StatusCode::INVALID_ARGUMENT, "client not registered");
+
+        auto ctx = context::WithCancel(context::Background());
+
+        for (const auto& metric : req->conn_metrics()) {
+
+            auto& conn_id = metric.conn_id();
+
+            auto& mgr = connection::local_manager;
+            mgr.lock();
+            auto conn = mgr.find_connection(ctx, conn_id);
+            if (!conn) {
+                mgr.unlock();
+                continue;
+            }
+
+            conn->metrics.inbound_bytes = metric.inbound_bytes();
+            conn->metrics.outbound_bytes = metric.outbound_bytes();
+            conn->metrics.transactions_succeeded = metric.transactions_succeeded();
+            conn->metrics.transactions_failed = metric.transactions_failed();
+            conn->metrics.errors = metric.errors();
+
+            mgr.unlock();
+            
+            // log::debug("Metric")
+            //           ("client_id", client_id)
+            //           ("conn_id", conn_id)
+            //           ("in", metric.inbound_bytes())
+            //           ("out", metric.outbound_bytes())
+            //           ("strn", metric.transactions_succeeded())
+            //           ("ftrn", metric.transactions_failed())
+            //           ("err", metric.errors());
+        }
+        return Status::OK;
+    }
+    
     Status RegisterAndStreamEvents(ServerContext* sctx, const RegisterRequest* req,
                                    ServerWriter<Event>* writer) override {
         std::string id;
@@ -190,7 +268,7 @@ public:
                 continue;
 
             auto evt = v.value();
-            log::debug("Sending event")("type", (int)evt.type);
+            // log::debug("Sending event")("type", (int)evt.type);
 
             Event event;
 
@@ -203,6 +281,38 @@ public:
                         e->set_conn_id(conn_id);
                     }
                 }
+            } else if (evt.type == event::Type::conn_zero_copy_config) {
+                auto e = event.mutable_conn_zero_copy_config();
+                if (evt.params.contains("conn_id")) {
+                    auto v = evt.params["conn_id"];
+                    if (v.type() == typeid(std::string)) {
+                        auto conn_id = std::any_cast<std::string>(v);
+                        e->set_conn_id(conn_id);
+                    }
+                }
+                if (evt.params.contains("temporary_id")) {
+                    auto v = evt.params["temporary_id"];
+                    if (v.type() == typeid(std::string)) {
+                        auto temporary_id = std::any_cast<std::string>(v);
+                        e->set_temporary_id(temporary_id);
+                    }
+                }
+                if (evt.params.contains("sysv_key")) {
+                    auto v = evt.params["sysv_key"];
+                    if (v.type() == typeid(key_t)) {
+                        auto sysv_key = std::any_cast<key_t>(v);
+                        e->set_sysv_key(sysv_key);
+                    }
+                }
+                if (evt.params.contains("mem_region_sz")) {
+                    auto v = evt.params["mem_region_sz"];
+                    if (v.type() == typeid(size_t)) {
+                        auto mem_region_sz = std::any_cast<size_t>(v);
+                        e->set_mem_region_sz(mem_region_sz);
+                    }
+                }
+            } else if (evt.type == event::Type::report_metrics_triggered) {
+                auto e = event.mutable_report_metrics_triggered();
             }
 
             writer->Write(event);

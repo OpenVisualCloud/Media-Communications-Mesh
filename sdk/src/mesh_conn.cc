@@ -19,20 +19,33 @@
  * Isolation interface for testability. Accessed from unit tests only.
  */
 struct mesh_internal_ops_t mesh_internal_ops = {
-    .create_conn = mcm_create_connection,
-    .destroy_conn = mcm_destroy_connection,
-    .dequeue_buf = mcm_dequeue_buffer,
-    .enqueue_buf = mcm_enqueue_buffer,
-
-    .grpc_create_client = mesh_grpc_create_client,
-    .grpc_create_client_json = mesh_grpc_create_client_json,
-    .grpc_destroy_client = mesh_grpc_destroy_client,
-    .grpc_create_conn = mesh_grpc_create_conn,
-    .grpc_create_conn_json = mesh_grpc_create_conn_json,
-    .grpc_destroy_conn = mesh_grpc_destroy_conn,
+    .create_client            = mesh::create_proxy_client,
+    .destroy_client           = mesh::destroy_proxy_client,
+    .create_conn              = mesh::create_proxy_conn,
+    .destroy_conn             = mesh::destroy_proxy_conn,
+    .create_conn_zero_copy    = mesh::create_proxy_conn_zero_copy,
+    .configure_conn_zero_copy = mesh::configure_proxy_conn_zero_copy,
+    .destroy_conn_zero_copy   = mesh::destroy_proxy_conn_zero_copy,
+    .dequeue_buf              = mcm_dequeue_buffer,
+    .enqueue_buf              = mcm_enqueue_buffer,
 };
 
 namespace mesh {
+
+int ConnectionConfig::apply_json_config(const char *config) {
+
+    auto err = parse_from_json(config);
+    if (err)
+        return err;
+
+    log::debug("JSON conn config: %s", config);
+
+    err = calc_payload_size();
+    if (err)
+        return err;
+
+    return configure_buf_partitions();
+}
 
 int ConnectionConfig::parse_from_json(const char *str)
 {
@@ -579,109 +592,10 @@ ConnectionContext::ConnectionContext(ClientContext *parent)
     cfg.payload_type = MESH_PAYLOAD_TYPE_UNINITIALIZED;
 }
 
-int ConnectionContext::apply_json_config(const char *config) {
-
-    auto err = cfg.parse_from_json(config);
-    if (err)
-        return err;
-
-    log::debug("JSON conn config: %s", config);
-
-    err = cfg.calc_payload_size();
-    if (err)
-        return err;
-
-    return cfg.configure_buf_partitions();
-}
-
-int ConnectionContext::establish()
+void ConnectionContext::assign_config(ConnectionConfig& cfg)
 {
-    int err;
-
-    if (handle)
-        return -MESH_ERR_BAD_CONN_PTR;
-
-    ClientContext *mc_ctx = (ClientContext *)__public.client;
-    if (!mc_ctx)
-        return -MESH_ERR_BAD_CLIENT_PTR;
-
-    grpc_conn = mesh_internal_ops.grpc_create_conn_json(mc_ctx->grpc_client,
-                                                        cfg);
-    if (!grpc_conn) {
-        handle = NULL;
-        return -MESH_ERR_CONN_FAILED;
-    }
-    handle = *(mcm_conn_context **)grpc_conn; // unsafe type casting
-    if (!handle)
-        return -MESH_ERR_CONN_FAILED;
-
-    *(size_t *)&__public.payload_size = cfg.buf_parts.payload.size;
-    *(size_t *)&__public.metadata_size = cfg.buf_parts.metadata.size;
-
-    if (cfg.buf_parts.total_size() != handle->frame_size)
-        return -MESH_ERR_CONN_FAILED;
-
-    return 0;
-}
-
-int ConnectionContext::shutdown()
-{
-    ClientContext *mc_ctx = (ClientContext *)__public.client;
-    if (!mc_ctx)
-        return -MESH_ERR_BAD_CLIENT_PTR;
-
-    if (grpc_conn) {
-        /** In Sender mode, delay for 50 ms to allow for completing
-         * transmission of all buffers sitting in the memif queue
-         * before destroying the connection.
-         *
-         * TODO: Replace the delay with polling of the actual memif
-         * queue status.
-         */
-        if (cfg.kind == MESH_CONN_KIND_SENDER) {
-            usleep(50000);
-            mesh_internal_ops.grpc_destroy_conn(grpc_conn);
-        } else {
-            /**
-             * In Receiver mode, start a thread to drain the queue continuously
-             * while the DeleteConnection request is being processed in Media
-             * Proxy and Mesh Agent. This prevents the following errors at
-             * connection shutdown:
-             *     Failed to alloc memif buffer: Ring buffer full.
-             */
-            std::stop_source ss;
-
-            std::jthread th([&] {
-                while (!ss.stop_requested()) {
-                    BufferContext *buf_ctx = new(std::nothrow) BufferContext(this);
-                    if (!buf_ctx)
-                        break;
-                
-                    int err = buf_ctx->dequeue(500);
-                    if (err) {
-                        delete buf_ctx;
-                        break;
-                    }
-
-                    err = buf_ctx->enqueue(500);
-
-                    delete buf_ctx;
-
-                    if (err)
-                        break;
-                }
-            });
-
-            mesh_internal_ops.grpc_destroy_conn(grpc_conn);
-
-            ss.request_stop();
-        }
-
-        grpc_conn = NULL;
-        handle = NULL;
-    }
-
-    return 0;
+    cfg.kind = this->cfg.kind;
+    this->cfg = std::move(cfg);
 }
 
 ConnectionContext::~ConnectionContext()
@@ -691,29 +605,6 @@ ConnectionContext::~ConnectionContext()
     std::lock_guard<std::mutex> lk(mc_ctx->mx);
 
     mc_ctx->conns.remove(this);
-}
-
-int ConnectionContext::get_buffer_timeout(MeshBuffer **buf, int timeout_ms)
-{
-    if (!buf)
-        return -MESH_ERR_BAD_BUF_PTR;
-
-    BufferContext *buf_ctx = new(std::nothrow) BufferContext(this);
-    if (!buf_ctx)
-        return -ENOMEM;
-
-    if (timeout_ms == MESH_TIMEOUT_DEFAULT && __public.client)
-        timeout_ms = ((ClientContext *)__public.client)->cfg.default_timeout_us;
-
-    int err = buf_ctx->dequeue(timeout_ms);
-    if (err) {
-        delete buf_ctx;
-        return err;
-    }
-
-    *buf = (MeshBuffer *)buf_ctx;
-
-    return 0;
 }
 
 } // namespace mesh

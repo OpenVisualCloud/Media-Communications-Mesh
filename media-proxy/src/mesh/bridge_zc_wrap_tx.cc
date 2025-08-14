@@ -26,6 +26,16 @@ Result ZeroCopyWrapperBridgeTx::configure(context::Context& ctx,
     return Result::success;
 }
 
+State ZeroCopyWrapperBridgeTx::state()
+{
+    auto st = Connection::state();
+
+    if (st == State::active)
+        return bridge->state();
+    else
+        return st;
+}
+
 Result ZeroCopyWrapperBridgeTx::set_link(context::Context& ctx, Connection *new_link,
                                          Connection *requester)
 {
@@ -74,6 +84,13 @@ Result ZeroCopyWrapperBridgeTx::on_shutdown(context::Context& ctx)
 {
     gw.shutdown(ctx);
     return bridge->shutdown(ctx);
+}
+
+void ZeroCopyWrapperBridgeTx::collect(telemetry::Metric& metric,
+                                      const int64_t& timestamp_ms)
+{
+    metrics.errors.store(bridge->metrics.errors);
+    Connection::collect(metric, timestamp_ms);
 }
 
 } // namespace mesh::connection

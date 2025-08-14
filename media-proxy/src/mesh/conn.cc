@@ -73,6 +73,10 @@ const std::string& Connection::name() {
     return _name;
 }
 
+const std::string& Connection::parent() {
+    return _parent_id;
+}
+
 void Connection::set_config(const Config& cfg)
 {
     config = cfg;
@@ -130,7 +134,7 @@ void Connection::log_dump_config()
 
 void Connection::set_parent(const std::string& parent_id)
 {
-    this->parent_id = parent_id;
+    _parent_id = parent_id;
 }
 
 void Connection::set_name(const std::string& name)
@@ -140,9 +144,9 @@ void Connection::set_name(const std::string& name)
 
 void Connection::notify_parent_conn_unlink_requested(context::Context& ctx)
 {
-    if (!parent_id.empty())
-            event::broker.send(ctx, parent_id, event::Type::conn_unlink_requested,
-                               {{"conn_id", id}});
+    if (!parent().empty())
+        event::broker.send(ctx, parent(), event::Type::conn_unlink_requested,
+                           {{"conn_id", id}});
 }
 
 Result Connection::establish(context::Context& ctx)
@@ -168,13 +172,13 @@ Result Connection::establish_async(context::Context& ctx)
 
         try {
             establish_th = std::jthread([this]() {
-                log::warn("START establish thread");
+                // log::warn("START establish thread");
                 auto res = on_establish(establish_ctx);
                 if (res != Result::success)
                     log::error("Threaded on_establish() err: %s",
                                result2str(res));
 
-                log::warn("EXIT establish thread");
+                // log::warn("EXIT establish thread");
             });
         }
         catch (const std::system_error& e) {

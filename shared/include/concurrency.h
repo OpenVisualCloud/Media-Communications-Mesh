@@ -44,6 +44,11 @@ public:
     std::stop_token stop_token();
     bool done();
 
+    // uint32_t reserved[17] = {1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1};
+    // uint32_t reserved[5] = {1,1,1,1,1};
+    // char reserved[25] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08,0x09,0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18,0x19,0x21,0x22,0x31,0x32,0x33};
+    // char reserved[9] = "ABCDEFGH";
+
     std::stop_source ss;
 
 protected:
@@ -57,7 +62,7 @@ protected:
     std::unique_ptr<std::stop_callback<std::function<void()>>> cb = nullptr;
 
     friend Context& Background();
-    friend class WithCancel;
+    // friend class WithCancel;
     friend Context WithCancel(Context& parent);
     friend Context WithTimeout(Context& parent,
                                std::chrono::milliseconds timeout_ms);
@@ -179,6 +184,16 @@ public:
         q.pop();
         cv_full.notify_one();
         return value;
+    }
+
+    bool try_send(T value) {
+        std::unique_lock<std::mutex> lk(mx);
+        if (_closed || q.size() >= cap) {
+            return false;
+        }
+        q.push(std::move(value));
+        cv_empty.notify_one();
+        return true;
     }
 
     std::optional<T> try_receive() {

@@ -32,8 +32,6 @@ key_t generate_sysv_key(const std::string& input) {
 
 Result ZeroCopyGroup::on_establish(context::Context& ctx)
 {
-    // TODO: shmget create
-
     cfg.sysv_key = generate_sysv_key(id);
     cfg.mem_region_sz = config.buf_parts.total_size() + 4;
 
@@ -60,8 +58,6 @@ Result ZeroCopyGroup::on_establish(context::Context& ctx)
 
 Result ZeroCopyGroup::on_shutdown(context::Context& ctx)
 {
-    // TODO: shmctl RMID
-
     auto res = shmctl(shmid, IPC_RMID, nullptr);
     if (res < 0) {
         log::error("shmctl error %d", errno);

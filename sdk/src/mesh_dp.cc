@@ -7,6 +7,7 @@
 #include "mesh_conn.h"
 #include "mesh_buf.h"
 #include "mesh_dp_legacy.h"
+#include "mesh_logger.h"
 
 using namespace mesh;
 
@@ -71,15 +72,11 @@ int mesh_create_tx_connection(MeshClient *mc, MeshConnection **conn, const char 
 
     ClientContext *mc_ctx = (ClientContext *)mc;
 
-    auto err = mc_ctx->create_conn(conn, MESH_CONN_KIND_SENDER);
+    auto err = mc_ctx->create_connection(conn, MESH_CONN_KIND_SENDER, cfg);
     if (err)
         return err;
 
     ConnectionContext *conn_ctx = (ConnectionContext *)(*conn);
-
-    err = conn_ctx->apply_json_config(cfg);
-    if (err)
-        return err;
 
     return conn_ctx->establish();
 }
@@ -94,15 +91,11 @@ int mesh_create_rx_connection(MeshClient *mc, MeshConnection **conn, const char 
 
     ClientContext *mc_ctx = (ClientContext *)mc;
 
-    auto err = mc_ctx->create_conn(conn, MESH_CONN_KIND_RECEIVER);
+    auto err = mc_ctx->create_connection(conn, MESH_CONN_KIND_RECEIVER, cfg);
     if (err)
         return err;
 
     ConnectionContext *conn_ctx = (ConnectionContext *)(*conn);
-
-    err = conn_ctx->apply_json_config(cfg);
-    if (err)
-        return err;
 
     return conn_ctx->establish();
 }
@@ -165,7 +158,7 @@ int mesh_get_buffer_timeout(MeshConnection *conn, MeshBuffer **buf,
 
     ConnectionContext *conn_ctx = (ConnectionContext *)conn;
 
-    return conn_ctx->get_buffer_timeout(buf, timeout_ms);
+    return conn_ctx->get_buffer(buf, timeout_ms);
 }
 
 /**
@@ -189,7 +182,7 @@ int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms)
     if (!buf_ctx)
         return -MESH_ERR_BAD_BUF_PTR;
 
-    int err = buf_ctx->enqueue(timeout_ms);
+    int err = buf_ctx->put(timeout_ms);
 
     delete buf_ctx;
     *buf = NULL;

@@ -6,6 +6,7 @@
 #ifndef MESH_CONN_H
 #define MESH_CONN_H
 
+#include <atomic>
 #include <string>
 #include "mesh_dp.h"
 #include "mcm_dp.h"
@@ -20,18 +21,19 @@ class ConnectionConfig;
  * Isolation interface for testability. Accessed from unit tests only.
  */
 struct mesh_internal_ops_t {
-    mcm_conn_context * (*create_conn)(mcm_conn_param *param);
-    void (*destroy_conn)(mcm_conn_context *pctx);
+    void * (*create_client)(const std::string& endpoint, mesh::ClientContext *parent);
+    void   (*destroy_client)(void *client);
+
+    void * (*create_conn)(void *client, const mesh::ConnectionConfig& cfg);
+    void   (*destroy_conn)(void *conn);
+
+    void * (*create_conn_zero_copy)(void *client, const mesh::ConnectionConfig& cfg,
+                                    const std::string& temporary_id);
+    int    (*configure_conn_zero_copy)(void *conn);
+    void   (*destroy_conn_zero_copy)(void *conn);
+
     mcm_buffer * (*dequeue_buf)(mcm_conn_context *pctx, int timeout, int *error_code);
     int (*enqueue_buf)(mcm_conn_context *pctx, mcm_buffer *buf);
-
-    void * (*grpc_create_client)();
-    void * (*grpc_create_client_json)(const std::string& endpoint,
-                                      mesh::ClientContext *parent);
-    void (*grpc_destroy_client)(void *client);
-    void * (*grpc_create_conn)(void *client, mcm_conn_param *param);
-    void * (*grpc_create_conn_json)(void *client, const mesh::ConnectionConfig& cfg);
-    void (*grpc_destroy_conn)(void *conn);
 };
 
 extern struct mesh_internal_ops_t mesh_internal_ops;
@@ -57,6 +59,8 @@ namespace mesh {
 
 class ConnectionConfig {
 public:
+    int apply_json_config(const char *config);
+
     int parse_from_json(const char *str);
     int calc_payload_size();
     int configure_buf_partitions();
@@ -162,12 +166,14 @@ private:
 class ConnectionContext {
 public:
     explicit ConnectionContext(ClientContext *parent);
-    ~ConnectionContext();
+    virtual ~ConnectionContext();
 
-    int apply_json_config(const char *config);
-    int establish();
-    int shutdown();
-    int get_buffer_timeout(MeshBuffer **buf, int timeout_ms);
+    void assign_config(ConnectionConfig& cfg);
+
+    virtual int establish() = 0;
+    virtual int shutdown() = 0;
+    virtual int get_buffer(MeshBuffer **buf, int timeout_ms) = 0;
+    virtual int put_buffer(MeshBuffer *buf, int timeout_ms) = 0;
 
     /**
      * NOTE: The __public structure is directly mapped in the memory to the
@@ -179,17 +185,24 @@ public:
     /**
      * NOTE: All declarations below this point are hidden from the user.
      */
+    ConnectionConfig cfg;
+
+    context::Context ctx = context::WithCancel(context::Background());
 
     /**
      * MCM connection handle.
      */
     mcm_conn_context *handle = nullptr;
 
-    void *grpc_conn = nullptr;
+    void *proxy_conn = nullptr;
 
-    ConnectionConfig cfg;
-
-    context::Context ctx = context::WithCancel(context::Background());
+    struct {
+        std::atomic<uint64_t> inbound_bytes;
+        std::atomic<uint64_t> outbound_bytes;
+        std::atomic<uint32_t> transactions_succeeded;
+        std::atomic<uint32_t> transactions_failed;
+        std::atomic<uint32_t> errors;
+    } metrics;
 };
 
 } // namespace mesh
