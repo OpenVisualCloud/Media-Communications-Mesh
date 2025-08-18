@@ -1,16 +1,16 @@
 {
-    "python.testing.cwd": "tests/validation",
-    "python.testing.unittestEnabled": false,
-    "python.testing.pytestEnabled": true,
-    "[python]": {
-        "editor.formatOnSave": true
-    },
-    "black-formatter.args": [
-        "--config",
-        "tests/validation/pyproject.toml"
-    ],
-    "flake8.args": [
-        "--config",
-        "tests/validation/setup.cfg"
-    ]
+  "python.testing.pytestArgs": [
+    "-s",
+    "./tests/validation/functional",
+    "--show-capture=no",
+    "--test_config=./tests/validation/configs/test_config.yaml",
+    "--topology_config=./tests/validation/configs/topology_config.yaml"
+  ],
+  "python.testing.unittestEnabled": false,
+  "python.testing.pytestEnabled": true,
+  "[python]": {
+    "editor.formatOnSave": true
+  },
+  "black-formatter.args": ["--config", "tests/validation/pyproject.toml"],
+  "flake8.args": ["--config", "tests/validation/setup.cfg"]
 }

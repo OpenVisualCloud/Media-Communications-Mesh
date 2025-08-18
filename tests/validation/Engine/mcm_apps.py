@@ -6,16 +6,15 @@ from pathlib import Path
 
 from Engine.const import (
     LOG_FOLDER,
+    MCM_PATH,
     MEDIA_PROXY_ERROR_KEYWORDS,
+    MEDIA_PROXY_PORT,
     MESH_AGENT_ERROR_KEYWORDS,
+    MTL_PATH,
+    STOP_GRACEFULLY_PERIOD,
 )
 
 logger = logging.getLogger(__name__)
-STOP_GRACEFULLY_PERIOD = 2  # seconds
-
-MCM_PATH = "/opt/intel/mcm"  # Default path for MCM installation
-MTL_PATH = f"{MCM_PATH}/_build/mtl"  # Default path for Media Transport Library
-MEDIA_PROXY_PORT = 8002  # Default port for Media Proxy
 
 
 def get_mtl_path(host) -> str:
