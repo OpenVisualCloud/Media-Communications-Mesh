@@ -27,46 +27,112 @@ Project uses flake8, black, isort and markdownlint as linters. All of these are 
 - setup.cfg - flake8 configuration
 - settings.json - example settings for VSCode, to be copied to .vscode/settings.json
 
-
 ## Folder structure
 
 > **Note:** Some of the folders mentioned below may be unavailable in the current version of the repository.
 
-```text
-functional
- +--- cluster ____ tests of multi-node RDMA-based transfers (simulated)
- |     +- ancillary __ ancillary data
- |     +- audio ______ raw audio data
- |     +- blob _______ any other data not mentioned elsewhere
- |     +- ffmpeg _____ ffmpeg plugin with all types of data
- |     '- video ______ raw and compressed video data
- +--- local ______ tests of single-node memory copy (memif)
- |     +- ancillary __ ancillary data
- |     +- audio ______ raw audio data
- |     +- blob _______ any other data not mentioned elsewhere
- |     +- ffmpeg _____ ffmpeg plugin with all types of data
- |     '- video ______ raw and compressed video data
- '--- st2110 _____ tests of ST 2210 standard with Media Transport Library
-       +- ffmpeg _____ ffmpeg plugin with all types of data
-       +- st20 _______ raw video (ST 2110-20)
-       +- st22 _______ compressed video (ST 2110-22)
-       '- st30 _______ raw audio (ST 2110-30)
-```
-
+- **`functional`**
+  - **`cluster`** – tests of multi-node RDMA-based transfers (simulated)
+    - `ancillary` – ancillary data
+    - `audio` – raw audio data
+    - `blob` – any other data not mentioned elsewhere
+    - `ffmpeg` – ffmpeg plugin with all types of data
+    - `video` – raw and compressed video data
+  - **`local`** – tests of single-node memory copy (memif)
+    - `ancillary` – ancillary data
+    - `audio` – raw audio data
+    - `blob` – any other data not mentioned elsewhere
+    - `ffmpeg` – ffmpeg plugin with all types of data
+    - `video` – raw and compressed video data
+  - **`st2110`** – tests of ST 2210 standard with Media Transport Library
+    - `ffmpeg` – ffmpeg plugin with all types of data
+    - `st20` – raw video (ST 2110-20)
+    - `st22` – compressed video (ST 2110-22)
+    - `st30` – raw audio (ST 2110-30)
 
 ## Development setup
 
 ```bash
 cd tests/validation
-python -m venv .venv
+python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-For VSCode:
+### Example: Manual Test Run
 
-- set Python interpreter to: tests/validation/.venv/bin/python
-- copy content of tests/validation/settings.json to .vscode/settings.json
+To manually run the `test_blob_25_03` test from `test_blob_25_03.py` with the parameter `file = random_bin_100M`, use:
+
+```bash
+sudo .venv/bin/python3 -m pytest \
+  --topology_config=./configs/topology_config_workflow.yaml \
+  --test_config=./configs/test_config_workflow.yaml \
+  ./functional/local/blob/test_blob_25_03.py::test_blob_25_03[|file = random_bin_100M|]
+```
+
+To collect all smoke tests use:
+
+```bash
+sudo .venv/bin/python3 -m pytest --collect-only --quiet ./functional/ -m smoke
+```
+
+### VSCode Setup
+
+- Set the Python interpreter to: `tests/validation/.venv/bin/python`
+- Copy the contents of `tests/validation/settings.json` to `.vscode/settings.json`
+- Configure your settings as needed, following the instructions in [configs/config_readme.md](./configs/config_readme.md)
+- Example test configuration arguments:
+  ```yaml
+  --test_config=./tests/validation/configs/test_config.yaml
+  --topology_config=./tests/validation/configs/topology_config.yaml
+  ```
+
+## Development Folder Structure
+
+### `/opt/intel`
+
+This directory contains the main components and dependencies for Media Communications Mesh development and testing:
+
+- `_build/`
+  - `mcm/`
+    - `bin/`
+      - `media_proxy`
+      - `mesh-agent`
+    - `lib/`
+      - `libmcm_dp.so.*`
+  - `ffmpeg-6-1/`
+    - `ffmpeg-6-1_mcm_build/`
+      - `ffmpeg` – MCM-patched FFmpeg 6.1 binary
+      - `lib/` – Libraries for MCM-patched FFmpeg 6.1
+    - `ffmpeg-6-1_mtl_build/`
+      - `ffmpeg` – MTL-patched FFmpeg 6.1 binary
+      - `lib/` – Libraries for MTL-patched FFmpeg 6.1
+  - `ffmpeg-7-0/`
+    - `ffmpeg-7-0_mcm_build/`
+      - `ffmpeg` – MCM-patched FFmpeg 7.0 binary (DEFAULT_MCM_FFMPEG7_PATH)
+      - `lib/` – Libraries for MCM-patched FFmpeg 7.0 (DEFAULT_MCM_FFMPEG7_LD_LIBRARY_PATH)
+    - `ffmpeg-7-0_mtl_build/`
+      - `ffmpeg` – MTL-patched FFmpeg 7.0 binary
+      - `lib/` – Libraries for MTL-patched FFmpeg 7.0
+  - ... (other build outputs)
+- `ffmpeg/` – FFmpeg repository
+- `mcm/` – Media Communications Mesh repository
+- `mtl/` – Media Transport Library (MTL) repository
+- `integrity/` – Integrity check tools or files
+- `input_path/` – Directory for input files used during validation (for transmitters tx)
+- `output_path/` – Directory where output files are stored during validation (for receivers rx)
+- `openh264/` – OpenH264 codec binaries and libraries
+
+### `/mnt/media`
+
+This directory is typically used as a mount point for media files required during validation and testing. It may contain large video/audio files or test vectors.
+
+```text
+/mnt/media/
+└── [media files and test assets]
+```
+
+All paths can be adjusted in configs.
 
 ## Creating virtual functions
 
@@ -159,3 +225,6 @@ $ dpdk-devbind.py -s | grep Ethernet
 ```
 
 Switch the virtual interface's binding to vfio-pci with `dpdk-devbind.py -b vfio-pci <pci_address>`. For example, `dpdk-devbind.py -b vfio-pci 0000:c0:00.0`.
+
+Switch the virtual interface's binding to vfio-pci with `dpdk-devbind.py -b vfio-pci <pci_address>`. For example, `dpdk-devbind.py -b vfio-pci 0000:c0:00.0`.
+
