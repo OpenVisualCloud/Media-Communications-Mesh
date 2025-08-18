@@ -500,4 +500,3 @@ def test_build_mtl_ffmpeg(build_mtl_ffmpeg, hosts, test_config):
     """
     logger.info("Testing MTL FFmpeg build process")
     assert build_mtl_ffmpeg, "MTL FFmpeg build failed"
-
