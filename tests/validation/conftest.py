@@ -16,7 +16,23 @@ from mfd_connect.exceptions import (
 import pytest
 
 from common.nicctl import Nicctl
-from Engine.const import *
+from Engine.const import (
+    ALLOWED_FFMPEG_VERSIONS,
+    DEFAULT_FFMPEG_PATH,
+    DEFAULT_INPUT_PATH,
+    DEFAULT_MCM_FFMPEG_PATH,
+    DEFAULT_MCM_FFMPEG_VERSION,
+    DEFAULT_MEDIA_PATH,
+    DEFAULT_MTL_FFMPEG_PATH,
+    DEFAULT_MTL_FFMPEG_VERSION,
+    DEFAULT_OPENH264_PATH,
+    DEFAULT_OUTPUT_PATH,
+    INTEL_BASE_PATH,
+    LOG_FOLDER,
+    MCM_BUILD_PATH,
+    MTL_BUILD_PATH,
+    OPENH264_VERSION_TAG,
+)
 from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
 from datetime import datetime
 
@@ -148,7 +164,13 @@ def mesh_agent(hosts, test_config, log_path):
 
 @pytest.fixture(scope="session")
 def media_path(test_config: dict) -> str:
-    return test_config.get("media_path", "/mnt/media/")
+    """
+    Returns the path to the media files used for testing.
+
+    :param test_config: The test configuration dictionary.
+    :return: Path to the media files.
+    """
+    return test_config.get("media_path", DEFAULT_MEDIA_PATH)
 
 
 @pytest.fixture(scope="session")
@@ -302,6 +324,374 @@ def build_TestApp(hosts, test_config: dict) -> None:
         path.mkdir(parents=True)
         host.connection.execute_command("cmake ..", cwd=path, shell=True, timeout=10)
         host.connection.execute_command("make", cwd=path, shell=True, timeout=10)
+
+
+@pytest.fixture(scope="session")
+def build_mcm_ffmpeg(hosts, test_config: dict):
+    """
+    Build and install FFmpeg with the Media Communications Mesh plugin.
+
+    Steps:
+    1. Clone and patch FFmpeg (default version 7.0, can be overridden by test_config).
+    2. Run FFmpeg configuration tool.
+    3. Build and install FFmpeg with the plugin.
+
+    The FFmpeg binaries and libraries will be installed to:
+    /opt/intel/_build/ffmpeg-{version}/ffmpeg-{version}_mcm_build/
+    """
+    if not test_config.get("mcm_ffmpeg_rebuild", False):
+        return True
+
+    # Use constants from Engine/const.py
+    mcm_ffmpeg_version = test_config.get(
+        "mcm_ffmpeg_version", DEFAULT_MCM_FFMPEG_VERSION
+    )
+    if not mcm_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
+        logger.error(f"Invalid mcm_ffmpeg_version: {mcm_ffmpeg_version}")
+        return False
+
+    for host in hosts.values():
+        mcm_path = get_mcm_path(host)
+        ffmpeg_tools_path = f"{mcm_path}/ffmpeg-plugin"
+
+        # Ensure the directory structure exists
+        build_dir = Path(DEFAULT_MCM_FFMPEG_PATH).parent
+        host.connection.execute_command(f"mkdir -p {build_dir}", shell=True, timeout=10)
+
+        # Check and remove mcm_ffmpeg_build_path if it exists
+        check_dir = host.connection.execute_command(
+            f"[ -d {DEFAULT_MCM_FFMPEG_PATH} ] && echo 'exists' || echo 'not exists'",
+            shell=True,
+        ).stdout.strip()
+
+        if check_dir == "exists":
+            host.connection.execute_command(
+                f"rm -rf {DEFAULT_MCM_FFMPEG_PATH}", shell=True
+            )
+
+        logger.debug("Step 1: Clone and patch FFmpeg")
+        clone_patch_script = f"{ffmpeg_tools_path}/clone-and-patch-ffmpeg.sh"
+        cmd = f"bash {clone_patch_script} {mcm_ffmpeg_version}"
+        res = host.connection.execute_command(
+            cmd, cwd=ffmpeg_tools_path, shell=True, timeout=60, stderr_to_stdout=True
+        )
+        logger.debug(f"Command {cmd} output: {res.stdout}")
+        if res.return_code != 0:
+            logger.error(f"Command {cmd} failed with return code {res.return_code}.")
+            return False
+
+        logger.debug("Step 2: Run FFmpeg configuration tool")
+        configure_script = f"{ffmpeg_tools_path}/configure-ffmpeg.sh"
+        cmd = f"{configure_script} {mcm_ffmpeg_version} --prefix={DEFAULT_MCM_FFMPEG_PATH}"
+        res = host.connection.execute_command(
+            cmd, cwd=ffmpeg_tools_path, shell=True, timeout=60, stderr_to_stdout=True
+        )
+        logger.debug(f"Command {cmd} output: {res.stdout}")
+        if res.return_code != 0:
+            logger.error(f"Command {cmd} failed with return code {res.return_code}.")
+            return False
+
+        logger.debug("Step 3: Build and install FFmpeg with the plugin")
+        build_script = f"{ffmpeg_tools_path}/build-ffmpeg.sh"
+        cmd = f"{build_script} {mcm_ffmpeg_version}"
+        res = host.connection.execute_command(
+            cmd, cwd=ffmpeg_tools_path, shell=True, timeout=120, stderr_to_stdout=True
+        )
+        logger.debug(f"Command {cmd} output: {res.stdout}")
+        if res.return_code != 0:
+            logger.error(f"Command {cmd} failed with return code {res.return_code}.")
+            return False
+
+        logger.info(
+            f"Successfully built MCM FFmpeg {mcm_ffmpeg_version} at {DEFAULT_MCM_FFMPEG_PATH}"
+        )
+    return True
+
+
+def build_openh264(host: Host, work_dir: str) -> bool:
+    """
+    Build and install openh264 library on the specified host.
+
+    :param host: The host where openh264 will be built.
+    :type host: Host
+    :param work_dir: The working directory for building openh264.
+    :type work_dir: str
+    :return: True if the build was successful, False otherwise.
+    :rtype: bool
+    """
+    openh264_repo_dir = f"{INTEL_BASE_PATH}/openh264"  # Repository directory
+    openh264_install_dir = DEFAULT_OPENH264_PATH  # Installation directory
+
+    # Check if openh264 is already installed
+    check_install = host.connection.execute_command(
+        f"[ -d {openh264_install_dir}/lib ] && echo 'exists' || echo 'not exists'",
+        shell=True,
+    ).stdout.strip()
+
+    if check_install == "exists":
+        # Check if the library is already in the system
+        lib_check = host.connection.execute_command(
+            "ldconfig -p | grep -q libopenh264 && echo 'installed' || echo 'not installed'",
+            shell=True,
+            timeout=10,
+        ).stdout.strip()
+
+        if lib_check == "installed":
+            logger.info(f"OpenH264 is already installed at {openh264_install_dir}")
+            return True
+
+    # Check if repository directory exists
+    check_dir = host.connection.execute_command(
+        f"[ -d {openh264_repo_dir} ] && echo 'exists' || echo 'not exists'", shell=True
+    ).stdout.strip()
+
+    if check_dir == "not exists":
+        # Try to clone the repository
+        logger.info(
+            f"OpenH264 repository not found at {openh264_repo_dir}. Attempting to clone..."
+        )
+        res = host.connection.execute_command(
+            f"git clone https://github.com/cisco/openh264.git {openh264_repo_dir}",
+            shell=True,
+            timeout=60,
+            stderr_to_stdout=True,
+        )
+        if res.return_code != 0:
+            logger.error(f"Failed to clone OpenH264 repository to {openh264_repo_dir}")
+            return False
+
+    # Check if we need to checkout the specified version
+    tag_check = host.connection.execute_command(
+        "git describe --exact-match --tags 2>/dev/null || echo 'wrong tag'",
+        cwd=openh264_repo_dir,
+        shell=True,
+        timeout=10,
+    ).stdout.strip()
+
+    if tag_check != OPENH264_VERSION_TAG:
+        # Reset any changes and checkout the specific tag
+        logger.info(f"Checking out {OPENH264_VERSION_TAG} tag")
+        res = host.connection.execute_command(
+            f"git reset --hard && git checkout -f {OPENH264_VERSION_TAG}",
+            cwd=openh264_repo_dir,
+            shell=True,
+            timeout=30,
+            stderr_to_stdout=True,
+        )
+        if res.return_code != 0:
+            logger.error(f"Failed to checkout {OPENH264_VERSION_TAG} tag.")
+            return False
+    else:
+        logger.info(f"Already on {OPENH264_VERSION_TAG} tag")
+
+    # Build and install to openh264_install_dir
+    logger.info(f"Building and installing openh264 to {openh264_install_dir}")
+
+    # Create install directory if it doesn't exist
+    host.connection.execute_command(
+        f"sudo mkdir -p {openh264_install_dir}", shell=True, timeout=10
+    )
+
+    # Build with custom prefix
+    res = host.connection.execute_command(
+        f"make -j $(nproc) PREFIX={openh264_install_dir} && "
+        f"sudo make install PREFIX={openh264_install_dir} && "
+        "sudo ldconfig",
+        cwd=openh264_repo_dir,
+        shell=True,
+        timeout=300,
+        stderr_to_stdout=True,
+    )
+    logger.info(f"openh264 build output: {res.stdout}")
+    if res.return_code != 0:
+        logger.error("Failed to build and install openh264.")
+        return False
+
+    return True
+
+
+@pytest.fixture(scope="session")
+def build_mtl_ffmpeg(hosts, test_config: dict):
+    """
+    Build and install FFmpeg with the Media Transport Library (MTL) plugin.
+    """
+    if not test_config.get("mtl_ffmpeg_rebuild", False):
+        return True
+
+    mtl_ffmpeg_version = test_config.get(
+        "mtl_ffmpeg_version", DEFAULT_MTL_FFMPEG_VERSION
+    )
+    if not mtl_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
+        logger.error(f"Invalid mtl_ffmpeg_version: {mtl_ffmpeg_version}")
+        return False
+
+    enable_gpu_direct = test_config.get("mtl_ffmpeg_gpu_direct", False)
+
+    for host in hosts.values():
+        mtl_path = get_mtl_path(host)
+        if not mtl_path:
+            logger.error(f"MTL path not found on host {host.name}.")
+            return False
+
+        # Ensure the directory structure exists
+        build_dir = Path(DEFAULT_MTL_FFMPEG_PATH).parent
+        host.connection.execute_command(f"mkdir -p {build_dir}", shell=True, timeout=10)
+
+        check_dir = host.connection.execute_command(
+            f"[ -d {DEFAULT_MTL_FFMPEG_PATH} ] && echo 'exists' || echo 'not exists'",
+            shell=True,
+        ).stdout.strip()
+
+        if check_dir == "exists":
+            host.connection.execute_command(
+                f"rm -rf {DEFAULT_MTL_FFMPEG_PATH}", shell=True
+            )
+
+        # Step 1: Build openh264
+        logger.info("Step 1: Building openh264 dependency")
+        if not build_openh264(host, DEFAULT_OPENH264_PATH):
+            return False
+
+        # Step 2: Clone and patch FFmpeg
+        logger.info(f"Step 2: Clone and patch FFmpeg {mtl_ffmpeg_version}")
+        ffmpeg_dir = DEFAULT_FFMPEG_PATH
+
+        # Make sure the FFmpeg repo directory exists
+        check_ffmpeg_dir = host.connection.execute_command(
+            f"[ -d {ffmpeg_dir} ] && echo 'exists' || echo 'not exists'",
+            shell=True,
+        ).stdout.strip()
+
+        if check_ffmpeg_dir != "exists":
+            logger.error(f"FFmpeg repository not found at {ffmpeg_dir}")
+            return False
+
+        # Clean all previous changes
+        host.connection.execute_command(
+            f"rm -rf .git/rebase-apply && git clean -fd && git reset --hard origin/release/{mtl_ffmpeg_version}",
+            cwd=ffmpeg_dir,
+            shell=True,
+            timeout=30,
+            stderr_to_stdout=True,
+        )
+
+        # Apply MTL patches
+        res = host.connection.execute_command(
+            f"git am {mtl_path}/ecosystem/ffmpeg_plugin/{mtl_ffmpeg_version}/*.patch",
+            cwd=ffmpeg_dir,
+            shell=True,
+            timeout=30,
+            stderr_to_stdout=True,
+        )
+        if res.return_code == 0:
+            logger.info("Successfully applied MTL patches to FFmpeg")
+        else:
+            logger.error(f"Failed to apply MTL patches: {res.stderr}")
+            return False
+
+        # Copy MTL implementation files regardless (they might be updated)
+        res = host.connection.execute_command(
+            f"cp {mtl_path}/ecosystem/ffmpeg_plugin/mtl_*.c -rf libavdevice/ && "
+            f"cp {mtl_path}/ecosystem/ffmpeg_plugin/mtl_*.h -rf libavdevice/",
+            cwd=ffmpeg_dir,
+            shell=True,
+            timeout=30,
+            stderr_to_stdout=True,
+        )
+        if res.return_code != 0:
+            logger.error("Failed to copy MTL implementation files.")
+            return False
+
+        # Step 3: Configure and build FFmpeg with MTL support
+        logger.info("Step 3: Configure and build FFmpeg with MTL support")
+
+        # Base configure options
+        configure_options = [
+            f"--prefix={DEFAULT_MTL_FFMPEG_PATH}",
+            "--enable-shared",
+            "--disable-static",
+            "--enable-nonfree",
+            "--enable-pic",
+            "--enable-gpl",
+            "--enable-libopenh264",
+            "--enable-encoder=libopenh264",
+            "--enable-mtl",
+            f'--extra-ldflags="-L{DEFAULT_OPENH264_PATH}/lib"',
+            f'--extra-cflags="-I{DEFAULT_OPENH264_PATH}/include -I{mtl_path}/include"',
+        ]
+
+        # Add GPU direct support only if explicitly enabled and headers exist
+        if enable_gpu_direct:
+            # Check both possible GPU header locations
+            gpu_header_paths = [
+                f"{mtl_path}/include/mtl_gpu_direct",
+                f"{mtl_path}/include/gpu",
+            ]
+
+            gpu_headers_found = False
+            for gpu_path in gpu_header_paths:
+                try:
+                    res = host.connection.execute_command(
+                        f"test -d {gpu_path}",
+                        shell=True,
+                        stderr_to_stdout=True,
+                        expected_return_codes={0, 1},  # Allow both success and failure
+                    )
+                    if res.return_code == 0:
+                        logger.info(f"Found GPU headers at {gpu_path}")
+                        configure_options.append(
+                            f'--extra-cflags="-DMTL_GPU_DIRECT_ENABLED -I{gpu_path}"'
+                        )
+                        gpu_headers_found = True
+                        break
+                except Exception as e:
+                    logger.warning(f"Error checking GPU headers at {gpu_path}: {e}")
+                    continue
+
+            if not gpu_headers_found:
+                logger.warning(
+                    "GPU direct support requested but headers not found. Continuing without GPU support."
+                )
+                enable_gpu_direct = False
+
+        # Join configure options and continue with build
+        configure_command = "./configure " + " ".join(configure_options)
+
+        # Run configure
+        res = host.connection.execute_command(
+            configure_command,
+            cwd=DEFAULT_FFMPEG_PATH,
+            shell=True,
+            timeout=120,
+            stderr_to_stdout=True,
+        )
+        if res.return_code != 0:
+            logger.error("Failed to configure FFmpeg with MTL support.")
+            return False
+
+        # Build and install with better error handling
+        build_commands = [
+            "make clean",
+            f"make -j$(nproc)",
+            "sudo make install",
+            "sudo ldconfig",
+        ]
+
+        for cmd in build_commands:
+            res = host.connection.execute_command(
+                cmd,
+                cwd=DEFAULT_FFMPEG_PATH,
+                shell=True,
+                timeout=300,
+                stderr_to_stdout=True,
+            )
+            if res.return_code != 0:
+                logger.error(f"Failed to execute '{cmd}'")
+                return False
+
+        logger.info(f"Successfully built FFmpeg {mtl_ffmpeg_version} with MTL support")
+
+    return True
 
 
 @pytest.fixture(scope="session", autouse=True)

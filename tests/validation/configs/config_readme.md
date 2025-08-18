@@ -92,10 +92,112 @@ A list of host definitions. Each host can have the following fields:
 ## Test config Structure Overview
 
 ```yaml
-mesh_agent_name: dev8
-mesh_ip: <ip> 
-mesh_port: 50051
-control_port: 8100
+# Mesh agent configuration
+mesh-agent:
+  control_port: 8100
+  proxy_port: 50051
+
+# ST2110 configuration
+st2110:
+  sdk: 8002
+
+# RDMA configuration
+rdma:
+  rdma_ports: 9100-9999
+
+# Path configurations
+media_path: "/mnt/media/"
+input_path: "/opt/intel/input_path/"
+output_path: "/opt/intel/output_path/"
+
+# Build configurations
+mcm_ffmpeg_rebuild: false  # Set to true to rebuild FFmpeg with MCM plugin
+mcm_ffmpeg_version: "7.0"  # Default FFmpeg version for MCM
+
+mtl_ffmpeg_rebuild: false  # Set to true to rebuild FFmpeg with MTL plugin
+mtl_ffmpeg_version: "7.0"  # Default FFmpeg version for MTL
+mtl_ffmpeg_gpu_direct: false  # Set to true to enable GPU direct support
+
+rx_tx_app_rebuild: false  # Set to true to rebuild TestApp
+
+# Log configurations
+keep_logs: true
+```
+
+## Directory Structure
+
+### `/opt/intel`
+
+This directory contains the main components and dependencies for Media Communications Mesh development and testing:
+
+- `_build/`
+  - `mcm/`
+    - `bin/`
+      - `media_proxy`
+      - `mesh-agent`
+    - `lib/`
+      - `libmcm_dp.so.*`
+  - `ffmpeg-6-1/`
+    - `ffmpeg-6-1_mcm_build/`
+      - `ffmpeg` – MCM-patched FFmpeg 6.1 binary
+      - `lib/` – Libraries for MCM-patched FFmpeg 6.1
+    - `ffmpeg-6-1_mtl_build/`
+      - `ffmpeg` – MTL-patched FFmpeg 6.1 binary
+      - `lib/` – Libraries for MTL-patched FFmpeg 6.1
+  - `ffmpeg-7-0/`
+    - `ffmpeg-7-0_mcm_build/`
+      - `ffmpeg` – MCM-patched FFmpeg 7.0 binary (DEFAULT_MCM_FFMPEG7_PATH)
+      - `lib/` – Libraries for MCM-patched FFmpeg 7.0 (DEFAULT_MCM_FFMPEG7_LD_LIBRARY_PATH)
+    - `ffmpeg-7-0_mtl_build/`
+      - `ffmpeg` – MTL-patched FFmpeg 7.0 binary
+      - `lib/` – Libraries for MTL-patched FFmpeg 7.0
+  - ... (other build outputs)
+- `ffmpeg/` – FFmpeg repository
+- `mcm/` – Media Communications Mesh repository
+- `mtl/` – Media Transport Library (MTL) repository
+- `integrity/` – Integrity check tools or files
+- `input_path/` – Directory for input files used during validation (for transmitters tx)
+- `output_path/` – Directory where output files are stored during validation (for receivers rx)
+- `openh264/` – OpenH264 codec binaries and libraries
+
+### `/mnt/media`
+
+This directory is typically used as a mount point for media files required during validation and testing. It may contain large video/audio files or test vectors.
+
+## Path Constants in Engine/const.py
+
+Key path constants defined in `Engine/const.py`:
+
+- `INTEL_BASE_PATH = "/opt/intel"` - Base path for all Intel software
+- `MCM_PATH = "/opt/intel/mcm"` - Path to the MCM repository
+- `MTL_PATH = "/opt/intel/mtl"` - Path to the MTL repository
+- `DEFAULT_FFMPEG_PATH = "/opt/intel/ffmpeg"` - Path to the FFmpeg repository
+- `DEFAULT_OPENH264_PATH = "/opt/intel/openh264"` - Path to the OpenH264 installation
+- `DEFAULT_MCM_FFMPEG_PATH` - Path to the MCM FFmpeg build
+- `DEFAULT_MTL_FFMPEG_PATH` - Path to the MTL FFmpeg build
+- `DEFAULT_MEDIA_PATH = "/mnt/media/"` - Path to the media files for testing
+- `DEFAULT_INPUT_PATH = "/opt/intel/input_path/"` - Path for input files
+- `DEFAULT_OUTPUT_PATH = "/opt/intel/output_path/"` - Path for output files
+
+## Using the Test Configuration
+
+To use a specific configuration file, pass it to pytest using the `--test-config` option:
+
+```bash
+pytest --test-config=configs/test_config.yaml
+```
+
+## Build FFmpeg with Plugins
+
+To build FFmpeg with the MCM or MTL plugin, set the corresponding rebuild flag to `true` in your test configuration:
+
+```yaml
+mcm_ffmpeg_rebuild: true
+mcm_ffmpeg_version: "7.0"
+
+mtl_ffmpeg_rebuild: true
+mtl_ffmpeg_version: "7.0"
+mtl_ffmpeg_gpu_direct: false
 ```
 
 
