@@ -4,7 +4,7 @@
 
 # Required ordered log phrases for Rx validation
 RX_REQUIRED_LOG_PHRASES = [
-    '[RX] Launching RX App',
+    '[RX] Launching Rx App',
     '[RX] Reading client configuration',
     '[RX] Reading connection configuration',
     '[DEBU] JSON client config:',
@@ -16,13 +16,13 @@ RX_REQUIRED_LOG_PHRASES = [
     '[RX] Frame: 1',
     '[RX] Done reading the data',
     '[RX] dropping connection to media-proxy',
-    '[RX] Shuting down connection',
+    '[RX] Shutting down connection',
     'INFO - memif disconnected!',
     '[INFO] gRPC: connection deleted',
-    '[RX] Shuting down client',
+    '[RX] Shutting down client',
 ]
 TX_REQUIRED_LOG_PHRASES = [
-    '[TX] Launching TX app',
+    '[TX] Launching Tx App',
     '[TX] Reading client configuration',
     '[TX] Reading connection configuration',
     '[DEBU] JSON client config:',
@@ -34,9 +34,9 @@ TX_REQUIRED_LOG_PHRASES = [
     'INFO - memif connected!',
     '[INFO] gRPC: connection active',
     '[TX] sending',
-    '[TX] Shuting down connection',
+    '[TX] Shutting down connection',
     '[INFO] gRPC: connection deleted',
-    '[TX] Shuting down client',
+    '[TX] Shutting down client',
 ]
 
 LOG_FOLDER = "logs"

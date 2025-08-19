@@ -205,12 +205,16 @@ class AppRunnerBase:
             def check_phrases_in_order(log_path, phrases):
                 found_indices = []
                 missing_phrases = []
+                lines_around_missing = {}
                 with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
                     lines = [line.strip() for line in f]
+                
                 idx = 0
-                for phrase in phrases:
+                for phrase_idx, phrase in enumerate(phrases):
                     found = False
                     phrase_stripped = phrase.strip()
+                    start_idx = idx  # Remember where we started searching
+                    
                     while idx < len(lines):
                         line_stripped = lines[idx].strip()
                         if phrase_stripped in line_stripped:
@@ -219,13 +223,19 @@ class AppRunnerBase:
                             idx += 1
                             break
                         idx += 1
+                    
                     if not found:
                         missing_phrases.append(phrase)
-                return len(missing_phrases) == 0, missing_phrases
+                        # Store context - lines around where we were searching
+                        context_start = max(0, start_idx - 3)
+                        context_end = min(len(lines), start_idx + 7)
+                        lines_around_missing[phrase] = lines[context_start:context_end]
+                
+                return len(missing_phrases) == 0, missing_phrases, lines_around_missing
 
             if self.direction in ("Rx", "Tx"):
                 required_phrases = RX_REQUIRED_LOG_PHRASES if self.direction == "Rx" else TX_REQUIRED_LOG_PHRASES
-                log_pass, missing = check_phrases_in_order(log_file_path, required_phrases)
+                log_pass, missing, context_lines = check_phrases_in_order(log_file_path, required_phrases)
                 self.is_pass = log_pass
                 app_log_validation_status = log_pass
                 app_log_error_count = len(missing)
@@ -234,9 +244,15 @@ class AppRunnerBase:
                 validation_info.append(f"Validation result: {'PASS' if log_pass else 'FAIL'}")
                 validation_info.append(f"Errors found: {app_log_error_count}")
                 if not log_pass:
-                    validation_info.append(f"Missing or out-of-order phrases:")
+                    validation_info.append(f"Missing or out-of-order phrases analysis:")
                     for phrase in missing:
-                        validation_info.append(f"  - {phrase}")
+                        validation_info.append(f"\n  Expected phrase: \"{phrase}\"")
+                        validation_info.append(f"  Context in log file:")
+                        if phrase in context_lines:
+                            for line in context_lines[phrase]:
+                                validation_info.append(f"    {line}")
+                        else:
+                            validation_info.append("    <No context available>")
                     if missing:
                         print(f"{self.direction} process did not pass. First missing phrase: {missing[0]}")
             else:
