@@ -51,7 +51,7 @@ def calculate_yuv_frame_size(width: int, height: int, file_format: str) -> int:
     return int(width * height * pixel_size)
 
 
-class VideoIntegritor:
+class VideoIntegrator:
     def __init__(
         self,
         logger: logging.Logger,
@@ -159,7 +159,7 @@ class VideoIntegritor:
         result_queue.put(self.bad_frames_total)
 
 
-class VideoStreamIntegritor(VideoIntegritor):
+class VideoStreamIntegrator(VideoIntegrator):
     """Class to check integrity of video stream saved into files divided by segments.
     It assumes that there is X digit segment number in the file name like `out_name_001.yuv` or `out_name_02.yuv`.
     """
@@ -270,7 +270,7 @@ class VideoStreamIntegritor(VideoIntegritor):
         return True if shared_data.get("error_file", None) is None else False
 
 
-class VideoFileIntegritor(VideoIntegritor):
+class VideoFileIntegrator(VideoIntegrator):
     def __init__(
         self,
         logger: logging.Logger,
@@ -407,7 +407,7 @@ It performs frame-by-frame integrity checking using MD5 checksums."""
 
     # Execute based on mode
     if args.mode == "stream":
-        integrator = VideoStreamIntegritor(
+        integrator = VideoStreamIntegrator(
             logger,
             args.src,
             args.out,
@@ -419,7 +419,7 @@ It performs frame-by-frame integrity checking using MD5 checksums."""
             args.delete_file,
         )
     elif args.mode == "file":
-        integrator = VideoFileIntegritor(
+        integrator = VideoFileIntegrator(
             logger,
             args.src,
             args.out,
