@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
         *[f for f in video_files_25_03.keys() if f != "FullHD_59.94"],
     ],
 )
-def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str) -> None:
+def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str, log_path) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -80,7 +80,7 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str) -> None:
     )
 
     logger.debug(f"Tx command: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff)
 
     # >>>>> MCM Rx
     mcm_rx_inp = FFmpegMcmMemifVideoIO(
@@ -107,7 +107,7 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str) -> None:
     )
 
     logger.debug(f"Rx command: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance=mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff)
 
     mcm_rx_executor.start()
     mcm_tx_executor.start()

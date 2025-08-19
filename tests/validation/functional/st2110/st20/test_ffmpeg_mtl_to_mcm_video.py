@@ -32,7 +32,7 @@ EARLY_STOP_THRESHOLD_PERCENTAGE = (
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_st2110_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) -> None:
+def test_st2110_ffmpeg_video(media_proxy, hosts, test_config, video_type: str, log_path) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -97,7 +97,7 @@ def test_st2110_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) -
         yes_overwrite=False,
     )
     logger.debug(f"Tx command executed on {tx_host.name}: {mtl_tx_ff.get_command()}")
-    mtl_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mtl_tx_ff)
+    mtl_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mtl_tx_ff)
 
     # MCM Rx
     mcm_rx_inp = FFmpegMcmST2110VideoRx(
@@ -129,7 +129,7 @@ def test_st2110_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) -
         yes_overwrite=True,
     )
     logger.debug(f"Rx command executed on {rx_host.name}: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance=mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff)
 
     time.sleep(2)  # wait for media_proxy to start
     mcm_rx_executor.start()

@@ -118,6 +118,7 @@ class FFmpegExecutor:
         filename = prefix + filename
 
         def log_output():
+            log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             for line in ffmpeg_process.get_stdout_iter():
                 save_process_log(
                     subdir=subdir,
