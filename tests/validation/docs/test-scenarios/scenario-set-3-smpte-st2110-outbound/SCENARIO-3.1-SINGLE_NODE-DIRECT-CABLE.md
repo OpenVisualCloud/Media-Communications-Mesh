@@ -26,3 +26,7 @@ flowchart LR
 1. For SMPTE ST 2110-22 Compressed Video, consider the following
     * Tx App transmits uncompressed video frames.
     * External SMPTE ST 2110 compliant input device receives compressed video.
+
+### Test Cases
+
+For detailed test cases, refer to the centralized [Test Cases documentation](../SCENARIO.md#test-cases).
