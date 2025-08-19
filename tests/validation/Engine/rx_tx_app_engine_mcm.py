@@ -333,16 +333,12 @@ class LapkaExecutor:
                 cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
             )
 
-            # Start background logging thread
-            subdir = f"RxTx/{self.host.name}"
-            filename = "tx.log"
-
             def log_output():
                 log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
                 for line in self.process.get_stdout_iter():
                     save_process_log(
-                        subdir=subdir,
-                        filename=filename,
+                        subdir=f"RxTx/{self.host.name}",
+                        filename="tx.log",
                         text=line.rstrip(),
                         cmd=cmd,
                         log_dir=log_dir,
@@ -389,16 +385,12 @@ class LapkaExecutor:
                 cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
             )
 
-            # Start background logging thread
-            subdir = f"RxTx/{self.host.name}"
-            filename = "rx.log"
-
             def log_output():
                 log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
                 for line in self.process.get_stdout_iter():
                     save_process_log(
-                        subdir=subdir,
-                        filename=filename,
+                        subdir=f"RxTx/{self.host.name}",
+                        filename="rx.log",
                         text=line.rstrip(),
                         cmd=cmd,
                         log_dir=log_dir,

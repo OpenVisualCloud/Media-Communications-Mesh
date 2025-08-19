@@ -123,6 +123,9 @@ def output_validator(
         with open(log_file_path, "r") as f:
             output = f.read()
 
+    if output is None:
+        output = ""
+
     errors = []
     phrase_mismatches = []
 

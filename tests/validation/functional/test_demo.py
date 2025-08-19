@@ -77,7 +77,8 @@ def test_list_command_on_sut(hosts):
 
 
 @pytest.mark.smoke
-def test_mesh_agent_lifecycle(mesh_agent):
+@pytest.mark.parametrize("logging", ["logging_on"])
+def test_mesh_agent_lifecycle(mesh_agent, logging):
     """Test starting and stopping the mesh agent."""
     logger.info("Testing mesh_agent lifecycle")
     assert (
@@ -88,7 +89,8 @@ def test_mesh_agent_lifecycle(mesh_agent):
 
 
 @pytest.mark.smoke
-def test_media_proxy(media_proxy):
+@pytest.mark.parametrize("logging", ["logging_on"])
+def test_media_proxy(media_proxy, logging):
     """Test starting and stopping the media proxy without sudo."""
     logger.info("Testing media_proxy lifecycle")
     for proxy in media_proxy.values():
@@ -502,3 +504,9 @@ def test_build_mtl_ffmpeg(build_mtl_ffmpeg, hosts, test_config):
     """
     logger.info("Testing MTL FFmpeg build process")
     assert build_mtl_ffmpeg, "MTL FFmpeg build failed"
+
+def test_simple(log_path_dir, log_path, request):
+    # For this test, log_path will be based on "test_simple"
+    logging.info(f"Log path dir for test_simple: {log_path_dir}")
+    logging.info(f"Log path for test_simple: {log_path}")
+    logging.info(f"Request: {request.node.name}")

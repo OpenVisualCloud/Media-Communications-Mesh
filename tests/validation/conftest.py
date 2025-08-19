@@ -208,7 +208,7 @@ def sanitize_name(test_name):
 
 
 @pytest.fixture(scope="function")
-def log_path(log_path_dir: str, request) -> str:
+def log_path(log_path_dir: str, request) -> Path:
     """
     Create a test-specific subdirectory within the main log directory.
     Sanitizes test names to ensure valid directory names by replacing invalid characters.
@@ -223,7 +223,7 @@ def log_path(log_path_dir: str, request) -> str:
     sanitized_name = sanitize_name(test_name)
     test_log_path = Path(log_path_dir, sanitized_name)
     test_log_path.mkdir(parents=True, exist_ok=True)
-    return str(test_log_path)
+    return Path(test_log_path)
 
 
 @pytest.fixture(scope="session")
