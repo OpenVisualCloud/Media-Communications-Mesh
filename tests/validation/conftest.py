@@ -28,12 +28,11 @@ from Engine.const import (
     DEFAULT_OPENH264_PATH,
     DEFAULT_OUTPUT_PATH,
     INTEL_BASE_PATH,
-    LOG_FOLDER,
     MCM_BUILD_PATH,
     MTL_BUILD_PATH,
     OPENH264_VERSION_TAG,
 )
-from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
+from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path, get_log_folder_path
 from datetime import datetime
 import re
 
@@ -179,9 +178,8 @@ def log_path_dir(test_config: dict) -> str:
     """
     Creates and returns the main log directory path for the test session.
 
-    The directory is created under either the path specified in test_config['log_path']
-    or under the default LOG_FOLDER in the validation directory. If keep_logs is False,
-    the existing log directory is removed before creating a new one.
+    The directory is created under the path provided by get_log_folder_path.
+    If keep_logs is False, the existing log directory is removed before creating a new one.
 
     :param test_config: Dictionary containing test configuration.
     :return: Path to the main log directory for the session.
@@ -190,9 +188,7 @@ def log_path_dir(test_config: dict) -> str:
     keep_logs = test_config.get("keep_logs", True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir_name = f"log_{timestamp}"
-    validation_dir = Path(__file__).parent
-    log_path = test_config.get("log_path")
-    log_dir = Path(log_path) if log_path else Path(validation_dir, LOG_FOLDER)
+    log_dir = get_log_folder_path(test_config)
 
     if log_dir.exists() and not keep_logs:
         shutil.rmtree(log_dir)
