@@ -146,6 +146,9 @@ jobs:
           sed -i "s/{{ USER }}/root/g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MCM_FFMPEG_7_0 }}|${{ env.BUILD_DIR }}/ffmpeg-7-0/|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ OUTPUT_PATH }}|${{ github.workspace }}/received/|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ NICCTL_PATH }}|${{ env.BUILD_DIR }}/mtl/script/|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
 
   validation-run-tests:

@@ -18,12 +18,9 @@ hosts:
           key_path: {{ KEY_PATH }}
     extra_info:
       mcm_path: {{ MCM_PATH }}
-      # input_path: /opt/intel/integrity/
-      ffmpeg_path: ffmpeg
-      # output_path: /home/gta/received/
-      # integrity_path: /opt/intel/val_tests/validation/common/integrity
-      # mtl_path: /opt/intel/mtl
-      # nicctl_path: /opt/intel/mtl/script
+      ffmpeg_path: {{ MCM_FFMPEG_7_0 }}
+      output_path: {{ OUTPUT_PATH }}
+      nicctl_path: {{ NICCTL_PATH }}
       mesh_agent:
         control_port: 8100
         proxy_port: 50051
