@@ -51,6 +51,13 @@ jobs:
         with:
           egress-policy: audit
 
+      - name: "Fix permissions before checkout"
+        run: |
+          if [ -d "${{ github.workspace }}" ]; then
+            sudo chown -R "${USER}" "${{ github.workspace }}" || true
+            sudo chmod -R u+w "${{ github.workspace }}" || true
+          fi
+
       - name: "Checkout repository"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
