@@ -84,16 +84,14 @@ jobs:
         run: |
           # Just verify that binaries exist and are executable
           echo "Verifying binaries in build directory..."
+          ls -la ${{ env.BUILD_DIR }}/ || true
+          ls -la ${{ env.BUILD_DIR }}/mtl/ || true
           ls -la ${{ env.BUILD_DIR }}/mcm/bin/ || true
           ls -la ${{ env.BUILD_DIR }}/mcm/bin/media_proxy || true
           ls -la ${{ env.BUILD_DIR }}/mcm/bin/mesh-agent || true
           ls -la ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.* || true
           ls -la ${{ env.BUILD_DIR }}/ffmpeg-6-1/ || true
           ls -la ${{ env.BUILD_DIR }}/ffmpeg-7-0/ || true
-      - name: "Checkout back to ${{ github.ref_name }} branch"
-        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-        with:
-          ref: ${{ github.ref_name }}
       - name: Install RxTxApp dependencies
         run: sudo apt-get update && sudo apt-get install -y libjansson-dev
       - name: "build RxTxApp"
