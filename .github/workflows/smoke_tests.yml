@@ -18,7 +18,7 @@ on:
         default: "main"
         required: false
         description: "Branch name to use"
-      tag-to-checkout: # added tag input
+      tag-to-checkout:
         type: string
         required: false
         description: "Tag name to use"
@@ -54,17 +54,16 @@ permissions:
   contents: read
 
 jobs:
-  call-base-build:
+  call-bare-metal-build:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-    uses: ./.github/workflows/base_build.yml
+    uses: ./.github/workflows/bare-metal-build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
-      tag: ${{ github.event.inputs.tag-to-checkout }} # added tag input
-      use_self_hosted: true
+      tag: ${{ github.event.inputs.tag-to-checkout }}
 
   validation-prepare-setup-mcm:
     runs-on: [Linux, self-hosted]
-    needs: call-base-build
+    needs: call-bare-metal-build
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     outputs:

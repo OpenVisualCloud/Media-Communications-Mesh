@@ -171,13 +171,20 @@ Key path constants defined in `Engine/const.py`:
 - `INTEL_BASE_PATH = "/opt/intel"` - Base path for all Intel software
 - `MCM_PATH = "/opt/intel/mcm"` - Path to the MCM repository
 - `MTL_PATH = "/opt/intel/mtl"` - Path to the MTL repository
+- `MCM_BUILD_PATH = "/opt/intel/_build/mcm"` - Path for MCM built binaries
+- `MTL_BUILD_PATH = "/opt/intel/_build/mtl"` - Path for MTL built binaries
 - `DEFAULT_FFMPEG_PATH = "/opt/intel/ffmpeg"` - Path to the FFmpeg repository
 - `DEFAULT_OPENH264_PATH = "/opt/intel/openh264"` - Path to the OpenH264 installation
-- `DEFAULT_MCM_FFMPEG_PATH` - Path to the MCM FFmpeg build
-- `DEFAULT_MTL_FFMPEG_PATH` - Path to the MTL FFmpeg build
+- `ALLOWED_FFMPEG_VERSIONS = ["6.1", "7.0"]` - Supported FFmpeg versions
+- `DEFAULT_MCM_FFMPEG_VERSION = "7.0"` - Default FFmpeg version for MCM
+- `DEFAULT_MCM_FFMPEG_PATH = "/opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build"` - Path to the MCM FFmpeg build
+- `DEFAULT_MCM_FFMPEG_LD_LIBRARY_PATH = "/opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/lib"` - Library path for MCM FFmpeg
+- `DEFAULT_MTL_FFMPEG_VERSION = "7.0"` - Default FFmpeg version for MTL
+- `DEFAULT_MTL_FFMPEG_PATH = "/opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mtl_build"` - Path to the MTL FFmpeg build
+- `DEFAULT_MTL_FFMPEG_LD_LIBRARY_PATH = "/opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mtl_build/lib"` - Library path for MTL FFmpeg
 - `DEFAULT_MEDIA_PATH = "/mnt/media/"` - Path to the media files for testing
-- `DEFAULT_INPUT_PATH = "/opt/intel/input_path/"` - Path for input files
-- `DEFAULT_OUTPUT_PATH = "/opt/intel/output_path/"` - Path for output files
+- `DEFAULT_INPUT_PATH = "/opt/intel/input_path"` - Path for input files
+- `DEFAULT_OUTPUT_PATH = "/opt/intel/output_path"` - Path for output files
 
 ## Using the Test Configuration
 

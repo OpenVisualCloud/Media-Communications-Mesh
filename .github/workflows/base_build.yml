@@ -2,26 +2,10 @@ name: Base Build
 
 on:
   push:
-    branches: ["main"]
+    branches: [ "main" ]
   pull_request:
-    branches: ["main"]
+    branches: [ "main" ]
   workflow_dispatch:
-  workflow_call:
-    inputs:
-      branch:
-        required: false
-        type: string
-        default: "main"
-        description: "Branch to checkout"
-      tag: # Add tag input
-        required: false
-        type: string
-        description: "Tag to checkout"
-      use_self_hosted:
-        required: false
-        type: boolean
-        default: false
-        description: "Whether to use self-hosted runners"
 
 env:
   BUILD_TYPE: Release
@@ -43,109 +27,80 @@ concurrency:
 
 jobs:
   build-baremetal-ubuntu:
-    runs-on: ${{ inputs.use_self_hosted && fromJSON('["Linux", "self-hosted"]') || 'ubuntu-22.04' }}
+    runs-on: 'ubuntu-22.04'
     timeout-minutes: 120
     steps:
-      - name: "Harden Runner"
-        uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
-        with:
-          egress-policy: audit
+    - name: 'Harden Runner'
+      uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
+      with:
+        egress-policy: audit
 
-      - name: "Fix permissions before checkout"
-        run: |
-          if [ -d "${{ github.workspace }}" ]; then
-            sudo chown -R "${USER}" "${{ github.workspace }}" || true
-            sudo chmod -R u+w "${{ github.workspace }}" || true
-          fi
+    - name: 'Checkout repository'
+      uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-      - name: "Checkout repository"
-        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
-        with:
-          ref: ${{ inputs.tag || inputs.branch }} # Use tag if provided, otherwise use branch
+    - name: 'Install OS level dependencies'
+      run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
 
-      - name: "Install CMake from Kitware"
-        run: |
-          # Remove any existing CMake installations to avoid conflicts
-          sudo apt-get remove --purge -y cmake cmake-data
-          sudo rm -rf /usr/local/share/cmake-*
-          
-          # Download and install CMake 3.22.6
-          wget https://github.com/Kitware/CMake/releases/download/v3.22.6/cmake-3.22.6-linux-x86_64.sh
-          chmod +x cmake-3.22.6-linux-x86_64.sh
-          sudo ./cmake-3.22.6-linux-x86_64.sh --skip-license --prefix=/usr/local
-          
-          # Ensure the new CMake is in the PATH and update the GitHub ENV
-          export PATH=/usr/local/bin:$PATH
-          echo "PATH=/usr/local/bin:$PATH" >> $GITHUB_ENV
-          hash -r
-          cmake --version
+    - name: 'Check local dependencies build cache'
+      id: load-local-dependencies-cache
+      uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+      with:
+        path: ${{ env.BUILD_DIR }}
+        key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
 
-      - name: "Install OS level dependencies"
-        run: |
-          # Create a symbolic link to make apt think cmake is already installed
-          sudo ln -sf /usr/local/bin/cmake /usr/bin/cmake
-          eval 'source scripts/setup_build_env.sh && install_package_dependencies'
+    - name: 'Download, unpack and patch build dependencies'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
 
-      - name: "Check local dependencies build cache"
-        id: load-local-dependencies-cache
-        uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
-        with:
-          path: ${{ env.BUILD_DIR }}
-          key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
+    - name: 'Clone and patch ffmpeg 6.1 and 7.0'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      run: |
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
 
-      - name: "Download, unpack and patch build dependencies"
-        if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
-        run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
+    - name: 'Build and Install xdp and libbpf'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
 
-      - name: "Clone and patch ffmpeg 6.1 and 7.0"
-        if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
-        run: |
-          ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
-          ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
+    - name: 'Build and Install libfabric'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_fabrics'
 
-      - name: "Build and Install xdp and libbpf"
-        run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
+    - name: 'Build and Install the DPDK'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_dpdk'
 
-      - name: "Build and Install libfabric"
-        run: eval 'source scripts/setup_build_env.sh && lib_install_fabrics'
+    - name: 'Build and Install the MTL'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_mtl'
 
-      - name: "Build and Install the DPDK"
-        run: eval 'source scripts/setup_build_env.sh && lib_install_dpdk'
+    - name: 'Build and Install JPEG XS'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_jpeg_xs'
 
-      - name: "Build and Install the MTL"
-        run: eval 'source scripts/setup_build_env.sh && lib_install_mtl'
+    - name: 'Build and Install JPEG XS ffmpeg plugin'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_mtl_jpeg_xs_plugin'
 
-      - name: "Build and Install JPEG XS"
-        run: eval 'source scripts/setup_build_env.sh && lib_install_jpeg_xs'
+    - name: 'Build gRPC and dependencies'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
 
-      - name: "Build and Install JPEG XS ffmpeg plugin"
-        run: eval 'source scripts/setup_build_env.sh && lib_install_mtl_jpeg_xs_plugin'
+    - name: 'Build MCM SDK and Media Proxy'
+      run: eval 'source scripts/common.sh && ./build.sh "${PREFIX_DIR}"'
 
-      - name: "Build gRPC and dependencies"
-        run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
+    - name: 'Build FFmpeg 6.1 with MCM plugin'
+      working-directory: ${{ github.workspace }}/ffmpeg-plugin
+      run: |
+        ./configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
+        ./build-ffmpeg.sh "6.1"
 
-      - name: "Build MCM SDK and Media Proxy"
-        run: eval 'source scripts/common.sh && ./build.sh "${PREFIX_DIR}"'
+    - name: 'Build FFmpeg 7.0 with MCM plugin'
+      working-directory: ${{ github.workspace }}/ffmpeg-plugin
+      run: |
+        ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
+        ./build-ffmpeg.sh "7.0"
 
-      - name: "Build FFmpeg 6.1 with MCM plugin"
-        working-directory: ${{ github.workspace }}/ffmpeg-plugin
-        run: |
-          ./configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
-          ./build-ffmpeg.sh "6.1"
-
-      - name: "Build FFmpeg 7.0 with MCM plugin"
-        working-directory: ${{ github.workspace }}/ffmpeg-plugin
-        run: |
-          ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
-          ./build-ffmpeg.sh "7.0"
-
-      - name: "upload media-proxy and mcm binaries"
-        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
-        with:
-          name: mcm-build
-          path: |
-            ${{ env.BUILD_DIR }}/mcm/bin/media_proxy
-            ${{ env.BUILD_DIR }}/mcm/bin/mesh-agent
-            ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.*
-            ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
-            ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
+    - name: 'upload media-proxy and mcm binaries'
+      uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+      with:
+        name: mcm-build
+        path: | 
+          ${{ env.BUILD_DIR }}/mcm/bin/media_proxy
+          ${{ env.BUILD_DIR }}/mcm/bin/mesh-agent
+          ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.*
+          ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
+          ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
