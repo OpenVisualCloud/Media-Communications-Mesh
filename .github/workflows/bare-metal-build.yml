@@ -52,7 +52,24 @@ jobs:
       with:
         ref: ${{ inputs.tag || inputs.branch }}
 
+    - name: 'Check OS level dependencies'
+      id: check_deps
+      run: |
+        # Check for key Ubuntu packages that indicate the system is set up
+        if dpkg -l | grep -q "\sbuild-essential\s" && \
+           dpkg -l | grep -q "\slibnuma-dev\s" && \
+           dpkg -l | grep -q "\slibssl-dev\s" && \
+           dpkg -l | grep -q "\srdma-core\s" && \
+           dpkg -l | grep -q "\slibpcap-dev\s"; then
+          echo "All key OS packages are already installed."
+          echo "packages_installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "Missing some required OS packages."
+          echo "packages_installed=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: 'Install OS level dependencies'
+      if: steps.check_deps.outputs.packages_installed == 'false'
       run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
 
     - name: "Check local dependencies build cache"
@@ -61,21 +78,70 @@ jobs:
       with:
         path: ${{ env.BUILD_DIR }}
         key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
+        
+    - name: "Check if build dependencies are already downloaded"
+      id: check_deps_download
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      run: |
+        # Check for key directories that would indicate dependencies are downloaded
+        if [ -d "${BUILD_DIR}/grpc" ] && [ -d "${BUILD_DIR}/xdp" ] && [ -d "${BUILD_DIR}/dpdk" ] && [ -d "${BUILD_DIR}/jpegxs" ]; then
+          echo "Build dependencies seem to be already downloaded."
+          echo "downloaded=true" >> $GITHUB_OUTPUT
+        else
+          echo "Build dependencies need to be downloaded."
+          echo "downloaded=false" >> $GITHUB_OUTPUT
+        fi
 
     - name: "Download, unpack and patch build dependencies"
-      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true' && steps.check_deps_download.outputs.downloaded != 'true'
       run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
 
-    - name: "Clone and patch ffmpeg 6.1 and 7.0"
+    - name: "Check if FFmpeg source is already cloned and patched"
+      id: check_ffmpeg_source
       if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      run: |
+        if [ -d "ffmpeg-plugin/6.1" ] && [ -d "ffmpeg-plugin/7.0" ]; then
+          echo "FFmpeg sources already cloned and patched."
+          echo "cloned=true" >> $GITHUB_OUTPUT
+        else
+          echo "FFmpeg sources need to be cloned and patched."
+          echo "cloned=false" >> $GITHUB_OUTPUT
+        fi
+
+    - name: "Clone and patch ffmpeg 6.1 and 7.0"
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true' && steps.check_ffmpeg_source.outputs.cloned != 'true'
       run: |
         ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
         ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
 
+    - name: "Check if xdp and libbpf are installed"
+      id: check_xdp
+      run: |
+        if [ -f "/usr/local/lib/libxdp.so" ] && [ -f "/usr/local/lib/libbpf.so" ]; then
+          echo "XDP and BPF libraries already installed."
+          echo "installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "XDP and BPF libraries need to be installed."
+          echo "installed=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build and Install xdp and libbpf"
+      if: steps.check_xdp.outputs.installed != 'true'
       run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
 
+    - name: "Check if libfabric is installed"
+      id: check_libfabric
+      run: |
+        if [ -f "/usr/local/lib/libfabric.so" ]; then
+          echo "Libfabric already installed."
+          echo "installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "Libfabric needs to be installed."
+          echo "installed=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build and Install libfabric"
+      if: steps.check_libfabric.outputs.installed != 'true'
       run: eval 'source scripts/setup_build_env.sh && lib_install_fabrics'
 
     - name: "Build and Install the DPDK (skipped: already installed on runner)"
@@ -84,21 +150,51 @@ jobs:
         echo "Skipping DPDK build and install as it is already installed on the machine."
         # eval 'source scripts/setup_build_env.sh && lib_install_dpdk'
 
-    # - name: "Switch DPDK version to currently used on the machine"
-    #   run: |
-    #     sed -i 's|DPDK_VER=23.11|DPDK_VER=25.03|g' \
-    #       "${{ github.workspace }}/versions.env" \
-    #       "${{ github.workspace }}/ffmpeg-plugin/versions.env" \
-    #       "${{ github.workspace }}/media-proxy/versions.env" \
-    #       "${{ github.workspace }}/sdk/versions.env"
+    - name: "Check if DPDK version needs to be updated"
+      id: check_dpdk_version
+      run: |
+        if grep -q "DPDK_VER=25.03" "${{ github.workspace }}/versions.env" && \
+           grep -q "DPDK_VER=25.03" "${{ github.workspace }}/ffmpeg-plugin/versions.env" && \
+           grep -q "DPDK_VER=25.03" "${{ github.workspace }}/media-proxy/versions.env" && \
+           grep -q "DPDK_VER=25.03" "${{ github.workspace }}/sdk/versions.env"; then
+          echo "DPDK version is already set correctly."
+          echo "need_update=false" >> $GITHUB_OUTPUT
+        else
+          echo "DPDK version needs to be updated."
+          echo "need_update=true" >> $GITHUB_OUTPUT
+        fi
 
-    # - name: "Switch MTL version to currently used on the machine"
-    #   run: |
-    #     sed -i 's|MTL_VER=main|MTL_VER=main|g' \
-    #       "${{ github.workspace }}/versions.env" \
-    #       "${{ github.workspace }}/ffmpeg-plugin/versions.env" \
-    #       "${{ github.workspace }}/media-proxy/versions.env" \
-    #       "${{ github.workspace }}/sdk/versions.env"
+    - name: "Switch DPDK version to currently used on the machine"
+      if: steps.check_dpdk_version.outputs.need_update == 'true'
+      run: |
+        sed -i 's|DPDK_VER=23.11|DPDK_VER=25.03|g' \
+          "${{ github.workspace }}/versions.env" \
+          "${{ github.workspace }}/ffmpeg-plugin/versions.env" \
+          "${{ github.workspace }}/media-proxy/versions.env" \
+          "${{ github.workspace }}/sdk/versions.env"
+          
+    - name: "Check if MTL version needs to be updated"
+      id: check_mtl_version
+      run: |
+        if grep -q "MTL_VER=main" "${{ github.workspace }}/versions.env" && \
+           grep -q "MTL_VER=main" "${{ github.workspace }}/ffmpeg-plugin/versions.env" && \
+           grep -q "MTL_VER=main" "${{ github.workspace }}/media-proxy/versions.env" && \
+           grep -q "MTL_VER=main" "${{ github.workspace }}/sdk/versions.env"; then
+          echo "MTL version is already set correctly."
+          echo "need_update=false" >> $GITHUB_OUTPUT
+        else
+          echo "MTL version needs to be updated."
+          echo "need_update=true" >> $GITHUB_OUTPUT
+        fi
+
+    - name: "Switch MTL version to currently used on the machine"
+      if: steps.check_mtl_version.outputs.need_update == 'true'
+      run: |
+        sed -i 's|MTL_VER=v25.02|MTL_VER=main|g' \
+          "${{ github.workspace }}/versions.env" \
+          "${{ github.workspace }}/ffmpeg-plugin/versions.env" \
+          "${{ github.workspace }}/media-proxy/versions.env" \
+          "${{ github.workspace }}/sdk/versions.env"
 
     - name: "Build and Install the MTL(skipped: already installed on runner)"
       if: always() && false  # Always skip this step for now
@@ -106,25 +202,97 @@ jobs:
         echo "Skipping MTL build and install as it is already installed on the machine."
         # eval 'source scripts/setup_build_env.sh && lib_install_mtl'
 
+    - name: "Check if JPEG XS is installed"
+      id: check_jpegxs
+      run: |
+        if [ -d "/usr/local/include/svt-jpegxs" ] && [ -f "/usr/local/lib/libSvtJpegXS.so" ]; then
+          echo "JPEG XS already installed."
+          echo "installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "JPEG XS needs to be installed."
+          echo "installed=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build and Install JPEG XS"
+      if: steps.check_jpegxs.outputs.installed != 'true'
       run: eval 'source scripts/setup_build_env.sh && lib_install_jpeg_xs'
 
+    - name: "Check if JPEG XS ffmpeg plugin is installed"
+      id: check_jpegxs_plugin
+      run: |
+        if [ -f "/usr/local/etc/imtl.json" ]; then
+          echo "JPEG XS ffmpeg plugin already installed."
+          echo "installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "JPEG XS ffmpeg plugin needs to be installed."
+          echo "installed=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build and Install JPEG XS ffmpeg plugin"
+      if: steps.check_jpegxs_plugin.outputs.installed != 'true'
       run: eval 'source scripts/setup_build_env.sh && lib_install_mtl_jpeg_xs_plugin'
 
+    - name: "Check if gRPC is installed"
+      id: check_grpc
+      run: |
+        if [ -d "/usr/local/include/grpc" ] && [ -d "/usr/local/include/grpcpp" ]; then
+          echo "gRPC already installed."
+          echo "installed=true" >> $GITHUB_OUTPUT
+        else
+          echo "gRPC needs to be installed."
+          echo "installed=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build gRPC and dependencies"
+      if: steps.check_grpc.outputs.installed != 'true'
       run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
 
+    - name: "Check if MCM SDK and Media Proxy are built"
+      id: check_mcm
+      run: |
+        if [ -f "${BUILD_DIR}/mcm/bin/media_proxy" ] && [ -f "${BUILD_DIR}/mcm/bin/mesh-agent" ] && [ -f "${BUILD_DIR}/mcm/lib/libmcm_dp.so" ]; then
+          echo "MCM SDK and Media Proxy are already built."
+          echo "built=true" >> $GITHUB_OUTPUT
+        else
+          echo "MCM SDK and Media Proxy need to be built."
+          echo "built=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build MCM SDK and Media Proxy"
+      if: steps.check_mcm.outputs.built != 'true'
       run: eval 'source scripts/common.sh && ./build.sh "${PREFIX_DIR}"'
 
+    - name: "Check if FFmpeg 6.1 with MCM plugin is built"
+      id: check_ffmpeg_61
+      run: |
+        if [ -f "${BUILD_DIR}/ffmpeg-6-1/ffmpeg" ]; then
+          echo "FFmpeg 6.1 with MCM plugin is already built."
+          echo "built=true" >> $GITHUB_OUTPUT
+        else
+          echo "FFmpeg 6.1 with MCM plugin needs to be built."
+          echo "built=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build FFmpeg 6.1 with MCM plugin"
+      if: steps.check_ffmpeg_61.outputs.built != 'true'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
         ./configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
         ./build-ffmpeg.sh "6.1"
 
+    - name: "Check if FFmpeg 7.0 with MCM plugin is built"
+      id: check_ffmpeg_70
+      run: |
+        if [ -f "${BUILD_DIR}/ffmpeg-7-0/ffmpeg" ]; then
+          echo "FFmpeg 7.0 with MCM plugin is already built."
+          echo "built=true" >> $GITHUB_OUTPUT
+        else
+          echo "FFmpeg 7.0 with MCM plugin needs to be built."
+          echo "built=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: "Build FFmpeg 7.0 with MCM plugin"
+      if: steps.check_ffmpeg_70.outputs.built != 'true'
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
         ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \

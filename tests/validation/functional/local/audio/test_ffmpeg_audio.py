@@ -17,7 +17,7 @@ from common.ffmpeg_handler.ffmpeg_enums import (
 
 from common.ffmpeg_handler.ffmpeg_io import FFmpegAudioIO
 from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmMemifAudioIO
-from Engine.rx_tx_app_file_validation_utils import cleanup_file
+from Engine.const import FFMPEG_RUN_TIMEOUT
 
 
 logger = logging.getLogger(__name__)
@@ -111,13 +111,21 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, lo
 
     mcm_rx_executor.start()
     mcm_tx_executor.start()
+    try:
+        if mcm_rx_executor._processes[0].running:
+            mcm_rx_executor._processes[0].wait(timeout=FFMPEG_RUN_TIMEOUT)
+    except Exception as e:
+        logging.warning(f"RX executor did not finish in time or error occurred: {e}")
+
     mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
     mcm_tx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
 
+    mcm_rx_executor.validate()
+    mcm_tx_executor.validate()
+
     # TODO add validate() function to check if the output file is correct
 
-    success = cleanup_file(rx_host.connection, str(mcm_rx_outp.output_path))
-    if success:
-        logger.debug(f"Cleaned up Rx output file: {mcm_rx_outp.output_path}")
-    else:
-        logger.warning(f"Failed to clean up Rx output file: {mcm_rx_outp.output_path}")
+    mcm_rx_executor.cleanup()
+
+    assert mcm_tx_executor.is_pass is True, "TX FFmpeg process did not pass"
+    assert mcm_rx_executor.is_pass is True, "RX FFmpeg process did not pass"

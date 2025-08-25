@@ -11,14 +11,14 @@ from mfd_connect.exceptions import RemoteProcessInvalidState
 
 import Engine.rx_tx_app_client_json
 import Engine.rx_tx_app_connection_json
-from Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH, RX_REQUIRED_LOG_PHRASES, TX_REQUIRED_LOG_PHRASES
+from Engine.const import LOG_FOLDER, DEFAULT_OUTPUT_PATH
+from common.log_constants import RX_REQUIRED_LOG_PHRASES, TX_REQUIRED_LOG_PHRASES, RX_TX_APP_ERROR_KEYWORDS
 from Engine.mcm_apps import (
     get_media_proxy_port,
-    output_validator,
     save_process_log,
     get_mcm_path,
 )
-from Engine.rx_tx_app_file_validation_utils import validate_file
+from Engine.rx_tx_app_file_validation_utils import validate_file, cleanup_file
 
 logger = logging.getLogger(__name__)
 
@@ -200,62 +200,27 @@ class AppRunnerBase:
 
             app_log_validation_status = False
             app_log_error_count = 0
-
-            # Custom Rx log validation: check for required phrases in order, ignoring timestamps
-            def check_phrases_in_order(log_path, phrases):
-                found_indices = []
-                missing_phrases = []
-                lines_around_missing = {}
-                with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
-                    lines = [line.strip() for line in f]
-                
-                idx = 0
-                for phrase_idx, phrase in enumerate(phrases):
-                    found = False
-                    phrase_stripped = phrase.strip()
-                    start_idx = idx  # Remember where we started searching
-                    
-                    while idx < len(lines):
-                        line_stripped = lines[idx].strip()
-                        if phrase_stripped in line_stripped:
-                            found_indices.append(idx)
-                            found = True
-                            idx += 1
-                            break
-                        idx += 1
-                    
-                    if not found:
-                        missing_phrases.append(phrase)
-                        # Store context - lines around where we were searching
-                        context_start = max(0, start_idx - 3)
-                        context_end = min(len(lines), start_idx + 7)
-                        lines_around_missing[phrase] = lines[context_start:context_end]
-                
-                return len(missing_phrases) == 0, missing_phrases, lines_around_missing
+            
+            # Using common log validation utility
+            from common.log_validation_utils import check_phrases_in_order
 
             if self.direction in ("Rx", "Tx"):
+                from common.log_validation_utils import validate_log_file
                 required_phrases = RX_REQUIRED_LOG_PHRASES if self.direction == "Rx" else TX_REQUIRED_LOG_PHRASES
-                log_pass, missing, context_lines = check_phrases_in_order(log_file_path, required_phrases)
-                self.is_pass = log_pass
-                app_log_validation_status = log_pass
-                app_log_error_count = len(missing)
-                validation_info.append(f"=== {self.direction} App Log Validation ===")
-                validation_info.append(f"Log file: {log_file_path}")
-                validation_info.append(f"Validation result: {'PASS' if log_pass else 'FAIL'}")
-                validation_info.append(f"Errors found: {app_log_error_count}")
-                if not log_pass:
-                    validation_info.append(f"Missing or out-of-order phrases analysis:")
-                    for phrase in missing:
-                        validation_info.append(f"\n  Expected phrase: \"{phrase}\"")
-                        validation_info.append(f"  Context in log file:")
-                        if phrase in context_lines:
-                            for line in context_lines[phrase]:
-                                validation_info.append(f"    {line}")
-                        else:
-                            validation_info.append("    <No context available>")
-                    if missing:
-                        print(f"{self.direction} process did not pass. First missing phrase: {missing[0]}")
+                
+                # Use the common validation function
+                validation_result = validate_log_file(log_file_path, required_phrases, self.direction)
+                
+                self.is_pass = validation_result['is_pass']
+                app_log_validation_status = validation_result['is_pass']
+                app_log_error_count = validation_result['error_count']
+                validation_info.extend(validation_result['validation_info'])
+                
+                # Additional logging if validation failed
+                if not validation_result['is_pass'] and validation_result['missing_phrases']:
+                    print(f"{self.direction} process did not pass. First missing phrase: {validation_result['missing_phrases'][0]}")
             else:
+                from common.log_validation_utils import output_validator
                 result = output_validator(
                     log_file_path=log_file_path,
                     error_keywords=RX_TX_APP_ERROR_KEYWORDS,
@@ -282,8 +247,8 @@ class AppRunnerBase:
                             f"  - {phrase}: found '{found}', expected '{expected}'"
                         )
 
-        # File validation for Rx only run if output path isn't "/dev/null"
-        if self.direction == "Rx" and self.output and self.output_path != "/dev/null":
+        # File validation for Rx only run if output path isn't "/dev/null" or doesn't start with "/dev/null/"
+        if self.direction == "Rx" and self.output and self.output_path and not str(self.output_path).startswith("/dev/null"):
             validation_info.append(f"\n=== {self.direction} Output File Validation ===")
             validation_info.append(f"Expected output file: {self.output}")
 
@@ -417,8 +382,6 @@ class LapkaExecutor:
 
         def cleanup(self):
             """Clean up the output file created by the Rx app."""
-            from Engine.rx_tx_app_file_validation_utils import cleanup_file
-
             if self.output:
                 success = cleanup_file(self.host.connection, str(self.output))
                 if success:

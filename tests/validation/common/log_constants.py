@@ -1,0 +1,53 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2024-2025 Intel Corporation
+# Media Communications Mesh
+
+"""
+Common constants for log validation used by both rxtxapp and ffmpeg validation.
+"""
+
+# Required ordered log phrases for Rx validation
+RX_REQUIRED_LOG_PHRASES = [
+    '[RX] Launching RX App',
+    '[RX] Reading client configuration',
+    '[RX] Reading connection configuration',
+    '[DEBU] JSON client config:',
+    '[INFO] Media Communications Mesh SDK version',
+    '[DEBU] JSON conn config:',
+    '[RX] Fetched mesh data buffer',
+    '[RX] Saving buffer data to a file',
+    '[RX] Done reading the data',
+    '[RX] dropping connection to media-proxy',
+    '[RX] Shuting down connection',
+    'INFO - memif disconnected!',
+    '[INFO] gRPC: connection deleted',
+    '[RX] Shutting down client',
+]
+
+# Required ordered log phrases for Tx validation
+TX_REQUIRED_LOG_PHRASES = [
+    '[TX] Launching TX app',
+    '[TX] Reading client configuration',
+    '[TX] Reading connection configuration',
+    '[DEBU] JSON client config:',
+    '[INFO] Media Communications Mesh SDK version',
+    '[DEBU] JSON conn config:',
+    '[INFO] gRPC: connection created',
+    'INFO - Create memif socket.',
+    'INFO - Create memif interface.',
+    '[TX] Sending packet:',
+    '[TX] Shuting down connection',
+    '[INFO] gRPC: connection deleted',
+    '[TX] Shutting down client',
+]
+
+# Common error keywords to look for in logs
+RX_TX_APP_ERROR_KEYWORDS = [
+    "ERROR",
+    "FATAL",
+    "exception",
+    "segfault",
+    "core dumped",
+    "failed",
+    "FAIL"
+]

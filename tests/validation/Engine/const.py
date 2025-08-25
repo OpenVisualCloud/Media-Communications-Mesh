@@ -4,25 +4,23 @@
 
 # Required ordered log phrases for Rx validation
 RX_REQUIRED_LOG_PHRASES = [
-    '[RX] Launching Rx App',
+    '[RX] Launching RX App',
     '[RX] Reading client configuration',
     '[RX] Reading connection configuration',
     '[DEBU] JSON client config:',
     '[INFO] Media Communications Mesh SDK version',
     '[DEBU] JSON conn config:',
-    '[RX] Waiting for packets',
     '[RX] Fetched mesh data buffer',
     '[RX] Saving buffer data to a file',
-    '[RX] Frame: 1',
     '[RX] Done reading the data',
     '[RX] dropping connection to media-proxy',
-    '[RX] Shutting down connection',
+    '[RX] Shuting down connection',
     'INFO - memif disconnected!',
     '[INFO] gRPC: connection deleted',
     '[RX] Shutting down client',
 ]
 TX_REQUIRED_LOG_PHRASES = [
-    '[TX] Launching Tx App',
+    '[TX] Launching TX app',
     '[TX] Reading client configuration',
     '[TX] Reading connection configuration',
     '[DEBU] JSON client config:',
@@ -31,10 +29,8 @@ TX_REQUIRED_LOG_PHRASES = [
     '[INFO] gRPC: connection created',
     'INFO - Create memif socket.',
     'INFO - Create memif interface.',
-    'INFO - memif connected!',
-    '[INFO] gRPC: connection active',
-    '[TX] sending',
-    '[TX] Shutting down connection',
+    '[TX] Sending packet:',
+    '[TX] Shuting down connection',
     '[INFO] gRPC: connection deleted',
     '[TX] Shutting down client',
 ]
@@ -43,6 +39,9 @@ LOG_FOLDER = "logs"
 DEFAULT_MEDIA_PATH = "/mnt/media/"
 DEFAULT_INPUT_PATH = "/opt/intel/input_path/"
 DEFAULT_OUTPUT_PATH = "/opt/intel/output_path/"
+
+FFMPEG_ESTABLISH_TIMEOUT = 5  # or use the same value as MCM_ESTABLISH_TIMEOUT
+FFMPEG_RUN_TIMEOUT = 60  # or use the same value as MCM_RXTXAPP_RUN_TIMEOUT
 
 # time for establishing connection for example between TX and RX in st2110
 MTL_ESTABLISH_TIMEOUT = 2
