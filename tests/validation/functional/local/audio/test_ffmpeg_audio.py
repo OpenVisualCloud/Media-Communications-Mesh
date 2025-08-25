@@ -37,13 +37,13 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, lo
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
     tx_host = rx_host = host_list[0]
-    tx_prefix_variables = test_config["tx"].get("prefix_variables", None)
-    rx_prefix_variables = test_config["rx"].get("prefix_variables", None)
-    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+    # Access prefix_variables directly
+    if hasattr(tx_host.topology.extra_info, "prefix_variables"):
+        prefix_variables = dict(tx_host.topology.extra_info.prefix_variables)
+    else:
+        prefix_variables = {}
+    prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
         tx_host.topology.extra_info.media_proxy["sdk_port"]
-    )
-    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
-        rx_host.topology.extra_info.media_proxy["sdk_port"]
     )
 
     audio_format = audio_file_format_to_format_dict(
@@ -65,7 +65,7 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, lo
         ac=int(audio_files_25_03[audio_type]["channels"]),
         ar=int(audio_files_25_03[audio_type]["sample_rate"]),
         stream_loop=False,
-        input_path=f'{test_config["tx"]["filepath"]}{audio_files_25_03[audio_type]["filename"]}',
+        input_path=f'{tx_host.topology.extra_info.filepath}{audio_files_25_03[audio_type]["filename"]}',
     )
     mcm_tx_outp = FFmpegMcmMemifAudioIO(
         channels=int(audio_files_25_03[audio_type]["channels"]),
@@ -74,13 +74,12 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, lo
         output_path="-",
     )
     mcm_tx_ff = FFmpeg(
-        prefix_variables=tx_prefix_variables,
-        ffmpeg_path=test_config["tx"]["ffmpeg_path"],
+        prefix_variables=prefix_variables,
+        ffmpeg_path=tx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_tx_inp,
         ffmpeg_output=mcm_tx_outp,
         yes_overwrite=False,
     )
-
     logger.debug(f"Tx command: {mcm_tx_ff.get_command()}")
     mcm_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff)
 
@@ -96,11 +95,11 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, lo
         ac=int(audio_files_25_03[audio_type]["channels"]),
         ar=int(audio_files_25_03[audio_type]["sample_rate"]),
         channel_layout=audio_channel_layout,
-        output_path=f'{test_config["rx"]["filepath"]}test_{audio_files_25_03[audio_type]["filename"]}',
+        output_path=f'{rx_host.topology.extra_info.output_path}test_{audio_files_25_03[audio_type]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
-        prefix_variables=rx_prefix_variables,
-        ffmpeg_path=test_config["rx"]["ffmpeg_path"],
+        prefix_variables=prefix_variables,
+        ffmpeg_path=rx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_rx_inp,
         ffmpeg_output=mcm_rx_outp,
         yes_overwrite=True,

@@ -1,18 +1,3 @@
-tx:
-    filepath: /mnt/media/
-    p_sip: "192.168.39.39"
-    ffmpeg_path: ffmpeg
-    prefix_variables:
-        NO_PROXY: 127.0.0.1,localhost
-        no_proxy: 127.0.0.1,localhost
-rx:
-    filepath: /dev/null/
-    ffmpeg_path: ffmpeg
-    prefix_variables:
-        NO_PROXY: 127.0.0.1,localhost
-        no_proxy: 127.0.0.1,localhost
-
-# other
 broadcast_ip: '239.2.39.239'
 port: 20000
 payload_type: 100

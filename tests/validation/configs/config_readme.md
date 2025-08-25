@@ -25,6 +25,13 @@ hosts:
     extra_info:
       mtl_path: /opt/intel/mtl
       nicctl_path: /opt/intel/mtl/script
+      filepath: /mnt/media/
+      output_path: /home/gta/received/
+      ffmpeg_path: /opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/bin/ffmpeg
+      prefix_variables:
+        LD_LIBRARY_PATH: /opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/lib
+        NO_PROXY: 127.0.0.1,localhost
+        no_proxy: 127.0.0.1,localhost
       media_proxy:
         st2110: true
         sdk_port: 8002
@@ -66,6 +73,12 @@ A list of host definitions. Each host can have the following fields:
   - **integrity_path**: Path for integrity scripts on the host if you want to run integrity tests (optional).
   - **mtl_path**: Custom path to the MTL repo (optional) default is /mcm_path/_build/mtl.
   - **nicctl_path**: Path to `nicctl.sh` script (optional).
+  - **filepath**: Path to input media files for transmitter (e.g., `/mnt/media/`).
+  - **output_path**: Path where output files will be stored (e.g., `/home/gta/received/`).
+  - **ffmpeg_path**: Path to FFmpeg binary (e.g., `/opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/bin/ffmpeg`).
+  - **prefix_variables**: Environment variables to set before running FFmpeg.
+    - **LD_LIBRARY_PATH**: Path to FFmpeg libraries.
+    - **NO_PROXY**, **no_proxy**: Proxy bypass settings.
   - **media_proxy**: (Optional) Media proxy configuration. DO NOT set this if you don't want to run media proxy process.
     - **st2110**: Set to `true` to use the ST2110 bridge.
     - **sdk_port**: Port for media proxy SDK.
@@ -85,6 +98,7 @@ A list of host definitions. Each host can have the following fields:
 - Fields marked as optional can be omitted if default values are sufficient.
 - You can add more hosts or network interfaces as needed.
 - If a field is not set, the system will use default values or those set in the OS.
+- FFmpeg and file path configurations are now recommended to be defined directly in the host's `extra_info` section rather than using the previously nested `tx` and `rx` structure, which has been deprecated.
 
 ---
 
@@ -92,23 +106,23 @@ A list of host definitions. Each host can have the following fields:
 ## Test config Structure Overview
 
 ```yaml
-# Mesh agent configuration
+# Mesh agent configuration (if not defined in topology)
 mesh-agent:
   control_port: 8100
   proxy_port: 50051
 
-# ST2110 configuration
+# ST2110 configuration (if not defined in topology)
 st2110:
   sdk: 8002
 
-# RDMA configuration
+# RDMA configuration (if not defined in topology)
 rdma:
   rdma_ports: 9100-9999
 
-# Path configurations
-media_path: "/mnt/media/"
+# Global path configurations (if not defined in host's extra_info)
+# Note: It's now recommended to define these in the host's extra_info section
+# of the topology file for better organization and host-specific settings
 input_path: "/opt/intel/input_path/"
-output_path: "/opt/intel/output_path/"
 
 # Build configurations
 mcm_ffmpeg_rebuild: false  # Set to true to rebuild FFmpeg with MCM plugin
