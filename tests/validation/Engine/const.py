@@ -2,39 +2,6 @@
 # Copyright 2024-2025 Intel Corporation
 # Media Communications Mesh
 
-# Required ordered log phrases for Rx validation
-RX_REQUIRED_LOG_PHRASES = [
-    '[RX] Launching RX App',
-    '[RX] Reading client configuration',
-    '[RX] Reading connection configuration',
-    '[DEBU] JSON client config:',
-    '[INFO] Media Communications Mesh SDK version',
-    '[DEBU] JSON conn config:',
-    '[RX] Fetched mesh data buffer',
-    '[RX] Saving buffer data to a file',
-    '[RX] Done reading the data',
-    '[RX] dropping connection to media-proxy',
-    '[RX] Shuting down connection',
-    'INFO - memif disconnected!',
-    '[INFO] gRPC: connection deleted',
-    '[RX] Shutting down client',
-]
-TX_REQUIRED_LOG_PHRASES = [
-    '[TX] Launching TX app',
-    '[TX] Reading client configuration',
-    '[TX] Reading connection configuration',
-    '[DEBU] JSON client config:',
-    '[INFO] Media Communications Mesh SDK version',
-    '[DEBU] JSON conn config:',
-    '[INFO] gRPC: connection created',
-    'INFO - Create memif socket.',
-    'INFO - Create memif interface.',
-    '[TX] Sending packet:',
-    '[TX] Shuting down connection',
-    '[INFO] gRPC: connection deleted',
-    '[TX] Shutting down client',
-]
-
 LOG_FOLDER = "logs"
 DEFAULT_MEDIA_PATH = "/mnt/media/"
 DEFAULT_INPUT_PATH = "/opt/intel/input_path/"

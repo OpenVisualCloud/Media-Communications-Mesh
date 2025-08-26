@@ -32,7 +32,6 @@ hosts:
       #   LD_LIBRARY_PATH: /opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mtl_build/lib
       #   NO_PROXY: 127.0.0.1,localhost
       #   no_proxy: 127.0.0.1,localhost
-      output_path: {{ OUTPUT_PATH }}
       nicctl_path: {{ NICCTL_PATH }}
       mesh_agent:
         control_port: 8100
