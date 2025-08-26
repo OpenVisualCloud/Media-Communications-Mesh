@@ -66,10 +66,9 @@ jobs:
       if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
       run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
 
-    - name: "Clone and patch ffmpeg 6.1 and 7.0"
+    - name: "Clone and patch ffmpeg 7.0"
       if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
       run: |
-        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
         ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
 
     - name: "Build and Install xdp and libbpf"
@@ -148,16 +147,10 @@ jobs:
     - name: "Build MCM SDK and Media Proxy"
       run: eval 'source scripts/common.sh && ./build.sh "${PREFIX_DIR}"'
 
-    - name: "Build FFmpeg 6.1 with MCM plugin"
-      working-directory: ${{ github.workspace }}/ffmpeg-plugin
-      run: |
-        ./configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
-        ./build-ffmpeg.sh "6.1"
-
     - name: "Build FFmpeg 7.0 with MCM plugin"
       working-directory: ${{ github.workspace }}/ffmpeg-plugin
       run: |
-        ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
+        ./configure-ffmpeg.sh "7.0" --prefix=${{ env.BUILD_DIR }}/ffmpeg-7-0 --disable-doc --disable-debug && \
         ./build-ffmpeg.sh "7.0"
 
     - name: "upload media-proxy and mcm binaries"
@@ -168,6 +161,5 @@ jobs:
             ${{ env.BUILD_DIR }}/mcm/bin/media_proxy
             ${{ env.BUILD_DIR }}/mcm/bin/mesh-agent
             ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.*
-            ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
             ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
             ${{ env.BUILD_DIR }}/ffmpeg-7-0/lib/**

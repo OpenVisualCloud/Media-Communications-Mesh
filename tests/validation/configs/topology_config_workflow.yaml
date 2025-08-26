@@ -19,7 +19,7 @@ hosts:
     extra_info:
       input_path: {{ INPUT_PATH }}
       output_path: {{ OUTPUT_PATH }}
-      # integrity_path: {{ INTEGRITY_PATH }}
+      integrity_path: {{ INTEGRITY_PATH }}
       mtl_path: {{ MTL_PATH }}
       mcm_path: {{ MCM_PATH }}
       mcm_ffmpeg_path: {{ MCM_FFMPEG_7_0 }}
@@ -27,11 +27,6 @@ hosts:
         LD_LIBRARY_PATH: {{ LD_LIBRARY_PATH }}
         NO_PROXY: 127.0.0.1,localhost
         no_proxy: 127.0.0.1,localhost
-      # mtl_ffmpeg_path: {{ MTL_FFMPEG_7_0 }}
-      # mtl_prefix_variables:
-      #   LD_LIBRARY_PATH: /opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mtl_build/lib
-      #   NO_PROXY: 127.0.0.1,localhost
-      #   no_proxy: 127.0.0.1,localhost
       nicctl_path: {{ NICCTL_PATH }}
       mesh_agent:
         control_port: 8100

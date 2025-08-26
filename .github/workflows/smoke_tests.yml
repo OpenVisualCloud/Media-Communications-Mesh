@@ -41,13 +41,15 @@ env:
   DPDK_REBUILD: "false"
   MEDIA_PATH: "/mnt/media"
   BUILD_DIR: "${{ github.workspace }}/_build"
+  INPUT_PATH: "/mnt/media/"
+  OUTPUT_PATH: "${{ github.workspace }}/received/"
   MCM_BINARIES_DIR: "./mcm-binaries"
   MEDIA_PROXY: "./mcm-binaries/media_proxy"
   MESH_AGENT: "./mcm-binaries/mesh-agent"
-  MCM_FFMPEG_7_0: ./mcm-binaries/ffmpeg-7-0/ffmpeg
-  MTL_FFMPEG_7_0: ./mtl-binaries/ffmpeg-7-0/ffmpeg
-  MCM_FFMPEG_6_1: ./mcm-binaries/ffmpeg-6-1/ffmpeg
-  MTL_FFMPEG_6_1: ./mtl-binaries/ffmpeg-6-1/ffmpeg
+  MCM_FFMPEG_7_0: "${{ github.workspace }}/_build/ffmpeg-7-0/bin/ffmpeg"
+  MCM_LD_LIBRARY_PATH: "${{ github.workspace }}/_build/ffmpeg-7-0/lib/"
+  MTL_FFMPEG_7_0: "./mtl-binaries/ffmpeg-7-0/ffmpeg"
+  INTEGRITY_PATH: "${{ github.workspace }}/tests/validation/common/integrity"
   LOG_DIR: "${{ github.workspace }}/logs"
 
 permissions:
@@ -142,13 +144,13 @@ jobs:
           echo "USER=${USER}" >> "$GITHUB_ENV"
           sed -i "s/{{ USER }}/root/g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ INTEGRITY_PATH }}|${{ github.workspace }}/tests/validation/common/integrity|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ OUTPUT_PATH }}|${{ github.workspace }}/received/|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ INPUT_PATH }}|/mnt/media/|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ INTEGRITY_PATH }}|${{ env.INTEGRITY_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ OUTPUT_PATH }}|${{ env.OUTPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ INPUT_PATH }}|${{ env.INPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ MTL_PATH }}|${{ env.BUILD_DIR }}/mtl/|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ MCM_FFMPEG_7_0 }}|${{ env.BUILD_DIR }}/ffmpeg-7-0/|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ LD_LIBRARY_PATH }}|${{ env.BUILD_DIR }}/ffmpeg-7-0/lib|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MCM_FFMPEG_7_0 }}|${{ env.MCM_FFMPEG_7_0 }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ LD_LIBRARY_PATH }}|${{ env.MCM_LD_LIBRARY_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ OUTPUT_PATH }}|${{ github.workspace }}/received/|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ NICCTL_PATH }}|${{ env.BUILD_DIR }}/mtl/script/|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
