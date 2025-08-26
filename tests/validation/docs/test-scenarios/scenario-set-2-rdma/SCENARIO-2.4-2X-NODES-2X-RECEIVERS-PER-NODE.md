@@ -33,3 +33,7 @@ flowchart LR
 * Blob
 * Video – Uncompressed
 * Audio
+
+### Test Cases
+
+For detailed test cases, refer to the centralized [Test Cases documentation](../SCENARIO.md#test-cases).
