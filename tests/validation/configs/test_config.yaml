@@ -1,9 +1,36 @@
-st2110:
-  sdk: 8002
-rdma:
-  rdma_ports: 9100-9999
-#st2110: True  - this will be enough also to run the ST2110 tests with default parameters
-#rdma: True  - this will be enough also to run the RDMA tests with default parameters
+# Media Communications Mesh test configuration
+# This file contains configuration for running MCM validation tests
+
+# Mesh agent configuration
 mesh-agent: # it's optional config
   control_port: 8100
   proxy_port: 50051
+
+# ST2110 configuration
+st2110:
+  sdk: 8002
+#st2110: True  - this will be enough also to run the ST2110 tests with default parameters
+
+# RDMA configuration
+rdma:
+  rdma_ports: 9100-9999
+#rdma: True  - this will be enough also to run the RDMA tests with default parameters
+
+# Path configurations
+media_path: "/mnt/media/"
+input_path: "/opt/intel/input_path/"
+output_path: "/opt/intel/output_path/"
+
+# Build configurations
+mcm_ffmpeg_rebuild: false  # Set to true to rebuild FFmpeg with MCM plugin
+mcm_ffmpeg_version: "7.0"  # Default FFmpeg version for MCM
+
+mtl_ffmpeg_rebuild: false  # Set to true to rebuild FFmpeg with MTL plugin
+mtl_ffmpeg_version: "7.0"  # Default FFmpeg version for MTL
+mtl_ffmpeg_gpu_direct: false  # Set to true to enable GPU direct support
+
+rx_tx_app_rebuild: false  # Set to true to rebuild TestApp
+
+# Log configurations
+keep_logs: true
+# log_path: "/path/to/custom/logs"  # Uncomment to use custom log path
