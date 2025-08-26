@@ -35,7 +35,7 @@ int main(int argc, char *argv[]) {
     char *conn_cfg_file = argv[2];
     char *out_filename = argv[3];
 
-    LOG("[RX] Launching RX App");
+    LOG("[RX] Launching Rx App");
     LOG("[RX] Reading client configuration...");
     client_cfg = input_parse_file_to_string(client_cfg_file);
     LOG("[RX] Reading connection configuration...");
@@ -60,11 +60,11 @@ int main(int argc, char *argv[]) {
 safe_exit:
     LOG("[RX] dropping connection to media-proxy...");
     if (connection) {
-        LOG("[RX] Shuting down connection");
+        LOG("[RX] Shutting down connection");
         mesh_delete_connection(&connection);
     }
     if (client) {
-        LOG("[RX] Shuting down client");
+        LOG("[RX] Shutting down client");
         mesh_delete_client(&client);
     }
     free(client_cfg);
