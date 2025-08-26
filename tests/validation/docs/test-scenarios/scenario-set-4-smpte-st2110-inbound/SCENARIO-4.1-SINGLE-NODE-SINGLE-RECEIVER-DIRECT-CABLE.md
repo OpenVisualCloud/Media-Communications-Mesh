@@ -28,6 +28,10 @@ flowchart LR
 * Video – SMPTE ST 2110-22 Compressed Video (JPEG XS)
 * Audio – SMPTE ST 2110-30 Uncompressed Audio (PCM)
 
+### Test Cases
+
+For detailed test cases, refer to the centralized [Test Cases documentation](../SCENARIO.md#test-cases).
+
 ### Notes
 
 1. For SMPTE ST 2110-22 Compressed Video, consider the following
