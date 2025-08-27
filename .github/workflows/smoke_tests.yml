@@ -63,10 +63,10 @@ jobs:
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
-      runner: ${{ env.RUNNER }}
+      runner: bcs-cicd-4
 
   validation-prepare-setup-mcm:
-    runs-on: ${{ env.RUNNER }}
+    runs-on: bcs-cicd-4
     needs: call-bare-metal-build
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -159,7 +159,7 @@ jobs:
 
   validation-run-tests:
     needs: validation-prepare-setup-mcm
-    runs-on: ${{ env.RUNNER }}
+    runs-on: bcs-cicd-4
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     env:
