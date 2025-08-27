@@ -105,7 +105,7 @@ def test_local_ffmpeg_video(hosts, test_config, file: str, log_path, media_path)
         framerate=frame_rate,
         video_size=video_size,
         pixel_format=pixel_format,
-        output_path=f'{DEFAULT_OUTPUT_PATH}/test_{video_files_25_03[file]["filename"]}',
+        output_path=f'{getattr(rx_host.topology.extra_info, "output_path", DEFAULT_OUTPUT_PATH)}/test_{video_files_25_03[file]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=rx_prefix_variables,

@@ -97,7 +97,7 @@ def test_local_ffmpeg_audio(hosts, test_config, audio_type: str, log_path, media
         ac=int(audio_files_25_03[audio_type]["channels"]),
         ar=int(audio_files_25_03[audio_type]["sample_rate"]),
         channel_layout=audio_channel_layout,
-        output_path=f'{DEFAULT_OUTPUT_PATH}/test_{audio_files_25_03[audio_type]["filename"]}',
+        output_path=f'{getattr(rx_host.topology.extra_info, "output_path", DEFAULT_OUTPUT_PATH)}/test_{audio_files_25_03[audio_type]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=prefix_variables,
