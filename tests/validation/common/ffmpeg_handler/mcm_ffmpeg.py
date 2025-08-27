@@ -89,7 +89,9 @@ class FFmpegMcmST2110AudioIO(FFmpegMcmST2110CommonIO):
         self.payload_type = payload_type
         self.channels = channels
         if sample_rate and ptime not in matching_sample_rates[sample_rate]:
-            raise Exception(f"Sample rate {sample_rate} Hz does not work with {ptime} packet time (ptime).")
+            raise Exception(
+                f"Sample rate {sample_rate} Hz does not work with {ptime} packet time (ptime)."
+            )
         self.sample_rate = sample_rate
         self.ptime = ptime
         self.f = f

@@ -103,7 +103,9 @@ def test_corrupted_file_integrity():
         )
 
         result = integrator.check_blob_integrity()
-        print(f"Corrupted file integrity check result: {'PASSED (UNEXPECTED!)' if result else 'FAILED (EXPECTED)'}")
+        print(
+            f"Corrupted file integrity check result: {'PASSED (UNEXPECTED!)' if result else 'FAILED (EXPECTED)'}"
+        )
         return not result  # We expect this to fail, so return True if it failed
 
 

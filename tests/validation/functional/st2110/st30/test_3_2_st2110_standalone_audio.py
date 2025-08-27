@@ -27,7 +27,9 @@ logger = logging.getLogger(__name__)
 @pytest.mark.parametrize("audio_type", list(audio_files.keys()))
 def test_3_2_st2110_standalone_audio(hosts, test_config, audio_type, log_path):
     try:
-        audio_format = audio_file_format_to_format_dict(str(audio_files[audio_type]["format"]))
+        audio_format = audio_file_format_to_format_dict(
+            str(audio_files[audio_type]["format"])
+        )
     except:
         pytest.skip(f"Unsupported audio format: {audio_files[audio_type]['format']}")
 
@@ -38,7 +40,9 @@ def test_3_2_st2110_standalone_audio(hosts, test_config, audio_type, log_path):
 
     audio_sample_rate = int(audio_files[audio_type]["sample_rate"])
     if audio_sample_rate not in [ar.value for ar in FFmpegAudioRate]:
-        raise Exception(f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!")
+        raise Exception(
+            f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
+        )
 
     tx_host = hosts["mesh-agent"]
     rx_host = hosts["client"]

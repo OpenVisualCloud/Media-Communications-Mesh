@@ -27,14 +27,18 @@ def test_6_1_st2110_ffmpeg_audio(hosts, test_config, audio_file, log_path):
     rx_b_host = hosts["client"]
 
     try:
-        audio_format = ffmpeg_enums.audio_file_format_to_format_dict(str(audio_file["format"]))
+        audio_format = ffmpeg_enums.audio_file_format_to_format_dict(
+            str(audio_file["format"])
+        )
     except:
         pytest.skip(f"Unsupported audio format: {audio_file['format']}")
 
     audio_sample_rate = int(audio_file["sample_rate"])
 
     if audio_sample_rate not in [ar.value for ar in ffmpeg_enums.FFmpegAudioRate]:
-        raise Exception(f"Not expected audio sample rate of {audio_file['sample_rate']}!")
+        raise Exception(
+            f"Not expected audio sample rate of {audio_file['sample_rate']}!"
+        )
 
     # Host A --- MTL FFmpeg Tx
 

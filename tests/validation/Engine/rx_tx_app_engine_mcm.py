@@ -23,7 +23,9 @@ from Engine.rx_tx_app_file_validation_utils import validate_file, cleanup_file
 logger = logging.getLogger(__name__)
 
 
-def create_client_json(build: str, client: Engine.rx_tx_app_client_json.ClientJson, log_path: str = "") -> None:
+def create_client_json(
+    build: str, client: Engine.rx_tx_app_client_json.ClientJson, log_path: str = ""
+) -> None:
     logger.debug("Client JSON:")
     for line in client.to_json().splitlines():
         logger.debug(line)
@@ -41,7 +43,9 @@ def create_connection_json(
     logger.debug("Connection JSON:")
     for line in rx_tx_app_connection.to_json().splitlines():
         logger.debug(line)
-    output_path = str(Path(build, "tests", "tools", "TestApp", "build", "connection.json"))
+    output_path = str(
+        Path(build, "tests", "tools", "TestApp", "build", "connection.json")
+    )
     logger.debug(f"Connection JSON path: {output_path}")
     rx_tx_app_connection.prepare_and_save_json(output_path=output_path)
     # Use provided log_path or default to LOG_FOLDER
@@ -72,21 +76,31 @@ class AppRunnerBase:
         self.file_dict = file_dict
         self.file = file
         self.rx_tx_app_connection = rx_tx_app_connection()
-        self.payload = payload_type.from_file_info(media_path=self.media_path, file_info=file_dict)
+        self.payload = payload_type.from_file_info(
+            media_path=self.media_path, file_info=file_dict
+        )
         self.media_proxy_port = get_media_proxy_port(host)
         self.rx_tx_app_client_json = Engine.rx_tx_app_client_json.ClientJson(
             host, apiConnectionString=f"Server=127.0.0.1; Port={self.media_proxy_port}"
         )
-        self.rx_tx_app_connection_json = Engine.rx_tx_app_connection_json.ConnectionJson(
-            host=host,
-            rx_tx_app_connection=self.rx_tx_app_connection,
-            payload=self.payload,
+        self.rx_tx_app_connection_json = (
+            Engine.rx_tx_app_connection_json.ConnectionJson(
+                host=host,
+                rx_tx_app_connection=self.rx_tx_app_connection,
+                payload=self.payload,
+            )
         )
-        self.app_path = host.connection.path(self.mcm_path, "tests", "tools", "TestApp", "build")
+        self.app_path = host.connection.path(
+            self.mcm_path, "tests", "tools", "TestApp", "build"
+        )
         self.client_cfg_file = host.connection.path(self.app_path, "client.json")
-        self.connection_cfg_file = host.connection.path(self.app_path, "connection.json")
+        self.connection_cfg_file = host.connection.path(
+            self.app_path, "connection.json"
+        )
         self.input = input_file
-        self.output_path = getattr(host.topology.extra_info, "output_path", DEFAULT_OUTPUT_PATH)
+        self.output_path = getattr(
+            host.topology.extra_info, "output_path", DEFAULT_OUTPUT_PATH
+        )
 
         # Handle output file path construction
         if output_file and output_path:
@@ -134,7 +148,9 @@ class AppRunnerBase:
         if self.output and str(self.output) != "/dev/null":
             # Skip for /dev/null and other special files
             if "/dev/" in str(self.output):
-                logger.debug(f"Skipping directory creation for special device path: {self.output}")
+                logger.debug(
+                    f"Skipping directory creation for special device path: {self.output}"
+                )
                 return
 
             output_dir = self.host.connection.path(self.output).parent
@@ -184,31 +200,27 @@ class AppRunnerBase:
 
             app_log_validation_status = False
             app_log_error_count = 0
-
+            
             # Using common log validation utility
             from common.log_validation_utils import check_phrases_in_order
 
             if self.direction in ("Rx", "Tx"):
                 from common.log_validation_utils import validate_log_file
-
                 required_phrases = RX_REQUIRED_LOG_PHRASES if self.direction == "Rx" else TX_REQUIRED_LOG_PHRASES
-
+                
                 # Use the common validation function
                 validation_result = validate_log_file(log_file_path, required_phrases, self.direction)
-
-                self.is_pass = validation_result["is_pass"]
-                app_log_validation_status = validation_result["is_pass"]
-                app_log_error_count = validation_result["error_count"]
-                validation_info.extend(validation_result["validation_info"])
-
+                
+                self.is_pass = validation_result['is_pass']
+                app_log_validation_status = validation_result['is_pass']
+                app_log_error_count = validation_result['error_count']
+                validation_info.extend(validation_result['validation_info'])
+                
                 # Additional logging if validation failed
-                if not validation_result["is_pass"] and validation_result["missing_phrases"]:
-                    print(
-                        f"{self.direction} process did not pass. First missing phrase: {validation_result['missing_phrases'][0]}"
-                    )
+                if not validation_result['is_pass'] and validation_result['missing_phrases']:
+                    print(f"{self.direction} process did not pass. First missing phrase: {validation_result['missing_phrases'][0]}")
             else:
                 from common.log_validation_utils import output_validator
-
                 result = output_validator(
                     log_file_path=log_file_path,
                     error_keywords=RX_TX_APP_ERROR_KEYWORDS,
@@ -220,7 +232,9 @@ class AppRunnerBase:
                 app_log_error_count = len(result["errors"])
                 validation_info.append(f"=== {self.direction} App Log Validation ===")
                 validation_info.append(f"Log file: {log_file_path}")
-                validation_info.append(f"Validation result: {'PASS' if result['is_pass'] else 'FAIL'}")
+                validation_info.append(
+                    f"Validation result: {'PASS' if result['is_pass'] else 'FAIL'}"
+                )
                 validation_info.append(f"Errors found: {len(result['errors'])}")
                 if result["errors"]:
                     validation_info.append("Error details:")
@@ -229,34 +243,39 @@ class AppRunnerBase:
                 if result["phrase_mismatches"]:
                     validation_info.append("Phrase mismatches:")
                     for phrase, found, expected in result["phrase_mismatches"]:
-                        validation_info.append(f"  - {phrase}: found '{found}', expected '{expected}'")
+                        validation_info.append(
+                            f"  - {phrase}: found '{found}', expected '{expected}'"
+                        )
 
         # File validation for Rx only run if output path isn't "/dev/null" or doesn't start with "/dev/null/"
-        if (
-            self.direction == "Rx"
-            and self.output
-            and self.output_path
-            and not str(self.output_path).startswith("/dev/null")
-        ):
+        if self.direction == "Rx" and self.output and self.output_path and not str(self.output_path).startswith("/dev/null"):
             validation_info.append(f"\n=== {self.direction} Output File Validation ===")
             validation_info.append(f"Expected output file: {self.output}")
 
-            file_info, file_validation_passed = validate_file(self.host.connection, self.output, cleanup=False)
+            file_info, file_validation_passed = validate_file(
+                self.host.connection, self.output, cleanup=False
+            )
             validation_info.extend(file_info)
             self.is_pass = self.is_pass and file_validation_passed
 
         # Save validation report to file
         if validation_info:
             validation_info.append(f"\n=== Overall Validation Summary ===")
-            overall_status = "PASS" if self.is_pass and file_validation_passed else "FAIL"
+            overall_status = (
+                "PASS" if self.is_pass and file_validation_passed else "FAIL"
+            )
             validation_info.append(f"Overall validation: {overall_status}")
-            validation_info.append(f"App log validation: {'PASS' if app_log_validation_status else 'FAIL'}")
+            validation_info.append(
+                f"App log validation: {'PASS' if app_log_validation_status else 'FAIL'}"
+            )
             if self.direction == "Rx":
                 file_status = "PASS" if file_validation_passed else "FAIL"
                 validation_info.append(f"File validation: {file_status}")
                 # Add note about overall validation logic
                 if not self.is_pass or not file_validation_passed:
-                    validation_info.append("Note: Overall validation fails if either app log or file validation fails")
+                    validation_info.append(
+                        "Note: Overall validation fails if either app log or file validation fails"
+                    )
 
             log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             subdir = f"RxTx/{self.host.name}"
@@ -287,9 +306,13 @@ class LapkaExecutor:
 
         def start(self):
             super().start()
-            logger.debug(f"Starting Tx app with payload: {self.payload.payload_type} on {self.host}")
+            logger.debug(
+                f"Starting Tx app with payload: {self.payload.payload_type} on {self.host}"
+            )
             cmd = self._get_app_cmd("Tx")
-            self.process = self.host.connection.start_process(cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path)
+            self.process = self.host.connection.start_process(
+                cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
+            )
 
             def log_output():
                 log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
@@ -327,15 +350,21 @@ class LapkaExecutor:
                 output_filename = f"rx_{self.host.name}_{input_path.stem}_{timestamp}{input_path.suffix}"
 
                 # Use the configured output path or default
-                self.output = self.host.connection.path(self.output_path, output_filename)
+                self.output = self.host.connection.path(
+                    self.output_path, output_filename
+                )
 
             logger.debug(f"Generated output path: {self.output}")
 
         def start(self):
             super().start()
-            logger.debug(f"Starting Rx app with payload: {self.payload.payload_type} on {self.host}")
+            logger.debug(
+                f"Starting Rx app with payload: {self.payload.payload_type} on {self.host}"
+            )
             cmd = self._get_app_cmd("Rx")
-            self.process = self.host.connection.start_process(cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path)
+            self.process = self.host.connection.start_process(
+                cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
+            )
 
             def log_output():
                 log_dir = self.log_path if self.log_path is not None else LOG_FOLDER

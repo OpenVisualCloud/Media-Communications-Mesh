@@ -12,8 +12,12 @@ from pathlib import Path
 
 
 DEFAULT_CHUNK_SIZE = 1024 * 1024  # 1MB chunks for processing
-SEGMENT_DURATION_GRACE_PERIOD = 1  # Grace period in seconds to allow for late-arriving files
-FILE_HASH_CHUNK_SIZE = 4096  # 4KB is optimal for file hashing (balances memory usage and disk I/O)
+SEGMENT_DURATION_GRACE_PERIOD = (
+    1  # Grace period in seconds to allow for late-arriving files
+)
+FILE_HASH_CHUNK_SIZE = (
+    4096  # 4KB is optimal for file hashing (balances memory usage and disk I/O)
+)
 
 
 def calculate_chunk_hashes(file_url: str, chunk_size: int = DEFAULT_CHUNK_SIZE) -> list:
@@ -23,7 +27,9 @@ def calculate_chunk_hashes(file_url: str, chunk_size: int = DEFAULT_CHUNK_SIZE) 
         chunk_index = 0
         while chunk := f.read(chunk_size):
             if len(chunk) != chunk_size:
-                logging.debug(f"CHUNK SIZE MISMATCH at index {chunk_index}: {len(chunk)} != {chunk_size}")
+                logging.debug(
+                    f"CHUNK SIZE MISMATCH at index {chunk_index}: {len(chunk)} != {chunk_size}"
+                )
             chunk_sum = hashlib.md5(chunk).hexdigest()
             chunk_sums.append(chunk_sum)
             chunk_index += 1
@@ -87,13 +93,16 @@ class BlobIntegrator:
         no_src_chunks = len(self.src_chunk_sums)
         if no_out_chunks != no_src_chunks:
             self.logger.error(
-                f"Chunk count mismatch: source has {no_src_chunks} chunks, " f"output has {no_out_chunks} chunks"
+                f"Chunk count mismatch: source has {no_src_chunks} chunks, "
+                f"output has {no_out_chunks} chunks"
             )
             bad_chunks += abs(no_out_chunks - no_src_chunks)
 
         if bad_chunks:
             self.bad_chunks_total += bad_chunks
-            self.logger.error(f"Received {bad_chunks} bad chunks out of {no_out_chunks} total chunks.")
+            self.logger.error(
+                f"Received {bad_chunks} bad chunks out of {no_out_chunks} total chunks."
+            )
             return False
 
         self.logger.info(f"All {no_out_chunks} chunks in {out_url} are correct.")
@@ -132,20 +141,26 @@ class BlobStreamIntegrator(BlobIntegrator):
         delete_file: bool = True,
     ):
         super().__init__(logger, src_url, out_name, chunk_size, out_path, delete_file)
-        self.logger.info(f"Output path {out_path}, segment duration: {segment_duration}")
+        self.logger.info(
+            f"Output path {out_path}, segment duration: {segment_duration}"
+        )
         self.segment_duration = segment_duration
         self.workers_count = workers_count
 
     def get_out_file(self, request_queue):
         """Monitor output path for new files and add them to processing queue."""
-        self.logger.info(f"Waiting for output files from {self.out_path} with prefix {self.out_name}")
+        self.logger.info(
+            f"Waiting for output files from {self.out_path} with prefix {self.out_name}"
+        )
         start = 0
         waiting_for_files = True
         list_processed = []
         out_files = []
 
         # Add a grace period to segment duration to allow for late-arriving files
-        while (self.segment_duration + SEGMENT_DURATION_GRACE_PERIOD > start) or waiting_for_files:
+        while (
+            self.segment_duration + SEGMENT_DURATION_GRACE_PERIOD > start
+        ) or waiting_for_files:
             gb = list(Path(self.out_path).glob(f"{self.out_name}*"))
             out_files = list(filter(lambda x: x not in list_processed, gb))
             self.logger.debug(f"Received files: {out_files}")
@@ -171,7 +186,9 @@ class BlobStreamIntegrator(BlobIntegrator):
         """Create and start worker processes."""
         processes = []
         for number in range(self.workers_count):
-            p = multiprocessing.Process(target=self.worker, args=(number, request_queue, result_queue, shared))
+            p = multiprocessing.Process(
+                target=self.worker, args=(number, request_queue, result_queue, shared)
+            )
             p.start()
             processes.append(p)
         return processes
@@ -183,7 +200,9 @@ class BlobStreamIntegrator(BlobIntegrator):
         result_queue = multiprocessing.Queue()
         request_queue = multiprocessing.Queue()
         workers = self.start_workers(result_queue, request_queue, shared_data)
-        output_worker = multiprocessing.Process(target=self.get_out_file, args=(request_queue,))
+        output_worker = multiprocessing.Process(
+            target=self.get_out_file, args=(request_queue,)
+        )
         output_worker.start()
         results = []
         while output_worker.is_alive():
@@ -220,7 +239,9 @@ class BlobFileIntegrator(BlobIntegrator):
             return gb[0]
         except IndexError:
             self.logger.error(f"File {self.out_name} not found!")
-            raise FileNotFoundError(f"File {self.out_name} not found in {self.out_path}")
+            raise FileNotFoundError(
+                f"File {self.out_name} not found in {self.out_path}"
+            )
 
     def check_blob_integrity(self) -> bool:
         """Check integrity of a single blob file."""
@@ -255,7 +276,9 @@ The tool compares files chunk by chunk using MD5 hashes and also performs a full
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    subparsers = parser.add_subparsers(dest="mode", help="Mode of operation: stream or file")
+    subparsers = parser.add_subparsers(
+        dest="mode", help="Mode of operation: stream or file"
+    )
 
     # Common arguments function to avoid repetition
     def add_common_arguments(parser):

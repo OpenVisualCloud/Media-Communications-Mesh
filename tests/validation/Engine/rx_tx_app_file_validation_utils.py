@@ -39,7 +39,9 @@ def validate_file(connection, file_path, cleanup=True):
         validation_info.append("File existence: PASS")
 
         # Execute a command to get the file size using ls
-        result = connection.execute_command(f"ls -l {file_path}", expected_return_codes=None)
+        result = connection.execute_command(
+            f"ls -l {file_path}", expected_return_codes=None
+        )
 
         if result.return_code != 0:
             error_msg = f"Failed to retrieve file size for {file_path}."
@@ -49,9 +51,13 @@ def validate_file(connection, file_path, cleanup=True):
         else:
             # Parse the output to get the file size
             file_info = result.stdout.strip().split()
-            file_size = int(file_info[4])  # The size is the 5th element in the split output
+            file_size = int(
+                file_info[4]
+            )  # The size is the 5th element in the split output
 
-            validation_info.append(f"File size: {file_size} bytes (checked via ls -l: {file_info})")
+            validation_info.append(
+                f"File size: {file_size} bytes (checked via ls -l: {file_info})"
+            )
 
             if file_size == 0:
                 error_msg = f"File size is 0: {file_path}"

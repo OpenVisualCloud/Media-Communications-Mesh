@@ -131,12 +131,16 @@ def mesh_agent(hosts, test_config, log_path):
         mesh_ip = test_config.get("mesh_ip", None)
 
         if not mesh_ip:
-            logger.error(f"Host '{mesh_agent_name}' not found in topology.yaml and no mesh_ip provided.")
+            logger.error(
+                f"Host '{mesh_agent_name}' not found in topology.yaml and no mesh_ip provided."
+            )
             raise RuntimeError(
                 f"No mesh-agent name '{mesh_agent_name}' found in hosts and no mesh_ip provided in test_config."
             )
         else:
-            logger.info(f"Assumed that mesh agent is running, getting IP from topology config: {mesh_ip}")
+            logger.info(
+                f"Assumed that mesh agent is running, getting IP from topology config: {mesh_ip}"
+            )
             mesh_agent.external = True
             mesh_agent.mesh_ip = mesh_ip
             mesh_agent.p = test_config.get("mesh_port", mesh_agent.p)
@@ -235,7 +239,9 @@ def media_config(hosts: dict) -> None:
             if host.topology.extra_info.media_proxy.get("st2110", False):
                 pf_addr = host.network_interfaces[if_idx].pci_address.lspci
                 vfs = nicctl.vfio_list(pf_addr)
-                host.st2110_dev = host.topology.extra_info.media_proxy.get("st2110_dev", None)
+                host.st2110_dev = host.topology.extra_info.media_proxy.get(
+                    "st2110_dev", None
+                )
                 if not host.st2110_dev and not vfs:
                     nicctl.create_vfs(pf_addr)
                     vfs = nicctl.vfio_list(pf_addr)
@@ -250,25 +256,44 @@ def media_config(hosts: dict) -> None:
                         f"Still no VFs on interface {host.network_interfaces[if_idx].pci_address_lspci} even after creating VFs!"
                     )
                 host.vfs = vfs
-                host.st2110_ip = host.topology.extra_info.media_proxy.get("st2110_ip", f"192.168.0.{last_oct}")
+                host.st2110_ip = host.topology.extra_info.media_proxy.get(
+                    "st2110_ip", f"192.168.0.{last_oct}"
+                )
                 if_idx += 1
             if host.topology.extra_info.media_proxy.get("rdma", False):
-                if int(host.network_interfaces[if_idx].virtualization.get_current_vfs()) > 0:
-                    nicctl.disable_vf(str(host.network_interfaces[if_idx].pci_address.lspci))
+                if (
+                    int(
+                        host.network_interfaces[if_idx].virtualization.get_current_vfs()
+                    )
+                    > 0
+                ):
+                    nicctl.disable_vf(
+                        str(host.network_interfaces[if_idx].pci_address.lspci)
+                    )
                 net_adap_ips = host.network_interfaces[if_idx].ip.get_ips().v4
                 rdma_ip = host.topology.extra_info.media_proxy.get("rdma_ip", False)
                 if rdma_ip:
-                    rdma_ip = IPv4Interface(f"{rdma_ip}" if "/" in rdma_ip else f"{rdma_ip}/24")
+                    rdma_ip = IPv4Interface(
+                        f"{rdma_ip}" if "/" in rdma_ip else f"{rdma_ip}/24"
+                    )
                 elif net_adap_ips and not rdma_ip:
                     rdma_ip = net_adap_ips[0]
                 if not rdma_ip or (rdma_ip not in net_adap_ips):
-                    rdma_ip = IPv4Interface(f"192.168.1.{last_oct}/24") if not rdma_ip else rdma_ip
-                    logger.info(f"IP {rdma_ip} not found on RDMA network interface, setting: {rdma_ip}")
+                    rdma_ip = (
+                        IPv4Interface(f"192.168.1.{last_oct}/24")
+                        if not rdma_ip
+                        else rdma_ip
+                    )
+                    logger.info(
+                        f"IP {rdma_ip} not found on RDMA network interface, setting: {rdma_ip}"
+                    )
                     host.network_interfaces[if_idx].ip.add_ip(rdma_ip)
                 host.rdma_ip = str(rdma_ip.ip)
             logger.info(f"VFs on {host.name} are: {host.vfs}")
         except IndexError:
-            raise IndexError(f"Not enough network adapters available for tests! Expected: {if_idx+1}")
+            raise IndexError(
+                f"Not enough network adapters available for tests! Expected: {if_idx+1}"
+            )
         except AttributeError:
             logger.warning(
                 f"Extra info media proxy in topology config for {host.name} is not set, skipping media config setup for this host."
@@ -291,11 +316,17 @@ def cleanup_processes(hosts: dict) -> None:
                     logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
         for pattern in ["^Rx[A-Za-z]+App$", "^Tx[A-Za-z]+App$"]:
             try:
-                connection.execute_command(f"pgrep -f '{pattern}'", stderr_to_stdout=True)
-                connection.execute_command(f"pkill -9 -f '{pattern}'", stderr_to_stdout=True)
+                connection.execute_command(
+                    f"pgrep -f '{pattern}'", stderr_to_stdout=True
+                )
+                connection.execute_command(
+                    f"pkill -9 -f '{pattern}'", stderr_to_stdout=True
+                )
             except Exception as e:
                 if not (hasattr(e, "returncode") and e.returncode == 1):
-                    logger.warning(f"Failed to check/kill processes matching {pattern} on {host.name}: {e}")
+                    logger.warning(
+                        f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"
+                    )
     logger.info("Cleanup of processes completed.")
 
 
@@ -330,7 +361,9 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
         return True
 
     # Use constants from Engine/const.py
-    mcm_ffmpeg_version = test_config.get("mcm_ffmpeg_version", DEFAULT_MCM_FFMPEG_VERSION)
+    mcm_ffmpeg_version = test_config.get(
+        "mcm_ffmpeg_version", DEFAULT_MCM_FFMPEG_VERSION
+    )
     if not mcm_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
         logger.error(f"Invalid mcm_ffmpeg_version: {mcm_ffmpeg_version}")
         return False
@@ -350,12 +383,16 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
         ).stdout.strip()
 
         if check_dir == "exists":
-            host.connection.execute_command(f"rm -rf {DEFAULT_MCM_FFMPEG_PATH}", shell=True)
+            host.connection.execute_command(
+                f"rm -rf {DEFAULT_MCM_FFMPEG_PATH}", shell=True
+            )
 
         logger.debug("Step 1: Clone and patch FFmpeg")
         clone_patch_script = f"{ffmpeg_tools_path}/clone-and-patch-ffmpeg.sh"
         cmd = f"bash {clone_patch_script} {mcm_ffmpeg_version}"
-        res = host.connection.execute_command(cmd, cwd=ffmpeg_tools_path, shell=True, timeout=60, stderr_to_stdout=True)
+        res = host.connection.execute_command(
+            cmd, cwd=ffmpeg_tools_path, shell=True, timeout=60, stderr_to_stdout=True
+        )
         logger.debug(f"Command {cmd} output: {res.stdout}")
         if res.return_code != 0:
             logger.error(f"Command {cmd} failed with return code {res.return_code}.")
@@ -364,7 +401,9 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
         logger.debug("Step 2: Run FFmpeg configuration tool")
         configure_script = f"{ffmpeg_tools_path}/configure-ffmpeg.sh"
         cmd = f"{configure_script} {mcm_ffmpeg_version} --prefix={DEFAULT_MCM_FFMPEG_PATH}"
-        res = host.connection.execute_command(cmd, cwd=ffmpeg_tools_path, shell=True, timeout=60, stderr_to_stdout=True)
+        res = host.connection.execute_command(
+            cmd, cwd=ffmpeg_tools_path, shell=True, timeout=60, stderr_to_stdout=True
+        )
         logger.debug(f"Command {cmd} output: {res.stdout}")
         if res.return_code != 0:
             logger.error(f"Command {cmd} failed with return code {res.return_code}.")
@@ -381,7 +420,9 @@ def build_mcm_ffmpeg(hosts, test_config: dict):
             logger.error(f"Command {cmd} failed with return code {res.return_code}.")
             return False
 
-        logger.info(f"Successfully built MCM FFmpeg {mcm_ffmpeg_version} at {DEFAULT_MCM_FFMPEG_PATH}")
+        logger.info(
+            f"Successfully built MCM FFmpeg {mcm_ffmpeg_version} at {DEFAULT_MCM_FFMPEG_PATH}"
+        )
     return True
 
 
@@ -424,7 +465,9 @@ def build_openh264(host: Host, work_dir: str) -> bool:
 
     if check_dir == "not exists":
         # Try to clone the repository
-        logger.info(f"OpenH264 repository not found at {openh264_repo_dir}. Attempting to clone...")
+        logger.info(
+            f"OpenH264 repository not found at {openh264_repo_dir}. Attempting to clone..."
+        )
         res = host.connection.execute_command(
             f"git clone https://github.com/cisco/openh264.git {openh264_repo_dir}",
             shell=True,
@@ -463,7 +506,9 @@ def build_openh264(host: Host, work_dir: str) -> bool:
     logger.info(f"Building and installing openh264 to {openh264_install_dir}")
 
     # Create install directory if it doesn't exist
-    host.connection.execute_command(f"sudo mkdir -p {openh264_install_dir}", shell=True, timeout=10)
+    host.connection.execute_command(
+        f"sudo mkdir -p {openh264_install_dir}", shell=True, timeout=10
+    )
 
     # Build with custom prefix
     res = host.connection.execute_command(
@@ -491,7 +536,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
     if not test_config.get("mtl_ffmpeg_rebuild", False):
         return True
 
-    mtl_ffmpeg_version = test_config.get("mtl_ffmpeg_version", DEFAULT_MTL_FFMPEG_VERSION)
+    mtl_ffmpeg_version = test_config.get(
+        "mtl_ffmpeg_version", DEFAULT_MTL_FFMPEG_VERSION
+    )
     if not mtl_ffmpeg_version in ALLOWED_FFMPEG_VERSIONS:
         logger.error(f"Invalid mtl_ffmpeg_version: {mtl_ffmpeg_version}")
         return False
@@ -514,7 +561,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
         ).stdout.strip()
 
         if check_dir == "exists":
-            host.connection.execute_command(f"rm -rf {DEFAULT_MTL_FFMPEG_PATH}", shell=True)
+            host.connection.execute_command(
+                f"rm -rf {DEFAULT_MTL_FFMPEG_PATH}", shell=True
+            )
 
         # Step 1: Build openh264
         logger.info("Step 1: Building openh264 dependency")
@@ -608,7 +657,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
                     )
                     if res.return_code == 0:
                         logger.info(f"Found GPU headers at {gpu_path}")
-                        configure_options.append(f'--extra-cflags="-DMTL_GPU_DIRECT_ENABLED -I{gpu_path}"')
+                        configure_options.append(
+                            f'--extra-cflags="-DMTL_GPU_DIRECT_ENABLED -I{gpu_path}"'
+                        )
                         gpu_headers_found = True
                         break
                 except Exception as e:
@@ -616,7 +667,9 @@ def build_mtl_ffmpeg(hosts, test_config: dict):
                     continue
 
             if not gpu_headers_found:
-                logger.warning("GPU direct support requested but headers not found. Continuing without GPU support.")
+                logger.warning(
+                    "GPU direct support requested but headers not found. Continuing without GPU support."
+                )
                 enable_gpu_direct = False
 
         # Join configure options and continue with build
@@ -667,7 +720,9 @@ def check_iommu(hosts: dict[str, Host]) -> None:
     iommu_not_enabled_hosts = []
     for host in hosts.values():
         try:
-            output = host.connection.execute_command("ls -1 /sys/kernel/iommu_groups | wc -l", shell=True, timeout=10)
+            output = host.connection.execute_command(
+                "ls -1 /sys/kernel/iommu_groups | wc -l", shell=True, timeout=10
+            )
             if int(output.stdout.strip()) == 0:
                 logger.error(f"IOMMU is not enabled on host {host.name}.")
                 iommu_not_enabled_hosts.append(host.name)
@@ -675,7 +730,9 @@ def check_iommu(hosts: dict[str, Host]) -> None:
             logger.exception(f"Failed to check IOMMU status on host {host.name}.")
             iommu_not_enabled_hosts.append(host.name)
     if iommu_not_enabled_hosts:
-        pytest.exit(f"IOMMU is not enabled on hosts: {', '.join(iommu_not_enabled_hosts)}. Aborting test session.")
+        pytest.exit(
+            f"IOMMU is not enabled on hosts: {', '.join(iommu_not_enabled_hosts)}. Aborting test session."
+        )
     else:
         logger.info("IOMMU is enabled on all hosts.")
 
@@ -688,14 +745,20 @@ def enable_hugepages(hosts: dict[str, Host]) -> None:
     for host in hosts.values():
         if not _check_hugepages(host):
             try:
-                host.connection.execute_command("sudo sysctl -w vm.nr_hugepages=2048", shell=True, timeout=10)
+                host.connection.execute_command(
+                    "sudo sysctl -w vm.nr_hugepages=2048", shell=True, timeout=10
+                )
                 logger.info(f"Hugepages enabled on host {host.name}.")
             except (RemoteProcessTimeoutExpired, ConnectionCalledProcessError):
                 logger.exception(f"Failed to enable hugepages on host {host.name}.")
-                pytest.exit(f"Failed to enable hugepages on host {host.name}. Aborting test session.")
+                pytest.exit(
+                    f"Failed to enable hugepages on host {host.name}. Aborting test session."
+                )
             if not _check_hugepages(host):
                 logger.error(f"Hugepages could not be enabled on host {host.name}.")
-                pytest.exit(f"Hugepages could not be enabled on host {host.name}. Aborting test session.")
+                pytest.exit(
+                    f"Hugepages could not be enabled on host {host.name}. Aborting test session."
+                )
         else:
             logger.info(f"Hugepages are already enabled on host {host.name}.")
 
@@ -705,7 +768,9 @@ def _check_hugepages(host: Host) -> bool:
     Check if hugepages are enabled on the host.
     """
     try:
-        output = host.connection.execute_command("cat /proc/sys/vm/nr_hugepages", shell=True, timeout=10)
+        output = host.connection.execute_command(
+            "cat /proc/sys/vm/nr_hugepages", shell=True, timeout=10
+        )
         return int(output.stdout.strip()) > 0
     except (RemoteProcessTimeoutExpired, ConnectionCalledProcessError):
         logger.exception(f"Failed to check hugepages status on host {host.name}.")

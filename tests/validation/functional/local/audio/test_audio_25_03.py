@@ -24,7 +24,9 @@ from Engine.media_files import audio_files_25_03
         *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Mono"],
     ],
 )
-def test_audio_25_03(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
+def test_audio_25_03(
+    build_TestApp, hosts, media_proxy, media_path, file, log_path
+) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())

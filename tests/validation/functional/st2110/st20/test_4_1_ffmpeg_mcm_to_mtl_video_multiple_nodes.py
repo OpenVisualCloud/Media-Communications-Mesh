@@ -32,7 +32,9 @@ from Engine.media_files import video_files_25_03 as yuv_files
 logger = logging.getLogger(__name__)
 
 
-EARLY_STOP_THRESHOLD_PERCENTAGE = 20  # percentage of max_test_time to consider an early stop
+EARLY_STOP_THRESHOLD_PERCENTAGE = (
+    20  # percentage of max_test_time to consider an early stop
+)
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys() if "4K" not in k])
@@ -57,7 +59,9 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
 
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
+    video_pixel_format = video_file_format_to_payload_format(
+        str(yuv_files[video_type]["file_format"])
+    )
     conn_type = McmConnectionType.st.value
 
     # MCM FFmpeg Tx
@@ -87,8 +91,12 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
         ffmpeg_output=mcm_tx_outp,
         yes_overwrite=False,
     )
-    logger.debug(f"MCM Tx command executed on {tx_host.name}: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mcm_tx_ff, log_path=log_path)
+    logger.debug(
+        f"MCM Tx command executed on {tx_host.name}: {mcm_tx_ff.get_command()}"
+    )
+    mcm_tx_executor = FFmpegExecutor(
+        tx_host, ffmpeg_instance=mcm_tx_ff, log_path=log_path
+    )
 
     rx_mtl_path = get_mtl_path(rx_mtl_host)
 
@@ -116,7 +124,11 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
     )
     mtl_rx_outp = FFmpegVideoIO(
         video_size=video_size,
-        pixel_format=("yuv422p10le" if video_pixel_format == "yuv422p10rfc4175" else video_pixel_format),
+        pixel_format=(
+            "yuv422p10le"
+            if video_pixel_format == "yuv422p10rfc4175"
+            else video_pixel_format
+        ),
         f=FFmpegVideoFormat.raw.value,
         output_path=f'{getattr(rx_mtl_host.topology.extra_info, "output_path", DEFAULT_OUTPUT_PATH)}/test_{yuv_files[video_type]["filename"]}_{video_size}at{yuv_files[video_type]["fps"]}fps.yuv',
         pix_fmt=None,  # this is required to overwrite the default
@@ -128,8 +140,12 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
         ffmpeg_output=mtl_rx_outp,
         yes_overwrite=True,
     )
-    logger.debug(f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}")
-    mtl_rx_executor = FFmpegExecutor(rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path)
+    logger.debug(
+        f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}"
+    )
+    mtl_rx_executor = FFmpegExecutor(
+        rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path
+    )
 
     # MCM FFmpeg Rx A
     mcm_rx_a_inp = FFmpegMcmST2110VideoRx(
@@ -159,8 +175,12 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
         ffmpeg_output=mcm_rx_a_outp,
         yes_overwrite=True,
     )
-    logger.debug(f"MCM Rx A command executed on {rx_host_a.name}: {mcm_rx_a_ff.get_command()}")
-    mcm_rx_a_executor = FFmpegExecutor(rx_host_a, ffmpeg_instance=mcm_rx_a_ff, log_path=log_path)
+    logger.debug(
+        f"MCM Rx A command executed on {rx_host_a.name}: {mcm_rx_a_ff.get_command()}"
+    )
+    mcm_rx_a_executor = FFmpegExecutor(
+        rx_host_a, ffmpeg_instance=mcm_rx_a_ff, log_path=log_path
+    )
 
     # MCM FFmpeg Rx B
     mcm_rx_b_inp = FFmpegMcmST2110VideoRx(
@@ -190,8 +210,12 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
         ffmpeg_output=mcm_rx_b_outp,
         yes_overwrite=True,
     )
-    logger.debug(f"MCM Rx B command executed on {rx_host_b.name}: {mcm_rx_b_ff.get_command()}")
-    mcm_rx_b_executor = FFmpegExecutor(rx_host_b, ffmpeg_instance=mcm_rx_b_ff, log_path=log_path)
+    logger.debug(
+        f"MCM Rx B command executed on {rx_host_b.name}: {mcm_rx_b_ff.get_command()}"
+    )
+    mcm_rx_b_executor = FFmpegExecutor(
+        rx_host_b, ffmpeg_instance=mcm_rx_b_ff, log_path=log_path
+    )
 
     mcm_tx_executor.start()
     sleep(MCM_ESTABLISH_TIMEOUT)

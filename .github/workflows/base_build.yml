@@ -4,21 +4,21 @@ on:
   push:
     branches: ["main"]
     paths-ignore:
-      - "**/*.md"
-      - "tests/**"
-      - "docs/**"
-      - "LICENSE"
-      - ".gitignore"
-      - ".editorconfig"
+      - '**/*.md'
+      - 'tests/**'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.editorconfig'
   pull_request:
     branches: ["main"]
     paths-ignore:
-      - "**/*.md"
-      - "tests/**"
-      - "docs/**"
-      - "LICENSE"
-      - ".gitignore"
-      - ".editorconfig"
+      - '**/*.md'
+      - 'tests/**'
+      - 'docs/**'
+      - 'LICENSE'
+      - '.gitignore'
+      - '.editorconfig'
   workflow_dispatch:
 
 env:

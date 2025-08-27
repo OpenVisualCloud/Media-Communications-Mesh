@@ -30,7 +30,9 @@ def calculate_chunk_hashes(file_url: str, chunk_size: int) -> list:
         chunk_index = 0
         while chunk := f.read(chunk_size):
             if len(chunk) != chunk_size:
-                logging.debug(f"CHUNK SIZE MISMATCH at index {chunk_index}: {len(chunk)} != {chunk_size}")
+                logging.debug(
+                    f"CHUNK SIZE MISMATCH at index {chunk_index}: {len(chunk)} != {chunk_size}"
+                )
             chunk_sum = hashlib.md5(chunk).hexdigest()
             chunk_sums.append(chunk_sum)
             chunk_index += 1
@@ -112,7 +114,9 @@ class VideoIntegrator:
             for _ in range(self.shift - STARTING_FRAME):
                 self.src_chunk_sums.append(self.src_chunk_sums.pop(0))
         else:
-            raise ValueError(f"No match found in the extracted text from first frame of {self.src_url}")
+            raise ValueError(
+                f"No match found in the extracted text from first frame of {self.src_url}"
+            )
 
     def check_integrity_file(self, out_url) -> bool:
         out_chunk_sums = calculate_chunk_hashes(out_url, self.frame_size)
@@ -125,11 +129,15 @@ class VideoIntegrator:
                         f"Chunk: {chunk_sum} received in position: {ids}, expected in {self.src_chunk_sums.index(chunk_sum)}"
                     )
                 else:
-                    self.logger.error(f"Chunk: {chunk_sum} with ID: {ids} not found in src chunks checksums!")
+                    self.logger.error(
+                        f"Chunk: {chunk_sum} with ID: {ids} not found in src chunks checksums!"
+                    )
                 bad_frames += 1
         if bad_frames:
             self.bad_frames_total += bad_frames
-            self.logger.error(f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured.")
+            self.logger.error(
+                f"Received {bad_frames} bad frames out of {len(out_chunk_sums)} captured."
+            )
             return False
         self.logger.info(f"All {len(out_chunk_sums)} frames in {out_url} are correct.")
         return True
@@ -168,13 +176,19 @@ class VideoStreamIntegrator(VideoIntegrator):
         workers_count=5,
         delete_file: bool = True,
     ):
-        super().__init__(logger, src_url, out_name, resolution, file_format, out_path, delete_file)
-        self.logger.info(f"Output path {out_path}, segment duration: {segment_duration}")
+        super().__init__(
+            logger, src_url, out_name, resolution, file_format, out_path, delete_file
+        )
+        self.logger.info(
+            f"Output path {out_path}, segment duration: {segment_duration}"
+        )
         self.segment_duration = segment_duration
         self.workers_count = workers_count
 
     def get_out_file(self, request_queue):
-        self.logger.info(f"Waiting for output files from {self.out_path} with prefix {self.out_name}")
+        self.logger.info(
+            f"Waiting for output files from {self.out_path} with prefix {self.out_name}"
+        )
         start = 0
         waiting_for_files = True
         list_processed = []
@@ -226,7 +240,9 @@ class VideoStreamIntegrator(VideoIntegrator):
         # Create and start a separate process for each task
         processes = []
         for number in range(self.workers_count):
-            p = multiprocessing.Process(target=self.worker, args=(number, request_queue, result_queue, shared))
+            p = multiprocessing.Process(
+                target=self.worker, args=(number, request_queue, result_queue, shared)
+            )
             p.start()
             processes.append(p)
         return processes
@@ -237,7 +253,9 @@ class VideoStreamIntegrator(VideoIntegrator):
         result_queue = multiprocessing.Queue()
         request_queue = multiprocessing.Queue()
         workers = self.start_workers(result_queue, request_queue, shared_data)
-        output_worker = multiprocessing.Process(target=self.get_out_file, args=(request_queue,))
+        output_worker = multiprocessing.Process(
+            target=self.get_out_file, args=(request_queue,)
+        )
         output_worker.start()
         results = []
         while output_worker.is_alive():
@@ -263,7 +281,9 @@ class VideoFileIntegrator(VideoIntegrator):
         out_path: str = "/mnt/ramdisk",
         delete_file: bool = True,
     ):
-        super().__init__(logger, src_url, out_name, resolution, file_format, out_path, delete_file)
+        super().__init__(
+            logger, src_url, out_name, resolution, file_format, out_path, delete_file
+        )
         self.logger = logging.getLogger(__name__)
 
     def get_out_file(self):
@@ -272,7 +292,9 @@ class VideoFileIntegrator(VideoIntegrator):
             return gb[0]
         except IndexError:
             self.logger.error(f"File {self.out_name} not found!")
-            raise FileNotFoundError(f"File {self.out_name} not found in {self.out_path}")
+            raise FileNotFoundError(
+                f"File {self.out_name} not found in {self.out_path}"
+            )
 
     def check_st20p_integrity(self) -> bool:
         output_file = self.get_out_file()
@@ -307,14 +329,20 @@ You can change them by modifying the constants at the beginning of the script.""
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
-    subparsers = parser.add_subparsers(dest="mode", help="Mode of operation: stream or file")
+    subparsers = parser.add_subparsers(
+        dest="mode", help="Mode of operation: stream or file"
+    )
 
     # Common arguments function to avoid repetition
     def add_common_arguments(parser):
         parser.add_argument("src", type=str, help="Path to the source video file")
         parser.add_argument("out", type=str, help="Name/prefix of the output file")
-        parser.add_argument("res", type=str, help="Resolution of the video (e.g., 1920x1080)")
-        parser.add_argument("fmt", type=str, help="Format of the video file (e.g., yuv422p10le)")
+        parser.add_argument(
+            "res", type=str, help="Resolution of the video (e.g., 1920x1080)"
+        )
+        parser.add_argument(
+            "fmt", type=str, help="Format of the video file (e.g., yuv422p10le)"
+        )
         parser.add_argument(
             "--output_path",
             type=str,

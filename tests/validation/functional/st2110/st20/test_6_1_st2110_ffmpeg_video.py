@@ -27,7 +27,9 @@ def test_6_1_st2110_ffmpeg_video(hosts, test_config, video_file, log_path):
     rx_b_host = hosts["client"]
 
     video_size = f'{video_file["width"]}x{video_file["height"]}'
-    video_pixel_format = ffmpeg_enums.video_file_format_to_payload_format(video_file["file_format"])
+    video_pixel_format = ffmpeg_enums.video_file_format_to_payload_format(
+        video_file["file_format"]
+    )
     video_frame_rate = video_file["fps"]
 
     # Host A --- MTL FFmpeg Tx

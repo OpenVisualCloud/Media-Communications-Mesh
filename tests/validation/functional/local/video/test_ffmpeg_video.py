@@ -48,12 +48,20 @@ def test_local_ffmpeg_video(hosts, test_config, file: str, log_path, media_path)
     else:
         rx_prefix_variables = {}
 
-    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = tx_host.topology.extra_info.media_proxy["sdk_port"]
-    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = rx_host.topology.extra_info.media_proxy["sdk_port"]
+    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+        tx_host.topology.extra_info.media_proxy["sdk_port"]
+    )
+    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
+        rx_host.topology.extra_info.media_proxy["sdk_port"]
+    )
 
     frame_rate = str(video_files_25_03[file]["fps"])
-    video_size = f'{video_files_25_03[file]["width"]}x{video_files_25_03[file]["height"]}'
-    pixel_format = video_file_format_to_payload_format(str(video_files_25_03[file]["file_format"]))
+    video_size = (
+        f'{video_files_25_03[file]["width"]}x{video_files_25_03[file]["height"]}'
+    )
+    pixel_format = video_file_format_to_payload_format(
+        str(video_files_25_03[file]["file_format"])
+    )
     conn_type = McmConnectionType.mpg.value
 
     # >>>>> MCM Tx

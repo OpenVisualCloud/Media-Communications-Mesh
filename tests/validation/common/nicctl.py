@@ -31,7 +31,9 @@ class Nicctl:
 
     def vfio_list(self, pci_addr: str = "all") -> list:
         """Returns list of VFs created on host."""
-        resp = self.connection.execute_command(f"{self.nicctl} list {pci_addr}", shell=True)
+        resp = self.connection.execute_command(
+            f"{self.nicctl} list {pci_addr}", shell=True
+        )
         return self._parse_vf_list(resp.stdout, "all" in pci_addr)
 
     def create_vfs(self, pci_id: str, num_of_vfs: int = 6) -> list:
@@ -40,14 +42,18 @@ class Nicctl:
         :param num_of_vfs: number of VFs to create
         :return: returns list of created vfs
         """
-        resp = self.connection.execute_command(f"{self.nicctl} create_vf {pci_id} {num_of_vfs}", shell=True)
+        resp = self.connection.execute_command(
+            f"{self.nicctl} create_vf {pci_id} {num_of_vfs}", shell=True
+        )
         return self._parse_vf_list(resp.stdout)
 
     def disable_vf(self, pci_id: str) -> None:
         """Remove VFs on NIC.
         :param pci_id: pci_id of the nic adapter
         """
-        self.connection.execute_command(self.nicctl + " disable_vf " + pci_id, shell=True)
+        self.connection.execute_command(
+            self.nicctl + " disable_vf " + pci_id, shell=True
+        )
 
     def prepare_vfs_for_test(self, nic: NetworkInterface) -> list:
         """Prepare VFs for test."""

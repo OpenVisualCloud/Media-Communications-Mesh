@@ -151,7 +151,9 @@ class ConnectionMode(Enum):
 class Rdma(RxTxAppConnection):
     """Prepares RDMA part of connection.json file"""
 
-    def __init__(self, connectionMode=ConnectionMode.RC, maxLatencyNs=DEFAULT_RDMA_MAX_LATENCY_NS):
+    def __init__(
+        self, connectionMode=ConnectionMode.RC, maxLatencyNs=DEFAULT_RDMA_MAX_LATENCY_NS
+    ):
         super().__init__(rx_tx_app_connection_type=RxTxAppConnectionType.RDMA)
         self.connectionMode = connectionMode
         self.maxLatencyNs = maxLatencyNs
