@@ -42,7 +42,9 @@ def create_client_json(
 
 
 def create_connection_json(
-    build: str, rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson, log_path: str = ""
+    build: str,
+    rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson,
+    log_path: str = "",
 ) -> None:
     logger.debug("Connection JSON:")
     for line in rx_tx_app_connection.to_json().splitlines():
@@ -177,7 +179,9 @@ class AppRunnerBase:
         # Use self.log_path for consistent logging across the application
         log_dir = self.log_path if self.log_path else LOG_FOLDER
         create_client_json(self.mcm_path, self.rx_tx_app_client_json, log_path=log_dir)
-        create_connection_json(self.mcm_path, self.rx_tx_app_connection_json, log_path=log_dir)
+        create_connection_json(
+            self.mcm_path, self.rx_tx_app_connection_json, log_path=log_dir
+        )
         self._ensure_output_directory_exists()
 
     def stop(self):
@@ -204,13 +208,17 @@ class AppRunnerBase:
 
             app_log_validation_status = False
             app_log_error_count = 0
-            
             # Using common log validation utility
             from common.log_validation_utils import check_phrases_in_order
 
             if self.direction in ("Rx", "Tx"):
                 from common.log_validation_utils import validate_log_file
-                required_phrases = RX_REQUIRED_LOG_PHRASES if self.direction == "Rx" else TX_REQUIRED_LOG_PHRASES
+
+                required_phrases = (
+                    RX_REQUIRED_LOG_PHRASES
+                    if self.direction == "Rx"
+                    else TX_REQUIRED_LOG_PHRASES
+                )
 
                 validation_result = validate_log_file(
                     log_file_path, required_phrases, self.direction
