@@ -32,14 +32,10 @@ from Engine.media_files import audio_files_25_03 as audio_files
 
 logger = logging.getLogger(__name__)
 
-EARLY_STOP_THRESHOLD_PERCENTAGE = (
-    20  # percentage of max_test_time to consider an early stop
-)
+EARLY_STOP_THRESHOLD_PERCENTAGE = 20  # percentage of max_test_time to consider an early stop
 
 
-@pytest.mark.parametrize(
-    "audio_type", [k for k in audio_files.keys() if "PCM8" not in k]
-)
+@pytest.mark.parametrize("audio_type", [k for k in audio_files.keys() if "PCM8" not in k])
 def test_st2110_ffmpeg_mcm_to_mtl_audio(
     build_TestApp, hosts, media_proxy, media_path, test_config, audio_type, log_path
 ) -> None:
@@ -59,9 +55,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
     rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = get_media_proxy_port(rx_host_b)
     rx_mtl_prefix_variables["MCM_MEDIA_PROXY_PORT"] = get_media_proxy_port(rx_mtl_host)
 
-    audio_format = audio_file_format_to_format_dict(
-        str(audio_files[audio_type]["format"])
-    )
+    audio_format = audio_file_format_to_format_dict(str(audio_files[audio_type]["format"]))
     audio_channel_layout = audio_files[audio_type].get(
         "channel_layout",
         audio_channel_number_to_layout(int(audio_files[audio_type]["channels"])),
@@ -70,9 +64,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
     # Set audio sample rate based on the audio file sample rate
     audio_sample_rate = int(audio_files[audio_type]["sample_rate"])
     if audio_sample_rate not in [ar.value for ar in FFmpegAudioRate]:
-        raise Exception(
-            f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
-        )
+        raise Exception(f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!")
 
     conn_type = McmConnectionType.st.value
 
@@ -102,12 +94,8 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         ffmpeg_output=mcm_tx_outp,
         yes_overwrite=False,
     )
-    logger.debug(
-        f"MCM Tx command executed on {tx_host.name}: {mcm_tx_ff.get_command()}"
-    )
-    mcm_tx_executor = FFmpegExecutor(
-        tx_host, ffmpeg_instance=mcm_tx_ff, log_path=log_path
-    )
+    logger.debug(f"MCM Tx command executed on {tx_host.name}: {mcm_tx_ff.get_command()}")
+    mcm_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mcm_tx_ff, log_path=log_path)
 
     rx_mtl_path = get_mtl_path(rx_mtl_host)
 
@@ -147,12 +135,8 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         ffmpeg_output=mtl_rx_outp,
         yes_overwrite=True,
     )
-    logger.debug(
-        f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}"
-    )
-    mtl_rx_executor = FFmpegExecutor(
-        rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path
-    )
+    logger.debug(f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}")
+    mtl_rx_executor = FFmpegExecutor(rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path)
 
     # MCM FFmpeg Rx A
     mcm_rx_a_inp = FFmpegMcmST2110AudioRx(
@@ -180,12 +164,8 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         ffmpeg_output=mcm_rx_a_outp,
         yes_overwrite=True,
     )
-    logger.debug(
-        f"MCM Rx A command executed on {rx_host_a.name}: {mcm_rx_a_ff.get_command()}"
-    )
-    mcm_rx_a_executor = FFmpegExecutor(
-        rx_host_a, ffmpeg_instance=mcm_rx_a_ff, log_path=log_path
-    )
+    logger.debug(f"MCM Rx A command executed on {rx_host_a.name}: {mcm_rx_a_ff.get_command()}")
+    mcm_rx_a_executor = FFmpegExecutor(rx_host_a, ffmpeg_instance=mcm_rx_a_ff, log_path=log_path)
 
     # MCM FFmpeg Rx B
     mcm_rx_b_inp = FFmpegMcmST2110AudioRx(
@@ -213,12 +193,8 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         ffmpeg_output=mcm_rx_b_outp,
         yes_overwrite=True,
     )
-    logger.debug(
-        f"MCM Rx B command executed on {rx_host_b.name}: {mcm_rx_b_ff.get_command()}"
-    )
-    mcm_rx_b_executor = FFmpegExecutor(
-        rx_host_b, ffmpeg_instance=mcm_rx_b_ff, log_path=log_path
-    )
+    logger.debug(f"MCM Rx B command executed on {rx_host_b.name}: {mcm_rx_b_ff.get_command()}")
+    mcm_rx_b_executor = FFmpegExecutor(rx_host_b, ffmpeg_instance=mcm_rx_b_ff, log_path=log_path)
 
     mcm_tx_executor.start()
     sleep(MCM_ESTABLISH_TIMEOUT)

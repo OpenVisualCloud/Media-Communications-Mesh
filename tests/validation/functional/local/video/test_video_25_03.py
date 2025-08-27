@@ -25,9 +25,7 @@ from Engine.media_files import video_files_25_03
         *[f for f in video_files_25_03.keys() if f != "FullHD_60"],
     ],
 )
-def test_video_25_03(
-    build_TestApp, hosts, media_proxy, media_path, file, log_path
-) -> None:
+def test_video_25_03(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())

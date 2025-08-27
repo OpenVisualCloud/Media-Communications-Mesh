@@ -26,9 +26,7 @@ from ....Engine.media_files import yuv_files
 logger = logging.getLogger(__name__)
 
 MAX_TEST_TIME_DEFAULT = 60  # seconds
-EARLY_STOP_THRESHOLD_PERCENTAGE = (
-    20  # percentage of max_test_time to consider an early stop
-)
+EARLY_STOP_THRESHOLD_PERCENTAGE = 20  # percentage of max_test_time to consider an early stop
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
@@ -48,9 +46,7 @@ def test_st2110_ffmpeg_video(media_proxy, hosts, test_config, video_type: str, l
 
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(
-        str(yuv_files[video_type]["file_format"])
-    )
+    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
     conn_type = McmConnectionType.st.value
 
     # Prepare Tx VFs
@@ -78,9 +74,7 @@ def test_st2110_ffmpeg_video(media_proxy, hosts, test_config, video_type: str, l
     )
     mtl_tx_outp = FFmpegMtlSt20pTx(
         # TODO: Add -filter option (to FFmpegIO?)
-        p_port=str(
-            tx_vfs[0] if tx_vfs else tx_pf
-        ),  # use VF or PF if no VFs are available
+        p_port=str(tx_vfs[0] if tx_vfs else tx_pf),  # use VF or PF if no VFs are available
         p_sip=test_config["tx"]["p_sip"],
         p_tx_ip=test_config["broadcast_ip"],
         udp_port=test_config["port"],

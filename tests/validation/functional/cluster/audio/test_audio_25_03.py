@@ -21,9 +21,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("file", audio_files_25_03.keys())
-def test_audio_25_03_2_2_standalone(
-    build_TestApp, hosts, media_proxy, media_path, file, log_path
-) -> None:
+def test_audio_25_03_2_2_standalone(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())

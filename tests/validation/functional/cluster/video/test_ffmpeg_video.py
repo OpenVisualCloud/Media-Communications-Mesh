@@ -29,18 +29,12 @@ def test_cluster_ffmpeg_video(hosts, media_proxy, test_config, video_type: str, 
     rx_host = host_list[1]
     tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
     rx_prefix_variables = test_config["rx"].get("prefix_variables", {})
-    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
-        tx_host.topology.extra_info.media_proxy["sdk_port"]
-    )
-    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
-        rx_host.topology.extra_info.media_proxy["sdk_port"]
-    )
+    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = tx_host.topology.extra_info.media_proxy["sdk_port"]
+    rx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = rx_host.topology.extra_info.media_proxy["sdk_port"]
 
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    pixel_format = video_file_format_to_payload_format(
-        str(yuv_files[video_type]["file_format"])
-    )
+    pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
     conn_type = McmConnectionType.mpg.value
 
     # >>>>> MCM Tx

@@ -58,9 +58,7 @@ def test_3_2_st2110_standalone_video(hosts, test_config, video_type, log_path):
 
     fps = str(yuv_files[video_type]["fps"])
     size = f"{yuv_files[video_type]['width']}x{yuv_files[video_type]['height']}"
-    pixel_format = video_file_format_to_payload_format(
-        yuv_files[video_type]["file_format"]
-    )
+    pixel_format = video_file_format_to_payload_format(yuv_files[video_type]["file_format"])
 
     rx_ffmpeg_input = FFmpegMtlSt20pRx(
         video_size=size,
@@ -80,9 +78,7 @@ def test_3_2_st2110_standalone_video(hosts, test_config, video_type, log_path):
     )
     rx_ffmpeg_output = FFmpegVideoIO(
         video_size=size,
-        pixel_format=(
-            "yuv422p10le" if pixel_format == "yuv422p10rfc4175" else pixel_format
-        ),
+        pixel_format=("yuv422p10le" if pixel_format == "yuv422p10rfc4175" else pixel_format),
         f=FFmpegVideoFormat.raw.value,
         output_path=f'{test_config["rx"]["filepath"]}test_{yuv_files[video_type]["filename"]}_{size}at{yuv_files[video_type]["fps"]}fps.yuv',
         pix_fmt=None,

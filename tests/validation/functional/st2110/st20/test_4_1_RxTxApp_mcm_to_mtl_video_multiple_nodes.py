@@ -70,9 +70,7 @@ def test_st2110_rttxapp_mcm_to_mtl_video(
 
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(
-        str(yuv_files[video_type]["file_format"])
-    )
+    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
 
     rx_nicctl = Nicctl(
         mtl_path=rx_mtl_path,
@@ -97,11 +95,7 @@ def test_st2110_rttxapp_mcm_to_mtl_video(
     )
     mtl_rx_outp = FFmpegVideoIO(
         video_size=video_size,
-        pixel_format=(
-            "yuv422p10le"
-            if video_pixel_format == "yuv422p10rfc4175"
-            else video_pixel_format
-        ),
+        pixel_format=("yuv422p10le" if video_pixel_format == "yuv422p10rfc4175" else video_pixel_format),
         f=FFmpegVideoFormat.raw.value,
         output_path=f'{test_config["rx"]["filepath"]}test_{yuv_files[video_type]["filename"]}_{video_size}at{yuv_files[video_type]["fps"]}fps.yuv',
         pix_fmt=None,  # this is required to overwrite the default
@@ -113,12 +107,8 @@ def test_st2110_rttxapp_mcm_to_mtl_video(
         ffmpeg_output=mtl_rx_outp,
         yes_overwrite=True,
     )
-    logger.debug(
-        f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}"
-    )
-    mtl_rx_executor = FFmpegExecutor(
-        rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path
-    )
+    logger.debug(f"Mtl rx command executed on {rx_mtl_host.name}: {mtl_rx_ff.get_command()}")
+    mtl_rx_executor = FFmpegExecutor(rx_mtl_host, ffmpeg_instance=mtl_rx_ff, log_path=log_path)
 
     rx_executor_a = utils.LapkaExecutor.Rx(
         host=rx_host_a,
@@ -172,9 +162,5 @@ def test_st2110_rttxapp_mcm_to_mtl_video(
     mtl_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
     tx_executor.stop()
 
-    assert (
-        rx_executor_a.is_pass
-    ), "Receiver A validation failed. Check logs for details."
-    assert (
-        rx_executor_b.is_pass
-    ), "Receiver B validation failed. Check logs for details."
+    assert rx_executor_a.is_pass, "Receiver A validation failed. Check logs for details."
+    assert rx_executor_b.is_pass, "Receiver B validation failed. Check logs for details."

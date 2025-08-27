@@ -102,9 +102,7 @@ print(
 )
 
 print("ConnectionJson:")
-cj = ConnectionJson(
-    maxPayloadSize=1024, payload=pl, rx_tx_app_connection=rx_tx_app_connection_st2110
-)
+cj = ConnectionJson(maxPayloadSize=1024, payload=pl, rx_tx_app_connection=rx_tx_app_connection_st2110)
 
 print(
     f"""Dict:

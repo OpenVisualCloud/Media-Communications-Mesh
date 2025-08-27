@@ -19,9 +19,7 @@ from Engine.media_files import video_files_25_03
 
 
 @pytest.mark.parametrize("file", [file for file in video_files_25_03.keys()])
-def test_video_25_03_2_2_standalone(
-    build_TestApp, hosts, media_proxy, media_path, file, log_path
-) -> None:
+def test_video_25_03_2_2_standalone(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())

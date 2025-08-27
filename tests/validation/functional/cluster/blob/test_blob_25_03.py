@@ -19,9 +19,7 @@ from Engine.media_files import blob_files_25_03
 
 
 @pytest.mark.parametrize("file", [file for file in blob_files_25_03.keys()])
-def test_blob_25_03(
-    build_TestApp, hosts, media_proxy, media_path, file, log_path
-) -> None:
+def test_blob_25_03(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> None:
 
     # Get TX and RX hosts
     host_list = list(hosts.values())

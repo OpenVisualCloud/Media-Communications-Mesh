@@ -53,9 +53,7 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
     tx_mtl_path = get_mtl_path(tx_host)
 
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(
-        str(yuv_files[video_type]["file_format"])
-    )
+    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
 
     tx_nicctl = Nicctl(
         mtl_path=tx_mtl_path,
@@ -87,9 +85,7 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
         yes_overwrite=False,
     )
     logger.debug(f"Tx command executed on {tx_host.name}: {mtl_tx_ff.get_command()}")
-    mtl_tx_executor = FFmpegExecutor(
-        tx_host, ffmpeg_instance=mtl_tx_ff, log_path=log_path
-    )
+    mtl_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mtl_tx_ff, log_path=log_path)
 
     rx_connection = Engine.rx_tx_app_connection.St2110_20(
         remoteIpAddr=test_config.get("broadcast_ip", DEFAULT_REMOTE_IP_ADDR),
@@ -141,9 +137,5 @@ def test_st2110_rttxapp_mtl_to_mcm_video(
     rx_executor_a.cleanup()
     rx_executor_b.cleanup()
 
-    assert (
-        rx_executor_a.is_pass
-    ), "Receiver A validation failed. Check logs for details."
-    assert (
-        rx_executor_b.is_pass
-    ), "Receiver B validation failed. Check logs for details."
+    assert rx_executor_a.is_pass, "Receiver A validation failed. Check logs for details."
+    assert rx_executor_b.is_pass, "Receiver B validation failed. Check logs for details."

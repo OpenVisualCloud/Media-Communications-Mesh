@@ -29,15 +29,11 @@ from ....Engine.media_files import audio_files
 logger = logging.getLogger(__name__)
 
 MAX_TEST_TIME_DEFAULT = 60  # seconds
-EARLY_STOP_THRESHOLD_PERCENTAGE = (
-    20  # percentage of max_test_time to consider an early stop
-)
+EARLY_STOP_THRESHOLD_PERCENTAGE = 20  # percentage of max_test_time to consider an early stop
 
 
 @pytest.mark.parametrize("audio_type", [k for k in audio_files.keys()])
-def test_st2110_ffmpeg_mtl_to_mcm_audio(
-    media_proxy, hosts, test_config, audio_type: str, log_path
-) -> None:
+def test_st2110_ffmpeg_mtl_to_mcm_audio(media_proxy, hosts, test_config, audio_type: str, log_path) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -51,9 +47,7 @@ def test_st2110_ffmpeg_mtl_to_mcm_audio(
     tx_mtl_path = get_mtl_path(tx_host)
     rx_mtl_path = get_mtl_path(rx_host)
 
-    audio_format = audio_file_format_to_format_dict(
-        str(audio_files[audio_type]["format"])
-    )  # audio format
+    audio_format = audio_file_format_to_format_dict(str(audio_files[audio_type]["format"]))  # audio format
     audio_channel_layout = audio_files[audio_type].get(
         "channel_layout",
         audio_channel_number_to_layout(int(audio_files[audio_type]["channels"])),
@@ -62,9 +56,7 @@ def test_st2110_ffmpeg_mtl_to_mcm_audio(
     # Set audio sample rate based on the audio file sample rate
     audio_sample_rate = int(audio_files[audio_type]["sample_rate"])
     if audio_sample_rate not in [ar.value for ar in FFmpegAudioRate]:
-        raise Exception(
-            f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!"
-        )
+        raise Exception(f"Not expected audio sample rate of {audio_files[audio_type]['sample_rate']}!")
 
     # Prepare Tx VFs
     tx_nicctl = Nicctl(
@@ -92,9 +84,7 @@ def test_st2110_ffmpeg_mtl_to_mcm_audio(
     )
     mtl_tx_outp = FFmpegMtlSt30pTx(
         ptime=PacketTime.pt_1ms.value,
-        p_port=str(
-            tx_vfs[0] if tx_vfs else tx_pf
-        ),  # use VF or PF if no VFs are available
+        p_port=str(tx_vfs[0] if tx_vfs else tx_pf),  # use VF or PF if no VFs are available
         p_sip=test_config["tx"]["p_sip"],
         p_tx_ip=test_config["broadcast_ip"],
         udp_port=test_config["port"],

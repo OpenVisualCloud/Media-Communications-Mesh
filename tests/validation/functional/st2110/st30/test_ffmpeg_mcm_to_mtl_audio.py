@@ -29,9 +29,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("audio_type", [k for k in audio_files.keys()])
-def test_st2110_ffmpeg_mcm_to_mtl_audio(
-    media_proxy, hosts, test_config, audio_type: str, log_path
-) -> None:
+def test_st2110_ffmpeg_mcm_to_mtl_audio(media_proxy, hosts, test_config, audio_type: str, log_path) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -41,9 +39,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
     tx_host = host_list[0]
     tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
     tx_prefix_variables = no_proxy_to_prefix_variables(tx_host, tx_prefix_variables)
-    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
-        tx_host.topology.extra_info.media_proxy.get("sdk_port")
-    )
+    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = tx_host.topology.extra_info.media_proxy.get("sdk_port")
 
     # RX configuration
     rx_host = host_list[1]
@@ -52,9 +48,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
     rx_mtl_path = rx_host.topology.extra_info.mtl_path
 
     # Audio configuration
-    audio_format = audio_file_format_to_format_dict(
-        str(audio_files[audio_type]["format"])
-    )  # audio format
+    audio_format = audio_file_format_to_format_dict(str(audio_files[audio_type]["format"]))  # audio format
     audio_channel_layout = audio_files[audio_type].get(
         "channel_layout",
         audio_channel_number_to_layout(int(audio_files[audio_type]["channels"])),
@@ -67,9 +61,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
     elif int(audio_files[audio_type]["sample_rate"]) == 96000:
         audio_sample_rate = FFmpegAudioRate.k96.value
     else:
-        pytest.skip(
-            f"Skipping test due to unsupported audio sample rate: {audio_files[audio_type]['sample_rate']}"
-        )
+        pytest.skip(f"Skipping test due to unsupported audio sample rate: {audio_files[audio_type]['sample_rate']}")
 
     # Prepare Rx VFs
     rx_nicctl = Nicctl(

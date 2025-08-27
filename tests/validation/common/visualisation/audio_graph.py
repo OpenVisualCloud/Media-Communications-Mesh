@@ -30,9 +30,7 @@ def read_pcm(
     """
     with open(file_path, "rb") as f:
         if pcm_format == 8:
-            pcm_data = (
-                np.frombuffer(f.read(), dtype=np.uint8) - 128
-            )  # Center around zero
+            pcm_data = np.frombuffer(f.read(), dtype=np.uint8) - 128  # Center around zero
         elif pcm_format == 16:
             pcm_data = np.frombuffer(f.read(), dtype=np.int16)
         elif pcm_format == 24:
@@ -45,9 +43,7 @@ def read_pcm(
             )
             pcm_data = pcm_data - (pcm_data & 0x800000) * 2  # Sign extension
         else:
-            raise ValueError(
-                f"Unsupported PCM format '{pcm_format}'. Use 8, 16, or 24."
-            )
+            raise ValueError(f"Unsupported PCM format '{pcm_format}'. Use 8, 16, or 24.")
 
     # Reshape the data to separate channels if there are multiple channels
     if num_channels > 1:
@@ -110,14 +106,8 @@ def plot_waveforms(
 
     # If start_time or end_time is specified, plot only that subset
     if start_time is not None or end_time is not None:
-        start_sample = (
-            int(start_time * effective_sample_rate) if start_time is not None else 0
-        )
-        end_sample = (
-            int(end_time * effective_sample_rate)
-            if end_time is not None
-            else len(pcm_data1)
-        )
+        start_sample = int(start_time * effective_sample_rate) if start_time is not None else 0
+        end_sample = int(end_time * effective_sample_rate) if end_time is not None else len(pcm_data1)
         pcm_data1 = pcm_data1[start_sample:end_sample]
         pcm_data2 = pcm_data2[start_sample:end_sample]
 
@@ -153,9 +143,7 @@ def plot_waveforms(
             label=f"{file_name1} - Right",
         )
     else:
-        axs[0].plot(
-            time_axis, pcm_data1, color="red", linewidth=LINEWIDTH, label=file_name1
-        )
+        axs[0].plot(time_axis, pcm_data1, color="red", linewidth=LINEWIDTH, label=file_name1)
 
     if num_channels2 > 1:
         axs[0].plot(
@@ -173,9 +161,7 @@ def plot_waveforms(
             label=f"{file_name2} - Right",
         )
     else:
-        axs[0].plot(
-            time_axis, pcm_data2, color="blue", linewidth=LINEWIDTH, label=file_name2
-        )
+        axs[0].plot(time_axis, pcm_data2, color="blue", linewidth=LINEWIDTH, label=file_name2)
 
     axs[0].set_title("Combined Waveforms")
     axs[0].set_xlabel("Time [s]")
@@ -186,18 +172,14 @@ def plot_waveforms(
     # Plot each channel separately
     plot_index = 1
     if num_channels1 > 1:
-        axs[plot_index].plot(
-            time_axis, pcm_data1[:, 0], color="red", linewidth=LINEWIDTH
-        )
+        axs[plot_index].plot(time_axis, pcm_data1[:, 0], color="red", linewidth=LINEWIDTH)
         axs[plot_index].set_title(f"{file_name1} - Left Channel")
         axs[plot_index].set_xlabel("Time [s]")
         axs[plot_index].set_ylabel("Amplitude")
         axs[plot_index].grid(True)
         plot_index += 1
 
-        axs[plot_index].plot(
-            time_axis, pcm_data1[:, 1], color="black", linewidth=LINEWIDTH
-        )
+        axs[plot_index].plot(time_axis, pcm_data1[:, 1], color="black", linewidth=LINEWIDTH)
         axs[plot_index].set_title(f"{file_name1} - Right Channel")
         axs[plot_index].set_xlabel("Time [s]")
         axs[plot_index].set_ylabel("Amplitude")
@@ -212,18 +194,14 @@ def plot_waveforms(
         plot_index += 1
 
     if num_channels2 > 1:
-        axs[plot_index].plot(
-            time_axis, pcm_data2[:, 0], color="blue", linewidth=LINEWIDTH
-        )
+        axs[plot_index].plot(time_axis, pcm_data2[:, 0], color="blue", linewidth=LINEWIDTH)
         axs[plot_index].set_title(f"{file_name2} - Left Channel")
         axs[plot_index].set_xlabel("Time [s]")
         axs[plot_index].set_ylabel("Amplitude")
         axs[plot_index].grid(True)
         plot_index += 1
 
-        axs[plot_index].plot(
-            time_axis, pcm_data2[:, 1], color="green", linewidth=LINEWIDTH
-        )
+        axs[plot_index].plot(time_axis, pcm_data2[:, 1], color="green", linewidth=LINEWIDTH)
         axs[plot_index].set_title(f"{file_name2} - Right Channel")
         axs[plot_index].set_xlabel("Time [s]")
         axs[plot_index].set_ylabel("Amplitude")
@@ -275,14 +253,8 @@ def plot_single_waveform(
 
     # If start_time or end_time is specified, plot only that subset
     if start_time is not None or end_time is not None:
-        start_sample = (
-            int(start_time * effective_sample_rate) if start_time is not None else 0
-        )
-        end_sample = (
-            int(end_time * effective_sample_rate)
-            if end_time is not None
-            else len(pcm_data)
-        )
+        start_sample = int(start_time * effective_sample_rate) if start_time is not None else 0
+        end_sample = int(end_time * effective_sample_rate) if end_time is not None else len(pcm_data)
         pcm_data = pcm_data[start_sample:end_sample]
 
     time_axis = np.arange(len(pcm_data)) / effective_sample_rate
@@ -294,9 +266,7 @@ def plot_single_waveform(
         num_plots,
         1,
         figsize=(10, 2 * num_plots),
-        gridspec_kw=(
-            {"height_ratios": [2] + [1] * (num_plots - 1)} if num_plots > 1 else None
-        ),
+        gridspec_kw=({"height_ratios": [2] + [1] * (num_plots - 1)} if num_plots > 1 else None),
     )
 
     # If only one plot, convert axs to a list for consistent indexing
@@ -316,9 +286,7 @@ def plot_single_waveform(
                 label=f"{file_name} - {channel_name}",
             )
     else:
-        axs[0].plot(
-            time_axis, pcm_data, color="red", linewidth=LINEWIDTH, label=file_name
-        )
+        axs[0].plot(time_axis, pcm_data, color="red", linewidth=LINEWIDTH, label=file_name)
 
     axs[0].set_title("Waveform")
     axs[0].set_xlabel("Time [s]")
@@ -376,14 +344,10 @@ def generate_waveform_plot(
     Returns:
         Absolute path to the generated output file.
     """
-    pcm_data1 = read_pcm(
-        file_path1, sample_rate, pcm_format=pcm_format, num_channels=num_channels1
-    )
+    pcm_data1 = read_pcm(file_path1, sample_rate, pcm_format=pcm_format, num_channels=num_channels1)
 
     if file_path2:
-        pcm_data2 = read_pcm(
-            file_path2, sample_rate, pcm_format=pcm_format, num_channels=num_channels2
-        )
+        pcm_data2 = read_pcm(file_path2, sample_rate, pcm_format=pcm_format, num_channels=num_channels2)
         return plot_waveforms(
             file_path1,
             file_path2,
@@ -428,9 +392,7 @@ if __name__ == "__main__":
         nargs="?",
         help="Path to the second PCM file (optional).",
     )
-    parser.add_argument(
-        "--sample_rate", type=int, default=48000, help="Sample rate of the PCM files."
-    )
+    parser.add_argument("--sample_rate", type=int, default=48000, help="Sample rate of the PCM files.")
     parser.add_argument(
         "--output_file",
         type=str,
@@ -455,12 +417,8 @@ if __name__ == "__main__":
         default=10,
         help="Factor by which to downsample the data.",
     )
-    parser.add_argument(
-        "--start_time", type=float, help="Start time in seconds for the plot."
-    )
-    parser.add_argument(
-        "--end_time", type=float, help="End time in seconds for the plot."
-    )
+    parser.add_argument("--start_time", type=float, help="Start time in seconds for the plot.")
+    parser.add_argument("--end_time", type=float, help="End time in seconds for the plot.")
     parser.add_argument(
         "--pcm_format",
         type=int,

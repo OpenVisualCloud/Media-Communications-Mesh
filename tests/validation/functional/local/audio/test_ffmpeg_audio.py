@@ -44,22 +44,16 @@ def test_local_ffmpeg_audio(hosts, test_config, audio_type: str, log_path, media
         prefix_variables = dict(tx_host.topology.extra_info.mcm_prefix_variables)
     else:
         prefix_variables = {}
-    prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
-        tx_host.topology.extra_info.media_proxy["sdk_port"]
-    )
+    prefix_variables["MCM_MEDIA_PROXY_PORT"] = tx_host.topology.extra_info.media_proxy["sdk_port"]
 
-    audio_format = audio_file_format_to_format_dict(
-        str(audio_files_25_03[audio_type]["format"])
-    )  # audio format
+    audio_format = audio_file_format_to_format_dict(str(audio_files_25_03[audio_type]["format"]))  # audio format
     audio_channel_layout = audio_files_25_03[audio_type].get(
         "channel_layout",
         audio_channel_number_to_layout(int(audio_files_25_03[audio_type]["channels"])),
     )
 
     if audio_files_25_03[audio_type]["sample_rate"] not in [48000, 44100, 96000]:
-        raise Exception(
-            f"Not expected audio sample rate of {audio_files_25_03[audio_type]['sample_rate']}!"
-        )
+        raise Exception(f"Not expected audio sample rate of {audio_files_25_03[audio_type]['sample_rate']}!")
 
     # >>>>> MCM Tx
     mcm_tx_inp = FFmpegAudioIO(

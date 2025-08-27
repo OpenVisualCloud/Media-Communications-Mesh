@@ -42,27 +42,16 @@ class VideoIntegrityRunner:
         """
         if integrity_path:
             return str(self.host.connection.path(integrity_path, self.module_name))
-        return str(
-            self.host.connection.path(
-                self.test_repo_path, "tests", "common", "integrity", self.module_name
-            )
-        )
+        return str(self.host.connection.path(self.test_repo_path, "tests", "common", "integrity", self.module_name))
 
     def setup(self):
         """
         Setup method to prepare the environment for running the integrity check.
         This can include creating directories, checking dependencies, etc.
         """
-        logger.info(
-            f"Setting up integrity check on {self.host.name} for {self.out_name}"
-        )
-        self.host.connection.execute_command(
-            f"apt install tesseract-ocr -y", shell=True
-        )
-        reqs = str(
-            self.host.connection.path(self.integrity_path).parents[0]
-            / "requirements.txt"
-        )
+        logger.info(f"Setting up integrity check on {self.host.name} for {self.out_name}")
+        self.host.connection.execute_command(f"apt install tesseract-ocr -y", shell=True)
+        reqs = str(self.host.connection.path(self.integrity_path).parents[0] / "requirements.txt")
         for library in ["pytesseract", "opencv-python"]:
             cmd = f"{self.python_path} -m pip list | grep {library} || {self.python_path} -m pip install -r {reqs}"
             self.host.connection.execute_command(cmd, shell=True)
@@ -110,9 +99,7 @@ class FileVideoIntegrityRunner(VideoIntegrityRunner):
                 "--delete_file" if self.delete_file else "--no_delete_file",
             ]
         )
-        logger.debug(
-            f"Running integrity check on {self.host.name} for {self.out_name} with command: {cmd}"
-        )
+        logger.debug(f"Running integrity check on {self.host.name} for {self.out_name} with command: {cmd}")
         result = self.host.connection.execute_command(
             cmd, shell=True, stderr_to_stdout=True, expected_return_codes=(0, 1)
         )
@@ -120,9 +107,7 @@ class FileVideoIntegrityRunner(VideoIntegrityRunner):
             logger.error(f"Integrity check failed on {self.host.name}: {self.out_name}")
             logger.error(result.stdout)
             return False
-        logger.info(
-            f"Integrity check completed successfully on {self.host.name} for {self.out_name}"
-        )
+        logger.info(f"Integrity check completed successfully on {self.host.name} for {self.out_name}")
         return True
 
 
@@ -177,23 +162,15 @@ class StreamVideoIntegrityRunner(VideoIntegrityRunner):
                 str(self.workers),
             ]
         )
-        logger.debug(
-            f"Running stream integrity check on {self.host.name} for {self.out_name} with command: {cmd}"
-        )
-        self.process = self.host.connection.start_process(
-            cmd, shell=True, stderr_to_stdout=True
-        )
+        logger.debug(f"Running stream integrity check on {self.host.name} for {self.out_name} with command: {cmd}")
+        self.process = self.host.connection.start_process(cmd, shell=True, stderr_to_stdout=True)
 
     def stop(self, timeout: int = 10):
         if self.process:
             self.process.wait(timeout)
-            logger.info(
-                f"Stream integrity check stopped on {self.host.name} for {self.out_name}"
-            )
+            logger.info(f"Stream integrity check stopped on {self.host.name} for {self.out_name}")
         else:
-            logger.warning(
-                f"No active process to stop for {self.out_name} on {self.host.name}"
-            )
+            logger.warning(f"No active process to stop for {self.out_name} on {self.host.name}")
 
     def stop_and_verify(self, timeout: int = 10):
         """
@@ -201,14 +178,10 @@ class StreamVideoIntegrityRunner(VideoIntegrityRunner):
         """
         self.stop(timeout)
         if self.process and self.process.return_code != 0:
-            logger.error(
-                f"Stream integrity check failed on {self.host.name} for {self.out_name}"
-            )
+            logger.error(f"Stream integrity check failed on {self.host.name} for {self.out_name}")
             logger.error(f"Process output: {self.process.stdout_text}")
             return False
-        logger.info(
-            f"Stream integrity check completed successfully on {self.host.name} for {self.out_name}"
-        )
+        logger.info(f"Stream integrity check completed successfully on {self.host.name} for {self.out_name}")
         return True
 
 
@@ -244,20 +217,14 @@ class BlobIntegrityRunner:
         """
         if integrity_path:
             return str(self.host.connection.path(integrity_path, self.module_name))
-        return str(
-            self.host.connection.path(
-                self.test_repo_path, "tests", "common", "integrity", self.module_name
-            )
-        )
+        return str(self.host.connection.path(self.test_repo_path, "tests", "common", "integrity", self.module_name))
 
     def setup(self):
         """
         Setup method to prepare the environment for running the blob integrity check.
         This is simpler than video integrity as it doesn't require OCR dependencies.
         """
-        logger.info(
-            f"Setting up blob integrity check on {self.host.name} for {self.out_name}"
-        )
+        logger.info(f"Setting up blob integrity check on {self.host.name} for {self.out_name}")
         # Blob integrity doesn't need special dependencies like tesseract or opencv
 
 
@@ -301,21 +268,15 @@ class FileBlobIntegrityRunner(BlobIntegrityRunner):
                 "--delete_file" if self.delete_file else "--no_delete_file",
             ]
         )
-        logger.debug(
-            f"Running blob integrity check on {self.host.name} for {self.out_name} with command: {cmd}"
-        )
+        logger.debug(f"Running blob integrity check on {self.host.name} for {self.out_name} with command: {cmd}")
         result = self.host.connection.execute_command(
             cmd, shell=True, stderr_to_stdout=True, expected_return_codes=(0, 1)
         )
         if result.return_code > 0:
-            logger.error(
-                f"Blob integrity check failed on {self.host.name}: {self.out_name}"
-            )
+            logger.error(f"Blob integrity check failed on {self.host.name}: {self.out_name}")
             logger.error(result.stdout)
             return False
-        logger.info(
-            f"Blob integrity check completed successfully on {self.host.name} for {self.out_name}"
-        )
+        logger.info(f"Blob integrity check completed successfully on {self.host.name} for {self.out_name}")
         return True
 
 
@@ -368,23 +329,15 @@ class StreamBlobIntegrityRunner(BlobIntegrityRunner):
                 str(self.workers),
             ]
         )
-        logger.debug(
-            f"Running stream blob integrity check on {self.host.name} for {self.out_name} with command: {cmd}"
-        )
-        self.process = self.host.connection.start_process(
-            cmd, shell=True, stderr_to_stdout=True
-        )
+        logger.debug(f"Running stream blob integrity check on {self.host.name} for {self.out_name} with command: {cmd}")
+        self.process = self.host.connection.start_process(cmd, shell=True, stderr_to_stdout=True)
 
     def stop(self, timeout: int = 10):
         if self.process:
             self.process.wait(timeout)
-            logger.info(
-                f"Stream blob integrity check stopped on {self.host.name} for {self.out_name}"
-            )
+            logger.info(f"Stream blob integrity check stopped on {self.host.name} for {self.out_name}")
         else:
-            logger.warning(
-                f"No active process to stop for {self.out_name} on {self.host.name}"
-            )
+            logger.warning(f"No active process to stop for {self.out_name} on {self.host.name}")
 
     def stop_and_verify(self, timeout: int = 10):
         """
@@ -392,12 +345,8 @@ class StreamBlobIntegrityRunner(BlobIntegrityRunner):
         """
         self.stop(timeout)
         if self.process and self.process.return_code != 0:
-            logger.error(
-                f"Stream blob integrity check failed on {self.host.name} for {self.out_name}"
-            )
+            logger.error(f"Stream blob integrity check failed on {self.host.name} for {self.out_name}")
             logger.error(f"Process output: {self.process.stdout_text}")
             return False
-        logger.info(
-            f"Stream blob integrity check completed successfully on {self.host.name} for {self.out_name}"
-        )
+        logger.info(f"Stream blob integrity check completed successfully on {self.host.name} for {self.out_name}")
         return True

@@ -28,9 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_st2110_ffmpeg_mcm_to_mtl_video(
-    media_proxy, hosts, test_config, video_type: str, log_path
-) -> None:
+def test_st2110_ffmpeg_mcm_to_mtl_video(media_proxy, hosts, test_config, video_type: str, log_path) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     # Get TX and RX hosts
     host_list = list(hosts.values())
@@ -40,9 +38,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
     tx_host = host_list[0]
     tx_prefix_variables = test_config["tx"].get("prefix_variables", {})
     tx_prefix_variables = no_proxy_to_prefix_variables(tx_host, tx_prefix_variables)
-    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
-        tx_host.topology.extra_info.media_proxy.get("sdk_port")
-    )
+    tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = tx_host.topology.extra_info.media_proxy.get("sdk_port")
     logger.debug(f"tx_prefix_variables: {tx_prefix_variables}")
 
     # RX configuration
@@ -54,9 +50,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
     # Video configuration
     frame_rate = str(yuv_files[video_type]["fps"])
     video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
-    video_pixel_format = video_file_format_to_payload_format(
-        str(yuv_files[video_type]["file_format"])
-    )
+    video_pixel_format = video_file_format_to_payload_format(str(yuv_files[video_type]["file_format"]))
     conn_type = McmConnectionType.st.value
 
     # Prepare Rx VFs
@@ -119,11 +113,7 @@ def test_st2110_ffmpeg_mcm_to_mtl_video(
     )
     mtl_rx_outp = FFmpegVideoIO(
         video_size=video_size,
-        pixel_format=(
-            "yuv422p10le"
-            if video_pixel_format == "yuv422p10rfc4175"
-            else video_pixel_format
-        ),
+        pixel_format=("yuv422p10le" if video_pixel_format == "yuv422p10rfc4175" else video_pixel_format),
         f=FFmpegVideoFormat.raw.value,
         output_path=f'{test_config["rx"]["filepath"]}test_{yuv_files[video_type]["filename"]}_{video_size}at{yuv_files[video_type]["fps"]}fps.yuv',
         pix_fmt=None,  # this is required to overwrite the default
