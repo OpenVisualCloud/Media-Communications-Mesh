@@ -16,16 +16,28 @@ namespace mesh::connection {
 
 class LocalManager {
 public:
-    int create_connection(context::Context& ctx, std::string& id,
-                          mcm_conn_param *param, memif_conn_param *memif_param);
+    int create_connection_sdk(context::Context& ctx, std::string& id,
+                              mcm_conn_param *param, memif_conn_param *memif_param,
+                              const Config& conn_config, std::string& err_str);
 
-    int delete_connection(context::Context& ctx, const std::string& id);
+    int activate_connection_sdk(context::Context& ctx, const std::string& id);
+
+    int delete_connection_sdk(context::Context& ctx, const std::string& id,
+                              bool do_unregister = true);
+
+    Connection * get_connection(context::Context& ctx, const std::string& id);
+
+    int reregister_all_connections(context::Context& ctx);
 
     void shutdown(context::Context& ctx);
 
+    void lock();
+    void unlock();
+
 private:
-    Registry registry;
-    std::shared_mutex mx;
+    Registry registry_sdk; // This registry uses SDK ids
+    Registry registry;     // This registry uses Agent assigned ids
+    std::mutex mx;
 };
 
 extern LocalManager local_manager;

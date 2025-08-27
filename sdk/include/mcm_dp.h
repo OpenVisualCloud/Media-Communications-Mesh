@@ -97,16 +97,12 @@ typedef struct {
 } mcm_buffer;
 
 typedef enum {
-    /* YUV 4:2:0 */
-    PIX_FMT_NV12,
-    /* YUV 4:2:2 */
-    PIX_FMT_YUV422P,
-    /* YUV 4:2:2 10bit planar le */
-    PIX_FMT_YUV422P_10BIT_LE,
-    /* YUV 4:4:4 10bit planar le */
-    PIX_FMT_YUV444P_10BIT_LE,
-    /* RGB 8bit packed RGB,RGB,...*/
-    PIX_FMT_RGB8,
+    /* planar YUV 4:2:2, 10bit */
+    PIX_FMT_YUV422PLANAR10LE,
+    /* packed YUV 4:2:2, 10bit*/
+    PIX_FMT_V210,
+    /* packed RFC4175 compliant YUV 4:2:2, 10bit */
+    PIX_FMT_YUV422RFC4175BE10,
 } video_pixel_format;
 
 typedef enum {
@@ -207,6 +203,9 @@ typedef struct {
 /* rdma format */
 typedef struct {
     size_t transfer_size;
+    int queue_size;
+    char     *provider;
+    uint16_t  num_endpoints;
 } mcm_rdma_args;
 
 typedef struct {

@@ -34,6 +34,8 @@ typedef struct ep_ctx_t {
     cq_ctx_t cq_ctx;
 
     libfabric_ctx *rdma_ctx;
+
+    volatile bool stop_flag;
 } ep_ctx_t;
 
 typedef struct {
@@ -41,6 +43,7 @@ typedef struct {
     rdma_addr remote_addr;
     rdma_addr local_addr;
     enum direction dir;
+    struct fid_cq *shared_rx_cq;
 } ep_cfg_t;
 
 /**

@@ -39,11 +39,31 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(MCMDP_SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR}/src)
 set(MCMDP_INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(MEMIF_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/libmemif)
+set(NLOHMANN_JSON_DIR ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty/nlohmann)
 set(MCMDP_SAMPLE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/samples)
 set(PROTO_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../protos)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fPIC")
 
 add_subdirectory(${MEMIF_DIR})
+
+# Get current version: Git tag and hash
+execute_process(
+  COMMAND git describe --tags --always
+  OUTPUT_VARIABLE GIT_TAG
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+execute_process(
+  COMMAND git rev-parse --short HEAD
+  OUTPUT_VARIABLE GIT_HASH
+  OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# Generate a version header file
+configure_file(
+  ${MCMDP_INCLUDE_DIR}/mcm-version.h.in
+  ${MCMDP_INCLUDE_DIR}/mcm-version.h
+  @ONLY
+)
 
 include(compile_options)
 
@@ -65,8 +85,9 @@ endif()
 
 # Define the .proto files
 set(PROTO_FILES
-    ${PROTO_DIR}/mediaproxy.proto
+    ${PROTO_DIR}/conn-config.proto
     ${PROTO_DIR}/sdk.proto
+    ${PROTO_DIR}/mediaproxy.proto
 )
 
 # Generate the protobuf and gRPC source files
@@ -115,7 +136,8 @@ target_include_directories(mcm_dp PUBLIC
     ${MEMIF_DIR}/src
     ${Protobuf_INCLUDE_DIRS}
     ${gRPC_INCLUDE_DIRS}
-    ${PROTO_SRC_DIR}  # Include the directory where the generated files are located
+    ${PROTO_SRC_DIR}
+    ${NLOHMANN_JSON_DIR}
 )
 target_link_libraries(mcm_dp PUBLIC memif gRPC::grpc++ protobuf::libprotobuf)
 
@@ -127,7 +149,6 @@ set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 include(CPack)
 
 list(APPEND SDK_HEADERS
-    # include/mcm_dp.h
     include/mesh_dp.h
 )
 

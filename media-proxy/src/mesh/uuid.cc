@@ -8,6 +8,7 @@
 #include <random>
 #include <iomanip>
 #include <mutex>
+#include <array>
 
 namespace mesh {
 

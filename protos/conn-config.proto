@@ -1,0 +1,126 @@
+// SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
+syntax = "proto3";
+
+package sdk;
+
+option go_package = "control-plane-agent/api/proxy/proto/sdk";
+
+message ConfigMultipointGroup {
+  string urn = 1;
+}
+
+enum ConnectionKind {
+  CONN_KIND_TRANSMITTER = 0; ///< Unidirectional connection for sending data
+  CONN_KIND_RECEIVER    = 1; ///< Unidirectional connection for receiving data
+}
+
+enum ST2110Transport {
+  CONN_TRANSPORT_ST2110_20 = 0;
+  CONN_TRANSPORT_ST2110_22 = 1;
+  CONN_TRANSPORT_ST2110_30 = 2;
+}
+
+message ConfigST2110 {
+  string ip_addr            = 1;
+  uint32 port               = 2;
+  string mcast_sip_addr     = 3;
+  ST2110Transport transport = 4;
+  string pacing             = 5;
+  uint32 payload_type       = 6;
+}
+
+message ConfigRDMA {
+  string connection_mode = 1;
+  uint32 max_latency_ns  = 2;
+}
+
+message ConnectionOptions {
+  ConnectionOptionsRDMA rdma = 1;
+}
+
+message ConnectionOptionsRDMA {
+  string provider      = 1;
+  uint32 num_endpoints = 2;
+}
+
+enum VideoPixelFormat {
+  VIDEO_PIXEL_FORMAT_YUV422PLANAR10LE  = 0;
+  VIDEO_PIXEL_FORMAT_V210              = 1;
+  VIDEO_PIXEL_FORMAT_YUV422RFC4175BE10 = 2;
+}
+
+message ConfigVideo {
+  uint32 width                  = 1;
+  uint32 height                 = 2;
+  double fps                    = 3;
+  VideoPixelFormat pixel_format = 4;
+}
+
+enum AudioSampleRate {
+  AUDIO_SAMPLE_RATE_48000 = 0;
+  AUDIO_SAMPLE_RATE_96000 = 1;
+  AUDIO_SAMPLE_RATE_44100 = 2;
+}
+
+enum AudioFormat {
+  AUDIO_FORMAT_PCM_S8    = 0;
+  AUDIO_FORMAT_PCM_S16BE = 1;
+  AUDIO_FORMAT_PCM_S24BE = 2;
+}
+
+enum AudioPacketTime {
+  AUDIO_PACKET_TIME_1MS    = 0;
+  AUDIO_PACKET_TIME_125US  = 1;
+  AUDIO_PACKET_TIME_250US  = 2;
+  AUDIO_PACKET_TIME_333US  = 3;
+  AUDIO_PACKET_TIME_4MS    = 4;
+  AUDIO_PACKET_TIME_80US   = 5;
+  AUDIO_PACKET_TIME_1_09MS = 6;
+  AUDIO_PACKET_TIME_0_14MS = 7;
+  AUDIO_PACKET_TIME_0_09MS = 8;
+}
+
+message ConfigAudio {
+  uint32 channels             = 1;
+  AudioSampleRate sample_rate = 2;
+  AudioFormat format          = 3;
+  AudioPacketTime packet_time = 4;
+}
+
+message ConfigBlob {
+  // To configure the blob size, max_payload_size must be populated with a non-zero value.
+}
+
+message BufferPartition {
+  uint32 size   = 1;
+  uint32 offset = 2;
+}
+
+message BufferPartitions {
+  BufferPartition payload  = 1;
+  BufferPartition metadata = 2;
+  BufferPartition sysdata  = 3;
+}
+
+message ConnectionConfig {
+  ConnectionKind kind                      = 1;
+  uint32 buf_queue_capacity                = 2;
+  uint32 max_payload_size                  = 3;
+  uint32 max_metadata_size                 = 4;
+  uint32 calculated_payload_size           = 5;
+  BufferPartitions buf_parts               = 6;
+  oneof conn {
+    ConfigMultipointGroup multipoint_group = 7;
+    ConfigST2110 st2110                    = 8;
+    ConfigRDMA rdma                        = 9;
+  }
+  ConnectionOptions options                = 10;
+  oneof payload {
+    ConfigVideo video                      = 11;
+    ConfigAudio audio                      = 12;
+    ConfigBlob blob                        = 13;
+  } 
+}

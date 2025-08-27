@@ -1,0 +1,21 @@
+# dual-host ST2110 test from MTL to MCM
+tx:
+  ffmpeg_path: ffmpeg
+  filepath: /mnt/ramdisk/received/
+  prefix_variables:
+    NO_PROXY: {{ tx_no_proxy|default('127.0.0.1, localhost') }}
+    no_proxy: {{ tx_no_proxy|default('127.0.0.1, localhost') }}
+rx:
+  ffmpeg_path: /opt/intel/tempMTL-packages/FFmpeg/ffmpeg
+  filepath: /mnt/ramdisk/received/
+  p_sip: {{ p_sip|default('192.168.39.39') }}
+  prefix_variables:
+    LD_LIBRARY_PATH: /opt/intel/MTL/build/lib
+    NO_PROXY: {{ rx_no_proxy|default('127.0.0.1, localhost') }}
+    no_proxy: {{ rx_no_proxy|default('127.0.0.1, localhost') }}
+
+# other
+broadcast_ip: {{ broadcast_ip|default('239.2.39.239') }}
+port: {{ port|default(20000) }}
+payload_type: 100
+test_time_sec: 90

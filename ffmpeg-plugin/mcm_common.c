@@ -8,11 +8,42 @@
 #include "mcm_common.h"
 #include <bsd/string.h>
 #include <stdatomic.h>
+#include <signal.h>
 #include "libavutil/pixdesc.h"
 
 static pthread_mutex_t mx = PTHREAD_MUTEX_INITIALIZER;
 static MeshClient *client;
 static int refcnt;
+static atomic_bool shutdown_requested = ATOMIC_VAR_INIT(false);
+
+void mcm_replace_back_quotes(char *str) {
+    while (*str) {
+        if (*str == '`')
+            *str = '"';
+        str++;
+    }
+}
+
+static volatile __sighandler_t prev_SIGINT_handler;
+static volatile __sighandler_t prev_SIGTERM_handler;
+
+static void mcm_handle_signal(int signal) {
+    atomic_store(&shutdown_requested, true);
+
+    if (signal == SIGINT && prev_SIGINT_handler) {
+        prev_SIGINT_handler(signal);
+    } else if (signal == SIGTERM && prev_SIGTERM_handler) {
+        prev_SIGTERM_handler(signal);
+    }
+}
+
+/**
+ * Check if a termination signal has been received from OS.
+ */
+bool mcm_shutdown_requested()
+{
+    return atomic_load(&shutdown_requested);
+}
 
 /**
  * Get MCM client. Create one if needed.
@@ -27,13 +58,41 @@ int mcm_get_client(MeshClient **mc)
         return err;
 
     if (!client) {
-        MeshClientConfig config = { 0 };
+        static char json_config[250];
 
-        err = mesh_create_client(&client, &config);
-        if (err)
+        static const char json_config_format[] =
+            "{"
+                "`apiVersion`: `v1`,"
+                "`apiConnectionString`: `Server=; Port=`,"
+                "`apiDefaultTimeoutMicroseconds`: 100000,"
+                "`maxMediaConnections`: 32"
+            "}";
+
+        snprintf(json_config, sizeof(json_config), json_config_format);
+        mcm_replace_back_quotes(json_config);
+
+        err = mesh_create_client(&client, json_config);
+        if (err) {
             client = NULL;
-        else
+        } else {
+            struct sigaction action = { 0 };
+                    
+            sigfillset(&action.sa_mask);
+
+            action.sa_flags = SA_RESTART;
+            action.sa_handler = mcm_handle_signal;
+
+            if (!prev_SIGINT_handler) {
+                prev_SIGINT_handler = signal(SIGINT, SIG_DFL);
+                sigaction(SIGINT, &action, NULL);
+            }
+            if (!prev_SIGTERM_handler) {
+                prev_SIGTERM_handler = signal(SIGTERM, SIG_DFL);
+                sigaction(SIGTERM, &action, NULL);
+            }
+
             refcnt = 1;
+        }
     } else {
         refcnt++;
     }
@@ -71,150 +130,111 @@ int mcm_put_client(MeshClient **mc)
     return err;
 }
 
-/**
- * Parse MCM connection parameters and fill the structure.
- */
-int mcm_parse_conn_param(AVFormatContext* avctx, MeshConnection *conn,
-                         int kind, char *ip_addr, char *port,
-                         char *protocol_type, char *payload_type,
-                         char *socket_name, int interface_id)
-{
-    int err;
+const char mcm_json_config_multipoint_group_video_format[] =
+    "{"
+      "`bufferQueueCapacity`: %u,"
+      "`connCreationDelayMilliseconds`: %u,"
+      "`connection`: {"
+        "`multipointGroup`: {"
+          "`urn`: `%s`"
+        "}"
+      "},"
+      "`options`: {"
+        "`rdma`: {"
+          "`provider`: `%s`,"
+          "`num_endpoints`: %d"
+        "}"
+      "},"
+      "`payload`: {"
+        "`video`: {"
+          "`width`: %d,"
+          "`height`: %d,"
+          "`fps`: %0.2f,"
+          "`pixelFormat`: `%s`"
+        "}"
+      "}"
+    "}";
 
-    /* protocol type */
-    if (!strcmp(protocol_type, "memif")) {
-        MeshConfig_Memif cfg;
+const char mcm_json_config_st2110_video_format[] =
+    "{"
+      "`bufferQueueCapacity`: %u,"
+      "`connCreationDelayMilliseconds`: %u,"
+      "`connection`: {"
+        "`st2110`: {"
+          "`ipAddr`: `%s`,"
+          "`port`: %d,"
+          "`multicastSourceIpAddr`: `%s`,"
+          "`transport`: `%s`,"
+          "`payloadType`: %d,"
+          "`transportPixelFormat`: `%s`"
+        "}"
+      "},"
+      "`options`: {"
+        "`rdma`: {"
+          "`provider`: `%s`,"
+          "`num_endpoints`: %d"
+        "}"
+      "},"
+      "`payload`: {"
+        "`video`: {"
+          "`width`: %d,"
+          "`height`: %d,"
+          "`fps`: %0.2f,"
+          "`pixelFormat`: `%s`"
+        "}"
+      "}"
+    "}";
 
-        snprintf(cfg.socket_path, sizeof(cfg.socket_path),
-            "/run/mcm/mcm_memif_%s.sock", socket_name ? socket_name : "0");
-        cfg.interface_id = interface_id;
+const char mcm_json_config_multipoint_group_audio_format[] =
+    "{"
+      "`bufferQueueCapacity`: %u,"
+      "`connCreationDelayMilliseconds`: %u,"
+      "`connection`: {"
+        "`multipointGroup`: {"
+          "`urn`: `%s`"
+        "}"
+      "},"
+      "`options`: {"
+        "`rdma`: {"
+          "`provider`: `%s`,"
+          "`num_endpoints`: %d"
+        "}"
+      "},"
+      "`payload`: {"
+        "`audio`: {"
+          "`channels`: %d,"
+          "`sampleRate`: %d,"
+          "`format`: `%s`,"
+          "`packetTime`: `%s`"
+        "}"
+      "}"
+    "}";
 
-        err = mesh_apply_connection_config_memif(conn, &cfg);
-        if (err)
-            return err;
-    } else {
-        MeshConfig_ST2110 cfg;
-
-        strlcpy(cfg.remote_ip_addr, ip_addr, sizeof(cfg.remote_ip_addr));
-        
-        if (kind == MESH_CONN_KIND_SENDER)
-            cfg.remote_port = atoi(port);
-        else
-            cfg.local_port = atoi(port);
-
-        /* transport type */
-        if (!strcmp(payload_type, "st20")) {
-            cfg.transport = MESH_CONN_TRANSPORT_ST2110_20;
-        } else if (!strcmp(payload_type, "st22")) {
-            cfg.transport = MESH_CONN_TRANSPORT_ST2110_22;
-        } else if (!strcmp(payload_type, "st30")) {
-            cfg.transport = MESH_CONN_TRANSPORT_ST2110_30;
-        } else {
-            av_log(avctx, AV_LOG_ERROR, "Unknown payload type\n");
-            return -MESH_ERR_CONN_CONFIG_INVAL;
-        }
-
-        err = mesh_apply_connection_config_st2110(conn, &cfg);
-        if (err)
-            return err;
-    }
-
-    return 0;
-}
-
-/**
- * Parse MCM video pixel format
- */
-int mcm_parse_video_pix_fmt(AVFormatContext* avctx, int *pix_fmt,
-                            enum AVPixelFormat value)
-{
-    switch (value) {
-    case AV_PIX_FMT_NV12:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_NV12;
-        return 0;
-    case AV_PIX_FMT_YUV422P:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_YUV422P;
-        return 0;
-    case AV_PIX_FMT_YUV444P10LE:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-        return 0;
-    case AV_PIX_FMT_RGB8:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_RGB8;
-        return 0;
-    case AV_PIX_FMT_YUV422P10LE:
-        *pix_fmt = MESH_VIDEO_PIXEL_FORMAT_YUV422P10LE;
-        return 0;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Unknown pixel format (%s)\n",
-               av_get_pix_fmt_name(value));
-        return AVERROR(EINVAL);
-    }
-}
-
-/**
- * Parse MCM audio sampling rate
- */
-int mcm_parse_audio_sample_rate(AVFormatContext* avctx, int *sample_rate,
-                                int value)
-{
-    switch (value) {
-    case 44100:
-        *sample_rate = MESH_AUDIO_SAMPLE_RATE_44100;
-        return 0;
-    case 48000:
-        *sample_rate = MESH_AUDIO_SAMPLE_RATE_48000;
-        return 0;
-    case 96000:
-        *sample_rate = MESH_AUDIO_SAMPLE_RATE_96000;
-        return 0;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Audio sample rate not supported\n");
-        return AVERROR(EINVAL);
-    }
-}
-
-/**
- * Parse MCM audio packet time
- */
-int mcm_parse_audio_packet_time(AVFormatContext* avctx, int *ptime, char *str)
-{
-    if (!str || !strcmp(str, "1ms")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_1MS;
-        return 0;
-    }
-    if (!strcmp(str, "125us")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_125US;
-        return 0;
-    }
-    if (!strcmp(str, "250us")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_250US;
-        return 0;
-    }
-    if (!strcmp(str, "333us")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_333US;
-        return 0;
-    }
-    if (!strcmp(str, "4ms")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_4MS;
-        return 0;
-    }
-    if (!strcmp(str, "80us")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_80US;
-        return 0;
-    }
-    if (!strcmp(str, "1.09ms")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_1_09MS;
-        return 0;
-    }
-    if (!strcmp(str, "0.14ms")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_0_14MS;
-        return 0;
-    }
-    if (!strcmp(str, "0.09ms")) {
-        *ptime = MESH_AUDIO_PACKET_TIME_0_09MS;
-        return 0;
-    }
-
-    av_log(avctx, AV_LOG_ERROR, "Audio packet time not supported\n");
-    return AVERROR(EINVAL);
-}
+const char mcm_json_config_st2110_audio_format[] =
+    "{"
+      "`bufferQueueCapacity`: %u,"
+      "`connCreationDelayMilliseconds`: %u,"
+      "`connection`: {"
+        "`st2110`: {"
+          "`ipAddr`: `%s`,"
+          "`port`: %d,"
+          "`multicastSourceIpAddr`: `%s`,"
+          "`transport`: `st2110-30`,"
+          "`payloadType`: %d"
+        "}"
+      "},"
+      "`options`: {"
+        "`rdma`: {"
+          "`provider`: `%s`,"
+          "`num_endpoints`: %d"
+        "}"
+      "},"
+      "`payload`: {"
+        "`audio`: {"
+          "`channels`: %d,"
+          "`sampleRate`: %d,"
+          "`format`: `%s`,"
+          "`packetTime`: `%s`"
+        "}"
+      "}"
+    "}";

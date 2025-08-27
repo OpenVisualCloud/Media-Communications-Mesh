@@ -8,12 +8,12 @@ ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
-ENV DEBIAN_FRONTEND=noninteractive
-ENV TZ=Europe/Warsaw
+ARG VERSIONS_FILE="versions.env"
+COPY "${VERSIONS_FILE}" /opt/versions.env
+ENV BASH_ENV=/opt/versions.env
 
 ARG MCM_DIR=/opt/mcm
 ARG PREFIX_DIR="/install"
-ARG GPRC_VER="v1.58.0"
 ARG GRPC_DIR="/opt/grpc"
 
 SHELL ["/bin/bash", "-exo", "pipefail", "-c"]
@@ -29,24 +29,24 @@ RUN apt-get update && \
 # gRPC
 WORKDIR ${GRPC_DIR}/cmake/build
 RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
-    make -j `nproc` && \
+    make "-j$(nproc)" && \
     make install
 
 COPY . ${MCM_DIR}
+
 WORKDIR ${MCM_DIR}/sdk
-RUN INSTALL_PREFIX="${PREFIX_DIR}/usr/local" ./build.sh
+RUN ./build.sh "${PREFIX_DIR}"
 
 ARG IMAGE_CACHE_REGISTRY
 ARG IMAGE_NAME
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME}
 
-LABEL maintainer="milosz.linkiewicz@intel.com"
+LABEL maintainer="milosz.linkiewicz@intel.com,konstantin.ilichev@intel.com"
 LABEL org.opencontainers.image.title="Media Communications Mesh SDK"
 LABEL org.opencontainers.image.description="Media Communications Mesh SDK sample applications. Ubuntu 22.04 Docker Release Image"
-LABEL org.opencontainers.image.version="1.0.0"
+LABEL org.opencontainers.image.version="25.03.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
-
 
 ARG MCM_DIR="/opt/mcm"
 ARG PREFIX_DIR="/install"
@@ -71,8 +71,6 @@ RUN apt-get update && \
     usermod -aG sudo mcm
 
 COPY --chown=1002 --from=builder "${PREFIX_DIR}" /
-COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/recver_app" "${MCM_DIR}/recver_app"
-COPY --chown=1002 --chmod=755 --from=builder "${MCM_DIR}/sdk/build/samples/sender_app" "${MCM_DIR}/sender_app"
 
 RUN ldconfig
 WORKDIR /opt/mcm/
@@ -83,3 +81,4 @@ USER mcm
 CMD ["--help"]
 SHELL ["/bin/bash", "-c"]
 ENTRYPOINT ["${MCM_DIR}/recver_app"]
+HEALTHCHECK --interval=30s --timeout=5s CMD if(( $(ps aux | grep "recver_app\|sender_app" | wc -l) != 2 )); then exit 1; fi

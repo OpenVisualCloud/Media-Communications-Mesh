@@ -5,17 +5,20 @@
 
 set -eo pipefail
 
+FFMPEG_VER="${1:-${FFMPEG_VER}}"
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 REPOSITORY_DIR="$(readlink -f "${SCRIPT_DIR}/..")"
-BUILD_DIR="${BUILD_DIR:-${SCRIPT_DIR}/build}"
+BUILD_DIR="${BUILD_DIR:-${REPOSITORY_DIR}/_build}"
 
 # shellcheck source="../scripts/common.sh"
 . "${REPOSITORY_DIR}/scripts/common.sh"
+lib_setup_ffmpeg_dir_and_version "${FFMPEG_VER:-7.0}"
+export FFMPEG_DIR="${BUILD_DIR}/${FFMPEG_SUB_DIR}"
 
-cp -f "${SCRIPT_DIR}/mcm_"* "${BUILD_DIR}/FFmpeg/libavdevice/"
+cp -f "${SCRIPT_DIR}/mcm_"* "${FFMPEG_DIR}/libavdevice/"
 
-make -C "${BUILD_DIR}/FFmpeg/" -j "$(nproc)"
-run_as_root_user make -C "${BUILD_DIR}/FFmpeg/" install
+make -C "${FFMPEG_DIR}" -j "$(nproc)"
+as_root make -C "${FFMPEG_DIR}" install
 
-prompt "FFmpeg MCM plugin build completed."
-prompt "\t${BUILD_DIR}/FFmpeg"
+log_info "FFmpeg MCM plugin build completed."
+log_info "\t${FFMPEG_DIR}"

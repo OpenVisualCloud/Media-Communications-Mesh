@@ -1,4 +1,4 @@
-# How to contribute to MCM project
+# How to contribute to Media Communications Mesh project
 
 You're welcome to contribute source code, document or idea to this project.
 
@@ -18,7 +18,7 @@ All source code in this project must follow the same coding style, which is defi
 Please format your code with "clang-format" tool before submit to PR.
 
 ```bash
-$ clang-format -i <source.c>
+clang-format -i <source.c>
 ```
 
 ## Issues

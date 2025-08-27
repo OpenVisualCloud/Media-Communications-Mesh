@@ -25,6 +25,7 @@ set(MP_TESTS_DIR ${MP_DIR}/tests)
 set(SDK_DIR ${CMAKE_CURRENT_SOURCE_DIR}/sdk)
 set(SDK_TESTS_DIR ${SDK_DIR}/tests)
 set(SDK_INCLUDE_DIR ${SDK_DIR}/include)
+set(AGENT_DIR ${CMAKE_CURRENT_SOURCE_DIR}/control-plane-agent)
 
 # Setup output folder
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
@@ -33,13 +34,22 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 add_subdirectory(${SDK_DIR})
 add_subdirectory(${MP_DIR})
-
-option(BUILD_UNIT_TESTS "Build and enable unit tests" ON)
-if (BUILD_UNIT_TESTS)
-    enable_testing()
-    add_subdirectory(${MP_TESTS_DIR})
-    add_subdirectory(${SDK_TESTS_DIR})
-endif()
+add_subdirectory(${AGENT_DIR})
 
 target_include_directories(media_proxy_lib PUBLIC ${SDK_INCLUDE_DIR})
-target_link_libraries(media_proxy_lib PUBLIC mcm_dp)
+option(BUILD_UNIT_TESTS "Build and enable unit tests" ON)
+if (BUILD_UNIT_TESTS)
+  # Fetch google test dependencies
+  include(FetchContent)
+  FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/35d0c365609296fa4730d62057c487e3cfa030ff.zip
+  )
+  FetchContent_MakeAvailable(googletest)
+  enable_testing()
+  add_subdirectory(${MP_TESTS_DIR})
+  add_subdirectory(${SDK_TESTS_DIR})
+  target_link_libraries(media_proxy_lib PUBLIC gtest gmock gtest_main)
+else()
+  target_link_libraries(media_proxy_lib PUBLIC)
+endif()

@@ -1,4 +1,4 @@
-name: Scan Coverity Ubuntu Scan
+name: Coverity Build
 
 on:
   schedule:
@@ -12,17 +12,17 @@ on:
 
 env:
   BUILD_TYPE: Release
+  BUILD_DIR: "${{ github.workspace }}/_build"
+  PREFIX_DIR: "${{ github.workspace }}/_install"
   MTL_BUILD_DISABLE_PCAPNG: true
-  LIBFABRIC_DIR: /tmp/libfabric
-  XDP_VERSION: 5c88569dd15e55db678b897b8ea2a73aeaf956f4
-  XDP_DIR: /tmp/xdp
-  GRPC_VERSION: v1.58.0
-  GRPC_DIR: /tmp/grpc
-  PREFIX_DIR: /usr/local
   DEBIAN_FRONTEND: noninteractive
 
 permissions:
   contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
 
 jobs:
   coverity:
@@ -39,73 +39,56 @@ jobs:
       with:
         ref: ${{ inputs.branch }}
 
-    - name: 'Install dependencies'
+    - name: 'Install OS level dependencies'
+      run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
+
+    - name: 'Check local dependencies build cache'
+      id: load-local-dependencies-cache
+      uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
+      with:
+        path: ${{ env.BUILD_DIR }}
+        key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
+
+    - name: 'Download, unpack and patch build dependencies'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
+      run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
+
+    - name: 'Clone and patch ffmpeg 6.1 and 7.0'
+      if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
       run: |
-        sudo apt-get update -y && \
-        sudo apt-get install -y --no-install-recommends \
-            git build-essential meson python3 python3-pyelftools pkg-config \
-            libnuma-dev libjson-c-dev libpcap-dev libgtest-dev libsdl2-dev \
-            libsdl2-ttf-dev libssl-dev ca-certificates m4 clang llvm zlib1g-dev \
-            libelf-dev libcap-ng-dev libcap2-bin gcc-multilib systemtap-sdt-dev ninja-build \
-            nasm dpdk-dev librdmacm-dev && \
-        sudo apt-get clean && \
-        sudo rm -rf /var/lib/apt/lists/*
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
+        ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
 
     - name: 'Build and Install xdp and libbpf'
-      run: |
-        git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git "${XDP_DIR}" && \
-        pushd "${XDP_DIR}" && \
-        ./configure && \
-        make -j$(nproc) && \
-        sudo make install && \
-        make -j$(nproc) -C "${XDP_DIR}/lib/libbpf/src" && \
-        sudo make -C "${XDP_DIR}/lib/libbpf/src" install && popd
+      run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
 
     - name: 'Build and Install libfabric'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_fabrics'
+
+    - name: 'Build and Install the DPDK'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_dpdk'
+
+    - name: 'Build and Install the MTL'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_mtl'
+
+    - name: 'Build and Install JPEG XS'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_jpeg_xs'
+
+    - name: 'Build and Install JPEG XS ffmpeg plugin'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_mtl_jpeg_xs_plugin'
+
+    - name: 'Build gRPC and dependencies'
+      run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
+
+    - name: 'Configure ffmpeg and dependencies'
       run: |
-        git clone --depth 1 --branch v1.22.0 https://github.com/ofiwg/libfabric "${LIBFABRIC_DIR}" && \
-        pushd "${LIBFABRIC_DIR}" && \
-        ./autogen.sh && ./configure && \
-        make -j$(nproc) && \
-        sudo make install && popd
-
-    - name: 'Install MTL'
-      run: |
-        git clone --depth 1 https://github.com/OpenVisualCloud/Media-Transport-Library.git imtl
-        pushd imtl && ./build.sh && popd
-
-    - name: 'Restore cached for gRPC build'
-      id: grpc-cache-restore
-      uses: actions/cache/restore@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-      with:
-        path: ${{ env.GRPC_DIR }}
-        key: Linux-grpc${{ env.GRPC_VERSION }}
-
-    - name: 'Build gRPC'
-      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
-      run: |
-          git clone --branch ${GRPC_VERSION} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc "${GRPC_DIR}" && \
-          cmake -DgRPC_INSTALL=ON -DgRPC_BUILD_TESTS=OFF -DCMAKE_INSTALL_PREFIX=${PREFIX_DIR} \
-            -B "${GRPC_DIR}/cmake/build" -S "${GRPC_DIR}" && \
-          cmake --build "${GRPC_DIR}/cmake/build" -j `nproc`
-
-    - name: 'Save cache for gRPC build'
-      id: grpc-cache-save
-      if: steps.grpc-cache-restore.outputs.cache-hit != 'true'
-      uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4.0.2
-      with:
-        path: ${{ env.GRPC_DIR }}
-        key: ${{ steps.grpc-cache-restore.outputs.cache-primary-key }}
-
-    - name: 'Install gRPC'
-      run: sudo cmake --install "${GRPC_DIR}/cmake/build"
-
-    - name: 'Patch and configure MCM FFmpeg plugin'
-      working-directory: ${{ github.workspace }}/ffmpeg-plugin
-      run: |
-          git config --global user.email "milosz.linkiewicz@intel.com"
-          git config --global user.name "Milosz Linkiewicz"
-          ./clone-and-patch-ffmpeg.sh
+        sed -i 's/strlen (MEMIF_DEFAULT_APP_NAME)/(sizeof(MEMIF_DEFAULT_APP_NAME) - 1)/g' ${{ github.workspace }}/sdk/3rdparty/libmemif/src/memif_private.h && \
+        ${{ github.workspace }}/build.sh && \
+        ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
+        ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
+        rm -rf ${{ github.workspace }}/_build/mcm
+        echo "\"${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh\" \"6.1\"" > ${{ github.workspace }}/build.sh
+        echo "\"${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh\" \"7.0\"" > ${{ github.workspace }}/build.sh
 
     - name: 'Run coverity'
       uses: vapier/coverity-scan-action@2068473c7bdf8c2fb984a6a40ae76ee7facd7a85 # v1.8.0
@@ -115,11 +98,9 @@ jobs:
         token: ${{ secrets.COVERITY_SCAN_TOKEN }}
         build_language: 'cxx'
         build_platform: 'linux64'
-        command: |
-            ${{ github.workspace }}/build.sh && \
-            ${{ github.workspace }}/ffmpeg-plugin/configure-ffmpeg.sh && \
-            ${{ github.workspace }}/ffmpeg-plugin/build-ffmpeg.sh
-    - uses: actions/upload-artifact@v4
+        command: ${{ github.workspace }}/build.sh
+
+    - uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
       with:
         name: coverity-reports
         path: '${{ github.workspace }}/cov-int'

@@ -12,9 +12,11 @@
 namespace mesh::connection {
 
 Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
-                              size_t frame_size)
+                              size_t frame_size, uint8_t log2_ring_size)
 {
     this->frame_size = frame_size;
+
+    log::debug("FRAME SIZE %lu", frame_size);
 
     bzero(memif_socket_args.app_name, sizeof(memif_socket_args.app_name));
     bzero(memif_socket_args.path, sizeof(memif_socket_args.path));
@@ -37,7 +39,11 @@ Result Local::configure_memif(context::Context& ctx, memif_ops_t *ops,
     ready = false;
     memif_conn_args.interface_id = ops->interface_id;
     memif_conn_args.buffer_size = (uint32_t)frame_size;
-    memif_conn_args.log2_ring_size = 2;
+
+    const uint8_t MEMIF_DEFAULT_LOG2_RING_SIZE = 4;
+    memif_conn_args.log2_ring_size = log2_ring_size ? log2_ring_size :
+                                     MEMIF_DEFAULT_LOG2_RING_SIZE;
+
     snprintf((char*)memif_conn_args.interface_name,
              sizeof(memif_conn_args.interface_name), "%s", ops->interface_name);
     memif_conn_args.is_master = 1;
@@ -58,12 +64,9 @@ Result Local::on_establish(context::Context& ctx)
 {
     // Unlink socket file
     if (memif_socket_args.path[0] != '@') {
-        struct stat st = { 0 };
-        if (stat("/run/mcm", &st) == -1) {
-            auto err = mkdir("/run/mcm", 0666);
-            if (err) {
-                return Result::error_general_failure;
-            }
+        auto err = mkdir("/run/mcm", 0666);
+        if (err && errno != EEXIST) {
+            return Result::error_general_failure;
         }
         unlink(memif_socket_args.path);
     }
@@ -71,23 +74,22 @@ Result Local::on_establish(context::Context& ctx)
     auto ret = memif_create_socket(&memif_socket, &memif_socket_args, NULL);
     if (ret != MEMIF_ERR_SUCCESS) {
         log::error("memif_create_socket: %s", memif_strerror(ret));
-        return Result::error_general_failure;
+        return set_result(Result::error_general_failure);
     }
 
     memif_conn_args.socket = memif_socket;
 
-    log::debug("Create memif interface.");
+    // log::debug("Create memif interface.");
     ret = memif_create(&memif_conn, &memif_conn_args,
                        Local::callback_on_connect,
                        Local::callback_on_disconnect,
                        Local::callback_on_interrupt, this);
     if (ret != MEMIF_ERR_SUCCESS) {
         log::error("memif_create: %s", memif_strerror(ret));
-        return Result::error_general_failure;
+        return set_result(Result::error_general_failure);
     }
 
     // Start the memif event loop.
-    // TODO: Replace ctx with a context passed at creation.
     try {
         th = std::jthread([this]() {
             for (;;) {
@@ -99,11 +101,11 @@ Result Local::on_establish(context::Context& ctx)
     }
     catch (const std::system_error& e) {
         log::error("thread create failed (%d)", ret);
-        return Result::error_out_of_memory;
+        return set_result(Result::error_out_of_memory);
     }
 
-    set_state(ctx, State::active);
-    return Result::success;
+    set_state(ctx, State::suspended);
+    return set_result(Result::success);
 }
 
 int Local::callback_on_connect(memif_conn_handle_t conn, void *private_ctx)
@@ -115,6 +117,7 @@ int Local::callback_on_connect(memif_conn_handle_t conn, void *private_ctx)
     int err = memif_refill_queue(_this->memif_conn, 0, -1, 0);
     if (err != MEMIF_ERR_SUCCESS) {
         log::error("memif_refill_queue: %s", memif_strerror(err));
+        _this->metrics.errors++;
         return err;
     }
 
@@ -122,7 +125,7 @@ int Local::callback_on_connect(memif_conn_handle_t conn, void *private_ctx)
 
     print_memif_details(_this->memif_conn);
 
-    log::debug("Memif ready");
+    // log::debug("Memif ready");
 
     return MEMIF_ERR_SUCCESS;
 }
@@ -139,9 +142,11 @@ int Local::callback_on_disconnect(memif_conn_handle_t conn, void *private_ctx)
     _this->ready = false;
 
     auto err = memif_cancel_poll_event(_this->memif_socket);
-    if (err != MEMIF_ERR_SUCCESS)
+    if (err != MEMIF_ERR_SUCCESS) {
         log::error("on_disconnect memif_cancel_poll_event: %s",
                    memif_strerror(err));
+        _this->metrics.errors++;
+    }
 
     return MEMIF_ERR_SUCCESS;
 }
@@ -166,26 +171,31 @@ int Local::callback_on_interrupt(memif_conn_handle_t conn, void *private_ctx,
     err = memif_rx_burst(_this->memif_conn, qid, &shm_bufs, 1, &buf_num);
     if (err != MEMIF_ERR_SUCCESS && err != MEMIF_ERR_NOBUF) {
         log::error("memif_rx_burst: %s", memif_strerror(err));
+        _this->metrics.errors++;
         return err;
     }
 
-    _this->on_memif_receive(shm_bufs.data, shm_bufs.len);
+    if (shm_bufs.data && shm_bufs.len)
+        _this->on_memif_receive(shm_bufs.data, shm_bufs.len);
 
     err = memif_refill_queue(_this->memif_conn, qid, buf_num, 0);
-    if (err != MEMIF_ERR_SUCCESS)
+    if (err != MEMIF_ERR_SUCCESS) {
         log::error("memif_refill_queue: %s", memif_strerror(err));
+        _this->metrics.errors++;
+    }
 
     return 0;
 }
 
 Result Local::on_shutdown(context::Context& ctx)
 {
-    log::debug("Memif shutdown");
+    // log::debug("Memif shutdown");
 
     auto err = memif_cancel_poll_event(memif_socket);
     if (err != MEMIF_ERR_SUCCESS) {
         log::error("on_shutdown memif_cancel_poll_event: %s",
                    memif_strerror(err));
+        metrics.errors++;
     }
 
     th.join();
@@ -202,19 +212,19 @@ Result Local::on_shutdown(context::Context& ctx)
     uint64_t out = metrics.outbound_bytes;
 
     log::info("Local %s conn shutdown", kind2str(_kind, true))
-             ("frames", metrics.transactions_successful)
+             ("frames", metrics.transactions_succeeded)
              ("in", in)("out", out)("equal", in == out);
 
     uint64_t errors = metrics.errors;
     uint64_t failures = metrics.transactions_failed;
 
     if (errors || failures)
-        log::error("Local %s conn shutdown", kind2str(_kind, true))
-                  ("frames_failed", failures)
-                  ("errors", errors);
+        log::warn("Local %s conn shutdown", kind2str(_kind, true))
+                 ("frames_failed", failures)
+                 ("errors", errors);
 
     set_state(ctx, State::closed);
-    return Result::success;
+    return set_result(Result::success);
 }
 
 } // namespace mesh::connection

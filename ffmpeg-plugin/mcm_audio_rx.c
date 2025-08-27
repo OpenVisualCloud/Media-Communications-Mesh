@@ -20,16 +20,23 @@ typedef struct McmAudioDemuxerContext {
     const AVClass *class; /**< Class for private options. */
 
     /* arguments */
+    int buf_queue_cap;
+    int conn_delay;
+    char *conn_type;
+    char *urn;
     char *ip_addr;
-    char *port;
-    char *protocol_type;
-    char *payload_type;
+    int port;
+    char *mcast_sip_addr;
+    int payload_type;
     char *socket_name;
     int interface_id;
 
     int channels;
     int sample_rate;
     char* ptime;
+
+    char *rdma_provider;
+    int rdma_num_endpoints;
 
     MeshClient *mc;
     MeshConnection *conn;
@@ -39,33 +46,9 @@ typedef struct McmAudioDemuxerContext {
 static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id)
 {
     McmAudioDemuxerContext *s = avctx->priv_data;
-    int kind = MESH_CONN_KIND_RECEIVER;
-    MeshConfig_Audio cfg;
+    char json_config[1024];
     AVStream *st;
-    int err;
-
-    err = mcm_parse_audio_sample_rate(avctx, &cfg.sample_rate, s->sample_rate);
-    if (err)
-        return err;
-
-    err = mcm_parse_audio_packet_time(avctx, &cfg.packet_time, s->ptime);
-    if (err)
-        return err;
-
-    /* audio format */
-    switch (codec_id) {
-    case AV_CODEC_ID_PCM_S24BE:
-        cfg.format = MESH_AUDIO_FORMAT_PCM_S24BE;
-        break;
-    case AV_CODEC_ID_PCM_S16BE:
-        cfg.format = MESH_AUDIO_FORMAT_PCM_S16BE;
-        break;
-    default:
-        av_log(avctx, AV_LOG_ERROR, "Audio PCM format not supported\n");
-        return AVERROR(EINVAL);
-    }
-
-    cfg.channels = s->channels;
+    int err, n;
 
     err = mcm_get_client(&s->mc);
     if (err) {
@@ -74,38 +57,36 @@ static int mcm_audio_read_header(AVFormatContext* avctx, enum AVCodecID codec_id
         return AVERROR(EINVAL);
     }
 
-    err = mesh_create_connection(s->mc, &s->conn);
+    if (!strcmp(s->conn_type, "multipoint-group")) {
+        n = snprintf(json_config, sizeof(json_config),
+                     mcm_json_config_multipoint_group_audio_format,
+                     s->buf_queue_cap, s->conn_delay,
+                     s->urn, s->rdma_provider, s->rdma_num_endpoints,
+                     s->channels, s->sample_rate,
+                     avcodec_get_name(codec_id), s->ptime);
+                     
+    } else if (!strcmp(s->conn_type, "st2110")) {
+        n = snprintf(json_config, sizeof(json_config),
+                     mcm_json_config_st2110_audio_format,
+                     s->buf_queue_cap, s->conn_delay,
+                     s->ip_addr, s->port, s->mcast_sip_addr, s->payload_type,
+                     s->rdma_provider, s->rdma_num_endpoints,
+                     s->channels, s->sample_rate,
+                     avcodec_get_name(codec_id), s->ptime);
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Unknown conn type: '%s'\n", s->conn_type);
+        return AVERROR(EINVAL);
+    }
+
+    av_log(avctx, AV_LOG_INFO, "JSON LEN = %d\n", n);
+    mcm_replace_back_quotes(json_config);
+
+    err = mesh_create_rx_connection(s->mc, &s->conn, json_config);
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Create connection failed: %s (%d)\n",
                mesh_err2str(err), err);
         err = AVERROR(EIO);
         goto exit_put_client;
-    }
-
-    err = mcm_parse_conn_param(avctx, s->conn, kind, s->ip_addr, s->port,
-                                  s->protocol_type, s->payload_type,
-                                  s->socket_name, s->interface_id);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Configuration parsing failed: %s (%d)\n",
-               mesh_err2str(err), err);
-        err = AVERROR(EINVAL);
-        goto exit_delete_conn;
-    }
-
-    err = mesh_apply_connection_config_audio(s->conn, &cfg);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Failed to apply connection config: %s (%d)\n",
-               mesh_err2str(err), err);
-        err = AVERROR(EIO);
-        goto exit_delete_conn;
-    }
-
-    err = mesh_establish_connection(s->conn, kind);
-    if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot establish connection: %s (%d)\n",
-               mesh_err2str(err), err);
-        err = AVERROR(EIO);
-        goto exit_delete_conn;
     }
 
     st = avformat_new_stream(avctx, NULL);
@@ -150,28 +131,39 @@ static int mcm_audio_read_header_pcm24(AVFormatContext* avctx)
 static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
 {
     McmAudioDemuxerContext *s = avctx->priv_data;
-    int timeout = s->first_frame ? MESH_TIMEOUT_INFINITE : 1000;
     MeshBuffer *buf;
-    int len, err;
+    int timeout = s->first_frame ? MESH_TIMEOUT_INFINITE : 1000;
+    int err, ret, len;
 
     s->first_frame = false;
 
     err = mesh_get_buffer_timeout(s->conn, &buf, timeout);
-    if (err == -MESH_ERR_CONN_CLOSED)
-        return AVERROR_EOF;
-
+    if (err == -MESH_ERR_CONN_CLOSED) {
+        ret = AVERROR_EOF;
+        goto error_close_conn;
+    }
     if (err) {
-        av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
-               mesh_err2str(err), err);
-        return AVERROR(EIO);
+        if (mcm_shutdown_requested()) {
+            ret = AVERROR_EXIT;
+        } else {
+            av_log(avctx, AV_LOG_ERROR, "Get buffer error: %s (%d)\n",
+                   mesh_err2str(err), err);
+            ret = AVERROR(EIO);
+        }
+        goto error_close_conn;
     }
 
-    len = buf->data_len;
-    err = av_new_packet(pkt, len);
-    if (err)
-        return err;
+    if (mcm_shutdown_requested()) {
+        ret = AVERROR_EXIT;
+        goto error_put_buf;
+    }
 
-    memcpy(pkt->data, buf->data, len);
+    len = buf->payload_len;
+
+    if ((ret = av_new_packet(pkt, len)) < 0)
+        goto error_put_buf;
+
+    memcpy(pkt->data, buf->payload_ptr, len);
 
     pkt->pts = pkt->dts = AV_NOPTS_VALUE;
 
@@ -179,10 +171,22 @@ static int mcm_audio_read_packet(AVFormatContext* avctx, AVPacket* pkt)
     if (err) {
         av_log(avctx, AV_LOG_ERROR, "Put buffer error: %s (%d)\n",
                mesh_err2str(err), err);
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto error_close_conn;
     }
 
     return len;
+
+error_put_buf:
+    mesh_put_buffer(&buf);
+
+error_close_conn:
+    err = mesh_delete_connection(&s->conn);
+    if (err)
+        av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
+            mesh_err2str(err), err);
+
+    return ret;
 }
 
 static int mcm_audio_read_close(AVFormatContext* avctx)
@@ -190,10 +194,12 @@ static int mcm_audio_read_close(AVFormatContext* avctx)
     McmAudioDemuxerContext* s = avctx->priv_data;
     int err;
 
-    err = mesh_delete_connection(&s->conn);
-    if (err)
-        av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
-               mesh_err2str(err), err);
+    if (s->conn) {
+        err = mesh_delete_connection(&s->conn);
+        if (err)
+            av_log(avctx, AV_LOG_ERROR, "Delete mesh connection failed: %s (%d)\n",
+                mesh_err2str(err), err);
+    }
 
     err = mcm_put_client(&s->mc);
     if (err)
@@ -205,15 +211,21 @@ static int mcm_audio_read_close(AVFormatContext* avctx)
 #define OFFSET(x) offsetof(McmAudioDemuxerContext, x)
 #define DEC (AV_OPT_FLAG_DECODING_PARAM)
 static const AVOption mcm_audio_rx_options[] = {
-    { "ip_addr", "set remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "192.168.96.1"}, .flags = DEC },
-    { "port", "set local port", OFFSET(port), AV_OPT_TYPE_STRING, {.str = "9001"}, .flags = DEC },
-    { "protocol_type", "set protocol type", OFFSET(protocol_type), AV_OPT_TYPE_STRING, {.str = "auto"}, .flags = DEC },
-    { "payload_type", "set payload type", OFFSET(payload_type), AV_OPT_TYPE_STRING, {.str = "st30"}, .flags = DEC },
+    { "buf_queue_cap", "set buffer queue capacity", OFFSET(buf_queue_cap), AV_OPT_TYPE_INT, {.i64 = 16}, 1, 255, DEC },
+    { "conn_delay", "set connection creation delay", OFFSET(conn_delay), AV_OPT_TYPE_INT, {.i64 = 0}, 0, 10000, DEC },
+    { "conn_type", "set connection type ('multipoint-group' or 'st2110')", OFFSET(conn_type), AV_OPT_TYPE_STRING, {.str = "multipoint-group"}, .flags = DEC },
+    { "urn", "set multipoint group URN", OFFSET(urn), AV_OPT_TYPE_STRING, {.str = "192.168.97.1"}, .flags = DEC },
+    { "ip_addr", "set ST2110 multicast IP address or unicast remote IP address", OFFSET(ip_addr), AV_OPT_TYPE_STRING, {.str = "239.168.68.190"}, .flags = DEC },
+    { "port", "set ST2110 local port", OFFSET(port), AV_OPT_TYPE_INT, {.i64 = 9001}, 0, USHRT_MAX, DEC },
+    { "mcast_sip_addr", "set ST2110 multicast source filter IP address", OFFSET(mcast_sip_addr), AV_OPT_TYPE_STRING, {.str = ""}, .flags = DEC },
+    { "payload_type", "set ST2110 payload type", OFFSET(payload_type), AV_OPT_TYPE_INT, {.i64 = 111}, 0, 127, DEC },
     { "socket_name", "set memif socket name", OFFSET(socket_name), AV_OPT_TYPE_STRING, {.str = NULL}, .flags = DEC },
     { "interface_id", "set interface id", OFFSET(interface_id), AV_OPT_TYPE_INT, {.i64 = 0}, -1, INT_MAX, DEC },
     { "channels", "number of audio channels", OFFSET(channels), AV_OPT_TYPE_INT, {.i64 = 2}, 1, INT_MAX, DEC },
     { "sample_rate", "audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.i64 = 48000}, 1, INT_MAX, DEC },
     { "ptime", "audio packet time", OFFSET(ptime), AV_OPT_TYPE_STRING, {.str = "1ms"}, .flags = DEC },
+    { "rdma_provider", "optional: set RDMA provider type ('tcp' or 'verbs')", OFFSET(rdma_provider), AV_OPT_TYPE_STRING, {.str = "tcp"}, .flags = DEC },
+    { "rdma_num_endpoints", "optional: set number of RDMA endpoints, range 1..8", OFFSET(rdma_num_endpoints), AV_OPT_TYPE_INT, {.i64 = 1}, 1, 8, DEC },
     { NULL },
 };
 

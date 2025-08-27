@@ -1,0 +1,57 @@
+#
+# SPDX-FileCopyrightText: Copyright (c) 2024 Intel Corporation
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Default Manifest of Business Logic - Mesh Control Plane Agent
+
+logic:
+
+  on-register-proxy:
+    registry-add-proxy:
+
+  on-activate-proxy:
+    proxy-apply-config:
+
+  on-register-connection:
+    if(group_exists(group_id)):
+      false:
+        registry-add-connection:
+          success:
+            if(conn_type == "st2110"):
+              true:
+                registry-add-multipoint-group-st2110:
+                  success:
+                    registry-add-bridge-st2110:
+                      success:
+                        registry-update-multipoint-group-link-bridge:
+            registry-update-or-add-multipoint-group-link-connection:
+            all-multipoint-groups-apply-proxy-star-interconnect:
+      true:
+        if(group_compatible(group_id, conn_kind, conn_config)):
+          true:
+            registry-add-connection:
+              success:
+                registry-update-or-add-multipoint-group-link-connection:
+                all-multipoint-groups-apply-proxy-star-interconnect:
+
+  on-register-connection-ok:
+    if(proxy_active(proxy_id)):
+      true:
+        all-proxies-apply-config:
+
+  on-unregister-connection:
+    registry-delete-connection:
+      success:
+        registry-update-multipoint-group-unlink-connection:
+        registry-delete-multipoint-group-if-empty:
+        all-multipoint-groups-apply-proxy-star-interconnect:
+
+  on-unregister-connection-ok:
+    all-proxies-apply-config:
+
+  on-unregister-proxy:
+    registry-delete-proxy:
+
+  # on-proxy-disconnected:
+  #   registry-delete-proxy:

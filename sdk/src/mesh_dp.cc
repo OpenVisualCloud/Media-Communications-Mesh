@@ -6,24 +6,32 @@
 #include "mesh_client.h"
 #include "mesh_conn.h"
 #include "mesh_buf.h"
+#include "mesh_dp_legacy.h"
 
 using namespace mesh;
 
 /**
  * Create a new mesh client
  */
-int mesh_create_client(MeshClient **mc, MeshClientConfig *cfg)
+int mesh_create_client(MeshClient **mc, const char *cfg)
 {
     if (!mc)
         return -MESH_ERR_BAD_CLIENT_PTR;
 
-    ClientContext *mc_ctx = new(std::nothrow) ClientContext(cfg);
+    if (!cfg)
+        return -MESH_ERR_BAD_CONFIG_PTR;
+
+    ClientContext *mc_ctx = new (std::nothrow) ClientContext();
     if (!mc_ctx) {
         *mc = NULL;
         return -ENOMEM;
     }
 
-    mc_ctx->init();
+    int ret = mc_ctx->init(cfg);
+    if (ret) {
+        delete mc_ctx;
+        return ret;
+    }
 
     *mc = (MeshClient *)mc_ctx;
 
@@ -53,95 +61,50 @@ int mesh_delete_client(MeshClient **mc)
     return 0;
 }
 
-/**
- * Create a new mesh connection
- */
-int mesh_create_connection(MeshClient *mc, MeshConnection **conn)
+int mesh_create_tx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg)
 {
     if (!mc)
         return -MESH_ERR_BAD_CLIENT_PTR;
 
+    if (!cfg)
+        return -MESH_ERR_BAD_CONFIG_PTR;
+
     ClientContext *mc_ctx = (ClientContext *)mc;
 
-    return mc_ctx->create_conn(conn);
+    auto err = mc_ctx->create_conn(conn, MESH_CONN_KIND_SENDER);
+    if (err)
+        return err;
+
+    ConnectionContext *conn_ctx = (ConnectionContext *)(*conn);
+
+    err = conn_ctx->apply_json_config(cfg);
+    if (err)
+        return err;
+
+    return conn_ctx->establish();
 }
 
-/**
- * Apply configuration to setup Single node direct connection via memif
- */
-int mesh_apply_connection_config_memif(MeshConnection *conn, MeshConfig_Memif *cfg)
+int mesh_create_rx_connection(MeshClient *mc, MeshConnection **conn, const char *cfg)
 {
-    if (!conn)
-        return -MESH_ERR_BAD_CONN_PTR;
+    if (!mc)
+        return -MESH_ERR_BAD_CLIENT_PTR;
 
-    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
+    if (!cfg)
+        return -MESH_ERR_BAD_CONFIG_PTR;
 
-    return conn_ctx->apply_config_memif(cfg);
-}
+    ClientContext *mc_ctx = (ClientContext *)mc;
 
-/**
- * Apply configuration to setup SMPTE ST2110-xx connection via Media Proxy
- */
-int mesh_apply_connection_config_st2110(MeshConnection *conn, MeshConfig_ST2110 *cfg)
-{
-    if (!conn)
-        return -MESH_ERR_BAD_CONN_PTR;
+    auto err = mc_ctx->create_conn(conn, MESH_CONN_KIND_RECEIVER);
+    if (err)
+        return err;
 
-    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
+    ConnectionContext *conn_ctx = (ConnectionContext *)(*conn);
 
-    return conn_ctx->apply_config_st2110(cfg);
-}
+    err = conn_ctx->apply_json_config(cfg);
+    if (err)
+        return err;
 
-/**
- * Apply configuration to setup RDMA connection via Media Proxy
- */
-int mesh_apply_connection_config_rdma(MeshConnection *conn, MeshConfig_RDMA *cfg)
-{
-    if (!conn)
-        return -MESH_ERR_BAD_CONN_PTR;
-
-    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
-
-    return conn_ctx->apply_config_rdma(cfg);
-}
-
-/**
- * Apply configuration to setup connection payload for Video frames
- */
-int mesh_apply_connection_config_video(MeshConnection *conn, MeshConfig_Video *cfg)
-{
-    if (!conn)
-        return -MESH_ERR_BAD_CONN_PTR;
-
-    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
-
-    return conn_ctx->apply_config_video(cfg);
-}
-
-/**
- * Apply configuration to setup connection payload for Audio packets
- */
-int mesh_apply_connection_config_audio(MeshConnection *conn, MeshConfig_Audio *cfg)
-{
-    if (!conn)
-        return -MESH_ERR_BAD_CONN_PTR;
-
-    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
-
-    return conn_ctx->apply_config_audio(cfg);
-}
-
-/**
- * Establish a mesh connection
- */
-int mesh_establish_connection(MeshConnection *conn, int kind)
-{
-    if (!conn)
-        return -MESH_ERR_BAD_CONN_PTR;
-
-    ConnectionContext *conn_ctx = (ConnectionContext *)conn;
-
-    return conn_ctx->establish(kind);
+    return conn_ctx->establish();
 }
 
 /**
@@ -227,19 +190,37 @@ int mesh_put_buffer_timeout(MeshBuffer **buf, int timeout_ms)
         return -MESH_ERR_BAD_BUF_PTR;
 
     int err = buf_ctx->enqueue(timeout_ms);
-    if (err)
-        return err;
 
     delete buf_ctx;
     *buf = NULL;
 
-    return 0;
+    return err;
+}
+
+int mesh_buffer_set_payload_len(MeshBuffer *buf, size_t len)
+{
+    if (!buf)
+        return -MESH_ERR_BAD_BUF_PTR;
+
+    BufferContext *buf_ctx = (BufferContext *)buf;
+
+    return buf_ctx->setPayloadLen(len);
+}
+
+int mesh_buffer_set_metadata_len(MeshBuffer *buf, size_t len)
+{
+    if (!buf)
+        return -MESH_ERR_BAD_BUF_PTR;
+
+    BufferContext *buf_ctx = (BufferContext *)buf;
+
+    return buf_ctx->setMetadataLen(len);
 }
 
 /**
  * Get text description of an error code.
  */
-const char *mesh_err2str(int err)
+const char * mesh_err2str(int err)
 {
     switch (err) {
     case -MESH_ERR_BAD_CLIENT_PTR:
@@ -250,6 +231,10 @@ const char *mesh_err2str(int err)
         return "Bad configuration pointer";
     case -MESH_ERR_BAD_BUF_PTR:
         return "Bad buffer pointer";
+    case -MESH_ERR_BAD_BUF_LEN:
+        return "Bad buffer length";
+    case -MESH_ERR_CLIENT_CONFIG_INVAL:
+        return "Invalid parameters in client configuration";
     case -MESH_ERR_MAX_CONN:
         return "Reached max number of connections";
     case -MESH_ERR_FOUND_ALLOCATED:
@@ -264,6 +249,8 @@ const char *mesh_err2str(int err)
         return "Connection is closed";
     case -MESH_ERR_TIMEOUT:
         return "Timeout occurred";
+    case -MESH_ERR_NOT_IMPLEMENTED:
+        return "Feature not implemented yet";
     default:
         return "Unknown error code";
     }

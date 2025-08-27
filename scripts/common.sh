@@ -3,63 +3,82 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
-COMMON_SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-REPO_DIR="$(readlink -f "${COMMON_SCRIPT_DIR}/..")"
-
+REPO_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")/..")"
+export REPO_DIR
 export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
 export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
+export PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
 
-export TZ="Europe/Warsaw"
-export NPROC="${NPROC:-$(nproc)}"
-export DEBIAN_FRONTEND="noninteractive"
+MCM_VERSIONS_FILE_PATH="$(readlink -f "${MCM_VERSIONS_FILE:-${REPO_DIR}/versions.env}")"
+export MCM_VERSIONS_FILE_PATH
 
-export ICE_VER="${ICE_VER:-1.14.9}"
+# shellcheck source="versions.env"
+. "${MCM_VERSIONS_FILE_PATH}"
+
+export MTL_DIR="${BUILD_DIR}/mtl"
+MTL_VERSIONS_FILE_PATH="${MTL_VERSIONS_FILE:-${MTL_DIR}/versions.env}"
+
+if [[ -f "${MTL_VERSIONS_FILE_PATH}" ]]; then
+    MTL_VERSIONS_FILE_PATH="$(readlink -f "${MTL_VERSIONS_FILE_PATH}")"
+    export MTL_VERSIONS_FILE_PATH
+# shellcheck source=/dev/null
+    . "${MTL_VERSIONS_FILE_PATH}"    
+fi
+
+export DPDK_DIR="${BUILD_DIR}/dpdk"
+export XDP_DIR="${BUILD_DIR}/xdp"
+export BPF_DIR="${XDP_DIR}/lib/libbpf"
+export GRPC_DIR="${BUILD_DIR}/grpc"
+export JPEGXS_DIR="${BUILD_DIR}/jpegxs"
+export LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
+export LIBFDT_DIR="${BUILD_DIR}/libfdt"
+export JSONC_DIR="${BUILD_DIR}/json-c"
+export CMAKE_DIR="${BUILD_DIR}/cmake"
+export NASM_DIR="${BUILD_DIR}/nasm"
+
 export ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
-export IAVF_VER="${IAVF_VER:-4.12.5}"
-export IAVF_DIR="${DRIVERS_DIR}/iavf/${IAVF_VER}"
-export IRDMA_DMID="${IRDMA_DMID:-832291}"
-export IRDMA_VER="${IRDMA_VER:-1.15.11}"
 export IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
-export IRDMA_REPO="https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz"
-export PERF_DIR="${DRIVERS_DIR}/perftest"
-export PERF_REPO="https://github.com/linux-rdma/perftest/releases/download/24.07.0-0.44/perftest-24.07.0-0.44.g57725f2.tar.gz"
 
-if ! grep "/root/.local/bin" <<< "${PATH}"; then
+PM="${PM:-apt-get}"
+KERNEL_VERSION="${KERNEL_VERSION:-$(uname -r)}"
+export TZ="${TZ:-Europe/Warsaw}"
+export NPROC="${NPROC:-$(nproc)}"
+
+if ! grep "/root/.local/bin" <<< "${PATH}" > /dev/null 2>&1; then
     export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"
     export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH}"
 fi
 
-if [ -z "${DISABLE_COLOR_PRINT}" ]; then
-    export    PromptTBlue='\e[38;05;45m'
-    export    PromptHBlue='\e[38;05;33m'
-    export      ErrorHRed='\e[38;05;1m'
-    export WarningHPurple='\e[38;05;61m'
-    export          EndCl='\e[m'
-else
-    export    PromptTBlue=''
-    export    PromptHBlue=''
-    export      ErrorHRed=''
-    export WarningHPurple=''
-    export          EndCl=''
-fi
+BOLD="${BOLD:-\e[1;}"
+REGULAR="${REGULAR:-\e[0;}"
+RED="${RED:-31m}"
+GREEN="${GREEN:-32m}"
+YELLOW="${YELLOW:-33m}"
+BLUE="${BLUE:-34m}"
+EndCl='\e[m'
 
-function message() {
-    local type=$1
+function log_message() {
+    local type="${1}"
     shift
-    echo -e "$type: $*" >&2
+    local HEADER="${type}: "
+    local FOOTER=""
+    # case $(echo $type | tr '[:upper:]' '[:lower:]') in
+    if [ -z "${DISABLE_COLOR_PRINT}" ]; then
+        FOOTER='\e[0m'
+        case "${type}" in
+          ERROR)        HEADER="${REGULAR}${RED}${type}:  ${BOLD}${RED}" ;;
+          WARN|WARNING) HEADER="${REGULAR}${BLUE}${type}: ${BOLD}${YELLOW}" ;;
+          SUCC|SUCCESS) HEADER="${REGULAR}${BLUE}${type}: ${BOLD}${GREEN}" ;;
+          INFO|*)       HEADER="${REGULAR}${BLUE}${type}: ${BOLD}${BLUE}" ;;
+        esac
+    fi
+    echo -e "${HEADER}$*${FOOTER}" >&2
 }
 
-function prompt() {
-    message "${PromptHBlue}INFO${PromptTBlue}" "$*${EndCl}"
-}
-
-function error() {
-    message "${ErrorHRed}ERROR${PromptTBlue}" "$*${EndCl}"
-}
-
-function warning() {
-    message "${WarningHPurple}WARN${PromptTBlue}" "$*${EndCl}"
-}
+function log_info()    { log_message "INFO" "$*"; }
+function log_success() { log_message "SUCCESS" "$*"; }
+function log_warning() { log_message "WARNING" "$*"; }
+function log_error()   { log_message "ERROR" "$*"; }
 
 function get_user_input_confirm() {
     local confirm
@@ -67,7 +86,7 @@ function get_user_input_confirm() {
     local confirm_default="${1:-0}"
     confirm_string=( "(N)o" "(Y)es" )
 
-    echo -en "${PromptHBlue}CHOOSE:${PromptTBlue} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: ${EndCl}" >&2
+    echo -en "${REGULAR}${BLUE}CHOOSE:${BOLD}${BLUE} (Y)es/(N)o [default: ${confirm_string[$confirm_default]}]: ${EndCl}" >&2
     read -r confirm
     if [[ -z "$confirm" ]]; then
         confirm="$confirm_default"
@@ -126,7 +145,7 @@ function get_github_elements() {
     path_part="${1#*://github.com/}"
     mapfile -t -d'/' path_elements <<< "${path_part}"
     if [[ "${#path_elements[@]}" -lt "2" ]]; then
-        error "Invalid link passed to get_github_elements method."
+        log_error  "Invalid link passed to get_github_elements method."
         return 1
     fi
     echo "${path_elements[0]} ${path_elements[1]}"
@@ -156,25 +175,31 @@ function get_filepath_add_sufix() {
     echo "${dir_path}${file_base}${file_sufix}.${file_ext}"
 }
 
-function run_as_root_user()
+function command_exists {
+    command -v "$@" > /dev/null 2>&1
+}
+
+function as_root()
 {
     CMD_TO_EVALUATE="$*"
-    EFECTIVE_USER_ID="${EUID:-$(id -u)}"
+    CURRENT_USER_ID="$(id -u)"
+    EFECTIVE_USER_ID="${EUID:-$CURRENT_USER_ID}"
+    AS_ROOT="/bin/bash -c"
 
-    if [ "${EFECTIVE_USER_ID}" -eq 0 ]; then
-        eval "${CMD_TO_EVALUATE[*]}"
-    else
-        if which sudo 1>/dev/null; then
-            eval "sudo ${CMD_TO_EVALUATE[*]}"
+    if [ "${EFECTIVE_USER_ID}" -ne 0 ]; then
+        if command_exists sudo; then
+            AS_ROOT="sudo -E /bin/bash -c"
+        elif command_exists su; then
+            AS_ROOT="su -c"
         else
-            error "This command must be run as root [EUID=0] ${CMD_TO_EVALUATE[*]}."
-            error "- current [EUID=${EFECTIVE_USER_ID}]."
-            error "- sudo was not found in PATH."
-            error "Re-run the script as sudo or install sudo pkg. Exiting."
+            log_error  "This command must be run as root [EUID=0] ${CMD_TO_EVALUATE[*]}."
+            log_error  "- current [EUID=${EFECTIVE_USER_ID}]."
+            log_error  "- 'sudo' nor 'su' commands were found in PATH."
+            log_error  "Re-run the script as sudo or install sudo pkg."
             exit 1
         fi
     fi
-    return 0
+    $AS_ROOT "${CMD_TO_EVALUATE[*]}"
 }
 
 function github_api_call() {
@@ -265,6 +290,7 @@ function print_logo()
 
 function print_logo_sequence()
 {
+    set +x
     local wait_between_frames="${1:-0}"
     local wait_cmd=""
     if [ ! "${wait_between_frames}" = "0" ]; then
@@ -292,6 +318,7 @@ function print_logo_sequence()
 
 function print_logo_anim()
 {
+    set +x
     local number_of_sequences="${1:-2}"
     local wait_between_frames="${2:-0.025}"
     clear
@@ -301,7 +328,8 @@ function print_logo_anim()
     done
 }
 
-function catch_error_print_debug() {
+function catch_error_print_debug()
+{
     local _last_command_height=""
     local -n _lineno="${1:-LINENO}"
     local -n _bash_lineno="${2:-BASH_LINENO}"
@@ -336,14 +364,14 @@ function catch_error_print_debug() {
     fi
 
     _output_array+=('---')
-    error "${_output_array[*]}"
+    log_error  "${_output_array[*]}"
 }
 
 # Calling this function executes ERR and SIGINT signals trapping. Triggered trap calls catch_error_print_debug and exit 1
 function trap_error_print_debug() {
-    prompt "Setting trap for errors handling"
+    log_info "Setting trap for errors handling"
     trap 'catch_error_print_debug "LINENO" "BASH_LINENO" "${BASH_COMMAND}" "${?}"; exit 1' SIGINT ERR
-    prompt "Trap set successfuly."
+    log_info "Trap set successfuly."
 }
 
 # GITHUB_CREDENTIALS="username:password"
@@ -385,37 +413,6 @@ function wget_download_strip_unpack()
     rm -f "${dest_dir}/${filename}.tar.gz"
 }
 
-function config_intel_rdma_driver() {
-    #   \s - single (s)pace or tabulator
-    #   \d - single (d)igit
-    # ^\s* - starts with zero or more space/tabulators
-    # \s\+ - at least one or more space/tabulators
-    local PREFIX_REGEX='^\s*options\s\+irdma\s\+'
-    local PREFIX_NORM_ROCE='options irdma roce_ena=1'
-    local PREFIX_NORM_SEL='options irdma limits_sel=5'
-
-    prompt "Configuration of iRDMA starting."
-    touch "/etc/modprobe.d/irdma.conf"
-
-    prompt "Enabling RoCE."
-    if grep -e "${PREFIX_REGEX}roce_ena=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
-        sudo sed -i "s/${PREFIX_REGEX}roce_ena=\d/${PREFIX_NORM_ROCE}/g" /etc/modprobe.d/irdma.conf
-    else
-        echo "${PREFIX_NORM_ROCE}" | sudo tee -a /etc/modprobe.d/irdma.conf
-    fi
-    prompt "RoCE enabled."
-
-    prompt "Increasing Queue Pair limit."
-    if grep -e "${PREFIX_REGEX}limits_sel=" /etc/modprobe.d/irdma.conf 1>/dev/null 2>&1; then
-        sudo sed -i "s/${PREFIX_REGEX}limits_sel=\d/${PREFIX_NORM_SEL}/g" /etc/modprobe.d/irdma.conf
-    else
-        echo "${PREFIX_NORM_SEL}" | sudo tee -a /etc/modprobe.d/irdma.conf
-    fi
-    sudo dracut -f
-    prompt "Queue Pair limits_sel set to 5."
-    prompt "Configuration of iRDMA finished."
-}
-
 # Example usage:
 #    PM="$(setup_package_manager)" && \
 #    $PM install python3
@@ -433,13 +430,35 @@ function setup_package_manager()
     elif [[ -x "$(command -v apt)" ]]; then
         export PM='apt'
     else
-        error "No known pkg manager found. Try to re-run with variable, example:"
-        error "export PM=\"apt\""
+        log_error  "No known pkg manager found. Try to re-run with variable, example:"
+        log_error  "export PM=\"apt\""
         return 1
     fi
-    prompt "Setting pkg manager to ${PM}."
+    log_info "Setting pkg manager to ${PM}."
     echo "${PM}"
     return 0
+}
+
+# Setup build dir and ffmpeg version/directory.
+# FFMPEG_VER taken from environment or forced by 1st parameter
+# Exports FFMPEG_DIR and FFMPEG_VER
+function lib_setup_ffmpeg_dir_and_version()
+{
+    FFMPEG_VER="${1:-$FFMPEG_VER}"
+    FFMPEG_7_0_DIR="${FFMPEG_7_0_DIR:-ffmpeg-7-0}"
+    FFMPEG_6_1_DIR="${FFMPEG_6_1_DIR:-ffmpeg-6-1}"
+
+    if [[ "${FFMPEG_VER}" == "7.0" ]]; then
+        FFMPEG_SUB_DIR="${FFMPEG_7_0_DIR}"
+    elif [[ "${FFMPEG_VER}" == "6.1" ]]; then
+        FFMPEG_SUB_DIR="${FFMPEG_6_1_DIR}"
+    else
+        log_error "Unsupported version of FFmpeg == '${FFMPEG_VER}'."
+        log_error "Try again, choose one of '7.0', '6.1'."
+        exit 2
+    fi
+    export FFMPEG_VER
+    export FFMPEG_SUB_DIR
 }
 
 function exec_command()
@@ -458,12 +477,12 @@ function exec_command()
     elif [[ "$#" -eq "2" ]] || [[ "$#" -eq "3" ]]; then
         values_returned="$($SSH_CMD "RemoteCommand=eval \"${1}\"" "${user_at_address}" 2>/dev/null)"
     else
-        error "Wrong arguments for exec_command(). Valid number is one of [1 2 3], got $#"
+        log_error  "Wrong arguments for exec_command(). Valid number is one of [1 2 3], got $#"
         return 1
     fi
 
     if [ -z "$values_returned" ]; then
-        error "Unable to collect results or results are empty."
+        log_error  "Unable to collect results or results are empty."
         return 1
     else
         echo "${values_returned}"
@@ -490,19 +509,19 @@ function get_cpu_arch() {
 
     case $arch in
         icelake)
-            prompt "Xeon IceLake CPU (icx)" 1>&2
+            log_info "Xeon IceLake CPU (icx)" 1>&2
             echo "icx"
             ;;
         sapphire_rapids)
-            prompt "Xeon Sapphire Rapids CPU (spr)" 1>&2
+            log_info "Xeon Sapphire Rapids CPU (spr)" 1>&2
             echo "spr"
             ;;
         skylake)
-            prompt "Xeon SkyLake"
+            log_info "Xeon SkyLake"
             echo "skl"
             ;;
         *)
-            error "Unsupported architecture: ${arch}. Please edit the script or setup the architecture manually."
+            log_error  "Unsupported architecture: ${arch}. Please edit the script or setup the architecture manually."
             return 1
             ;;
     esac

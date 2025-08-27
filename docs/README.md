@@ -1,230 +1,353 @@
-# Intel® Media Communications Mesh
+# Media Communications Mesh
 
-> [!TIP]
-> [Full Documentation](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html) for [Intel®](https://intel.com) [Media Communications Mesh](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html).
-
-[![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/ubuntu-build.yml)
-[![Coverity status](https://scan.coverity.com/projects/30272/badge.svg?flat=1)](https://scan.coverity.com/projects/media-communications-mesh)
+[![Ubuntu Build](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/base_build.yml/badge.svg)](https://github.com/OpenVisualCloud/Media-Communications-Mesh/actions/workflows/base_build.yml)
+[![Coverity Status](https://scan.coverity.com/projects/30272/badge.svg?flat=1)](https://scan.coverity.com/projects/media-communications-mesh)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/OpenVisualCloud/Media-Communications-Mesh/badge)](https://securityscorecards.dev/viewer/?uri=github.com/OpenVisualCloud/Media-Communications-Mesh)
 [![BSD 3-Clause][license-img]][license]
 
-![Media-Communication-Mesh](./_static/media-communications-mesh-proto-1.webp)
+> See [Online documentation](https://openvisualcloud.github.io/Media-Communications-Mesh/docs/README.html).
 
 ## Introduction
 
-The Media Communications Mesh (MCM) enables efficient, low-latency media transport for media microservices for Edge, Edge-to-Cloud, and both private and public Cloud environments. The framework creates a secure, standards-based media data plane for inter-microservices communications using a new media proxy leveraging the [Media Transport Library (MTL)](https://github.com/OpenVisualCloud/Media-Transport-Library) and adds the necessary microservices control-plane communications infrastructure to implement any media control protocol.
+**Media Communications Mesh**, or **MCM**, is a distributed network framework designed
+for real-time transmission of multimedia data, such as video, audio, or ancillary over
+managed IP networks. It leverages the [Media Transport Library](https://github.com/OpenVisualCloud/Media-Transport-Library)
+that implements [SMPTE ST 2110 Suite of Standards](https://www.smpte.org/standards/st2110)
+transmission protocols to ensure professional-grade
+media streaming, commonly used in broadcast and production environments. MCM integrates
+data and control planes to efficiently manage media traffic and network topology,
+providing developers with an SDK for creating connections to send and receive
+media streams. It supports advanced features like multipoint groups for scalable
+distribution and bridges for compatibility with external networks, aiming to enhance
+performance and reduce latency in media transfers.
 
+## Mesh topology example
+Consider the following environment as a simple example of a live video broadcast scenario, e.g. a sports event live stream
 
-## 1. Media Communications Mesh:
+```mermaid
+graph TB
+    cam1([Video Camera
+          CAM1])
+    net <===>|Video ST 2110-20
+              239.192.0.1
+              +
+              Audio ST 2110-30
+              239.192.0.2| cam1
 
-- Framework Introduction: MCM is a framework designed for low-latency media transport. It caters specifically to Edge, Edge-to-Cloud, and Cloud environments, connecting media microservices.
-- Purpose: Its main role is to establish a secure media data plane for inter-microservices communication. This ensures media can be reliably transmitted across different cloud environments.
-- Technological Basis: The Media Transport Library (MTL) helps form the media data plane, and a control-plane communications infrastructure adds support for media control protocols.
+    cam2([Video Camera
+          CAM2])
+    net <===>|Video ST 2110-20
+              239.192.0.3
+              +
+              Audio ST 2110-30
+              239.192.0.4| cam2
 
-✅ Key point: The main goal is to enable secure, fast, and standardized media communication between microservices, regardless of the environment (Edge or Cloud).
+    mon1([Programme Monitor])
+    net <===>|Video ST 2110-22
+              239.192.5.1
+              +
+              Audio ST 2110-30
+              239.192.5.2| mon1
 
-## 2. Media Proxy Introduction:
+    mon2([Replay Monitor])
+    net <===>|Video ST 2110-22
+              239.192.5.3| mon2
 
-- Core Functionality: The Media Proxy handles the routing and forwarding of media data, specifically audio and video streams, between mesh nodes.
-- Low Latency & Efficiency: The focus is on ensuring low-latency and efficient usage of system resources, which is critical for real-time media applications.
-- Service Mesh Role: It acts as a Data Plane component within a larger service mesh for media applications, utilizing `MTL` `ST 2110` API, `libfabric` for `RDMA` API, `MemIF` shared memory APIs, and many more, to abstract the complexities involved in efficient media transport.
+    subgraph net [Network]
+        direction TB
+        switch1(". . .")
+        switch2(100 Gbit/s Multicast Network Switch)
+        switch3(". . .")
+        switch4(100 Gbit/s Multicast Network Switch)
+        switch5(". . .")
+        switch6(100 Gbit/s Multicast Network Switch)
+        switch7(". . .")
+    end
 
-✅ Key point: Media Proxy handles the data transport layer of media streams, focusing on real-time efficiency and ensuring media routing between microservices in the mesh.
+    subgraph control-node [Control Plane Node]
+        agent(Mesh Agent)
+    end
 
-✅ More information about the Media Proxy component can be found in the [media-proxy](../media-proxy/README.md) subdirectory.
+    subgraph node1 [Worker Node 1]
+        direction TB
+        subgraph node1.proxy [Media Proxy]
+            node1.proxy.group1(Multipoint
+                               Group
+                               239.192.0.1)
+            node1.proxy.group2(Multipoint
+                               Group
+                               239.192.0.3)
+            node1.proxy.group3(Multipoint
+                               Group
+                               239.192.5.1)
 
-## 3. SDK and FFmpeg plugins:
+            node1.proxy.group4(Multipoint
+                               Group
+                               239.192.0.2)
+            node1.proxy.group5(Multipoint
+                               Group
+                               239.192.0.4)
+            node1.proxy.group6(Multipoint
+                               Group
+                               239.192.5.2)
+        end
 
-- Key Features: Zero Memory Copy, uses a zero-copy memory techniques for ultra-low-latency media transfers between containers. This helps avoid data duplication, reducing time and resource overhead.
-- Media Stream Compatibility: Supports compressed (like JPEG XS) and RAW uncompressed media formats, ensuring flexibility in how media is transported.
-- Multiple Protocols: Works with protocols such as SMPTE ST 2110 and RTSP, enhancing its versatility in different media service setups.
+        subgraph app-A [Microservice A]
+            app-A.proc(Multiviewer Pipeline)
+            app-A.proc <==> app-A.data
+            app-A.proc <==> app-A2.data
+            app-A.proc <==> app-A3.data
 
-✅ Key point: The system is optimized for zero-copy transmission with wide protocol compatibility, ensuring it can handle both compressed and uncompressed media streams efficiently.
+            app-A.data([Video
+                       Stream
+                       CAM1])
+            app-A.sdk((SDK))
+            app-A.data <==>|Input| app-A.sdk
 
-✅ Detailed information about MCM SDK can be found in [sdk](../sdk/README.md) directory.
+            app-A2.data([Video
+                         Stream
+                         CAM2])
+            app-A2.sdk((SDK))
+            app-A2.data <==>|Input| app-A2.sdk
 
-✅ Detailed information about FFmpeg with MCM plugin can be found in [FFmpeg-plugin](../ffmpeg-plugin/README.md) directory.
+            app-A3.data([Video
+                         Stream
+                         Multiviewer])
+            app-A3.sdk((SDK))
+            app-A3.data <==>|Output| app-A3.sdk
+        end
+        app-A.sdk <==> node1.proxy.group1
+        app-A2.sdk <==> node1.proxy.group2
+        app-A3.sdk <==> node1.proxy.group3
 
-## Getting Started
+        subgraph app-B [Microservice B]
+            app-B.proc(Audio Mixer Pipeline)
+            app-B.proc <==> app-B.data
+            app-B.proc <==> app-B2.data
+            app-B.proc <==> app-B3.data
 
-### Basic build and installation
+            app-B.data([Audio
+                       Stream
+                       CAM1])
+            app-B.sdk((SDK))
+            app-B.data <==>|Input| app-B.sdk
 
-#### Prerequisites
+            app-B2.data([Audio
+                         Stream
+                         CAM2])
+            app-B2.sdk((SDK))
+            app-B2.data <==>|Input| app-B2.sdk
 
-- Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
-- Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
-- (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
+            app-B3.data([Mixed
+                         Audio
+                         Stream])
+            app-B3.sdk((SDK))
+            app-B3.data <==>|Output| app-B3.sdk
+        end
+        app-B.sdk <==> node1.proxy.group4
+        app-B2.sdk <==> node1.proxy.group5
+        app-B3.sdk <==> node1.proxy.group6
 
-#### Steps
+    end
 
-1. **Clone the repository**
+    subgraph node2 [Worker Node 2]
+        direction TB
+        subgraph node2.proxy [Media Proxy]
+            node2.proxy.group1(Multipoint
+                               Group
+                               239.192.0.1)
+            node2.proxy.group2(Multipoint
+                               Group
+                               239.192.0.3)
 
-   ```bash
-   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
-   ```
+            node2.proxy.group3(Multipoint
+                               Group
+                               239.192.5.3)
+        end
 
-2. **Navigate to the Media-Communications-Mesh directory**
+        subgraph app-C [Microservice C]
+            app-C.proc(Video Recorder)
+            app-C.proc <==> app-C.data
+            app-C.proc <==> app-C2.data
 
-    ```bash
-    $ cd Media-Communications-Mesh
-    ```
+            app-C.data([Video
+                       Stream
+                       CAM1])
+            app-C.sdk((SDK))
+            app-C.data <==>|Input| app-C.sdk
 
-3. **Install Dependencies**, choose between options `a)` or `b)`.
+            app-C2.data([Video
+                         Stream
+                         CAM2])
+            app-C2.sdk((SDK))
+            app-C2.data <==>|Input| app-C2.sdk
+        end
+        app-C.sdk <==> node2.proxy.group1
+        app-C2.sdk <==> node2.proxy.group2
 
-    a) Use all-in-one environment preparation script. The script was tested under `Ubuntu 20.04`, `Ubuntu 22.04`, `Ubuntu 24.04`, `CentOS Stream8`, `CentOS Stream9` and kernel version `5.15` environments.
+        subgraph app-D [Microservice D]
+            app-D.proc(Video Replay)
+            app-D.proc <==> app-D.data
 
-    To use this option run the following command:
+            app-D.data([Video
+                       Stream])
+            app-D.sdk((SDK))
+            app-D.data <==>|Output| app-D.sdk
+        end
+        app-D.sdk <==> node2.proxy.group3
+    end
 
-    ```bash
-    sudo ./scripts/setup_build_env.sh
-    ```
-
-    b) The following method is universal and should work for most Linux OS distributions.
-
-    - XDP-tools with eBpf: Follow the simple guide [XDP-tools](https://github.com/xdp-project/xdp-tools.git) for installation instructions.
-    - libfabric: Follow the [libfabric from source](https://github.com/ofiwg/libfabric?tab=readme-ov-file#building-and-installing-libfabric-from-source) for installation instructions.
-    - MTL: Follow the [MTL setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/build.md) for installation instructions.
-    - E810 driver: Follow the [MTL NIC setup guide](https://github.com/OpenVisualCloud/Media-Transport-Library/blob/main/doc/e810.md) for installation instructions.
-    - gRPC: Refer to the [gRPC documentation](https://grpc.io/docs/languages/cpp/quickstart/) for installation instructions.
-    - Install required packages:
-
-        - Ubuntu/Debian
-        ```bash
-        sudo apt-get update
-        sudo apt-get install libbsd-dev cmake make rdma-core libibverbs-dev librdmacm-dev dracut
-        ```
-        - Centos stream
-        ```bash
-        sudo yum install -y libbsd-devel cmake make rdma-core libibverbs-devel librdmacm-devel dracut
-        ```
-
-    - Install the irdma driver and libfabric
-
-    ```bash
-    ./scripts/setup_rdma_env.sh install
-    ```
-
-    - Reboot
-
-4. **Build the Media Proxy binary**
-
-    To build Media Communications Mesh and make SDK available for development, run:
-
-    ```bash
-    $ ./build.sh
-    ```
-
-    By following these instructions, you'll be able to perform the basic build and installation of the Media Communications Mesh application.
-
-### Basic usage
-
-The program "media_proxy" and SDK library will be installed on system, after the "build.sh" script run successfully. To run "Media Proxy" execute below command:
-
-```bash
-$ media_proxy
-INFO: TCP Server listening on 0.0.0.0:8002
-INFO: gRPC Server listening on 0.0.0.0:8001
+    node1 <===>|Control Plane + Data Plane| net
+    node2 <===>|Control Plane + Data Plane| net
+    net <--->|Control Plane| agent
 ```
 
-This will start the media proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+The above diagram shows the topology established in the Mesh cluster according to the configuration requested by microservices that use SDK API.
 
-### Dockerfiles build
+In that diagram there are
 
-#### Prerequisites
+* 2x video cameras supporting SMPTE ST 2110
+   * CAM 1
+   * CAM 2
+* 2x video monitors supporting SMPTE ST 2110
+   * Programme monitor
+   * Replay monitor
+* Media Communications Mesh cluster
+   * Control plane node
+      * Mesh Agent
+   * Worker Node 1
+      * Microservice A – Multiviewer pipeline
+      * Microservice B – Audio mixer pipeline
+   * Worker Node 2
+      * Microservice C – Video recorder
+      * Microservice D – Video replay
+* Network multicast switch based infrastructure
 
-- Linux server (Intel Xeon processor recommended, ex. Sapphire Rapids).
-- Network Interface Card (NIC) compatible with DPDK (ex. Intel Ethernet Controller E810-C).
-- (recommended) Update NIC drivers and firmware, more info and latest drivers [Support](#support)
-- Docker engine (recommended with Buildx toolkit) configured and installed.
+## Terminology
 
-#### Build the Docker images
+* **Media Stream** – Continuous flow of multimedia data, such as video, audio, or ancillary, that is transmitted over the network.
+* **SMPTE ST 2110** – Suite of standards developed by the Society of Motion Picture and Television Engineers ([SMPTE](https://www.smpte.org/))
+for professional media streaming over managed IP networks. It is designed to facilitate the transport of video, audio, and ancillary data in real-time formats,
+which is widely used in broadcast and production environments. See the [SMPTE ST 2110](https://www.smpte.org/standards/st2110) documentation.
+* **Mesh** – Media Communications Mesh, a distributed multi-node network framework for transmitting media streams in real-time.
+* **Data Plane** – Layer of functions responsible for the transmission of media data through the Mesh.
+* **Control Plane** – Layer of functions responsible for managing and configuring the Mesh topology, components, and media traffic.
+* **Client** – SDK API structure handling resource allocation flow in the Mesh. Once initialized, the client allows creating connections to the Mesh.
+* **Connection** – SDK API structure handling data plane communication with the Mesh. An established connection allows sending or receiving media stream traffic in buffers.
+   * **Tx connection** – Sender mode connection to the Mesh.
+   * **Rx connection** – Receiver mode connection to the Mesh.
+* **Buffer** – SDK API structure for handling a single piece of data transfered in a media stream. Buffers carry payload and metadata.
+   * **Payload** – Single piece of media stream data, e.g. a video frame, an audio packet, or blob data.
+   * **Metadata** – Arbitrary user metadata that can be carried in every buffer in an active connection.
+* **Multicast Group** – Network switch configuration for a set of nodes or devices that are interested in receiving a specific stream of multicast data.
+* **Multipoint Group** – Scalable distributed mechanism for sending media traffic within the Mesh to multiple receivers running on multiple nodes leveraging
+the zero-copy mechanism to reduce latency. A multipoint group can have one sender and multiple receivers.
+   * One sender – a Tx connection or an ingress bridge.
+   * Multiple receivers – Rx connections or egress bridges.
+* **Bridge** – Mesh software entity that handles import or export of media traffic between the Mesh and the external network.
+   * **Ingress Bridge** – Bridge that receives media stream data from an SMPTE ST 2110 or RDMA connection and sends it to a multipoint group.
+   * **Egress Bridge** – Bridge that receives media stream data from a multipoint group and sends it to an SMPTE ST 2110 or RDMA connection.
+* **NIC** – Network interface card, e.g. Intel® Ethernet Controller E810-C.
+* **DPDK** – Data Plane Development Kit, a set of libraries and drivers designed to accelerate packet processing workloads running on general-purpose CPUs.
+See the [DPDK](https://www.dpdk.org/) documentation.
+* **MTL** – Media Transport Library, a DPDK-based library providing support for SMPTE ST 2110 media transport protocols.
+See the [MTL](https://github.com/OpenVisualCloud/Media-Transport-Library/) documentation.
 
-1. **Clone the repository**
+## Implemented Features
 
-   ```bash
-   $ git clone https://github.com/OpenVisualCloud/Media-Communications-Mesh.git
-   ```
+### Latest release: [25.03](https://github.com/OpenVisualCloud/Media-Communications-Mesh/releases/tag/25.03)
 
-2. **Navigate to the Media-Communications-Mesh directory**
+* SDK API modes of operation
+   * Receiver mode – Rx connection to Mesh.
+   * Sender mode – Tx connection to Mesh.
+* Rx/Tx connection types
+   * SMPTE ST 2110
+      * SMPTE ST 2110-20 Uncompressed Video
+      * SMPTE ST 2110-22 Compressed Video (JPEG XS)
+      * SMPTE ST 2110-30 Uncompressed Audio (PCM)
+   * Multipoint Group
+      * Supports attaching user metadata to every buffer in Mesh.
+* Payload types
+   * Video
+      * Resolution up to FullHD 1920 x 1080
+      * Frame rate up to 60 FPS
+   * Audio
+      * Channels
+         * 1, 2, 4, etc.
+      * Formats
+         * PCM 16-bit
+         * PCM 24-bit
+      * Sample rates
+         * 48000 Hz
+         * 96000 Hz
+   * Blob
+      * Supported in SDK only.
+      * Not supported in the FFmpeg plugin.
 
-    ```bash
-    $ cd Media-Communications-Mesh
-    ```
+## Planned Features
 
-3. **Build the Dockerfiles**
+* Payload types
+   * Video
+      * Resolution up to 4K 4096 x 2160.
+   * Audio
+      * Sample rates
+         * 44100 Hz
 
-> [!WARNING]
-> Depending on your docker installation, this step may require being run as `root`.
+## Core software components
+* **SDK** – Software Development Kit in the form of a library providing SDK API to access Media Communications Mesh.
+   * Library file name: `libmcm_dp.so`
+   * Header file to include: [`mesh_dp.h`](../sdk/include/mesh_dp.h)
+   * [SDK overview](SDK.md)
+   * [SDK API description](SDK_API_Definition.md)
+   * [Code examples](SDK_API_Examples.md)
+* **Media Proxy** – Core data plane transmission handling component running on every node in the Mesh. SDK API establishes connections with Media Proxy to send and receive media streams.
+   * Supported streaming options
+      * SMPTE ST 2110-20 Uncompressed Video
+      * SMPTE ST 2110-22 Compressed Video (JPEG XS)
+      * SMPTE ST 2110-30 Uncompressed Audio (PCM)
+      * RDMA for inter-node communication
+   * Executable file name: `media_proxy`
+   * For command line arguments, see the [Media Proxy](MediaProxy.md) documentation.
+* **Mesh Agent** – Control plane component responsible for establishing appropriate traffic topology in the Mesh according to user app requests. It handles the life cycle of connections and multipoint groups, configures egress and ingress bridges of SMPTE ST 2110 and RDMA types, and collects Media Proxy metrics.
+   * Executable file name: `mesh-agent`
+   * For command line arguments, see the [MeshAgent](MeshAgent.md) documentation.
 
-    run bellow command from the root directory of the repository to build all of the Dockerfiles:
+## Integration with media streaming software
+* **FFmpeg MCM Plugin** – Device plugin for [FFmpeg](https://ffmpeg.org) utilizing SDK API to create connections to the Mesh and send or receive media streams.
+   * Supports video and audio streams.
+   * Allows multiple Mesh connections running in the same FFmpeg instance.
+   * For command line arguments, see the [FFmpeg MCM Plugin](FFmpegPlugin.md) documentation.
 
-    ```bash
-    $ ./build_docker.sh
-    ```
+## Setup and Run
 
-### Basic usage
+Follow the [Setup Guide](SetupGuide.md) to navigate through the setup, build, and install process.
 
-After running the `build_docker.sh` the following docker images will be available in current docker context if the script run successfully:
-- `mcm/sample-app:latest`
-- `mcm/media-proxy:latest`
-- `mcm/ffmpeg:latest`
-- `mcm/ffmpeg:6.1-latest`
+For guidance on running Media Communication Mesh, see [Runbook](Runbook.md).
 
-Now the "Media Proxy" can be run inside the container. To check it, execute bellow command:
+## Data Plane topology
 
-```bash
-$ docker run --privileged -it -v /var/run/mcm:/run/mcm -v /dev/hugepages:/dev/hugepages mcm/media-proxy:latest
-INFO: TCP Server listening on 0.0.0.0:8002
-INFO: gRPC Server listening on 0.0.0.0:8001
-```
+Media Communications Mesh applies specific logic rules to establish the topology. See [Topology](Topology.md) for details.
 
-This will start the media proxy in blocking mode and confirm that build was successful. To close it, press `Ctrl+C`
+## Performance
+See [Performance Notes](PerformanceNotes.md) to learn how to tune the connection configuration for the best performance.
 
-## Parameters breakdown and ports
+## Known issues and limitations
 
-Run the media proxy:
+* There is a bug with the default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) do not work as expected. It is preferred to install the `docker-ce` package, following an [instruction from Docker Docs](https://docs.docker.com/engine/install/ubuntu/).
 
-```bash
-$ media_proxy
-INFO: TCP Server listening on 0.0.0.0:8002
-INFO: gRPC Server listening on 0.0.0.0:8001
-```
-
-This will start the "Media Proxy" program. When the "Media Proxy" program launches successfully, it will open two ports to listen for control messages:
-- gRPC port (default 8001) is for service mesh control plane connection.
-- TCP port (default 8002) is for the connection with MCM SDK.
-
-To get full list of all supported parameters, use the `-h` flag alongside `media_proxy` call:
-
-```bash
-$ media_proxy -h
-Usage: media_proxy [OPTION]
--h, --help              Print this help and exit.
--d, --dev=dev_port      PCI device port (defaults: 0000:31:00.0).
--i, --ip=ip_address     IP address for media data transportation (defaults: 192.168.96.1).
--g, --grpc=port_number  Port number gRPC controller (defaults: 8001).
--t, --tcp=port_number   Port number for TCP socket controller (defaults: 8002).
-```
-
-## Known Issues
-
-- There is one bug with default docker.io package installation (version 20.10.25-0ubuntu1~22.04.2) with Ubuntu 22.04.3 LTS. The [`USER` command](https://github.com/moby/moby/issues/46355) and [`chown` command](https://github.com/moby/moby/issues/46161) don't work as expected. It's preferred to install docker-ce package following [instruction from docker community](https://docs.docker.com/engine/install/ubuntu/).
-
-- The Authentication function of the Media Proxy interfaces is currently missing. This feature is still under development, and the current implementation is weak in defending against network attacks.
+* The Authentication function of the Media Proxy interfaces is under development.
 
 ## Support
 
-If you encounter any issues or need assistance, there are several ways to seek support:
+If you encounter any issues or need assistance, there are several ways to seek support
 
-- **Update NIC Firmware and Drivers:** Check for your NIC firmware and/or drivers update: [Intel® Ethernet Linux Driver Repositories](https://intel.github.io/ethernet-linux/).
+* **Update NIC firmware and drivers** – Check for your NIC firmware and/or drivers update: [Intel® Ethernet Linux Driver Repositories](https://intel.github.io/ethernet-linux/).
+* **Project documents** – Search for solutions in the [Project documents](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main/docs).
+* **Discussions** – Ask questions and seek help in the [Discussions](https://github.com/OpenVisualCloud/Media-Communications-Mesh/discussions/categories/q-a) section on the project's GitHub page.
+* **Report an issue** – Report bugs and specific issues by submitting them on the [Issues](https://github.com/OpenVisualCloud/Media-Communications-Mesh/issues) page of the project's GitHub repository.
+   Before submitting an issue, please check the existing documentation and discussions to avoid duplication and streamline the support process.
 
-- **Project Documents:** Search for solutions in the [project documents](https://github.com/OpenVisualCloud/Media-Communications-Mesh/tree/main/docs).
-- **Discussions:** Ask questions and seek help in the [Discussions](https://github.com/OpenVisualCloud/Media-Communications-Mesh/discussions/categories/q-a) section on the project's GitHub page.
-- **Issue Submission:** Report bugs and specific issues by submitting them on the [Issues](https://github.com/OpenVisualCloud/Media-Communications-Mesh/issues) page of the project's GitHub repository.
-
-Before submitting an issue, please check the existing documentation and discussions to avoid duplication and streamline the support process.
-
-We are here to help, so don't hesitate to reach out if you need assistance.
+We are here to help, so do not hesitate to reach out to us if you need assistance.
 
 ## Note
 

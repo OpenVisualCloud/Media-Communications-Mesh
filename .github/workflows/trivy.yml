@@ -1,9 +1,9 @@
-name: Scan Trivy Config
+name: Trivy
 on:
   push:
-    branches:
-    - main
+    branches: [ "main", "maint-*" ]
   pull_request:
+    branches: [ "main", "maint-*" ]
   workflow_dispatch:
     inputs:
       branch:
@@ -14,47 +14,64 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: true
+
 jobs:
   scan:
     permissions:
-      contents: read  # for actions/checkout to fetch code
       security-events: write  # for github/codeql-action/upload-sarif to upload SARIF results
     runs-on: ubuntu-22.04
-    name: scan
+    name: "Trivy: Perform scans job"
     steps:
-
-      - name: Harden Runner
+      - name: "Trivy: Harden Runner"
         uses: step-security/harden-runner@17d0e2bd7d51742c71671bd19fa12bdc9d40a3d6 # v2.8.1
         with:
           egress-policy: audit
-      - name: Checkout code
+
+      - name: "Trivy: Checkout code"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
         with:
           ref: ${{ inputs.branch }}
-      - name: Run Trivy vulnerability scanner for 'config' with sarif output
+
+      - name: "Trivy: Run vulnerability scanner for type=config (out=sarif)"
         uses: aquasecurity/trivy-action@7c2007bcb556501da015201bcba5aa14069b74e2 # v0.23.0
         with:
           scan-type: config
-          skip-dirs: deployment #helm charts not supported 
+          skip-dirs: deployment #helm charts not supported
           exit-code: '0'
           format: 'sarif'
-          output: 'trivy-results.sarif'
-      - name: Run Trivy vulnerability scanner for 'config' with table output
+          output: "trivy-config-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
+
+      - name: "Trivy: Run vulnerability scanner for type=config (out=table)"
         if: always()
         uses: aquasecurity/trivy-action@7c2007bcb556501da015201bcba5aa14069b74e2 # v0.23.0
         with:
           scan-type: config
-          skip-dirs: deployment #helm charts not supported 
+          skip-dirs: deployment #helm charts not supported
           exit-code: '0'
           format: 'table'
-          output: 'trivy-results.txt'
-      - name: Upload Trivy scan results to GitHub Security tab
+          output: "trivy-config-scan-results-${{ github.event.pull_request.number || github.sha }}.txt"
+
+      - name: "Trivy: Upload scan results to GitHub Security tab"
         if: always()
         uses: github/codeql-action/upload-sarif@b611370bb5703a7efb587f9d136a52ea24c5c38c # v3.25.11
         with:
-          sarif_file: 'trivy-results.sarif'
-      - uses: actions/upload-artifact@v4
+          sarif_file: "trivy-config-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
+
+      - name: "Trivy: Upload scan results as artifacts (out=sarif)"
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
         if: always()
         with:
-          name: trivy-results
-          path: 'trivy-results.txt'
+          name: "trivy-config-scan-results-sarif-${{ github.event.pull_request.number || github.sha }}"
+          path: "trivy-config-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
+          retention-days: 5
+
+      - name: "Trivy: Upload scan results as artifacts (out=table)"
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # V4.4.3
+        if: always()
+        with:
+          name: "trivy-config-scan-results-table-${{ github.event.pull_request.number || github.sha }}"
+          path: "trivy-config-scan-results-${{ github.event.pull_request.number || github.sha }}.txt"
+          retention-days: 5

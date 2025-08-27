@@ -11,6 +11,7 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <errno.h>
 
 void print_memif_details(memif_conn_handle_t conn)
 {
@@ -211,12 +212,10 @@ mcm_conn_context* mcm_create_connection_memif(mcm_conn_param* svc_args, memif_co
 
     /* unlink socket file */
     if (memif_args->conn_args.is_master && memif_args->socket_args.path[0] != '@') {
-        struct stat st = { 0 };
-        if (stat("/run/mcm", &st) == -1) {
-            if (mkdir("/run/mcm", 0666) == -1) {
-                perror("Fail to create directory for memif.");
-                return NULL;
-            }
+        int err = mkdir("/run/mcm", 0666);
+        if (err && errno != EEXIST) {
+            perror("Fail to create directory for memif.");
+            return NULL;
         }
         unlink(memif_args->socket_args.path);
     }
@@ -372,8 +371,28 @@ mcm_buffer* memif_dequeue_buffer(mcm_conn_context* conn_ctx, int timeout, int* e
         }
     } else {    /* RX */
         /* waiting for the buffer ready from rx_on_receive callback. */
-        if (memif_conn->buf_num <= 0) {
+        while (memif_conn->buf_num <= 0) {
+            struct timespec start, end;
+            clock_gettime(CLOCK_MONOTONIC, &start);
+
             err = memif_poll_event(memif_conn->sockfd, timeout);
+            if (err) {
+                if (error_code)
+                    *error_code = err;
+                return NULL;
+            }
+
+            if (timeout > 0) {
+                clock_gettime(CLOCK_MONOTONIC, &end);
+                long elapsed_msec = (end.tv_sec - start.tv_sec) * 1000 +
+                                    (end.tv_nsec - start.tv_nsec) / 1000000;
+
+                if (elapsed_msec >= timeout) {
+                    if (error_code)
+                        *error_code = 0;
+                    return NULL;
+                }
+            }
         }
 
         if (err != MEMIF_ERR_SUCCESS) {

@@ -4,11 +4,13 @@
 
 syntax = "proto3";
 
-option go_package = "control-plane-agent/api/proxy/proto/mediaproxy";
-
 package mediaproxy;
 
-service ControlAPI {
+option go_package = "control-plane-agent/api/proxy/proto/mediaproxy";
+
+import "conn-config.proto";
+
+service ProxyAPI {
   rpc RegisterMediaProxy (RegisterMediaProxyRequest) returns (RegisterMediaProxyReply) {}
 
   rpc UnregisterMediaProxy (UnregisterMediaProxyRequest) returns (UnregisterMediaProxyReply) {}
@@ -17,17 +19,27 @@ service ControlAPI {
 
   rpc UnregisterConnection (UnregisterConnectionRequest) returns (UnregisterConnectionReply) {}
 
-  rpc StartCommandQueue (StartCommandQueueRequest) returns (stream CommandMessage) {}
+  rpc StartCommandQueue (StartCommandQueueRequest) returns (stream CommandRequest) {}
 
-  // rpc ReportCommandResult (ReportCommandResultRequest) returns (ReportCommandResultReply) {}
+  rpc SendCommandReply (CommandReply) returns (CommandReplyReceipt) {}
+
+  rpc SendMetrics (SendMetricsRequest) returns (SendMetricsReply) {}
 }
 
-// message ReportCommandResultRequest {
-//   string proxy_id = 1; // id assigned by Agent at registration
-// }
+message ST2110ProxyConfig {
+  string dataplane_ip_addr = 1;
+  string dev_port_bdf      = 2;
+}
+
+message RDMAProxyConfig {
+  string dataplane_ip_addr     = 1;
+  string dataplane_local_ports = 2;
+}
 
 message RegisterMediaProxyRequest {
-  uint32 sdk_port = 1; // SDK API port - something to identify Media Proxy
+  uint32 sdk_api_port             = 1;
+  ST2110ProxyConfig st2110_config = 2;
+  RDMAProxyConfig rdma_config     = 3;
 }
 
 message RegisterMediaProxyReply {
@@ -39,15 +51,16 @@ message UnregisterMediaProxyRequest {
 }
 
 message UnregisterMediaProxyReply {
-  // Empty reply  
 }
 
 message RegisterConnectionRequest {
-  string proxy_id = 1;
-  uint32 kind = 2;
-  uint32 conn_type = 3;
-  uint32 payload_type = 4;
-  uint64 buffer_size = 5;
+  string proxy_id             = 1;
+  string kind                 = 2;
+  sdk.ConnectionConfig config = 3;
+  
+  // Normally, this field is empty. If connection to Agent was lost,
+  // this is the id assigned by Agent at previous registration.
+  string conn_id              = 4;
 }
 
 message RegisterConnectionReply {
@@ -56,18 +69,111 @@ message RegisterConnectionReply {
 
 message UnregisterConnectionRequest {
   string proxy_id = 1;
-  string conn_id = 2; // id assigned by Agent at registration
+  string conn_id  = 2; // id assigned by Agent at registration
 }
 
 message UnregisterConnectionReply {
-  // Empty reply
 }
 
 message StartCommandQueueRequest {
-  string proxy_id = 1; // Media Proxy id
+  string proxy_id = 1;
 }
 
-message CommandMessage {
-  string opcode = 1;
-  string id = 2;
+message CommandRequest {
+  string req_id                       = 1;
+  oneof command {
+    ApplyConfigRequest apply_config   = 6;
+    ResetMetricsRequest reset_metrics = 100;
+    DebugRequest debug                = 101;
+  }
+}
+
+message MultipointGroup {
+  string group_id            = 1;
+  repeated string conn_ids   = 2;
+  repeated string bridge_ids = 3;
+}
+
+message BridgeST2110 {
+  string ip_addr                = 1;
+  uint32 port                   = 2;
+  string mcast_sip_addr         = 3;
+  sdk.ST2110Transport transport = 4;
+  uint32 payload_type           = 5;
+}
+
+message BridgeRDMA {
+  string remote_ip_addr = 1;
+  uint32 port           = 2;
+}
+
+message Bridge {
+  string bridge_id                 = 1;
+  string type                      = 2;
+  string kind                      = 3;
+  sdk.ConnectionConfig conn_config = 4;
+  oneof config {
+    BridgeST2110 st2110            = 5;
+    BridgeRDMA rdma                = 6;
+  }
+}
+
+message ApplyConfigRequest {
+  repeated MultipointGroup groups = 1;
+  repeated Bridge bridges         = 2;
+}
+
+message ResetMetricsRequest {
+}
+
+message DebugRequest {
+  string in_text = 1;
+}
+
+message CommandReply {
+  string req_id                     = 1;
+  string proxy_id                   = 2;
+  oneof reply {
+    ApplyConfigReply apply_config   = 3;
+    ResetMetricsReply reset_metrics = 100;
+    DebugReply debug                = 101;
+  }
+}
+
+message ApplyConfigReply {
+  repeated string error = 1;
+}
+
+message ResetMetricsReply {
+}
+
+message DebugReply {
+  string out_text = 1;
+}
+
+message CommandReplyReceipt {
+}
+
+message MetricField {
+  string name           = 1;
+  oneof value {
+    string str_value    = 2;
+    uint64 uint_value   = 3;
+    double double_value = 4;
+    bool bool_value     = 5;
+  }
+}
+
+message Metric {
+  int64 timestamp_ms          = 1;
+  string provider_id          = 2;
+  repeated MetricField fields = 3;
+}
+
+message SendMetricsRequest {
+  string proxy_id = 1;
+  repeated Metric metrics = 2;
+}
+
+message SendMetricsReply {
 }

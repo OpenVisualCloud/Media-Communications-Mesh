@@ -8,28 +8,41 @@
 
 #include <list>
 #include <mutex>
+#include <string>
 #include "mesh_dp.h"
 
 namespace mesh {
 
 class ConnectionContext;
 
+class ClientConfig {
+public:
+    int parse_from_json(const char *str);
+
+    std::string api_version;
+    std::string proxy_ip;
+    std::string proxy_port;
+    int default_timeout_us;
+    int max_conn_num;
+};
+
 /**
  * Mesh client context structure
  */
 class ClientContext {
 public:
-    ClientContext(MeshClientConfig *cfg);
-    int init();
-    int shutdown();
-    int create_conn(MeshConnection **conn);
+    ClientContext();
 
-    MeshClientConfig config = {};
+    int init(const char *cfg);
+    int create_conn(MeshConnection **conn, int kind);
+    int shutdown();
+
+    ClientConfig cfg;
 
     std::list<ConnectionContext *> conns;
     std::mutex mx;
 
-    void *grpc_client;
+    void *grpc_client = nullptr;
 };
 
 } // namespace mesh
@@ -43,11 +56,5 @@ public:
  * Default timeout applied to all mesh client operations
  */
 #define MESH_CLIENT_DEFAULT_TIMEOUT_MS (MESH_TIMEOUT_INFINITE)
-
-/**
- * Constants for marking uninitialized resources
- */
-#define MESH_CONN_TYPE_UNINITIALIZED    -1 ///< Connection type is uninitialized
-#define MESH_PAYLOAD_TYPE_UNINITIALIZED -1 ///< Payload type is uninitialized
 
 #endif // MESH_CLIENT_H
