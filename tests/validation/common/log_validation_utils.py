@@ -110,6 +110,7 @@ def check_for_errors(
 
     return len(errors) == 0, errors
 
+
 def validate_log_file(
     log_file_path: str,
     required_phrases: List[str],
@@ -194,6 +195,7 @@ def validate_log_file(
         "errors": errors,
     }
 
+
 def save_validation_report(
     report_path: str, validation_info: List[str], overall_status: bool
 ) -> None:
@@ -215,6 +217,7 @@ def save_validation_report(
         logger.info(f"Validation report saved to {report_path}")
     except Exception as e:
         logger.error(f"Error saving validation report: {e}")
+
 
 def output_validator(
     log_file_path: str, error_keywords: Optional[List[str]] = None
