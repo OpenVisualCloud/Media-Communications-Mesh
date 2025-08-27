@@ -6,13 +6,13 @@ on:
     inputs:
       branch-to-checkout:
         type: string
-        default: 'main'
+        default: "main"
         required: false
-        description: 'Branch name to use'
+        description: "Branch name to use"
       validation-iface-binding:
         type: choice
         required: true
-        description: 'Type of iface binding to use'
+        description: "Type of iface binding to use"
         options:
           - "create_vf"
           - "create_kvf"
@@ -22,7 +22,7 @@ on:
       validation-test-port-p:
         type: choice
         required: true
-        description: 'Which to use as Test-Port-P'
+        description: "Which to use as Test-Port-P"
         options:
           - TEST_VF_PORT_P_0
           - TEST_VF_PORT_P_1
@@ -37,7 +37,7 @@ on:
       validation-test-port-r:
         type: choice
         required: true
-        description: 'Which to use as Test-Port-R'
+        description: "Which to use as Test-Port-R"
         options:
           - TEST_VF_PORT_P_1
           - TEST_VF_PORT_P_0
@@ -52,22 +52,22 @@ on:
       validation-no-fail-tests:
         type: choice
         required: false
-        description: 'Run all tests, non will fail'
+        description: "Run all tests, non will fail"
         options:
           - "true"
           - "false"
       validation-tests-1:
         type: string
-        default: 'single/video/pacing'
+        default: "single/video/pacing"
         required: true
-        description: '1st validation tests to run'
+        description: "1st validation tests to run"
       validation-tests-2:
         type: string
-        default: 'single/ancillary'
+        default: "single/ancillary"
         required: false
-        description: '2nd validation tests to run'
+        description: "2nd validation tests to run"
       validation-pre-release-1:
-        description: 'Select from pre-release group tests nr-1'
+        description: "Select from pre-release group tests nr-1"
         required: false
         type: choice
         options:
@@ -82,7 +82,7 @@ on:
           - video
           - xdp
       validation-pre-release-2:
-        description: 'Select from pre-release group tests nr-2'
+        description: "Select from pre-release group tests nr-2"
         required: false
         type: choice
         options:
@@ -96,7 +96,7 @@ on:
           - virtio-enable
           - wrong-parameter
       validation-pre-release-3:
-        description: 'Select from pre-release group tests nr-3'
+        description: "Select from pre-release group tests nr-3"
         required: false
         type: choice
         options:
@@ -105,9 +105,9 @@ on:
           - gpu-enabling
 
 env:
-  BUILD_TYPE: 'Release'
-  DPDK_VERSION: '23.11'
-  DPDK_REBUILD: 'false'
+  BUILD_TYPE: "Release"
+  DPDK_VERSION: "23.11"
+  DPDK_REBUILD: "false"
 
 permissions:
   contents: read
@@ -119,71 +119,71 @@ jobs:
     outputs:
       pipenv-activate: ${{ steps.pipenv-install.outputs.VIRTUAL_ENV }}
     steps:
-      - name: 'preparation: Harden Runner'
+      - name: "preparation: Harden Runner"
         uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
         with:
           egress-policy: audit
 
-      - name: 'Checkout repository'
+      - name: "Checkout repository"
         uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
 
-      - name: 'Install OS level dependencies'
+      - name: "Install OS level dependencies"
         run: eval 'source scripts/setup_build_env.sh && install_package_dependencies'
 
-      - name: 'Check local dependencies build cache'
+      - name: "Check local dependencies build cache"
         id: load-local-dependencies-cache
         uses: actions/cache/restore@1bd1e32a3bdc45362d1e726936510720a7c30a57 # v4.2.0
         with:
           path: ${{ env.BUILD_DIR }}
           key: ${{ runner.os }}-${{ hashFiles('versions.env') }}-${{ hashFiles('scripts/setup*.sh') }}
 
-      - name: 'Download, unpack and patch build dependencies'
+      - name: "Download, unpack and patch build dependencies"
         if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
         run: eval 'source scripts/setup_build_env.sh && get_download_unpack_dependencies'
 
-      - name: 'Clone and patch ffmpeg 6.1 and 7.0'
+      - name: "Clone and patch ffmpeg 6.1 and 7.0"
         if: steps.load-local-dependencies-cache.outputs.cache-hit != 'true'
         run: |
           ffmpeg-plugin/clone-and-patch-ffmpeg.sh "6.1"
           ffmpeg-plugin/clone-and-patch-ffmpeg.sh "7.0"
 
-      - name: 'Build and Install xdp and libbpf'
+      - name: "Build and Install xdp and libbpf"
         run: eval 'source scripts/setup_build_env.sh && lib_install_xdp_bpf_tools'
 
-      - name: 'Build and Install libfabric'
+      - name: "Build and Install libfabric"
         run: eval 'source scripts/setup_build_env.sh && lib_install_fabrics'
 
-      - name: 'Build and Install the DPDK'
+      - name: "Build and Install the DPDK"
         run: eval 'source scripts/setup_build_env.sh && lib_install_dpdk'
 
-      - name: 'Build and Install the MTL'
+      - name: "Build and Install the MTL"
         run: eval 'source scripts/setup_build_env.sh && lib_install_mtl'
 
-      - name: 'Build and Install JPEG XS'
+      - name: "Build and Install JPEG XS"
         run: eval 'source scripts/setup_build_env.sh && lib_install_jpeg_xs'
 
-      - name: 'Build and Install JPEG XS ffmpeg plugin'
+      - name: "Build and Install JPEG XS ffmpeg plugin"
         run: eval 'source scripts/setup_build_env.sh && lib_install_mtl_jpeg_xs_plugin'
 
-      - name: 'Build gRPC and dependencies'
+      - name: "Build gRPC and dependencies"
         run: eval 'source scripts/setup_build_env.sh && lib_install_grpc'
 
-      - name: 'Build MCM SDK and Media Proxy'
+      - name: "Build MCM SDK and Media Proxy"
         run: eval 'source scripts/common.sh && ./build.sh "${PREFIX_DIR}"'
 
-      - name: 'Build FFmpeg 6.1 with MCM plugin'
+      - name: "Build FFmpeg 6.1 with MCM plugin"
         working-directory: ${{ github.workspace }}/ffmpeg-plugin
         run: |
           ./configure-ffmpeg.sh "6.1" --disable-doc --disable-debug && \
           ./build-ffmpeg.sh "6.1"
 
-      - name: 'Build FFmpeg 7.0 with MCM plugin'
+      - name: "Build FFmpeg 7.0 with MCM plugin"
         working-directory: ${{ github.workspace }}/ffmpeg-plugin
         run: |
           ./configure-ffmpeg.sh "7.0" --disable-doc --disable-debug && \
           ./build-ffmpeg.sh "7.0"
 
-      - name: 'installation: Install pipenv environment'
+      - name: "installation: Install pipenv environment"
         working-directory: tests/validation
         id: pipenv-install
         run: |
@@ -197,16 +197,16 @@ jobs:
     runs-on: [Linux, self-hosted, DPDK]
     timeout-minutes: 720
     env:
-      PYTEST_ALIAS: 'sudo --preserve-env python3 -m pipenv run pytest'
+      PYTEST_ALIAS: "sudo --preserve-env python3 -m pipenv run pytest"
       PYTEST_PARAMS: '--media=/mnt/media --build="../.."'
-      PYTEST_RETRIES: '3'
+      PYTEST_RETRIES: "3"
     steps:
-      - name: 'preparation: Harden Runner'
+      - name: "preparation: Harden Runner"
         uses: step-security/harden-runner@91182cccc01eb5e619899d80e4e971d6181294a7 # v2.10.1
         with:
           egress-policy: audit
 
-      - name: 'cleanup: Generate runner summary'
+      - name: "cleanup: Generate runner summary"
         if: always()
         run: |
           {
