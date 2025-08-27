@@ -15,5 +15,5 @@ __all__ = [
     'output_validator',
     'RX_REQUIRED_LOG_PHRASES',
     'TX_REQUIRED_LOG_PHRASES',
-    'RX_TX_APP_ERROR_KEYWORDS'
+    'RX_TX_APP_ERROR_KEYWORDS',
 ]

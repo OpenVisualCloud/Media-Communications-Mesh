@@ -80,24 +80,24 @@ class FFmpegExecutor:
     def validate(self):
         """
         Validates the FFmpeg process execution and output.
-        
+
         Performs two types of validation:
         1. Log validation - checks for required phrases and error keywords
         2. File validation - checks if the output file exists and has expected characteristics
-        
+
         Generates validation report files.
-        
+
         Returns:
             bool: True if validation passed, False otherwise
         """
         process_passed = True
         validation_info = []
-        
+
         for process in self._processes:
             if process.return_code != 0:
                 logger.warning(f"FFmpeg process on {self.host.name} failed with return code {process.return_code}")
                 process_passed = False
-        
+
         # Determine if this is a receiver or transmitter
         is_receiver = False
         if self.ff.ffmpeg_input and self.ff.ffmpeg_output:
@@ -108,9 +108,9 @@ class FFmpegExecutor:
                 output_path and output_path != "-" and "." in output_path
             ):
                 is_receiver = True
-        
+
         direction = "Rx" if is_receiver else "Tx"
-        
+
         # Find the log file
         log_dir = self.log_path if self.log_path else LOG_FOLDER
         subdir = f"RxTx/{self.host.name}"
@@ -119,9 +119,9 @@ class FFmpegExecutor:
             input_class_name = self.ff.ffmpeg_input.__class__.__name__
         prefix = "mtl_" if input_class_name and "Mtl" in input_class_name else "mcm_"
         log_filename = prefix + ("ffmpeg_rx.log" if is_receiver else "ffmpeg_tx.log")
-        
+
         log_file_path = os.path.join(log_dir, subdir, log_filename)
-        
+
         # Perform log validation
         from common.log_validation_utils import validate_log_file
         from common.ffmpeg_handler.log_constants import (
@@ -129,9 +129,9 @@ class FFmpegExecutor:
             FFMPEG_TX_REQUIRED_LOG_PHRASES,
             FFMPEG_ERROR_KEYWORDS
         )
-        
+
         required_phrases = FFMPEG_RX_REQUIRED_LOG_PHRASES if is_receiver else FFMPEG_TX_REQUIRED_LOG_PHRASES
-        
+
         if os.path.exists(log_file_path):
             validation_result = validate_log_file(
                 log_file_path, 
@@ -150,7 +150,7 @@ class FFmpegExecutor:
             validation_info.append(f"Errors found: 1")
             validation_info.append(f"Missing log file")
             log_validation_passed = False
-        
+
         # File validation for Rx only run if output path isn't "/dev/null" or doesn't start with "/dev/null/"
         file_validation_passed = True
         if is_receiver and self.ff.ffmpeg_output and hasattr(self.ff.ffmpeg_output, "output_path"):
@@ -164,10 +164,10 @@ class FFmpegExecutor:
                     self.host.connection, output_path, cleanup=False
                 )
                 validation_info.extend(file_info)
-        
+
         # Overall validation status
         self.is_pass = process_passed and log_validation_passed and file_validation_passed
-        
+
         # Save validation report
         validation_info.append(f"\n=== Overall Validation Summary ===")
         validation_info.append(f"Overall validation: {'PASS' if self.is_pass else 'FAIL'}")
@@ -176,12 +176,12 @@ class FFmpegExecutor:
         if is_receiver:
             validation_info.append(f"File validation: {'PASS' if file_validation_passed else 'FAIL'}")
         validation_info.append(f"Note: Overall validation fails if any validation step fails")
-        
+
         # Save validation report to a file
         from common.log_validation_utils import save_validation_report
         validation_path = os.path.join(log_dir, subdir, f"{direction.lower()}_validation.log")
         save_validation_report(validation_path, validation_info, self.is_pass)
-        
+
         return self.is_pass
 
     def start(self):

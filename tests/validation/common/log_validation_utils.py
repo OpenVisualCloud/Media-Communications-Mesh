@@ -51,23 +51,23 @@ def check_phrases_in_order(log_path: str, phrases: List[str]) -> Tuple[bool, Lis
 def check_for_errors(log_path: str, error_keywords: Optional[List[str]] = None) -> Tuple[bool, List[Dict[str, Any]]]:
     """
     Check the log file for error keywords.
-    
+
     Args:
         log_path: Path to the log file
         error_keywords: List of keywords indicating errors (default: RX_TX_APP_ERROR_KEYWORDS)
-        
+
     Returns:
         Tuple of (is_pass, errors_found)
         errors_found is a list of dicts with 'line', 'line_number', and 'keyword' keys
     """
     if error_keywords is None:
         error_keywords = RX_TX_APP_ERROR_KEYWORDS
-        
+
     errors = []
     if not os.path.exists(log_path):
         logger.error(f"Log file not found: {log_path}")
         return False, [{"line": "Log file not found", "line_number": 0, "keyword": "FILE_NOT_FOUND"}]
-    
+
     try:
         with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
             for i, line in enumerate(f):
@@ -85,20 +85,20 @@ def check_for_errors(log_path: str, error_keywords: Optional[List[str]] = None) 
     except Exception as e:
         logger.error(f"Error reading log file: {e}")
         return False, [{"line": f"Error reading log file: {e}", "line_number": 0, "keyword": "FILE_READ_ERROR"}]
-    
+
     return len(errors) == 0, errors
 
 def validate_log_file(log_file_path: str, required_phrases: List[str], direction: str = "", 
                      error_keywords: Optional[List[str]] = None) -> Dict:
     """
     Validate log file for required phrases and return validation information.
-    
+
     Args:
         log_file_path: Path to the log file
         required_phrases: List of phrases to check for in order
         direction: Optional string to identify the direction (e.g., 'Rx', 'Tx')
         error_keywords: Optional list of error keywords to check for
-        
+
     Returns:
         Dictionary containing validation results:
         {
@@ -111,28 +111,28 @@ def validate_log_file(log_file_path: str, required_phrases: List[str], direction
         }
     """
     validation_info = []
-    
+
     # Phrase order validation
     log_pass, missing, context_lines = check_phrases_in_order(log_file_path, required_phrases)
     error_count = len(missing)
-    
+
     # Error keyword validation (optional)
     error_check_pass = True
     errors = []
     if error_keywords is not None:
         error_check_pass, errors = check_for_errors(log_file_path, error_keywords)
         error_count += len(errors)
-    
+
     # Overall pass/fail status
     is_pass = log_pass and error_check_pass
-    
+
     # Build validation info
     dir_prefix = f"{direction} " if direction else ""
     validation_info.append(f"=== {dir_prefix}Log Validation ===")
     validation_info.append(f"Log file: {log_file_path}")
     validation_info.append(f"Validation result: {'PASS' if is_pass else 'FAIL'}")
     validation_info.append(f"Total errors found: {error_count}")
-    
+
     # Missing phrases info
     if not log_pass:
         validation_info.append(f"Missing or out-of-order phrases analysis:")
@@ -146,13 +146,13 @@ def validate_log_file(log_file_path: str, required_phrases: List[str], direction
                 validation_info.append("    <No context available>")
         if missing:
             logger.warning(f"{dir_prefix}process did not pass. First missing phrase: {missing[0]}")
-    
+
     # Error keywords info
     if errors:
         validation_info.append(f"\nError keywords found:")
         for error in errors:
             validation_info.append(f"  Line {error['line_number']} - {error['keyword']}: {error['line']}")
-    
+
     return {
         "is_pass": is_pass,
         "error_count": error_count,
@@ -165,7 +165,7 @@ def validate_log_file(log_file_path: str, required_phrases: List[str], direction
 def save_validation_report(report_path: str, validation_info: List[str], overall_status: bool) -> None:
     """
     Save validation report to a file.
-    
+
     Args:
         report_path: Path where to save the report
         validation_info: List of validation information strings
@@ -185,11 +185,11 @@ def save_validation_report(report_path: str, validation_info: List[str], overall
 def output_validator(log_file_path: str, error_keywords: Optional[List[str]] = None) -> Dict[str, Any]:
     """
     Simple validator that checks for error keywords in a log file.
-    
+
     Args:
         log_file_path: Path to the log file
         error_keywords: List of keywords indicating errors
-        
+
     Returns:
         Dictionary with validation results:
         {
@@ -199,7 +199,7 @@ def output_validator(log_file_path: str, error_keywords: Optional[List[str]] = N
         }
     """
     is_pass, errors = check_for_errors(log_file_path, error_keywords)
-    
+
     return {
         "is_pass": is_pass,
         "errors": errors,

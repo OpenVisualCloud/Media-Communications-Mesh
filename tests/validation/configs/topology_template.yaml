@@ -18,18 +18,18 @@ hosts:
     extra_info: # This is the list of extra information that will be used in the test for each host
       mtl_path: /opt/intel/mtl # this is custom path to mtl repo if you want to use different path than default in mcm _build directory
       nicctl_path: /opt/intel/mtl/script # this is path for nicctl.sh script if you want to use different path
-      
+
       # File paths for tests
       filepath: /mnt/media/ # Path to input media files for transmitter
       output_path: /home/gta/received/ # Path where output files will be stored
-      
+
       # FFmpeg configuration
       ffmpeg_path: /opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/bin/ffmpeg # Path to FFmpeg binary
       prefix_variables: # Environment variables to set before running FFmpeg
         LD_LIBRARY_PATH: /opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/lib
         NO_PROXY: 127.0.0.1,localhost
         no_proxy: 127.0.0.1,localhost
-      
+
       media_proxy: # st2110 and rdma dev and ips are optional but remember that it overrites the default values and must be set in host
         st2110: {{ st2110|default(true) }} # set it to true if you want to use st2110 bridge for media proxy
         sdk_port: {{ sdk_port|default(8002) }} # this is the port that will be used for media proxy sdk

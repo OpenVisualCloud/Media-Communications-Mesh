@@ -15,5 +15,5 @@ from common.ffmpeg_handler.log_constants import (
 __all__ = [
     'FFMPEG_RX_REQUIRED_LOG_PHRASES',
     'FFMPEG_TX_REQUIRED_LOG_PHRASES',
-    'FFMPEG_ERROR_KEYWORDS'
+    'FFMPEG_ERROR_KEYWORDS',
 ]

@@ -54,10 +54,10 @@ class ClientJson:
         """Copy the client.json file to the log path on runner."""
         source_path = self.host.connection.path("client.json")
         dest_path = Path(log_path) / "client.json"
-        
+
         # Create log directory if it doesn't exist
         Path(log_path).mkdir(parents=True, exist_ok=True)
-        
+
         # Copy the client.json file to the log path
         with open(dest_path, "w") as dest_file:
             dest_file.write(self.to_json())
