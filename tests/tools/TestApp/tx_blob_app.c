@@ -36,7 +36,7 @@ int main(int argc, char **argv) {
     char *conn_cfg_file = argv[2];
     char *video_file = argv[3];
 
-    LOG("[TX] Launching TX app");
+    LOG("[TX] Launching Tx App");
 
     LOG("[TX] Reading client configuration...");
     client_cfg = input_parse_file_to_string(client_cfg_file);
@@ -83,11 +83,11 @@ int main(int argc, char **argv) {
         }
     }
 safe_exit:
-    LOG("[TX] Shuting down connection");
+    LOG("[TX] Shutting down connection");
     if (connection) {
         mesh_delete_connection(&connection);
     }
-    LOG("[TX] Shuting down client");
+    LOG("[TX] Shutting down client");
     if (client) {
         mesh_delete_client(&client);
     }
