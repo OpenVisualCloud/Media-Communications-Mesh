@@ -51,6 +51,7 @@ env:
   MTL_FFMPEG_7_0: "./mtl-binaries/ffmpeg-7-0/ffmpeg"
   INTEGRITY_PATH: "${{ github.workspace }}/tests/validation/common/integrity"
   LOG_DIR: "${{ github.workspace }}/logs"
+  RUNNER: "bcs-cicd-4"
 
 permissions:
   contents: read
@@ -62,9 +63,10 @@ jobs:
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
+      runner: ${{ env.RUNNER }}
 
   validation-prepare-setup-mcm:
-    runs-on: [self-hosted, bcs-cicd-4]
+    runs-on: ${{ env.RUNNER }}
     needs: call-bare-metal-build
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -157,7 +159,7 @@ jobs:
 
   validation-run-tests:
     needs: validation-prepare-setup-mcm
-    runs-on: [self-hosted, bcs-cicd-4]
+    runs-on: ${{ env.RUNNER }}
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     env:
