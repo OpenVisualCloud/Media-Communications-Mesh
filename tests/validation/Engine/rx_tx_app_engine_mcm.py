@@ -12,7 +12,11 @@ from mfd_connect.exceptions import RemoteProcessInvalidState
 import Engine.rx_tx_app_client_json
 import Engine.rx_tx_app_connection_json
 from Engine.const import LOG_FOLDER, DEFAULT_OUTPUT_PATH
-from common.log_constants import RX_REQUIRED_LOG_PHRASES, TX_REQUIRED_LOG_PHRASES, RX_TX_APP_ERROR_KEYWORDS
+from common.log_constants import (
+    RX_REQUIRED_LOG_PHRASES,
+    TX_REQUIRED_LOG_PHRASES,
+    RX_TX_APP_ERROR_KEYWORDS,
+)
 from Engine.mcm_apps import (
     get_media_proxy_port,
     save_process_log,
@@ -207,20 +211,27 @@ class AppRunnerBase:
             if self.direction in ("Rx", "Tx"):
                 from common.log_validation_utils import validate_log_file
                 required_phrases = RX_REQUIRED_LOG_PHRASES if self.direction == "Rx" else TX_REQUIRED_LOG_PHRASES
-                
-                # Use the common validation function
-                validation_result = validate_log_file(log_file_path, required_phrases, self.direction)
-                
-                self.is_pass = validation_result['is_pass']
-                app_log_validation_status = validation_result['is_pass']
-                app_log_error_count = validation_result['error_count']
-                validation_info.extend(validation_result['validation_info'])
-                
+
+                validation_result = validate_log_file(
+                    log_file_path, required_phrases, self.direction
+                )
+
+                self.is_pass = validation_result["is_pass"]
+                app_log_validation_status = validation_result["is_pass"]
+                app_log_error_count = validation_result["error_count"]
+                validation_info.extend(validation_result["validation_info"])
+
                 # Additional logging if validation failed
-                if not validation_result['is_pass'] and validation_result['missing_phrases']:
-                    print(f"{self.direction} process did not pass. First missing phrase: {validation_result['missing_phrases'][0]}")
+                if (
+                    not validation_result["is_pass"]
+                    and validation_result["missing_phrases"]
+                ):
+                    print(
+                        f"{self.direction} process did not pass. First missing phrase: {validation_result['missing_phrases'][0]}"
+                    )
             else:
                 from common.log_validation_utils import output_validator
+
                 result = output_validator(
                     log_file_path=log_file_path,
                     error_keywords=RX_TX_APP_ERROR_KEYWORDS,
@@ -248,7 +259,12 @@ class AppRunnerBase:
                         )
 
         # File validation for Rx only run if output path isn't "/dev/null" or doesn't start with "/dev/null/"
-        if self.direction == "Rx" and self.output and self.output_path and not str(self.output_path).startswith("/dev/null"):
+        if (
+            self.direction == "Rx"
+            and self.output
+            and self.output_path
+            and not str(self.output_path).startswith("/dev/null")
+        ):
             validation_info.append(f"\n=== {self.direction} Output File Validation ===")
             validation_info.append(f"Expected output file: {self.output}")
 

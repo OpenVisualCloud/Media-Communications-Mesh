@@ -115,7 +115,9 @@ def test_sudo_command(hosts):
     logger.info("Sudo command execution test completed")
 
 
-def test_demo_local_ffmpeg_video_integrity(media_proxy, hosts, test_config, log_path) -> None:
+def test_demo_local_ffmpeg_video_integrity(
+    media_proxy, hosts, test_config, log_path
+) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     tx_host = rx_host = list(hosts.values())[0]
     prefix_variables = test_config.get("prefix_variables", {})
@@ -167,7 +169,9 @@ def test_demo_local_ffmpeg_video_integrity(media_proxy, hosts, test_config, log_
     )
 
     logger.debug(f"Tx command: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(
+        tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff
+    )
 
     # >>>>> MCM Rx
     mcm_rx_inp = FFmpegMcmMemifVideoIO(
@@ -196,7 +200,9 @@ def test_demo_local_ffmpeg_video_integrity(media_proxy, hosts, test_config, log_
     )
 
     logger.debug(f"Rx command: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(
+        rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff
+    )
 
     integrator = FileVideoIntegrityRunner(
         host=rx_host,
@@ -219,7 +225,9 @@ def test_demo_local_ffmpeg_video_integrity(media_proxy, hosts, test_config, log_
     assert result, "Integrity check failed"
 
 
-def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config, log_path) -> None:
+def test_demo_local_ffmpeg_video_stream(
+    media_proxy, hosts, test_config, log_path
+) -> None:
     # media_proxy fixture used only to ensure that the media proxy is running
     tx_host = rx_host = list(hosts.values())[0]
     prefix_variables = test_config.get("prefix_variables", {})
@@ -272,7 +280,9 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config, log_pat
     )
 
     logger.debug(f"Tx command: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(
+        tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff
+    )
 
     # >>>>> MCM Rx
     mcm_rx_inp = FFmpegMcmMemifVideoIO(
@@ -302,7 +312,9 @@ def test_demo_local_ffmpeg_video_stream(media_proxy, hosts, test_config, log_pat
     )
 
     logger.debug(f"Rx command: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(
+        rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff
+    )
 
     integrator = StreamVideoIntegrityRunner(
         host=rx_host,
@@ -504,6 +516,7 @@ def test_build_mtl_ffmpeg(build_mtl_ffmpeg, hosts, test_config):
     """
     logger.info("Testing MTL FFmpeg build process")
     assert build_mtl_ffmpeg, "MTL FFmpeg build failed"
+
 
 def test_simple(log_path_dir, log_path, request):
     # For this test, log_path will be based on "test_simple"

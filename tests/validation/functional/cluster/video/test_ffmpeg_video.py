@@ -20,7 +20,9 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_cluster_ffmpeg_video(hosts, media_proxy, test_config, video_type: str, log_path) -> None:
+def test_cluster_ffmpeg_video(
+    hosts, media_proxy, test_config, video_type: str, log_path
+) -> None:
     # Get TX and RX hosts
     host_list = list(hosts.values())
     if len(host_list) < 2:
@@ -68,7 +70,9 @@ def test_cluster_ffmpeg_video(hosts, media_proxy, test_config, video_type: str, 
     )
 
     logger.debug(f"Tx command on {tx_host.name}: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(
+        tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff
+    )
 
     # >>>>> MCM Rx
     mcm_rx_inp = FFmpegMcmMultipointGroupVideoIO(
@@ -95,7 +99,9 @@ def test_cluster_ffmpeg_video(hosts, media_proxy, test_config, video_type: str, 
     )
 
     logger.debug(f"Rx command on {rx_host.name}: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(
+        rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff
+    )
 
     mcm_rx_executor.start()
     mcm_tx_executor.start()

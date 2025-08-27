@@ -17,6 +17,7 @@ from Engine.const import (
 )
 from Engine.media_files import blob_files_25_03
 
+
 @pytest.mark.smoke
 @pytest.mark.parametrize("file", [file for file in blob_files_25_03.keys()])
 def test_blob_25_03(

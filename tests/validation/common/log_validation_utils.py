@@ -13,7 +13,9 @@ from common.log_constants import RX_TX_APP_ERROR_KEYWORDS
 
 logger = logging.getLogger(__name__)
 
-def check_phrases_in_order(log_path: str, phrases: List[str]) -> Tuple[bool, List[str], Dict[str, List[str]]]:
+def check_phrases_in_order(
+    log_path: str, phrases: List[str]
+) -> Tuple[bool, List[str], Dict[str, List[str]]]:
     """
     Check that all required phrases appear in order in the log file.
     Returns (all_found, missing_phrases, context_lines)
@@ -21,7 +23,7 @@ def check_phrases_in_order(log_path: str, phrases: List[str]) -> Tuple[bool, Lis
     found_indices = []
     missing_phrases = []
     lines_around_missing = {}
-    with open(log_path, 'r', encoding='utf-8', errors='ignore') as f:
+    with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
         lines = [line.strip() for line in f]
 
     idx = 0
@@ -203,5 +205,5 @@ def output_validator(log_file_path: str, error_keywords: Optional[List[str]] = N
     return {
         "is_pass": is_pass,
         "errors": errors,
-        "phrase_mismatches": []  # Not used in this simple validator
+        "phrase_mismatches": [],  # Not used in this simple validator
     }

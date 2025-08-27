@@ -49,7 +49,6 @@ class ClientJson:
         json_content = self.to_json().replace('"', '\\"')
         f.write_text(json_content)
 
-
     def copy_json_to_logs(self, log_path: str) -> None:
         """Copy the client.json file to the log path on runner."""
         source_path = self.host.connection.path("client.json")

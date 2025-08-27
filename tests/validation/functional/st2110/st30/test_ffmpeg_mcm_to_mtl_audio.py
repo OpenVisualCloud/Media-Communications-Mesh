@@ -109,7 +109,9 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         yes_overwrite=False,
     )
     logger.debug(f"Tx command executed on {tx_host.name}: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(
+        tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff
+    )
 
     # MTL Rx
     mtl_rx_inp = FFmpegMtlSt30pRx(  # TODO: Verify the variables
@@ -148,7 +150,9 @@ def test_st2110_ffmpeg_mcm_to_mtl_audio(
         yes_overwrite=True,
     )
     logger.debug(f"Rx command executed on {rx_host.name}: {mtl_rx_ff.get_command()}")
-    mtl_rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=mtl_rx_ff)
+    mtl_rx_executor = FFmpegExecutor(
+        rx_host, log_path=log_path, ffmpeg_instance=mtl_rx_ff
+    )
 
     time.sleep(2)  # wait for media_proxy to start
     mtl_rx_executor.start()

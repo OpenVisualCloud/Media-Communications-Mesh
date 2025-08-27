@@ -32,7 +32,13 @@ from Engine.const import (
     MTL_BUILD_PATH,
     OPENH264_VERSION_TAG,
 )
-from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path, get_log_folder_path
+from Engine.mcm_apps import (
+    MediaProxy,
+    MeshAgent,
+    get_mcm_path,
+    get_mtl_path,
+    get_log_folder_path,
+)
 from datetime import datetime
 import re
 

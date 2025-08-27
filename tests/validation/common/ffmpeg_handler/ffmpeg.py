@@ -95,7 +95,9 @@ class FFmpegExecutor:
 
         for process in self._processes:
             if process.return_code != 0:
-                logger.warning(f"FFmpeg process on {self.host.name} failed with return code {process.return_code}")
+                logger.warning(
+                    f"FFmpeg process on {self.host.name} failed with return code {process.return_code}"
+                )
                 process_passed = False
 
         # Determine if this is a receiver or transmitter
@@ -103,7 +105,7 @@ class FFmpegExecutor:
         if self.ff.ffmpeg_input and self.ff.ffmpeg_output:
             input_path = getattr(self.ff.ffmpeg_input, "input_path", None)
             output_path = getattr(self.ff.ffmpeg_output, "output_path", None)
-            
+
             if input_path == "-" or (
                 output_path and output_path != "-" and "." in output_path
             ):
@@ -125,23 +127,24 @@ class FFmpegExecutor:
         # Perform log validation
         from common.log_validation_utils import validate_log_file
         from common.ffmpeg_handler.log_constants import (
-            FFMPEG_RX_REQUIRED_LOG_PHRASES, 
+            FFMPEG_RX_REQUIRED_LOG_PHRASES,
             FFMPEG_TX_REQUIRED_LOG_PHRASES,
-            FFMPEG_ERROR_KEYWORDS
+            FFMPEG_ERROR_KEYWORDS,
         )
 
-        required_phrases = FFMPEG_RX_REQUIRED_LOG_PHRASES if is_receiver else FFMPEG_TX_REQUIRED_LOG_PHRASES
+        required_phrases = (
+            FFMPEG_RX_REQUIRED_LOG_PHRASES
+            if is_receiver
+            else FFMPEG_TX_REQUIRED_LOG_PHRASES
+        )
 
         if os.path.exists(log_file_path):
             validation_result = validate_log_file(
-                log_file_path, 
-                required_phrases, 
-                direction, 
-                FFMPEG_ERROR_KEYWORDS
+                log_file_path, required_phrases, direction, FFMPEG_ERROR_KEYWORDS
             )
-            
-            log_validation_passed = validation_result['is_pass']
-            validation_info.extend(validation_result['validation_info'])
+
+            log_validation_passed = validation_result["is_pass"]
+            validation_info.extend(validation_result["validation_info"])
         else:
             logger.warning(f"Log file not found at {log_file_path}")
             validation_info.append(f"=== {direction} Log Validation ===")
@@ -153,33 +156,53 @@ class FFmpegExecutor:
 
         # File validation for Rx only run if output path isn't "/dev/null" or doesn't start with "/dev/null/"
         file_validation_passed = True
-        if is_receiver and self.ff.ffmpeg_output and hasattr(self.ff.ffmpeg_output, "output_path"):
+        if (
+            is_receiver
+            and self.ff.ffmpeg_output
+            and hasattr(self.ff.ffmpeg_output, "output_path")
+        ):
             output_path = self.ff.ffmpeg_output.output_path
             if output_path and not str(output_path).startswith("/dev/null"):
                 validation_info.append(f"\n=== {direction} Output File Validation ===")
                 validation_info.append(f"Expected output file: {output_path}")
-                
+
                 from Engine.rx_tx_app_file_validation_utils import validate_file
+
                 file_info, file_validation_passed = validate_file(
                     self.host.connection, output_path, cleanup=False
                 )
                 validation_info.extend(file_info)
 
         # Overall validation status
-        self.is_pass = process_passed and log_validation_passed and file_validation_passed
+        self.is_pass = (
+            process_passed and log_validation_passed and file_validation_passed
+        )
 
         # Save validation report
         validation_info.append(f"\n=== Overall Validation Summary ===")
-        validation_info.append(f"Overall validation: {'PASS' if self.is_pass else 'FAIL'}")
-        validation_info.append(f"Process validation: {'PASS' if process_passed else 'FAIL'}")
-        validation_info.append(f"Log validation: {'PASS' if log_validation_passed else 'FAIL'}")
+        validation_info.append(
+            f"Overall validation: {'PASS' if self.is_pass else 'FAIL'}"
+        )
+        validation_info.append(
+            f"Process validation: {'PASS' if process_passed else 'FAIL'}"
+        )
+        validation_info.append(
+            f"Log validation: {'PASS' if log_validation_passed else 'FAIL'}"
+        )
         if is_receiver:
-            validation_info.append(f"File validation: {'PASS' if file_validation_passed else 'FAIL'}")
-        validation_info.append(f"Note: Overall validation fails if any validation step fails")
+            validation_info.append(
+                f"File validation: {'PASS' if file_validation_passed else 'FAIL'}"
+            )
+        validation_info.append(
+            f"Note: Overall validation fails if any validation step fails"
+        )
 
         # Save validation report to a file
         from common.log_validation_utils import save_validation_report
-        validation_path = os.path.join(log_dir, subdir, f"{direction.lower()}_validation.log")
+
+        validation_path = os.path.join(
+            log_dir, subdir, f"{direction.lower()}_validation.log"
+        )
         save_validation_report(validation_path, validation_info, self.is_pass)
 
         return self.is_pass
@@ -285,30 +308,43 @@ class FFmpegExecutor:
     def wait_with_timeout(self, timeout=None):
         """Wait for the process to complete with a timeout."""
         if not timeout:
-            timeout = 60  # Default timeout or use a constant like MCM_RXTXAPP_RUN_TIMEOUT
+            timeout = (
+                60  # Default timeout or use a constant like MCM_RXTXAPP_RUN_TIMEOUT
+            )
 
         try:
             for process in self._processes:
                 if process.running:
                     process.wait(timeout=timeout)
         except Exception as e:
-            logger.warning(f"FFmpeg process did not finish in time or error occurred: {e}")
+            logger.warning(
+                f"FFmpeg process did not finish in time or error occurred: {e}"
+            )
             return False
         return True
 
     def cleanup(self):
         """Clean up any resources or output files."""
-        if (self.ff.ffmpeg_output and 
-            hasattr(self.ff.ffmpeg_output, "output_path") and 
-            self.ff.ffmpeg_output.output_path and
-            self.ff.ffmpeg_output.output_path != "-" and
-            not str(self.ff.ffmpeg_output.output_path).startswith("/dev/null")):
-            
-            success = cleanup_file(self.host.connection, str(self.ff.ffmpeg_output.output_path))
+        if (
+            self.ff.ffmpeg_output
+            and hasattr(self.ff.ffmpeg_output, "output_path")
+            and self.ff.ffmpeg_output.output_path
+            and self.ff.ffmpeg_output.output_path != "-"
+            and not str(self.ff.ffmpeg_output.output_path).startswith("/dev/null")
+        ):
+
+            success = cleanup_file(
+                self.host.connection, str(self.ff.ffmpeg_output.output_path)
+            )
             if success:
-                logger.debug(f"Cleaned up output file: {self.ff.ffmpeg_output.output_path}")
+                logger.debug(
+                    f"Cleaned up output file: {self.ff.ffmpeg_output.output_path}"
+                )
             else:
-                logger.warning(f"Failed to clean up output file: {self.ff.ffmpeg_output.output_path}")
+                logger.warning(
+                    f"Failed to clean up output file: {self.ff.ffmpeg_output.output_path}"
+                )
+
 
 def no_proxy_to_prefix_variables(host, prefix_variables: dict | None = None):
     """

@@ -34,7 +34,9 @@ logger = logging.getLogger(__name__)
         *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"],
     ],
 )
-def test_local_ffmpeg_audio(hosts, test_config, audio_type: str, log_path, media_path) -> None:
+def test_local_ffmpeg_audio(
+    hosts, test_config, audio_type: str, log_path, media_path
+) -> None:
     host_list = list(hosts.values())
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
@@ -44,9 +46,9 @@ def test_local_ffmpeg_audio(hosts, test_config, audio_type: str, log_path, media
         prefix_variables = dict(tx_host.topology.extra_info.mcm_prefix_variables)
     else:
         prefix_variables = {}
-    prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
-        tx_host.topology.extra_info.media_proxy["sdk_port"]
-    )
+    prefix_variables["MCM_MEDIA_PROXY_PORT"] = tx_host.topology.extra_info.media_proxy[
+        "sdk_port"
+    ]
 
     audio_format = audio_file_format_to_format_dict(
         str(audio_files_25_03[audio_type]["format"])
@@ -83,7 +85,9 @@ def test_local_ffmpeg_audio(hosts, test_config, audio_type: str, log_path, media
         yes_overwrite=False,
     )
     logger.debug(f"Tx command: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(
+        tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff
+    )
 
     # >>>>> MCM Rx
     mcm_rx_inp = FFmpegMcmMemifAudioIO(
@@ -108,7 +112,9 @@ def test_local_ffmpeg_audio(hosts, test_config, audio_type: str, log_path, media
     )
 
     logger.debug(f"Rx command: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(
+        rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff
+    )
 
     mcm_rx_executor.start()
     mcm_tx_executor.start()
