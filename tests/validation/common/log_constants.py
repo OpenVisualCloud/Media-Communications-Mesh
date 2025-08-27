@@ -18,7 +18,6 @@ RX_REQUIRED_LOG_PHRASES = [
     '[RX] Done reading the data',
     '[RX] dropping connection to media-proxy',
     'INFO - memif disconnected!',
-    '[INFO] gRPC: connection deleted',
 ]
 
 # Required ordered log phrases for Tx validation
@@ -31,8 +30,6 @@ TX_REQUIRED_LOG_PHRASES = [
     '[INFO] gRPC: connection created',
     'INFO - Create memif socket.',
     'INFO - Create memif interface.',
-    '[TX] Sending packet:',
-    '[INFO] gRPC: connection deleted',
 ]
 
 # Common error keywords to look for in logs

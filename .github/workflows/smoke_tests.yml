@@ -46,7 +46,7 @@ env:
   MCM_BINARIES_DIR: "./mcm-binaries"
   MEDIA_PROXY: "./mcm-binaries/media_proxy"
   MESH_AGENT: "./mcm-binaries/mesh-agent"
-  MCM_FFMPEG_7_0: "${{ github.workspace }}/_build/ffmpeg-7-0/bin/ffmpeg"
+  MCM_FFMPEG_7_0: "${{ github.workspace }}/_build/ffmpeg-7-0/ffmpeg"
   MCM_LD_LIBRARY_PATH: "${{ github.workspace }}/_build/ffmpeg-7-0/lib/"
   MTL_FFMPEG_7_0: "./mtl-binaries/ffmpeg-7-0/ffmpeg"
   INTEGRITY_PATH: "${{ github.workspace }}/tests/validation/common/integrity"
