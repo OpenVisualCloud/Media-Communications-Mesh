@@ -12,10 +12,6 @@ on:
         required: false
         type: string
         description: "Tag to checkout"
-      runner:
-        required: true
-        type: string
-        description: "Runner to use"
 
 env:
   BUILD_TYPE: Release
@@ -37,7 +33,7 @@ concurrency:
 
 jobs:
   build-baremetal-ubuntu:
-    runs-on: ${{ inputs.runner }}
+    runs-on: [Linux, self-hosted]
     timeout-minutes: 120
     steps:
       - name: "Harden Runner"

@@ -62,7 +62,6 @@ jobs:
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
-      runner: [Linux, self-hosted]
 
   validation-prepare-setup-mcm:
     runs-on: [Linux, self-hosted]
