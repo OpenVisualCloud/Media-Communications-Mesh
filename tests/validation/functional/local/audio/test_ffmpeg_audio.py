@@ -26,6 +26,7 @@ from Engine.const import (
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.usefixtures("media_proxy")
 @pytest.mark.parametrize(
     "audio_type",
     [
@@ -33,14 +34,12 @@ logger = logging.getLogger(__name__)
         *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"],
     ],
 )
-def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, log_path, media_path) -> None:
-    # media_proxy fixture used only to ensure that the media proxy is running
-    # Get TX and RX hosts
+def test_local_ffmpeg_audio(hosts, test_config, audio_type: str, log_path, media_path) -> None:
     host_list = list(hosts.values())
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
     tx_host = rx_host = host_list[0]
-    # Access prefix_variables directly
+
     if hasattr(tx_host.topology.extra_info, "mcm_prefix_variables"):
         prefix_variables = dict(tx_host.topology.extra_info.mcm_prefix_variables)
     else:
@@ -78,7 +77,7 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, lo
     )
     mcm_tx_ff = FFmpeg(
         prefix_variables=prefix_variables,
-        ffmpeg_path="/opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/bin/ffmpeg",
+        ffmpeg_path=tx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_tx_inp,
         ffmpeg_output=mcm_tx_outp,
         yes_overwrite=False,
@@ -102,7 +101,7 @@ def test_local_ffmpeg_audio(media_proxy, hosts, test_config, audio_type: str, lo
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=prefix_variables,
-        ffmpeg_path="/opt/intel/_build/ffmpeg-7.0/ffmpeg-7-0_mcm_build/bin/ffmpeg",
+        ffmpeg_path=rx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_rx_inp,
         ffmpeg_output=mcm_rx_outp,
         yes_overwrite=True,

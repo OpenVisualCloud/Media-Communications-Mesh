@@ -7,8 +7,6 @@
 import pytest
 import logging
 
-from Engine.rx_tx_app_file_validation_utils import cleanup_file
-
 from Engine.media_files import video_files_25_03
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
@@ -19,11 +17,15 @@ from common.ffmpeg_handler.ffmpeg_enums import (
 
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
 from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmMemifVideoIO
-from Engine.const import FFMPEG_RUN_TIMEOUT
+from Engine.const import (
+    FFMPEG_RUN_TIMEOUT,
+    DEFAULT_OUTPUT_PATH,
+)
 
 logger = logging.getLogger(__name__)
 
 
+@pytest.mark.usefixtures("media_proxy")
 @pytest.mark.parametrize(
     "file",
     [
@@ -31,15 +33,21 @@ logger = logging.getLogger(__name__)
         *[f for f in video_files_25_03.keys() if f != "FullHD_59.94"],
     ],
 )
-def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str, log_path) -> None:
-    # media_proxy fixture used only to ensure that the media proxy is running
-    # Get TX and RX hosts
+def test_local_ffmpeg_video(hosts, test_config, file: str, log_path, media_path) -> None:
     host_list = list(hosts.values())
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
     tx_host = rx_host = host_list[0]
-    tx_prefix_variables = test_config["tx"].get("prefix_variables", None)
-    rx_prefix_variables = test_config["rx"].get("prefix_variables", None)
+
+    if hasattr(tx_host.topology.extra_info, "mcm_prefix_variables"):
+        tx_prefix_variables = dict(tx_host.topology.extra_info.mcm_prefix_variables)
+    else:
+        tx_prefix_variables = {}
+    if hasattr(rx_host.topology.extra_info, "mcm_prefix_variables"):
+        rx_prefix_variables = dict(rx_host.topology.extra_info.mcm_prefix_variables)
+    else:
+        rx_prefix_variables = {}
+
     tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
         tx_host.topology.extra_info.media_proxy["sdk_port"]
     )
@@ -62,7 +70,7 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str, log_path
         video_size=video_size,
         pixel_format=pixel_format,
         stream_loop=False,
-        input_path=f'{test_config["tx"]["filepath"]}{video_files_25_03[file]["filename"]}',
+        input_path=f'{media_path}{video_files_25_03[file]["filename"]}',
     )
     mcm_tx_outp = FFmpegMcmMemifVideoIO(
         f="mcm",
@@ -74,7 +82,7 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str, log_path
     )
     mcm_tx_ff = FFmpeg(
         prefix_variables=tx_prefix_variables,
-        ffmpeg_path=test_config["tx"]["ffmpeg_path"],
+        ffmpeg_path=tx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_tx_inp,
         ffmpeg_output=mcm_tx_outp,
         yes_overwrite=False,
@@ -97,11 +105,11 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, file: str, log_path
         framerate=frame_rate,
         video_size=video_size,
         pixel_format=pixel_format,
-        output_path=f'{test_config["rx"]["filepath"]}test_{video_files_25_03[file]["filename"]}',
+        output_path=f'{DEFAULT_OUTPUT_PATH}/test_{video_files_25_03[file]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=rx_prefix_variables,
-        ffmpeg_path=test_config["rx"]["ffmpeg_path"],
+        ffmpeg_path=rx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_rx_inp,
         ffmpeg_output=mcm_rx_outp,
         yes_overwrite=True,
