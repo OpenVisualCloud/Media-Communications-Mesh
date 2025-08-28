@@ -235,11 +235,11 @@ def check_phrases_anywhere(
     """
     missing_phrases = []
     lines_around_missing = {}
-    
+
     try:
         with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
-            lines = content.split('\n')
+            lines = content.split("\n")
         
         for phrase in phrases:
             if phrase not in content:
@@ -252,8 +252,9 @@ def check_phrases_anywhere(
     except Exception as e:
         logger.error(f"Error reading log file {log_path}: {e}")
         return False, phrases, {"error": [f"Error reading log file: {e}"]}
-    
+
     return len(missing_phrases) == 0, missing_phrases, lines_around_missing
+
 
 def output_validator(
     log_file_path: str, error_keywords: Optional[List[str]] = None
