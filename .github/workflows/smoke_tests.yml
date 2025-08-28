@@ -64,7 +64,7 @@ jobs:
       tag: ${{ github.event.inputs.tag-to-checkout }}
 
   validation-prepare-setup-mcm:
-    runs-on: [linux, self-hosted, runner-4]
+    runs-on: [runner-4]
     needs: call-bare-metal-build
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -158,7 +158,7 @@ jobs:
 
   validation-run-tests:
     needs: validation-prepare-setup-mcm
-    runs-on: [linux, self-hosted, runner-4]
+    runs-on: [runner-4]
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     env:

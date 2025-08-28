@@ -33,7 +33,7 @@ concurrency:
 
 jobs:
   build-baremetal-ubuntu:
-    runs-on: [linux, self-hosted, runner-4]
+    runs-on: [runner-4]
     timeout-minutes: 120
     steps:
       - name: "Harden Runner"
