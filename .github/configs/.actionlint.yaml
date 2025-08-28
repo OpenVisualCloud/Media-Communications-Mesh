@@ -1,2 +1,5 @@
-runner-labels:
-  - "runner-4"
+self-hosted-runner:
+  labels:
+    - DPDK
+    - runner-1
+    - runner-4

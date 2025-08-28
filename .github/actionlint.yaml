@@ -1,9 +1,5 @@
-runner-labels:
-  - runner-4
-  - self-hosted
-  - x64
-  - linux
-  - windows
-  - macos
-  - arm
-  - arm64
+self-hosted-runner:
+  labels:
+    - DPDK
+    - runner-1
+    - runner-4
