@@ -112,7 +112,7 @@ jobs:
         run: |
           echo "USER=${USER}" >> "$GITHUB_ENV"
           sed -i "s/{{ USER }}/root/g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/mcm_key|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/id_rsa|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ INTEGRITY_PATH }}|${{ env.INTEGRITY_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ OUTPUT_PATH }}|${{ env.OUTPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
           sed -i "s|{{ INPUT_PATH }}|${{ env.INPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
