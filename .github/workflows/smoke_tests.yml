@@ -55,9 +55,14 @@ env:
 permissions:
   contents: read
 
+concurrency:
+  group: smoke-tests-runner-4-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   call-bare-metal-build:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: [runner-4]
     uses: ./.github/workflows/bare-metal-build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
