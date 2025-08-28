@@ -34,11 +34,6 @@ on:
         default: "smoke"
         required: false
         description: "Markers to use for pytest"
-      runner:
-        required: false
-        type: string
-        default: "runner-4"
-        description: "Runner to use for the build job"      
 
 env:
   BUILD_TYPE: "Release"
@@ -71,10 +66,10 @@ jobs:
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
-      runner: ${{ inputs.runner }}
+      runner: runner-4
 
   validation-prepare-setup-mcm:
-    runs-on: ${{ inputs.runner }}
+    runs-on: [self-hosted, runner-4]
     needs: call-bare-metal-build
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -131,7 +126,7 @@ jobs:
 
   validation-run-tests:
     needs: validation-prepare-setup-mcm
-    runs-on: ${{ inputs.runner }}
+    runs-on: [self-hosted, runner-4]
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     env:
