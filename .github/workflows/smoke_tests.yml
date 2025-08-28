@@ -62,11 +62,11 @@ concurrency:
 jobs:
   call-bare-metal-build:
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
-    runs-on: [runner-4]
     uses: ./.github/workflows/bare-metal-build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
+      runner: runner-4
 
   validation-prepare-setup-mcm:
     runs-on: [runner-4]
@@ -98,24 +98,7 @@ jobs:
           ls -la ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.* || true
           ls -la ${{ env.BUILD_DIR }}/ffmpeg-6-1/ || true
           ls -la ${{ env.BUILD_DIR }}/ffmpeg-7-0/ || true
-      - name: Install RxTxApp dependencies
-        run: sudo apt-get update && sudo apt-get install -y libjansson-dev
-      - name: "build RxTxApp"
-        working-directory: ${{ github.workspace }}/tests/tools/TestApp
-        run: |
-          rm -rf build && \
-          mkdir build && cd build && \
-          cmake .. && \
-          make
-      - name: "clone FFMPEG repository"
-        run: |
-          echo "Cloning FFMPEG repository"
-      - name: "clone MTL repository"
-        run: |
-          echo "Cloning MTL repository"
-      - name: "build MTL FFMPEG"
-        run: |
-          echo "Building MTL FFMPEG"
+
       - name: "installation: Install pipenv environment"
         working-directory: tests/validation
         id: pipenv-install

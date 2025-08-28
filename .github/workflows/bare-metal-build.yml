@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         description: "Tag to checkout"
+      runner:
+        required: false
+        type: string
+        default: "runner-4"
+        description: "Runner to use for the build job"
 
 env:
   BUILD_TYPE: Release
@@ -33,7 +38,7 @@ concurrency:
 
 jobs:
   build-baremetal-ubuntu:
-    runs-on: [runner-4]
+    runs-on: [${{ inputs.runner }}]
     timeout-minutes: 120
     steps:
       - name: "Harden Runner"
@@ -152,6 +157,25 @@ jobs:
         run: |
           ./configure-ffmpeg.sh "7.0" --prefix=${{ env.BUILD_DIR }}/ffmpeg-7-0 --disable-doc --disable-debug && \
           ./build-ffmpeg.sh "7.0"
+
+      - name: Install RxTxApp dependencies
+        run: sudo apt-get update && sudo apt-get install -y libjansson-dev
+      - name: "build RxTxApp"
+        working-directory: ${{ github.workspace }}/tests/tools/TestApp
+        run: |
+          rm -rf build && \
+          mkdir build && cd build && \
+          cmake .. && \
+          make
+      - name: "clone FFMPEG repository"
+        run: |
+          echo "Cloning FFMPEG repository"
+      - name: "clone MTL repository"
+        run: |
+          echo "Cloning MTL repository"
+      - name: "build MTL FFMPEG"
+        run: |
+          echo "Building MTL FFMPEG"
 
       - name: "upload media-proxy and mcm binaries"
         uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
