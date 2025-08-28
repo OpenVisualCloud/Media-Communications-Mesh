@@ -46,6 +46,7 @@ jobs:
           VALIDATE_CPP: true
           VALIDATE_GO: true
           VALIDATE_GITHUB_ACTIONS: true
+          ACTIONLINT_CONFIG_PATH: ".github/actionlint.yaml"
           VALIDATE_GROOVY: true
           VALIDATE_JSON_PRETTIER: true
           VALIDATE_JSONC_PRETTIER: true
