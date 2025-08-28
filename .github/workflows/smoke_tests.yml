@@ -124,26 +124,6 @@ jobs:
           source venv/bin/activate
           pip install -r requirements.txt
           echo "VIRTUAL_ENV=$PWD/venv/bin/activate" >> "$GITHUB_ENV"
-      - name: "ssh key root setup"
-        run: |
-          # Ensure root .ssh directory exists
-          sudo mkdir -p /root/.ssh
-          sudo chmod 700 /root/.ssh
-
-          # Copy the public key to root's authorized_keys
-          if [ -f "/home/${USER}/.ssh/mcm_key.pub" ]; then
-            sudo cp "/home/${USER}/.ssh/mcm_key.pub" /root/.ssh/authorized_keys
-          elif [ -f "/home/${USER}/.ssh/mcm_key" ]; then
-            # Generate public key from private key if public key doesn't exist
-            ssh-keygen -y -f "/home/${USER}/.ssh/mcm_key" | sudo tee /root/.ssh/authorized_keys
-          fi
-
-          # Set proper permissions
-          sudo chmod 600 /root/.ssh/authorized_keys
-          sudo chown root:root /root/.ssh/authorized_keys
-
-          # Ensure the private key has correct permissions for gta user
-          chmod 600 "/home/${USER}/.ssh/mcm_key"
 
       - name: "add user name to environment and config"
         run: |
