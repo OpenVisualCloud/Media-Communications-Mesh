@@ -69,7 +69,7 @@ jobs:
       runner: runner-4
 
   validation-prepare-setup-mcm:
-    runs-on: [self-hosted, runner-4]
+    runs-on: ["self-hosted", "runner-4"]
     needs: call-bare-metal-build
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -126,7 +126,7 @@ jobs:
 
   validation-run-tests:
     needs: validation-prepare-setup-mcm
-    runs-on: [self-hosted, runner-4]
+    runs-on: ["self-hosted", "runner-4"]
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     env:
