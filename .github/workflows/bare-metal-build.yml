@@ -38,7 +38,7 @@ concurrency:
 
 jobs:
   build-baremetal-ubuntu:
-    runs-on: [${{ inputs.runner }}]
+    runs-on: ${{ inputs.runner }}
     timeout-minutes: 120
     steps:
       - name: "Harden Runner"
