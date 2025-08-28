@@ -240,7 +240,7 @@ def check_phrases_anywhere(
         with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
             content = f.read()
             lines = content.split("\n")
-        
+
         for phrase in phrases:
             if phrase not in content:
                 missing_phrases.append(phrase)

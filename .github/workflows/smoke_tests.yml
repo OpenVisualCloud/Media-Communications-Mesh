@@ -71,7 +71,7 @@ jobs:
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
-      runner: runner-4
+      runner: ${{ inputs.runner }}
 
   validation-prepare-setup-mcm:
     runs-on: ${{ inputs.runner }}
