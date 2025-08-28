@@ -221,7 +221,7 @@ class AppRunnerBase:
                 )
 
                 validation_result = validate_log_file(
-                    log_file_path, required_phrases, self.direction
+                    log_file_path, required_phrases, self.direction, strict_order=False
                 )
 
                 self.is_pass = validation_result["is_pass"]

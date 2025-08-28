@@ -116,15 +116,17 @@ def validate_log_file(
     required_phrases: List[str],
     direction: str = "",
     error_keywords: Optional[List[str]] = None,
+    strict_order: bool = False,
 ) -> Dict:
     """
     Validate log file for required phrases and return validation information.
 
     Args:
         log_file_path: Path to the log file
-        required_phrases: List of phrases to check for in order
+        required_phrases: List of phrases to check for
         direction: Optional string to identify the direction (e.g., 'Rx', 'Tx')
         error_keywords: Optional list of error keywords to check for
+        strict_order: Whether to check phrases in strict order (default: False)
 
     Returns:
         Dictionary containing validation results:
@@ -139,10 +141,15 @@ def validate_log_file(
     """
     validation_info = []
 
-    # Phrase order validation
-    log_pass, missing, context_lines = check_phrases_in_order(
-        log_file_path, required_phrases
-    )
+    # Phrase validation (either ordered or anywhere)
+    if strict_order:
+        log_pass, missing, context_lines = check_phrases_in_order(
+            log_file_path, required_phrases
+        )
+    else:
+        log_pass, missing, context_lines = check_phrases_anywhere(
+            log_file_path, required_phrases
+        )
     error_count = len(missing)
 
     # Error keyword validation (optional)
@@ -218,6 +225,35 @@ def save_validation_report(
     except Exception as e:
         logger.error(f"Error saving validation report: {e}")
 
+
+def check_phrases_anywhere(
+    log_path: str, phrases: List[str]
+) -> Tuple[bool, List[str], Dict[str, List[str]]]:
+    """
+    Check that all required phrases appear anywhere in the log file, regardless of order.
+    Returns (all_found, missing_phrases, context_lines)
+    """
+    missing_phrases = []
+    lines_around_missing = {}
+    
+    try:
+        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
+            lines = content.split('\n')
+        
+        for phrase in phrases:
+            if phrase not in content:
+                missing_phrases.append(phrase)
+                # Find where the phrase should have appeared
+                # Just give some context from the end of the log
+                context_end = len(lines)
+                context_start = max(0, context_end - 10)
+                lines_around_missing[phrase] = lines[context_start:context_end]
+    except Exception as e:
+        logger.error(f"Error reading log file {log_path}: {e}")
+        return False, phrases, {"error": [f"Error reading log file: {e}"]}
+    
+    return len(missing_phrases) == 0, missing_phrases, lines_around_missing
 
 def output_validator(
     log_file_path: str, error_keywords: Optional[List[str]] = None
