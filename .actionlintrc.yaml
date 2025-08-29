@@ -1,5 +1,7 @@
-runner-labels:
+runner-label:
   - runner-4
+  - runner-1
+  - DPDK
   - self-hosted
   - x64
   - linux
