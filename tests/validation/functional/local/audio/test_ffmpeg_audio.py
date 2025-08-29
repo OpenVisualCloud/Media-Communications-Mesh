@@ -52,7 +52,9 @@ def test_local_ffmpeg_audio(
 
     # PCM 8 (pcm_s8) is not supported by the MCM FFmpeg plugin. Skip those cases.
     if audio_files_25_03[audio_type]["format"] == "pcm_s8":
-        pytest.skip("PCM 8 is not supported by Media Communications Mesh FFmpeg plugin!")
+        pytest.skip(
+            "PCM 8 is not supported by Media Communications Mesh FFmpeg plugin!"
+        )
 
     audio_format = audio_file_format_to_format_dict(
         str(audio_files_25_03[audio_type]["format"])
