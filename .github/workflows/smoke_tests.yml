@@ -181,6 +181,6 @@ jobs:
 
   call-report-summary:
     needs: validation-run-tests
-    uses: ./.github/workflows/report-summary.yml
+    uses: ./.github/workflows/report_summary.yml
     with:
       artifact-name: smoke-tests-report-json
