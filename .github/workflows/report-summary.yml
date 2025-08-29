@@ -20,7 +20,7 @@ jobs:
           sudo apt-get install -y jq
 
       - name: Download report artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
           name: ${{ inputs.artifact-name }}
           path: ./report_artifacts
@@ -33,7 +33,7 @@ jobs:
           else
             REPORT_PATH=$(find report_artifacts -type f -name 'report.json' | head -n1 || true)
           fi
-          echo "REPORT_PATH=$REPORT_PATH" >> $GITHUB_ENV
+          echo "REPORT_PATH=$REPORT_PATH" >> "$GITHUB_ENV"
           if [ -z "$REPORT_PATH" ]; then
             echo "No report.json found in downloaded artifacts"
             exit 1
@@ -91,7 +91,7 @@ jobs:
               echo "| Test | Status |"
               echo "| ---- | ------ |"
               if jq -e '.tests' "$REPORT_FILE" >/dev/null 2>&1; then
-                jq -r '.tests[] | "\(.nodeid)\t\(.outcome // \"passed\")"' "$REPORT_FILE" | \
+                jq -r ".tests[] | \"\(.nodeid)\t\(.outcome // \\\"passed\\\")\"" "$REPORT_FILE" | \
                 while IFS=$'\t' read -r NODEID OUTCOME; do
                   case "${OUTCOME}" in
                     passed) ICON="✅ Passed" ;;
