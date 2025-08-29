@@ -1,8 +1,0 @@
-self-hosted-runner:
-  labels:
-    - DPDK
-    - runner-1
-    - runner-4
-runner-label:
-  - runner-4
-  - runner-1
