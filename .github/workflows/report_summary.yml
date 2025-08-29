@@ -91,7 +91,7 @@ jobs:
               echo "| Test | Status |"
               echo "| ---- | ------ |"
               if jq -e '.tests' "$REPORT_FILE" >/dev/null 2>&1; then
-                jq -r ".tests[] | \"\(.nodeid)\t\(.outcome // \\\"passed\\\")\"" "$REPORT_FILE" | \
+                jq -r '.tests[] | "\(.nodeid)\t\(.outcome // "passed")"' "$REPORT_FILE" | \
                 while IFS=$'\t' read -r NODEID OUTCOME; do
                   case "${OUTCOME}" in
                     passed) ICON="✅ Passed" ;;
