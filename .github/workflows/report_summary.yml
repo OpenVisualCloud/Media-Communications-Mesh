@@ -46,68 +46,34 @@ jobs:
             echo "## Smoke Tests Report"
             echo ""
 
+            # Check if JSON report exists
             REPORT_FILE="$REPORT_PATH"
             if [ -f "$REPORT_FILE" ]; then
-              PASSED=$(jq -r '.summary.passed // empty' "$REPORT_FILE" 2>/dev/null || true)
-              FAILED=$(jq -r '.summary.failed // empty' "$REPORT_FILE" 2>/dev/null || true)
-              SKIPPED=$(jq -r '.summary.skipped // empty' "$REPORT_FILE" 2>/dev/null || true)
-              ERRORS=$(jq -r '.summary.errors // empty' "$REPORT_FILE" 2>/dev/null || true)
+              # Parse JSON report
+              PASSED=$(jq '.summary.passed // 0' "$REPORT_FILE")
+              FAILED=$(jq '.summary.failed // 0' "$REPORT_FILE")
+              SKIPPED=$(jq '.summary.skipped // 0' "$REPORT_FILE")
+              ERROR=$(jq '.summary.errors // 0' "$REPORT_FILE")
 
-              if [ -z "${PASSED}" ] || [ -z "${FAILED}" ] || [ -z "${SKIPPED}" ] || [ -z "${ERRORS}" ]; then
-                if jq -e '.tests' "$REPORT_FILE" >/dev/null 2>&1; then
-                  PASSED=$(jq '[.tests[] | select(.outcome=="passed")] | length' "$REPORT_FILE")
-                  FAILED=$(jq '[.tests[] | select(.outcome=="failed" or .outcome=="error")] | length' "$REPORT_FILE")
-                  SKIPPED=$(jq '[.tests[] | select(.outcome=="skipped")] | length' "$REPORT_FILE")
-                  ERRORS=$(jq '[.tests[] | select(.outcome=="error")] | length' "$REPORT_FILE")
-                fi
-              fi
-
-              PASSED=${PASSED:-0}
-              FAILED=${FAILED:-0}
-              SKIPPED=${SKIPPED:-0}
-              ERRORS=${ERRORS:-0}
-
+              # Add summary stats
               echo "| Status | Count |"
               echo "| ------ | ----- |"
-              echo "| ✅ Passed | ${PASSED} |"
-              echo "| ❌ Failed | ${FAILED} |"
-              echo "| ⚠️ Error | ${ERRORS} |"
-              echo "| ⏭️ Skipped | ${SKIPPED} |"
+              echo "| ✅ Passed | ${PASSED:-0} |"
+              echo "| ❌ Failed | ${FAILED:-0} |"
+              echo "| ⚠️ Error | ${ERROR:-0} |"
+              echo "| ⏭️ Skipped | ${SKIPPED:-0} |"
               echo ""
 
-              TOTAL=$((PASSED + FAILED + ERRORS + SKIPPED))
+              # Add test result details if available
+              TOTAL=$((${PASSED:-0} + ${FAILED:-0} + ${ERROR:-0} + ${SKIPPED:-0}))
               echo "**Total Tests:** $TOTAL"
               echo ""
-              if [ "${FAILED}" -gt 0 ] || [ "${ERRORS}" -gt 0 ]; then
+              if [ "${FAILED:-0}" -gt 0 ] || [ "${ERROR:-0}" -gt 0 ]; then
                 echo "❌ **Some tests failed!** Please check the detailed report."
               else
                 echo "✅ **All tests passed!**"
               fi
               echo ""
-
-              echo ""
-              echo "### Test results"
-              echo ""
-              echo "| Test | Status |"
-              echo "| ---- | ------ |"
-              if jq -e '.tests' "$REPORT_FILE" >/dev/null 2>&1; then
-                jq -r '.tests[] | "\(.nodeid)\t\(.outcome // \"passed\")"' "$REPORT_FILE" | \
-                while IFS=$'\t' read -r NODEID OUTCOME; do
-                  case "${OUTCOME}" in
-                    passed) ICON="✅ Passed" ;;
-                    failed) ICON="❌ Failed" ;;
-                    error) ICON="⚠️ Error" ;;
-                    skipped) ICON="⏭️ Skipped" ;;
-                    xfailed) ICON="❗ XFailed" ;;
-                    xpassed) ICON="❗ XPassed" ;;
-                    *) ICON="${OUTCOME}" ;;
-                  esac
-                  ESC_NODEID=$(printf '%s' "${NODEID}" | sed 's/`/\\`/g' | sed 's/|/\\|/g')
-                  echo "| \`${ESC_NODEID}\` | ${ICON} |"
-                done
-              else
-                echo "No per-test details available in report.json"
-              fi
             else
               echo "❌ No report.json file was generated"
             fi
