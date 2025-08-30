@@ -86,20 +86,19 @@ function get_irdma_driver_tgz() {
 function get_and_patch_intel_drivers()
 {
     log_info "Intel drivers: Starting download and patching actions."
-    if [[ ! -d "${MTL_DIR}" ]]; then
-        git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
-    fi
+    if [[ ! -d "${MTL_DIR}" ]]; then  git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}" fi
+    if [[ -d "${ICE_DIR}" ]]; then rm -rf "${ICE_DIR}"; fi
+
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
+    git_download_strip_unpack "intel/ethernet-linux-iavf"  "refs/tags/v${IAVF_VER}"  "${IAVF_DIR}"
+
     if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
-        log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
+        log_error "No Intel ICE (cvl) patches for ICE=v${ICE_VER} found at ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
+        log_error "version supported: $(ls "${MTL_DIR}/patches/ice_drv/")"
         return 1
     fi
-    if [[ -d "${ICE_DIR}" ]]; then
-        rm -rf "${ICE_DIR}"
-    fi
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
-
     pushd "${ICE_DIR}" && \
-    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
+        patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
     popd && \
     { log_success "Intel drivers: Finished download and patching actions." && return 0; } ||
     { log_error "Intel drivers: Failed to download or patch." && return 1; }
@@ -282,18 +281,26 @@ then
 
   set -eEo pipefail  
  
-  if [[ "${1}" == "get-ice" || "${1}" == "all" ]]; then
+  if [[ "${1}" == "get-ice" || "${1}" == "ice" || "${1}" == "all" ]]; then
     install_os_dependencies && \
     get_and_patch_intel_drivers && \
     build_install_and_config_intel_drivers
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
-      log_success "Finished: Build and install and configuration of Intel drivers.";
+      log_success "Finished: Intel ICE (cvl) driver build, install and configuration.";
     else
-      log_error "Intel drivers configuration/installation failed."
+      log_error "Intel ICE drivers configuration/installation failed."
     fi
   fi
-  if [[ "${1}" == "get-irdma" || "${1}" == "all" ]]; then
+  if [[ "${1}" == "get-iavf" || "${1}" == "iavf" || "${1}" == "all" ]]; then
+    return_code="$?"
+    if [[ "${return_code}" == "0" ]]; then
+      log_success "Finished: Intel IAVF driver build, install and configuration.";
+    else
+      log_error "Intel IAVF drivers configuration/installation failed."
+    fi
+  fi
+  if [[ "${1}" == "get-irdma" || "${1}" == "irdma" || "${1}" == "all" ]]; then
     if [[ "${1}" == "get-irdma" ]]; then
       install_os_dependencies && \
       lib_install_fabrics
@@ -302,9 +309,9 @@ then
     config_intel_rdma_driver
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
-      log_success "Finished: irdma driver configuration for Intel hardware backend."
+      log_success "Finished: Intel IRDMA driver build, install and configuration."
     else
-      log_error "Intel irdma configuration failed."
+      log_error "Intel IRDMA drivers configuration/installation failed."
       exit "${return_code}"
     fi
   fi
