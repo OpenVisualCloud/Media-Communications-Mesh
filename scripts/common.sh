@@ -3,50 +3,31 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2024 Intel Corporation
 
+
 REPO_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")/..")"
-export REPO_DIR
-export BUILD_DIR="${BUILD_DIR:-${REPO_DIR}/_build}"
-export DRIVERS_DIR="${DRIVERS_DIR:-/opt/intel/drivers}"
-export PREFIX_DIR="${PREFIX_DIR:-${REPO_DIR}/_install}"
 
-MCM_VERSIONS_FILE_PATH="$(readlink -f "${MCM_VERSIONS_FILE:-${REPO_DIR}/versions.env}")"
-export MCM_VERSIONS_FILE_PATH
-
+MCM_VERSIONS_FILE_PATH="$(readlink -f "${MCM_VERSIONS_FILE_PATH:-${REPO_DIR}/versions.env}")"
+if [[ -f "${MCM_VERSIONS_FILE_PATH}" ]]; then
 # shellcheck source="versions.env"
-. "${MCM_VERSIONS_FILE_PATH}"
-
-export MTL_DIR="${BUILD_DIR}/mtl"
-MTL_VERSIONS_FILE_PATH="${MTL_VERSIONS_FILE:-${MTL_DIR}/versions.env}"
-
-if [[ -f "${MTL_VERSIONS_FILE_PATH}" ]]; then
-    MTL_VERSIONS_FILE_PATH="$(readlink -f "${MTL_VERSIONS_FILE_PATH}")"
-    export MTL_VERSIONS_FILE_PATH
-# shellcheck source=/dev/null
-    . "${MTL_VERSIONS_FILE_PATH}"    
+  . "${MCM_VERSIONS_FILE_PATH}"
 fi
 
-export DPDK_DIR="${BUILD_DIR}/dpdk"
-export XDP_DIR="${BUILD_DIR}/xdp"
-export BPF_DIR="${XDP_DIR}/lib/libbpf"
-export GRPC_DIR="${BUILD_DIR}/grpc"
-export JPEGXS_DIR="${BUILD_DIR}/jpegxs"
-export LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
-export LIBFDT_DIR="${BUILD_DIR}/libfdt"
-export JSONC_DIR="${BUILD_DIR}/json-c"
-export CMAKE_DIR="${BUILD_DIR}/cmake"
-export NASM_DIR="${BUILD_DIR}/nasm"
+MTL_VERSIONS_FILE_PATH="$(readlink -f "${MTL_VERSIONS_FILE_PATH:-${MTL_DIR}/versions.env}")"
+if [[ -f "${MTL_VERSIONS_FILE_PATH}" ]]; then
+# shellcheck source=/dev/null
+  . "${MTL_VERSIONS_FILE_PATH}"    
+fi
 
-export ICE_DIR="${DRIVERS_DIR}/ice/${ICE_VER}"
-export IRDMA_DIR="${DRIVERS_DIR}/irdma/${IRDMA_VER}"
+ICE_DIR="${ICE_CORE_DIR}/${ICE_VER}"
+IAVF_DIR="${IAVF_CORE_DIR}/${IAVF_VER}"
+IRDMA_DIR="${IRDMA_CORE_DIR}/${IRDMA_VER}"
 
 PM="${PM:-apt-get}"
-KERNEL_VERSION="${KERNEL_VERSION:-$(uname -r)}"
-export TZ="${TZ:-Europe/Warsaw}"
-export NPROC="${NPROC:-$(nproc)}"
+NPROC="${NPROC:-$(nproc)}"
 
 if ! grep "/root/.local/bin" <<< "${PATH}" > /dev/null 2>&1; then
-    export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"
-    export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH}"
+  export PATH="/root/.local/bin:/root/bin:/root/usr/bin:${PATH}"
+  export PKG_CONFIG_PATH="/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig:${PKG_CONFIG_PATH}"
 fi
 
 BOLD="${BOLD:-\e[1;}"
