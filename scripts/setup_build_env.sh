@@ -3,12 +3,6 @@
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
 . "${SCRIPT_DIR}/common.sh"
 
-export PM="${PM:-apt-get}"
-export DEBIAN_FRONTEND="noninteractive"
-
-export KERNEL_VERSION="${KERNEL_VERSION:-$(uname -r)}"
-export INSTALL_USE_CUSTOM_PATH="${INSTALL_USE_CUSTOM_PATH:-false}"
-
 SYS_PKG_CONFIG_PATH="${SYS_PKG_CONFIG_PATH:-/usr/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig}"
 if [[ "${PKG_CONFIG_PATH}" != *"${SYS_PKG_CONFIG_PATH}"* ]]; then
     export PKG_CONFIG_PATH="${PKG_CONFIG_PATH}:${SYS_PKG_CONFIG_PATH}"

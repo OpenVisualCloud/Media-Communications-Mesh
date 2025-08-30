@@ -1,9 +1,6 @@
 #!/usr/bin/env bash
 
 SCRIPT_DIR="$(readlink -f "$(dirname -- "${BASH_SOURCE[0]}")")"
-export WORKING_DIR="${BUILD_DIR:-${REPO_DIR}/build/rdma}"
-export PERF_DIR="${DRIVERS_DIR}/perftest"
-
 . "${SCRIPT_DIR}/setup_build_env.sh"
 
 function print_usage()
@@ -15,11 +12,13 @@ function print_usage()
     log_info ""
     log_info "\tall"
     log_info "\t\t get, build, and install whole stack."
-    log_info "\tget-ice"
-    log_info "\t\t get, build, and install ice, rdma, and irdma drivers stack."
-    log_info "\tget-irdma"
-    log_info "\t\t setup and pre-configure rdma, irdma and libfabrics ."
-    log_info "\tget-perftest"
+    log_info "\tice"
+    log_info "\t\t get, build, and install ICE (cvl) drivers stack."
+    log_info "\tiavf"
+    log_info "\t\t get, build, and install IAVF (virtual functions) drivers stack."
+    log_info "\tirdma"
+    log_info "\t\t setup and pre-configure iRDMA and libfabrics."
+    log_info "\tperftest"
     log_info "\t\t download and install perftest and dependencies."
     log_info "\tcheck-mtu"
     log_info "\t\t fast-check basics in environment."
@@ -27,7 +26,7 @@ function print_usage()
     log_info "\t\t temporarily set MTU to 9000 for given interface."
     log_info "\trun-perftest <INTERFACE>"
     log_info "\t\t execute installed perftests."
-    log_info "" 
+    log_info ""
     log_info "\tintel"
     log_info "\t\t animation in bash"
 }
@@ -79,52 +78,80 @@ function install_os_dependencies()
     return 0
 }
 
-function get_irdma_driver_tgz() {
-    echo "https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz"
-}
-
 function get_and_patch_intel_drivers()
 {
     log_info "Intel drivers: Starting download and patching actions."
-    if [[ ! -d "${MTL_DIR}" ]]; then
-        git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"
-    fi
+    if [[ ! -d "${MTL_DIR}" ]]; then  git_download_strip_unpack "OpenVisualCloud/Media-Transport-Library" "${MTL_VER}" "${MTL_DIR}"; fi
+    if [[ -d "${ICE_DIR}" ]]; then rm -rf "${ICE_DIR}"; fi
+
+    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}" "${ICE_DIR}"
+
     if [ ! -d "${MTL_DIR}/patches/ice_drv/${ICE_VER}/" ]; then
-        log_error  "MTL patch for ICE=v${ICE_VER} could not be found: ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
+        log_error "No Intel ICE (cvl) patches for ICE=v${ICE_VER} found at ${MTL_DIR}/patches/ice_drv/${ICE_VER}"
+        log_error "version supported: $(ls "${MTL_DIR}/patches/ice_drv/")"
         return 1
     fi
-    if [[ -d "${ICE_DIR}" ]]; then
-        rm -rf "${ICE_DIR}"
-    fi
-    git_download_strip_unpack "intel/ethernet-linux-ice"  "refs/tags/v${ICE_VER}"  "${ICE_DIR}"
-
     pushd "${ICE_DIR}" && \
-    patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
+        patch -p1 -i <(cat "${MTL_DIR}/patches/ice_drv/${ICE_VER}/"*.patch) && \
     popd && \
-    { log_success "Intel drivers: Finished download and patching actions." && return 0; } ||
+    { log_success "Intel drivers: Finished download and patching actions." && return 0; } || \
     { log_error "Intel drivers: Failed to download or patch." && return 1; }
 }
 
-function build_install_and_config_intel_drivers()
+function build_install_and_config_ice_driver()
 {
-    log_info "Intel ICE: Driver starting the build and install workflow."
-    if ! as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install; then
-        log_error "Intel ICE: Failed to build and install drivers"
-        exit 5
-    fi
-    as_root rmmod irdma 2>&1 || true
-    as_root rmmod ice
-    as_root modprobe ice
-    log_success "Intel ICE: Drivers finished install process."
+  log_info "Intel ICE: Driver starting the build and install workflow."
+  get_and_patch_intel_drivers
 
-    return 0
+  as_root make "-j${NPROC}" -C "${ICE_DIR}/src" clean || true
+  if ! as_root make "-j${NPROC}" -C "${ICE_DIR}/src" ; then
+      log_error "Intel ICE: Failed to build and install drivers"
+      exit 5
+  fi
+  if ! as_root make "-j${NPROC}" -C "${ICE_DIR}/src" install; then
+      log_error "Intel ICE: Failed to build and install drivers"
+      exit 5
+  fi
+  as_root rmmod irdma 2>/dev/null || true
+  as_root rmmod ice 2>/dev/null || true
+  sleep 1 && \
+  as_root modprobe ice && \
+  log_success "Intel ICE: Drivers finished install process."
+  return 0
 }
 
-function build_install_and_config_irdma_drivers()
+function build_install_and_config_intel_driver()
 {
-    IRDMA_REPO="$(get_irdma_driver_tgz)"
+  build_install_and_config_ice_driver
+  return $?
+}
+
+function build_install_and_config_iavf_driver()
+{
+  log_info "Intel IAVF: Driver starting the build and install workflow."
+  git_download_strip_unpack "intel/ethernet-linux-iavf"  "refs/tags/v${IAVF_VER}" "${IAVF_DIR}"
+
+  as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" clean || true
+  if ! as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" ; then
+    log_error "Intel IAVF: Failed to build and install drivers"
+    exit 5
+  fi
+  if ! as_root make "-j${NPROC}" -C "${IAVF_DIR}/src" install; then
+    log_error "Intel IAVF: Failed to build and install drivers"
+    exit 6
+  fi
+  as_root rmmod iavf || true
+  sleep 1 && \
+  as_root modprobe iavf || true
+  log_success "Intel IAVF: Drivers finished install process."
+  return 0
+}
+
+function build_install_and_config_irdma_driver()
+{
+    IRDMA_REPO="${IRDMA_REPO:-"https://downloadmirror.intel.com/${IRDMA_DMID}/irdma-${IRDMA_VER}.tgz"}"
     wget_download_strip_unpack "${IRDMA_REPO}" "${IRDMA_DIR}"
-    
+
     if pushd "${IRDMA_DIR}"; then
         "${IRDMA_DIR}/build_core.sh" -y || exit 2
         as_root "${IRDMA_DIR}/install_core.sh"  || exit 3
@@ -253,14 +280,14 @@ function run_perftest()
     network_mask="${3:-24}"
     ip addr show dev "${interface_name}" | grep "${network_address}" || \
     ip addr add "${network_address}/${network_mask}" dev "${interface_name}"
-    taskset -c 1 ib_write_bw --qp=4 --report_gbit -D 60 --tos 96 -R &> "${WORKING_DIR}/perftest_server.log" &
+    taskset -c 1 ib_write_bw --qp=4 --report_gbit -D 60 --tos 96 -R &> "${PERF_RUN_DIR}/perftest_server.log" &
     server_pid=$!
-    ib_write_bw "${network_address}" --qp=4 --report_gbit -D 60 --tos 96 -R &> "${WORKING_DIR}/perftest_client.log" &
+    ib_write_bw "${network_address}" --qp=4 --report_gbit -D 60 --tos 96 -R &> "${PERF_RUN_DIR}/perftest_client.log" &
     client_pid=$!
     log_info "perftest is running. Waiting 60 s..."
     wait $server_pid
     wait $client_pid
-    log_info "perftest completed. See results in $WORKING_DIR/perftest_server.log and ${WORKING_DIR}/perftest_client.log"
+    log_info "perftest completed. See results in $PERF_RUN_DIR/perftest_server.log and ${PERF_RUN_DIR}/perftest_client.log"
     ip addr del "${network_address}/${network_mask}" dev "${interface_name}"
 }
 
@@ -273,38 +300,45 @@ then
     exit 1
   fi
 
-  if [[ -f "${WORKING_DIR}" ]]; then
-    log_error "Can't create rdma directory because of the rdma file ${WORKING_DIR}"
+  if [[ -f "${PERF_RUN_DIR}" ]]; then
+    log_error "Can't create rdma directory because of the rdma file ${PERF_RUN_DIR}"
     exit 1
   fi
-  rm -f "./${WORKING_DIR}/*"
-  mkdir -p "${WORKING_DIR}" "${PERF_DIR}"
+  rm -f "./${PERF_RUN_DIR}/*"
+  mkdir -p "${PERF_RUN_DIR}" "${PERF_DIR}"
 
-  set -eEo pipefail  
- 
-  if [[ "${1}" == "get-ice" || "${1}" == "all" ]]; then
-    install_os_dependencies && \
-    get_and_patch_intel_drivers && \
-    build_install_and_config_intel_drivers
+  set -eEo pipefail
+
+  if [[ "${1}" == *"ice" || "${1}" == *"iavf" || "${1}" == *"irdma" || "${1}" == "all" ]]; then
+    install_os_dependencies
+  fi
+  if [[ "${1}" == *"ice" || "${1}" == "all" ]]; then
+
+    build_install_and_config_ice_driver
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
-      log_success "Finished: Build and install and configuration of Intel drivers.";
+      log_success "Finished: Intel ICE (cvl) driver build, install and configuration.";
     else
-      log_error "Intel drivers configuration/installation failed."
+      log_error "Intel ICE drivers configuration/installation failed."
     fi
   fi
-  if [[ "${1}" == "get-irdma" || "${1}" == "all" ]]; then
-    if [[ "${1}" == "get-irdma" ]]; then
-      install_os_dependencies && \
-      lib_install_fabrics
+  if [[ "${1}" == *"iavf" || "${1}" == "all" ]]; then
+    build_install_and_config_iavf_driver
+    return_code="$?"
+    if [[ "${return_code}" == "0" ]]; then
+      log_success "Finished: Intel IAVF driver build, install and configuration.";
+    else
+      log_error "Intel IAVF drivers configuration/installation failed."
     fi
-    build_install_and_config_irdma_drivers && \
+  fi
+  if [[ "${1}" == *"irdma" || "${1}" == "all" ]]; then
+    build_install_and_config_irdma_driver && \
     config_intel_rdma_driver
     return_code="$?"
     if [[ "${return_code}" == "0" ]]; then
-      log_success "Finished: irdma driver configuration for Intel hardware backend."
+      log_success "Finished: Intel IRDMA driver build, install and configuration."
     else
-      log_error "Intel irdma configuration failed."
+      log_error "Intel IRDMA drivers configuration/installation failed."
       exit "${return_code}"
     fi
   fi
