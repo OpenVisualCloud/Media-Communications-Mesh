@@ -28,35 +28,45 @@ logger = logging.getLogger(__name__)
 
 
 def create_client_json(
-    build: str, client: Engine.rx_tx_app_client_json.ClientJson, log_path: str = ""
+    build: str, client: Engine.rx_tx_app_client_json.ClientJson, log_path: str = "", instance_num = None, instance_type = None
 ) -> None:
     logger.debug("Client JSON:")
     for line in client.to_json().splitlines():
         logger.debug(line)
-    output_path = str(Path(build, "tests", "tools", "TestApp", "build", "client.json"))
+    filename = (
+        f"client_{instance_type.lower()}_{instance_num}.json"
+        if instance_num is not None and instance_type is not None
+        else "client.json"
+    )
+    output_path = str(Path(build, "tests", "tools", "TestApp", "build", filename))
     logger.debug(f"Client JSON path: {output_path}")
     client.prepare_and_save_json(output_path=output_path)
-    # Use provided log_path or default to LOG_FOLDER
     log_dir = log_path if log_path else LOG_FOLDER
-    client.copy_json_to_logs(log_path=log_dir)
+    client.copy_json_to_logs(log_path=log_dir, filename=filename)
 
 
 def create_connection_json(
     build: str,
     rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson,
     log_path: str = "",
+    instance_num = None,
+    instance_type = None
 ) -> None:
     logger.debug("Connection JSON:")
     for line in rx_tx_app_connection.to_json().splitlines():
         logger.debug(line)
+    filename = (
+        f"connection_{instance_type.lower()}_{instance_num}.json"
+        if instance_num is not None  and instance_type is not None
+        else "connection.json"
+    )
     output_path = str(
-        Path(build, "tests", "tools", "TestApp", "build", "connection.json")
+        Path(build, "tests", "tools", "TestApp", "build", filename)
     )
     logger.debug(f"Connection JSON path: {output_path}")
     rx_tx_app_connection.prepare_and_save_json(output_path=output_path)
-    # Use provided log_path or default to LOG_FOLDER
     log_dir = log_path if log_path else LOG_FOLDER
-    rx_tx_app_connection.copy_json_to_logs(log_path=log_dir)
+    rx_tx_app_connection.copy_json_to_logs(log_path=log_dir, filename=filename)
 
 
 class AppRunnerBase:
@@ -75,6 +85,7 @@ class AppRunnerBase:
         loop=None,
         log_path=None,
         media_proxy_port=None,
+        instance_num=None,
     ):
         self.host = host
         self.mcm_path = get_mcm_path(host)
@@ -99,16 +110,17 @@ class AppRunnerBase:
         self.app_path = host.connection.path(
             self.mcm_path, "tests", "tools", "TestApp", "build"
         )
-        self.client_cfg_file = host.connection.path(self.app_path, "client.json")
+        client_filename = f"client_{instance_num}.json" if instance_num is not None else "client.json"
+        connection_filename = f"connection_{instance_num}.json" if instance_num is not None else "connection.json"
+        
+        self.client_cfg_file = host.connection.path(self.app_path, client_filename)
         self.connection_cfg_file = host.connection.path(
-            self.app_path, "connection.json"
+            self.app_path, connection_filename
         )
         self.input = input_file
         self.output_path = getattr(
             host.topology.extra_info, "output_path", DEFAULT_OUTPUT_PATH
         )
-
-        # Handle output file path construction
         if output_file and output_path:
             self.output = host.connection.path(output_path, output_file)
         elif output_file:
@@ -123,6 +135,7 @@ class AppRunnerBase:
         self.is_pass = False
         self.log_path = log_path
         self.media_proxy_port = media_proxy_port
+        self.instance_num = instance_num
 
     def _get_app_cmd(self, direction):
         payload_type = self.payload.payload_type.value.capitalize()
@@ -135,14 +148,12 @@ class AppRunnerBase:
         if self.output:
             cmd += f" {self.output}"
 
-        # Build environment variables
         env_vars = []
         if self.no_proxy:
             env_vars.append(f"NO_PROXY={self.no_proxy} no_proxy={self.no_proxy}")
         if self.media_proxy_port:
             env_vars.append(f"MCM_MEDIA_PROXY_PORT={self.media_proxy_port}")
 
-        # Add environment variables to command
         if env_vars:
             cmd = f"{' '.join(env_vars)} {cmd}"
 
@@ -152,7 +163,6 @@ class AppRunnerBase:
     def _ensure_output_directory_exists(self):
         """Ensure the output directory exists, create if it doesn't."""
         if self.output and str(self.output) != "/dev/null":
-            # Skip for /dev/null and other special files
             if "/dev/" in str(self.output):
                 logger.debug(
                     f"Skipping directory creation for special device path: {self.output}"
@@ -163,7 +173,6 @@ class AppRunnerBase:
             logger.debug(f"Ensuring output directory exists: {output_dir}")
 
             try:
-                # Check if directory already exists to avoid unnecessary commands
                 check_cmd = f"[ -d {output_dir} ] && echo 'exists' || echo 'not exists'"
                 result = self.host.connection.execute_command(check_cmd, shell=True)
                 if "not exists" in result.stdout:
@@ -176,11 +185,23 @@ class AppRunnerBase:
                 logger.warning(f"Error creating directory {output_dir}: {str(e)}")
 
     def start(self):
-        # Use self.log_path for consistent logging across the application
         log_dir = self.log_path if self.log_path else LOG_FOLDER
-        create_client_json(self.mcm_path, self.rx_tx_app_client_json, log_path=log_dir)
+
+        direction_type = self.direction.lower() if hasattr(self, 'direction') else None
+        
+        create_client_json(
+            self.mcm_path, 
+            self.rx_tx_app_client_json, 
+            log_path=log_dir,
+            instance_num=self.instance_num,
+            instance_type=direction_type
+        )
         create_connection_json(
-            self.mcm_path, self.rx_tx_app_connection_json, log_path=log_dir
+            self.mcm_path, 
+            self.rx_tx_app_connection_json, 
+            log_path=log_dir,
+            instance_num=self.instance_num,
+            instance_type=direction_type
         )
         self._ensure_output_directory_exists()
 
@@ -203,12 +224,14 @@ class AppRunnerBase:
 
             log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             subdir = f"RxTx/{self.host.name}"
-            filename = f"{self.direction.lower()}.log"
+            if self.instance_num is not None:
+                filename = f"{self.direction.lower()}_{self.instance_num}.log"
+            else:
+                filename = f"{self.direction.lower()}.log"
             log_file_path = os.path.join(log_dir, subdir, filename)
 
             app_log_validation_status = False
             app_log_error_count = 0
-            # Using common log validation utility
             from common.log_validation_utils import check_phrases_in_order
 
             if self.direction in ("Rx", "Tx"):
@@ -220,6 +243,15 @@ class AppRunnerBase:
                     else TX_REQUIRED_LOG_PHRASES
                 )
 
+                optional_phrases = []
+                if self.direction == "Rx" and hasattr(self, 'instance_num') and self.instance_num is not None:
+                    optional_phrases = [
+                        "[RX] Done reading the data",
+                        "[RX] dropping connection to media-proxy",
+                        "INFO - memif disconnected!"
+                    ]
+                    required_phrases = [p for p in required_phrases if p not in optional_phrases]
+                
                 validation_result = validate_log_file(
                     log_file_path, required_phrases, self.direction, strict_order=False
                 )
@@ -229,7 +261,6 @@ class AppRunnerBase:
                 app_log_error_count = validation_result["error_count"]
                 validation_info.extend(validation_result["validation_info"])
 
-                # Additional logging if validation failed
                 if (
                     not validation_result["is_pass"]
                     and validation_result["missing_phrases"]
@@ -266,7 +297,6 @@ class AppRunnerBase:
                             f"  - {phrase}: found '{found}', expected '{expected}'"
                         )
 
-        # File validation for Rx only run if output path isn't "/dev/null" or doesn't start with "/dev/null/"
         if (
             self.direction == "Rx"
             and self.output
@@ -282,7 +312,6 @@ class AppRunnerBase:
             validation_info.extend(file_info)
             self.is_pass = self.is_pass and file_validation_passed
 
-        # Save validation report to file
         if validation_info:
             validation_info.append(f"\n=== Overall Validation Summary ===")
             overall_status = (
@@ -295,7 +324,6 @@ class AppRunnerBase:
             if self.direction == "Rx":
                 file_status = "PASS" if file_validation_passed else "FAIL"
                 validation_info.append(f"File validation: {file_status}")
-                # Add note about overall validation logic
                 if not self.is_pass or not file_validation_passed:
                     validation_info.append(
                         "Note: Overall validation fails if either app log or file validation fails"
@@ -303,7 +331,10 @@ class AppRunnerBase:
 
             log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             subdir = f"RxTx/{self.host.name}"
-            validation_filename = f"{self.direction.lower()}_validation.log"
+            if self.instance_num is not None:
+                validation_filename = f"{self.direction.lower()}_{self.instance_num}_validation.log"
+            else:
+                validation_filename = f"{self.direction.lower()}_validation.log"
 
             save_process_log(
                 subdir=subdir,
@@ -340,10 +371,11 @@ class LapkaExecutor:
 
             def log_output():
                 log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
+                log_filename = f"tx_{self.instance_num}.log" if self.instance_num is not None else "tx.log"
                 for line in self.process.get_stdout_iter():
                     save_process_log(
                         subdir=f"RxTx/{self.host.name}",
-                        filename="tx.log",
+                        filename=log_filename,
                         text=line.rstrip(),
                         cmd=cmd,
                         log_dir=log_dir,
@@ -360,20 +392,19 @@ class LapkaExecutor:
         def _generate_output_file_path(self):
             """Generate a proper output file path with improved naming convention."""
             if self.output is None:
-                # If output_path is /dev/null, use it directly without creating a new filename
                 if self.output_path == "/dev/null":
                     self.output = self.host.connection.path("/dev/null")
                     logger.debug(f"Using /dev/null as output path")
                     return
 
-                # Generate output filename from input media file
                 input_path = Path(str(self.payload.media_file_path))
                 timestamp = int(time.time())
 
-                # Create a descriptive filename with timestamp and host info
-                output_filename = f"rx_{self.host.name}_{input_path.stem}_{timestamp}{input_path.suffix}"
+                if self.instance_num is not None:
+                    output_filename = f"rx_{self.instance_num}_{self.host.name}_{input_path.stem}_{timestamp}{input_path.suffix}"
+                else:
+                    output_filename = f"rx_{self.host.name}_{input_path.stem}_{timestamp}{input_path.suffix}"
 
-                # Use the configured output path or default
                 self.output = self.host.connection.path(
                     self.output_path, output_filename
                 )
@@ -392,10 +423,11 @@ class LapkaExecutor:
 
             def log_output():
                 log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
+                log_filename = f"rx_{self.instance_num}.log" if self.instance_num is not None else "rx.log"
                 for line in self.process.get_stdout_iter():
                     save_process_log(
                         subdir=f"RxTx/{self.host.name}",
-                        filename="rx.log",
+                        filename=log_filename,
                         text=line.rstrip(),
                         cmd=cmd,
                         log_dir=log_dir,
