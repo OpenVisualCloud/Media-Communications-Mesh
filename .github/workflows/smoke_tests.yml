@@ -180,6 +180,7 @@ jobs:
             report.json
 
   call-report-summary:
+    if: always()
     needs: validation-run-tests
     uses: ./.github/workflows/report_summary.yml
     with:

@@ -21,7 +21,7 @@ from Engine.media_files import audio_files_25_03
     "file",
     [
         pytest.param("PCM16_48000_Mono", marks=pytest.mark.smoke),
-        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Mono"],
+        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"],
     ],
 )
 def test_audio_25_03(
