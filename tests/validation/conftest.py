@@ -206,7 +206,7 @@ def media_path(test_config: dict) -> str:
 
 
 @pytest.fixture(scope="session")
-def log_path_dir(test_config: dict) -> str:
+def log_path_dir(test_config: dict, pytestconfig):
     """
     Creates and returns the main log directory path for the test session.
 
@@ -214,9 +214,8 @@ def log_path_dir(test_config: dict) -> str:
     If keep_logs is False, the existing log directory is removed before creating a new one.
 
     :param test_config: Dictionary containing test configuration.
-    :return: Path to the main log directory for the session.
-    :rtype: str
     """
+    add_logging_level("TESTCMD", TESTCMD_LVL)
     keep_logs = test_config.get("keep_logs", True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir_name = f"log_{timestamp}"
@@ -226,7 +225,10 @@ def log_path_dir(test_config: dict) -> str:
         shutil.rmtree(log_dir)
     log_dir = Path(log_dir, log_dir_name)
     log_dir.mkdir(parents=True, exist_ok=True)
-    return str(log_dir)
+    yield str(log_dir)
+    pytest_log = Path(pytestconfig.inicfg["log_file"])
+    shutil.copy(str(pytest_log), log_dir / pytest_log.name)
+    csv_write_report(str(log_dir / "report.csv"))
 
 
 def sanitize_name(test_name):
@@ -822,58 +824,23 @@ def log_interface_driver_info(hosts: dict[str, Host]) -> None:
             )
 
 
-@pytest.fixture(scope="session", autouse=True)
-def log_session():
-    add_logging_level("TESTCMD", TESTCMD_LVL)
-
-    today = datetime.today()
-    folder = today.strftime("%Y-%m-%dT%H:%M:%S")
-    path = os.path.join(LOG_FOLDER, folder)
-    path_symlink = os.path.join(LOG_FOLDER, "latest")
-    try:
-        os.remove(path_symlink)
-    except FileNotFoundError:
-        pass
-    os.makedirs(path, exist_ok=True)
-    os.symlink(folder, path_symlink)
-    yield
-    shutil.copy("pytest.log", f"{LOG_FOLDER}/latest/pytest.log")
-    csv_write_report(f"{LOG_FOLDER}/latest/report.csv")
-
 @pytest.fixture(scope="function", autouse=True)
 def log_case(request, caplog: pytest.LogCaptureFixture):
     case_id = request.node.nodeid
-    case_folder = os.path.dirname(case_id)
-    os.makedirs(os.path.join(LOG_FOLDER, "latest", case_folder), exist_ok=True)
-    logfile = os.path.join(LOG_FOLDER, "latest", f"{case_id}.log")
-    fh = logging.FileHandler(logfile)
-    formatter = request.session.config.pluginmanager.get_plugin(
-        "logging-plugin"
-    ).formatter
-    format = AmberLogFormatter(formatter)
-    fh.setFormatter(format)
-    fh.setLevel(logging.DEBUG)
-    logger = logging.getLogger()
-    logger.addHandler(fh)
     yield
     report = request.node.stash[phase_report_key]
     if report["setup"].failed:
         logging.log(level=TEST_FAIL, msg=f"Setup failed for {case_id}")
-        os.chmod(logfile, 0o4755)
         result = "Fail"
     elif ("call" not in report) or report["call"].failed:
         logging.log(level=TEST_FAIL, msg=f"Test failed for {case_id}")
-        os.chmod(logfile, 0o4755)
         result = "Fail"
     elif report["call"].passed:
         logging.log(level=TEST_PASS, msg=f"Test passed for {case_id}")
-        os.chmod(logfile, 0o755)
         result = "Pass"
     else:
         logging.log(level=TEST_INFO, msg=f"Test skipped for {case_id}")
         result = "Skip"
-
-    logger.removeHandler(fh)
 
     commands = []
     for record in caplog.get_records("call"):
@@ -887,22 +854,3 @@ def log_case(request, caplog: pytest.LogCaptureFixture):
         issue="n/a",
         result_note="n/a",
     )
-
-
-@pytest.fixture(scope="session")
-def compliance_report(request, log_session, test_config):
-    """
-    This function is used for compliance check and report.
-    """
-    # TODO: Implement compliance check logic. When tcpdump pcap is enabled, at the end of the test session all pcaps
-    # shall be send into EBU list.
-    # Pcaps shall be stored in the ramdisk, and then moved to the compliance
-    # folder or send into EBU list after each test finished and remove it from the ramdisk.
-    # Compliance report generation logic goes here after yield. Or in another class / function but triggered here.
-    # AFAIK names of pcaps contains test name so it can be matched with result of each test like in code below.
-    yield
-    if test_config.get("compliance", False):
-        logging.info("Compliance mode enabled, updating compliance results")
-        for item in request.session.items:
-            test_case = item.nodeid
-            update_compliance_result(test_case, "Fail")
