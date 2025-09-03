@@ -64,7 +64,7 @@ def check_for_errors(
 
     Returns:
         Tuple of (is_pass, errors_found)
-        errors_found is a list of dicts with 'line', 'line_number', and 'keyword' keys
+        errors_found is a list of dicts with "line", "line_number", and "keyword" keys
     """
     if error_keywords is None:
         error_keywords = RX_TX_APP_ERROR_KEYWORDS
@@ -124,19 +124,19 @@ def validate_log_file(
     Args:
         log_file_path: Path to the log file
         required_phrases: List of phrases to check for
-        direction: Optional string to identify the direction (e.g., 'Rx', 'Tx')
+        direction: Optional string to identify the direction (e.g., "Rx", "Tx")
         error_keywords: Optional list of error keywords to check for
         strict_order: Whether to check phrases in strict order (default: False)
 
     Returns:
         Dictionary containing validation results:
         {
-            'is_pass': bool,
-            'error_count': int,
-            'validation_info': list of validation information strings,
-            'missing_phrases': list of missing phrases,
-            'context_lines': dict mapping phrases to context lines,
-            'errors': list of error dictionaries (if error_keywords provided)
+            "is_pass": bool,
+            "error_count": int,
+            "validation_info": list of validation information strings,
+            "missing_phrases": list of missing phrases,
+            "context_lines": dict mapping phrases to context lines,
+            "errors": list of error dictionaries (if error_keywords provided)
         }
     """
     validation_info = []
@@ -166,14 +166,14 @@ def validate_log_file(
     dir_prefix = f"{direction} " if direction else ""
     validation_info.append(f"=== {dir_prefix}Log Validation ===")
     validation_info.append(f"Log file: {log_file_path}")
-    validation_info.append(f"Validation result: {'PASS' if is_pass else 'FAIL'}")
+    validation_info.append(f'Validation result: {"PASS" if is_pass else "FAIL"}')
     validation_info.append(f"Total errors found: {error_count}")
 
     # Missing phrases info
     if not log_pass:
         validation_info.append(f"Missing or out-of-order phrases analysis:")
         for phrase in missing:
-            validation_info.append(f'\n  Expected phrase: "{phrase}"')
+            validation_info.append(f"\n  Expected phrase: "{phrase}"")
             validation_info.append(f"  Context in log file:")
             if phrase in context_lines:
                 for line in context_lines[phrase]:
@@ -264,9 +264,7 @@ def append_to_consolidated_validation_report(
 
 
 def write_executor_validation_summary(
-    log_dir: str,
-    tx_executor=None,
-    rx_executors=None
+    log_dir: str, tx_executor=None, rx_executors=None
 ) -> bool:
     """
     Write the consolidated validation summary from tx and rx executors.
@@ -291,7 +289,12 @@ def write_executor_validation_summary(
                 component_hosts[component_name] = executor.host.name
         else:
             # Single tx executor
-            component_name = f"tx_{tx_executor.instance_num}" if hasattr(tx_executor, 'instance_num') and tx_executor.instance_num is not None else "tx_1"
+            component_name = (
+                f"tx_{tx_executor.instance_num}"
+                if hasattr(tx_executor, "instance_num")
+                and tx_executor.instance_num is not None
+                else "tx_1"
+            )
             component_results[component_name] = tx_executor.is_pass
             component_hosts[component_name] = tx_executor.host.name
 
@@ -299,24 +302,36 @@ def write_executor_validation_summary(
     if rx_executors is not None:
         if isinstance(rx_executors, list):
             for i, executor in enumerate(rx_executors, 1):
-                component_name = f"rx_{executor.instance_num}" if hasattr(executor, 'instance_num') and executor.instance_num is not None else f"rx_{i}"
+                component_name = (
+                    f"rx_{executor.instance_num}"
+                    if hasattr(executor, "instance_num")
+                    and executor.instance_num is not None
+                    else f"rx_{i}"
+                )
                 component_results[component_name] = executor.is_pass
                 component_hosts[component_name] = executor.host.name
         else:
             # Single rx executor
-            component_name = f"rx_{rx_executors.instance_num}" if hasattr(rx_executors, 'instance_num') and rx_executors.instance_num is not None else "rx_1"
+            component_name = (
+                f"rx_{rx_executors.instance_num}"
+                if hasattr(rx_executors, "instance_num")
+                and rx_executors.instance_num is not None
+                else "rx_1"
+            )
             component_results[component_name] = rx_executors.is_pass
             component_hosts[component_name] = rx_executors.host.name
 
-    # Write consolidated validation report - simpler version that doesn't rely on log_file attributes
-    return write_consolidated_validation_summary(log_dir, component_results, component_hosts)
+    # Write consolidated validation report - simpler version that doesn"t rely on log_file attributes
+    return write_consolidated_validation_summary(
+        log_dir, component_results, component_hosts
+    )
 
 
 def create_consolidated_validation_report(
     log_dir: str,
     component_results: Dict[str, bool],
     component_hosts: Dict[str, str],
-    validation_data: List[Dict]
+    validation_data: List[Dict],
 ) -> bool:
     """
     Create a comprehensive consolidated validation report with detailed information
@@ -327,7 +342,7 @@ def create_consolidated_validation_report(
         component_results: Dictionary mapping component names to their validation status
         component_hosts: Dictionary mapping component names to their host names
         validation_data: List of dictionaries containing detailed validation data for each component
-        
+
     Returns:
         bool: Overall pass/fail status
     """
@@ -337,11 +352,11 @@ def create_consolidated_validation_report(
         report_dir = os.path.join(log_dir, "RxTx")
         os.makedirs(report_dir, exist_ok=True)
         report_path = os.path.join(report_dir, "log_validation.log")
-        
+
         with open(report_path, "w", encoding="utf-8") as f:
             # Summary section
             f.write("=== Consolidated Validation Report ===\n\n")
-            
+
             # Group components by host
             host_components = {}
             for component, status in component_results.items():
@@ -349,32 +364,32 @@ def create_consolidated_validation_report(
                 if host not in host_components:
                     host_components[host] = []
                 host_components[host].append((component, status))
-            
+
             # Print components grouped by host in the summary
             for host, components in sorted(host_components.items()):
                 f.write(f"Host: {host}\n")
                 for component, status in sorted(components):
-                    f.write(f"  Component: {component} - {'PASS' if status else 'FAIL'}\n")
-                
-            f.write(f"\n=== Overall Test Result: {'PASS' if overall_status else 'FAIL'} ===\n\n")
-            
+                    f.write(f'  Component: {component} - {"PASS" if status else "FAIL"}\n')
+
+            f.write(f'\n=== Overall Test Result: {"PASS" if overall_status else "FAIL"} ===\n\n')
+
             # Detailed section
             f.write("=== Individual Component Validation Reports ===\n\n")
-            
+
             # Write detailed validation info for each component
             for component_data in validation_data:
-                host = component_data['host']
-                component = component_data['component']
-                is_pass = component_data['is_pass']
-                log_file = component_data.get('log_file', 'Unknown')
-                app_validation = component_data.get('app_validation', {})
-                
+                host = component_data["host"]
+                component = component_data["component"]
+                is_pass = component_data["is_pass"]
+                log_file = component_data.get("log_file", "Unknown")
+                app_validation = component_data.get("app_validation", {})
+
                 f.write(f"--- Component: {host}:{component} ---\n")
-                
+
                 # Write app validation info
                 direction = "Tx" if component.startswith("tx") else "Rx"
                 if app_validation:
-                    validation_info = app_validation.get('validation_info', [])
+                    validation_info = app_validation.get("validation_info", [])
                     for line in validation_info:
                         f.write(f"{line}\n")
                 else:
@@ -382,39 +397,39 @@ def create_consolidated_validation_report(
                     f.write(f"Log file: {log_file}\n")
                     f.write(f"Validation result: {'PASS' if is_pass else 'FAIL'}\n")
                     f.write(f"Total errors found: 0\n")
-                
+
                 # Additional validation for RX components (file validation)
-                if direction == "Rx" and 'file_validation' in component_data and component_data['file_validation']:
-                    file_validation = component_data['file_validation']
+                if direction == "Rx" and "file_validation" in component_data and component_data["file_validation"]:
+                    file_validation = component_data["file_validation"]
                     
                     f.write("\n=== Rx Output File Validation ===\n")
-                    if 'file_path' in file_validation:
+                    if "file_path" in file_validation:
                         f.write(f"Expected output file: {file_validation['file_path']}\n")
                     
-                    if 'file_exists' in file_validation:
+                    if "file_exists" in file_validation:
                         f.write(f"File existence: {'PASS' if file_validation['file_exists'] else 'FAIL'}\n")
                     
-                    if 'file_size' in file_validation:
+                    if "file_size" in file_validation:
                         f.write(f"File size: {file_validation['file_size']} bytes")
-                        if 'file_size_check_output' in file_validation:
+                        if "file_size_check_output" in file_validation:
                             f.write(f" (checked via ls -l: {file_validation['file_size_check_output']})\n")
                         else:
                             f.write("\n")
                     
-                    if 'file_size_check' in file_validation:
+                    if "file_size_check" in file_validation:
                         f.write(f"File size check: {'PASS' if file_validation['file_size_check'] else 'FAIL'}\n")
-                
+
                 # Overall component validation summary
                 f.write("\n=== Overall Validation Summary ===\n")
                 f.write(f"Overall validation: {'PASS' if is_pass else 'FAIL'}\n")
                 f.write(f"App log validation: {'PASS' if is_pass else 'FAIL'}\n")
-                
-                if direction == "Rx" and 'file_validation' in component_data and component_data['file_validation']:
-                    file_validation_pass = component_data['file_validation'].get('is_pass', False)
+
+                if direction == "Rx" and "file_validation" in component_data and component_data["file_validation"]:
+                    file_validation_pass = component_data["file_validation"].get("is_pass", False)
                     f.write(f"File validation: {'PASS' if file_validation_pass else 'FAIL'}\n")
-                
+
                 f.write("\n")
-            
+
         logger.info(f"Consolidated validation summary written to {report_path} with result: {'PASS' if overall_status else 'FAIL'}")
         return overall_status
     except Exception as e:
@@ -450,15 +465,15 @@ def write_consolidated_validation_summary(
         report_dir = os.path.join(log_dir, "RxTx")
         os.makedirs(report_dir, exist_ok=True)
         report_path = os.path.join(report_dir, "log_validation.log")
-        
+
         with open(report_path, "a", encoding="utf-8") as f:
             f.write("\n" + "="*50 + "\n")
             f.write("=== OVERALL TEST VALIDATION SUMMARY ===\n")
             f.write(f"Overall status: {'PASS' if overall_status else 'FAIL'}\n")
-            
+
             if component_results:
                 f.write("\nComponent Status by Host:\n")
-                
+
                 # Group components by host
                 host_components = {}
                 for component, status in component_results.items():
@@ -466,7 +481,7 @@ def write_consolidated_validation_summary(
                     if host not in host_components:
                         host_components[host] = []
                     host_components[host].append((component, status))
-                
+
                 # Print components grouped by host
                 for host, components in sorted(host_components.items()):
                     f.write(f"\n  {host}:\n")
@@ -474,7 +489,7 @@ def write_consolidated_validation_summary(
                         f.write(f"    - {component}: {'PASS' if status else 'FAIL'}\n")
                     
             f.write("="*50 + "\n\n")
-        
+
         logger.info(f"Consolidated validation summary written: {'PASS' if overall_status else 'FAIL'}")
         return overall_status
     except Exception as e:
@@ -532,9 +547,9 @@ def output_validator(
     Returns:
         Dictionary with validation results:
         {
-            'is_pass': bool,
-            'errors': list of error dictionaries,
-            'phrase_mismatches': list of phrase mismatches (empty in this validator)
+            "is_pass": bool,
+            "errors": list of error dictionaries,
+            "phrase_mismatches": list of phrase mismatches (empty in this validator)
         }
     """
     is_pass, errors = check_for_errors(log_file_path, error_keywords)
