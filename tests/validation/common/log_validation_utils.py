@@ -173,7 +173,7 @@ def validate_log_file(
     if not log_pass:
         validation_info.append(f"Missing or out-of-order phrases analysis:")
         for phrase in missing:
-            validation_info.append(f"\n  Expected phrase: "{phrase}"")
+            validation_info.append(f"\n  Expected phrase: \"{phrase}\"")
             validation_info.append(f"  Context in log file:")
             if phrase in context_lines:
                 for line in context_lines[phrase]:
