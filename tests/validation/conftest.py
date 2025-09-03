@@ -47,7 +47,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture(scope="function")
-def media_proxy(hosts, mesh_agent, media_config, log_path):
+def media_proxy(hosts, mesh_agent, mtl_manager, media_config, log_path):
     """
     Fixture initializes MediaProxy instances for the provided hosts,
     yields them for use in tests, and ensures proper cleanup by stopping the
@@ -110,6 +110,33 @@ def media_proxy(hosts, mesh_agent, media_config, log_path):
         media_proxy.stop()
         if not media_proxy.is_pass:
             raise Exception("MediaProxy process did not pass")
+
+
+@pytest.fixture(scope="function")
+def mtl_manager(hosts, test_config, log_path):
+    """
+    Fixture initializes MtlManager instances for the provided hosts,
+    yields them for use in tests, and ensures proper cleanup by stopping the
+    mtl_manager processes after the test function ends.
+
+    :param hosts: The hosts to be used for initializing the MtlManager instances.
+    :type hosts: dict
+    :param test_config: Test configuration parameters.
+    :param log_path: The log directory path from the log_path fixture.
+    :type log_path: str
+    :yield: A dictionary of MtlManager instances keyed by host name.
+    :rtype: dict[str, MtlManager]
+    """
+    # Force mtl_manager configuration to be present for all hosts
+    mtl_managers = {}
+    for host in hosts.values():
+        # Create a new MtlManager instance for each test with the test-specific log path
+        mtl_manager = MtlManager(host, log_path=log_path)
+        mtl_managers[host.name] = mtl_manager
+        mtl_manager.start()
+    yield mtl_managers
+    for mtl_manager in mtl_managers.values():
+        mtl_manager.stop()
 
 
 @pytest.fixture(scope="function")
@@ -308,22 +335,6 @@ def media_config(hosts: dict) -> None:
 
 
 @pytest.fixture(scope="session", autouse=True)
-def mtl_manager(hosts):
-    """
-    Automatically start MtlManager on all hosts at the beginning of the test session,
-    and stop it at the end.
-    """
-    managers = {}
-    for host in hosts.values():
-        mgr = MtlManager(host)
-        mgr.start()
-        managers[host.name] = mgr
-    yield managers
-    for mgr in managers.values():
-        mgr.stop()
-
-
-@pytest.fixture(scope="session", autouse=True)
 def cleanup_processes(hosts: dict) -> None:
     """
     Kill mesh-agent, media_proxy, ffmpeg, and all Rx*App/Tx*App processes on all hosts before running tests.
@@ -335,7 +346,16 @@ def cleanup_processes(hosts: dict) -> None:
                 connection.execute_command(f"pgrep {proc}", stderr_to_stdout=True)
                 connection.execute_command(f"pkill -9 {proc}", stderr_to_stdout=True)
             except Exception as e:
-                if not (hasattr(e, "returncode") and e.returncode == 1):
+                # Process not found returns exit code 1, which is expected
+                # We only want to log unexpected errors
+                is_expected_error = False
+                if hasattr(e, "returncode"):
+                    # Use getattr to avoid linting errors
+                    returncode = getattr(e, "returncode")
+                    if returncode == 1:
+                        is_expected_error = True
+                
+                if not is_expected_error:
                     logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
         for pattern in ["^Rx[A-Za-z]+App$", "^Tx[A-Za-z]+App$"]:
             try:
@@ -346,7 +366,16 @@ def cleanup_processes(hosts: dict) -> None:
                     f"pkill -9 -f '{pattern}'", stderr_to_stdout=True
                 )
             except Exception as e:
-                if not (hasattr(e, "returncode") and e.returncode == 1):
+                # Process not found returns exit code 1, which is expected
+                # We only want to log unexpected errors
+                is_expected_error = False
+                if hasattr(e, "returncode"):
+                    # Use getattr to avoid linting errors
+                    returncode = getattr(e, "returncode")
+                    if returncode == 1:
+                        is_expected_error = True
+                
+                if not is_expected_error:
                     logger.warning(
                         f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"
                     )
