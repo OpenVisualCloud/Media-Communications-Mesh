@@ -127,8 +127,7 @@ def test_local_ffmpeg_video(
     mcm_rx_executor.start()
     mcm_tx_executor.start()
     try:
-        if mcm_rx_executor._processes[0].running:
-            mcm_rx_executor._processes[0].wait(timeout=FFMPEG_RUN_TIMEOUT)
+        mcm_rx_executor.wait_with_timeout(timeout=FFMPEG_RUN_TIMEOUT)
     except Exception as e:
         logging.warning(f"RX executor did not finish in time or error occurred: {e}")
 
