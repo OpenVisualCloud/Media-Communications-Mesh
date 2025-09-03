@@ -118,7 +118,3 @@ jobs:
             ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.*
             ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
             ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
-            ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
-            ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
-            ${{ env.BUILD_DIR }}/ffmpeg-6-1/ffmpeg
-            ${{ env.BUILD_DIR }}/ffmpeg-7-0/ffmpeg
