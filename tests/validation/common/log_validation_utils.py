@@ -248,7 +248,7 @@ def check_phrases_anywhere(
                 if phrase in line:
                     phrase_found = True
                     break
-            
+
             if not phrase_found:
                 missing_phrases.append(phrase)
                 # Find where the phrase should have appeared
