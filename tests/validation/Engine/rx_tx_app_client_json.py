@@ -3,6 +3,7 @@
 # Media Communications Mesh
 
 import json
+from pathlib import Path
 
 
 class ClientJson:
@@ -47,3 +48,15 @@ class ClientJson:
         f = self.host.connection.path(output_path)
         json_content = self.to_json().replace('"', '\\"')
         f.write_text(json_content)
+
+    def copy_json_to_logs(self, log_path: str) -> None:
+        """Copy the client.json file to the log path on runner."""
+        source_path = self.host.connection.path("client.json")
+        dest_path = Path(log_path) / "client.json"
+
+        # Create log directory if it doesn't exist
+        Path(log_path).mkdir(parents=True, exist_ok=True)
+
+        # Copy the client.json file to the log path
+        with open(dest_path, "w") as dest_file:
+            dest_file.write(self.to_json())
