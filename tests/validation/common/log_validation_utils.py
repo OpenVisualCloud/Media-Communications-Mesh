@@ -81,7 +81,7 @@ def check_for_errors(
         ]
 
     try:
-        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+        with open(log_path, "r", encoding="utf-8", errors="replace") as f:
             for i, line in enumerate(f):
                 for keyword in error_keywords:
                     if keyword.lower() in line.lower():
