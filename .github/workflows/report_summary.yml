@@ -74,6 +74,24 @@ jobs:
                 echo "✅ **All tests passed!**"
               fi
               echo ""
+              
+              # Add detailed test results table
+              echo "### Detailed Test Results"
+              echo ""
+              echo "| Test Name | Status | Duration (ms) |"
+              echo "| --------- | ------ | ------------- |"
+              
+              # Process each test from the report
+              jq -r '.results[] | . as $test | 
+                $test.title + "|" + 
+                (if $test.status == "passed" then "✅ Passed" 
+                elif $test.status == "failed" then "❌ Failed" 
+                elif $test.status == "skipped" then "⏭️ Skipped" 
+                else "⚠️ Error" end) + "|" + 
+                ($test.duration | tostring)' "$REPORT_FILE" | while read -r line; do
+                echo "| $line |"
+              done
+              echo ""
             else
               echo "❌ No report.json file was generated"
             fi
