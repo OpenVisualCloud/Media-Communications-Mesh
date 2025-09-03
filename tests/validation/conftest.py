@@ -15,6 +15,7 @@ from mfd_connect.exceptions import (
 )
 import pytest
 
+from common.mtl_manager.mtlManager import MtlManager
 from common.nicctl import Nicctl
 from Engine.const import (
     ALLOWED_FFMPEG_VERSIONS,
@@ -278,6 +279,22 @@ def media_config(hosts: dict) -> None:
             logger.warning(
                 f"Extra info media proxy in topology config for {host.name} is not set, skipping media config setup for this host."
             )
+
+
+@pytest.fixture(scope="session", autouse=True)
+def mtl_manager(hosts):
+    """
+    Automatically start MtlManager on all hosts at the beginning of the test session,
+    and stop it at the end.
+    """
+    managers = {}
+    for host in hosts.values():
+        mgr = MtlManager(host)
+        mgr.start()
+        managers[host.name] = mgr
+    yield managers
+    for mgr in managers.values():
+        mgr.stop()
 
 
 @pytest.fixture(scope="session", autouse=True)
