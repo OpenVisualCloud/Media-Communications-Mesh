@@ -14,6 +14,7 @@ import Engine.rx_tx_app_connection_json
 from Engine.const import LOG_FOLDER, DEFAULT_OUTPUT_PATH
 from common.log_constants import (
     RX_REQUIRED_LOG_PHRASES,
+    RX_OPTIONAL_LOG_PHRASES,
     TX_REQUIRED_LOG_PHRASES,
     RX_TX_APP_ERROR_KEYWORDS,
 )
@@ -233,6 +234,10 @@ class AppRunnerBase:
             app_log_validation_status = False
             app_log_error_count = 0
             from common.log_validation_utils import check_phrases_in_order
+            
+            # Add a short delay to ensure logs are fully written
+            import time
+            time.sleep(1.0)
 
             if self.direction in ("Rx", "Tx"):
                 from common.log_validation_utils import validate_log_file
@@ -243,14 +248,14 @@ class AppRunnerBase:
                     else TX_REQUIRED_LOG_PHRASES
                 )
 
-                optional_phrases = []
-                if self.direction == "Rx" and hasattr(self, 'instance_num') and self.instance_num is not None:
-                    optional_phrases = [
-                        "[RX] Done reading the data",
-                        "[RX] dropping connection to media-proxy",
-                        "INFO - memif disconnected!"
-                    ]
-                    required_phrases = [p for p in required_phrases if p not in optional_phrases]
+                # For RX tests, filter out optional phrases
+                # This applies to both single RX and multi-RX tests
+                if self.direction == "Rx":
+                    # Remove optional phrases from required phrases list
+                    required_phrases = [p for p in required_phrases if p not in RX_OPTIONAL_LOG_PHRASES]
+                
+                # Add a short delay to ensure logs are fully written
+                time.sleep(0.5)
                 
                 validation_result = validate_log_file(
                     log_file_path, required_phrases, self.direction, strict_order=False

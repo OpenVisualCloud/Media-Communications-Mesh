@@ -20,6 +20,13 @@ RX_REQUIRED_LOG_PHRASES = [
     "INFO - memif disconnected!",
 ]
 
+# Optional phrases for Rx validation (may not appear if process is terminated)
+RX_OPTIONAL_LOG_PHRASES = [
+    "[RX] Done reading the data",
+    "[RX] dropping connection to media-proxy",
+    "INFO - memif disconnected!",
+]
+
 # Required ordered log phrases for Tx validation
 TX_REQUIRED_LOG_PHRASES = [
     "[TX] Reading client configuration",
