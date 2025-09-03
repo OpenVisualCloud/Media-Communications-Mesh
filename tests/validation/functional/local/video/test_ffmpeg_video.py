@@ -17,6 +17,7 @@ from common.ffmpeg_handler.ffmpeg_enums import (
 
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
 from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmMemifVideoIO
+from common.log_validation_utils import write_executor_validation_summary
 from Engine.const import (
     FFMPEG_RUN_TIMEOUT,
     DEFAULT_OUTPUT_PATH,
@@ -140,6 +141,9 @@ def test_local_ffmpeg_video(
     # TODO add validate() function to check if the output file is correct
 
     mcm_rx_executor.cleanup()
+    
+    # Write the consolidated validation summary
+    write_executor_validation_summary(log_path, mcm_tx_executor, mcm_rx_executor)
 
     assert mcm_tx_executor.is_pass is True, "TX FFmpeg process did not pass"
     assert mcm_rx_executor.is_pass is True, "RX FFmpeg process did not pass"

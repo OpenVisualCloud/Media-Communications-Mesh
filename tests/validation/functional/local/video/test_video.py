@@ -16,6 +16,7 @@ from Engine.const import (
     MCM_RXTXAPP_RUN_TIMEOUT,
 )
 from Engine.media_files import yuv_files
+from common.log_validation_utils import write_executor_validation_summary
 
 logger = logging.getLogger(__name__)
 
@@ -65,6 +66,9 @@ def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) ->
     # TODO add validate() function to check if the output file is correct
 
     rx_executor.cleanup()
+    
+    # Write the consolidated validation summary
+    write_executor_validation_summary(log_path, tx_executor, rx_executor)
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"

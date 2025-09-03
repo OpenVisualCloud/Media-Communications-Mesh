@@ -15,6 +15,7 @@ from Engine.const import (
     MCM_RXTXAPP_RUN_TIMEOUT,
 )
 from Engine.media_files import audio_files_25_03
+from common.log_validation_utils import write_executor_validation_summary
 
 
 @pytest.mark.parametrize(
@@ -70,6 +71,8 @@ def test_audio_25_03(
     # TODO add validate() function to check if the output file is correct
 
     rx_executor.cleanup()
+    # Write the consolidated validation summary
+    write_executor_validation_summary(log_path, tx_executor, rx_executor)
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
