@@ -354,7 +354,7 @@ def cleanup_processes(hosts: dict) -> None:
                     returncode = getattr(e, "returncode")
                     if returncode == 1:
                         is_expected_error = True
-                
+
                 if not is_expected_error:
                     logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
         for pattern in ["^Rx[A-Za-z]+App$", "^Tx[A-Za-z]+App$"]:
@@ -374,7 +374,7 @@ def cleanup_processes(hosts: dict) -> None:
                     returncode = getattr(e, "returncode")
                     if returncode == 1:
                         is_expected_error = True
-                
+
                 if not is_expected_error:
                     logger.warning(
                         f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"

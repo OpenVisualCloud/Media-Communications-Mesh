@@ -60,7 +60,7 @@ class MtlManager:
                     err = self.mtl_manager_process.stderr_text
                     logger.error(f"MtlManager failed to start. Error output:\n{err}")
                     return False
-                    
+
                 # Start background logging thread
                 def log_output():
                     for line in self.mtl_manager_process.get_stdout_iter():
@@ -73,7 +73,7 @@ class MtlManager:
                         )
 
                 threading.Thread(target=log_output, daemon=True).start()
-                
+
                 logger.info(
                     f"MtlManager started with PID {self.mtl_manager_process.pid}."
                 )
@@ -88,24 +88,26 @@ class MtlManager:
     def stop(self, log_path=None):
         """
         Stops all MtlManager processes on the remote host using sudo pkill.
-        
+
         :param log_path: Optional path to save logs, overrides the path set during initialization
         :return: True if the process was stopped successfully, False otherwise
         """
         # Use the provided log_path or the one stored in the object
         log_path = log_path if log_path is not None else self.log_path
-        
+
         connection = self.host.connection
         try:
             if self.mtl_manager_process and self.mtl_manager_process.running:
                 self.mtl_manager_process.stop()
-                time.sleep(STOP_GRACEFULLY_PERIOD)  # Give some time for the process to stop
+                time.sleep(
+                    STOP_GRACEFULLY_PERIOD
+                )  # Give some time for the process to stop
                 if self.mtl_manager_process.running:
                     self.mtl_manager_process.kill()
                     logger.error(
                         f"MtlManager process on host {self.host.name} did not exit gracefully and had to be killed."
                     )
-            
+
             # Additional backup method - use pkill to ensure it's stopped
             logger.info("Stopping MtlManager using sudo pkill MtlManager...")
             try:
@@ -114,9 +116,9 @@ class MtlManager:
                 # Ignore errors from pkill as they might mean the process is already gone
                 if "no process found" not in str(e).lower():
                     logger.warning(f"pkill command had non-zero exit: {e}")
-                    
+
             logger.info(f"MtlManager stopped on host {self.host.name}")
-            
+
             # Validate the log output to determine if the process exited successfully
             try:
                 result = output_validator(
@@ -129,14 +131,13 @@ class MtlManager:
             except Exception as e:
                 logger.error(f"Error validating MtlManager logs: {e}")
                 self.is_pass = False
-                
+
             self.mtl_manager_process = None
-            
             if not self.is_pass:
                 logger.error(f"MtlManager process on host {self.host.name} failed.")
-                
+
             return self.is_pass
-            
+
         except ConnectionCalledProcessError as e:
             logger.error(f"Failed to stop MtlManager: {e}")
             self.is_pass = False
