@@ -227,7 +227,7 @@ def save_validation_report(
 
 
 def append_to_consolidated_validation_report(
-    log_dir: str, 
+    log_dir: str,
     host_name: str,
     component_name: str,
     validation_info: List[str],
@@ -248,15 +248,17 @@ def append_to_consolidated_validation_report(
         report_dir = os.path.join(log_dir, "RxTx")
         os.makedirs(report_dir, exist_ok=True)
         report_path = os.path.join(report_dir, "log_validation.log")
-        
+
         with open(report_path, "a", encoding="utf-8") as f:
             f.write(f"\n=== {host_name}: {component_name} Validation ===\n")
             for line in validation_info:
                 f.write(f"{line}\n")
             f.write(f"Component status: {'PASS' if component_status else 'FAIL'}\n")
             f.write("="*50 + "\n")
-        
-        logger.info(f"Component validation for {host_name}:{component_name} appended to consolidated report")
+
+        logger.info(
+            f"Component validation for {host_name}:{component_name} appended to consolidated report"
+        )
     except Exception as e:
         logger.error(f"Error appending to consolidated validation report: {e}")
 

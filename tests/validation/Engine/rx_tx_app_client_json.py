@@ -51,19 +51,19 @@ class ClientJson:
 
     def copy_json_to_logs(self, log_path: str, filename="client.json") -> None:
         """Copy the client.json file to the log path on runner with specified filename.
-        
+
         Places the file in the mesh-agent directory and includes rx/tx prefix based on instance name.
         """
         source_path = self.host.connection.path(filename)  # Original file
-        
+
         # Create directory path under the host name directory
         mesh_agent_dir = Path(log_path) / "RxTx" / self.host.name
         mesh_agent_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Just use the filename as provided by the caller
         # The create_client_json function now provides the properly formatted filename
         new_filename = filename
-            
+
         dest_path = mesh_agent_dir / new_filename
 
         # Copy the client.json file to the mesh-agent directory

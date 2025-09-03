@@ -34,7 +34,7 @@ def test_audio_multi_rx_25_03(
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
     tx_host = host_list[0]
-    
+
     # Using the same host for all RX instances in local test
     rx_host1 = rx_host2 = rx_host3 = host_list[0]
 
@@ -49,7 +49,7 @@ def test_audio_multi_rx_25_03(
         loop=DEFAULT_LOOP_COUNT,
         instance_num=1,  # Add instance number for unique log file
     )
-    
+
     # Create 3 RX executors
     # Create RX executors with instance numbers
     rx_executor1 = utils.LapkaExecutor.Rx(
@@ -62,7 +62,7 @@ def test_audio_multi_rx_25_03(
         log_path=log_path,
         instance_num=1,  # Add instance number for unique log file
     )
-    
+
     rx_executor2 = utils.LapkaExecutor.Rx(
         host=rx_host2,
         media_path=media_path,
@@ -73,7 +73,7 @@ def test_audio_multi_rx_25_03(
         log_path=log_path,
         instance_num=2,  # Add instance number for unique log file
     )
-    
+
     rx_executor3 = utils.LapkaExecutor.Rx(
         host=rx_host3,
         media_path=media_path,
@@ -89,9 +89,9 @@ def test_audio_multi_rx_25_03(
     rx_executor1.start()
     rx_executor2.start()
     rx_executor3.start()
-    
+
     sleep(MCM_ESTABLISH_TIMEOUT)
-    
+
     # Start TX executor after all RX executors are ready
     tx_executor.start()
 
@@ -102,7 +102,9 @@ def test_audio_multi_rx_25_03(
             if rx_executor.process.running:
                 rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
         except Exception as e:
-            logging.warning(f"RX executor {i} did not finish in time or error occurred: {e}")
+            logging.warning(
+                f"RX executor {i} did not finish in time or error occurred: {e}"
+            )
 
     # Stop all executors
     tx_executor.stop()
@@ -117,7 +119,7 @@ def test_audio_multi_rx_25_03(
 
     # Write the consolidated validation summary with the simplified API
     write_executor_validation_summary(log_path, tx_executor, rx_executors)
-    
+
     # Verify all processes passed
     assert tx_executor.is_pass is True, "TX process did not pass"
     for i, rx_executor in enumerate(rx_executors, 1):
