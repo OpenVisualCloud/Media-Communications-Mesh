@@ -242,7 +242,14 @@ def check_phrases_anywhere(
             lines = content.split("\n")
 
         for phrase in phrases:
-            if phrase not in content:
+            # Check if the phrase is contained in any line, not just the entire content
+            phrase_found = False
+            for line in lines:
+                if phrase in line:
+                    phrase_found = True
+                    break
+            
+            if not phrase_found:
                 missing_phrases.append(phrase)
                 # Find where the phrase should have appeared
                 # Just give some context from the end of the log
