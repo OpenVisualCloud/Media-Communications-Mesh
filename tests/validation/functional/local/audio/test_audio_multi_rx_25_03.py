@@ -9,6 +9,7 @@ import pytest
 import Engine.rx_tx_app_connection
 import Engine.rx_tx_app_engine_mcm as utils
 import Engine.rx_tx_app_payload
+from common.log_validation_utils import write_executor_validation_summary
 from Engine.const import (
     DEFAULT_LOOP_COUNT,
     MCM_ESTABLISH_TIMEOUT,
@@ -114,6 +115,9 @@ def test_audio_multi_rx_25_03(
     for rx_executor in rx_executors:
         rx_executor.cleanup()
 
+    # Write the consolidated validation summary with the simplified API
+    write_executor_validation_summary(log_path, tx_executor, rx_executors)
+    
     # Verify all processes passed
     assert tx_executor.is_pass is True, "TX process did not pass"
     for i, rx_executor in enumerate(rx_executors, 1):
