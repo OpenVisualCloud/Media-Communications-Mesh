@@ -270,18 +270,18 @@ def write_executor_validation_summary(
 ) -> bool:
     """
     Write the consolidated validation summary from tx and rx executors.
-    
+
     Args:
         log_dir: Base log directory
         tx_executor: Single tx executor or list of tx executors
         rx_executors: Single rx executor or list of rx executors
-    
+
     Returns:
         bool: Overall pass/fail status
     """
     component_results = {}
     component_hosts = {}
-    
+
     # Handle tx executors (can be a single executor or a list)
     if tx_executor is not None:
         if isinstance(tx_executor, list):
@@ -294,7 +294,7 @@ def write_executor_validation_summary(
             component_name = f"tx_{tx_executor.instance_num}" if hasattr(tx_executor, 'instance_num') and tx_executor.instance_num is not None else "tx_1"
             component_results[component_name] = tx_executor.is_pass
             component_hosts[component_name] = tx_executor.host.name
-    
+
     # Handle rx executors (can be a single executor or a list)
     if rx_executors is not None:
         if isinstance(rx_executors, list):
@@ -307,7 +307,7 @@ def write_executor_validation_summary(
             component_name = f"rx_{rx_executors.instance_num}" if hasattr(rx_executors, 'instance_num') and rx_executors.instance_num is not None else "rx_1"
             component_results[component_name] = rx_executors.is_pass
             component_hosts[component_name] = rx_executors.host.name
-    
+
     # Write consolidated validation report - simpler version that doesn't rely on log_file attributes
     return write_consolidated_validation_summary(log_dir, component_results, component_hosts)
 
@@ -321,7 +321,7 @@ def create_consolidated_validation_report(
     """
     Create a comprehensive consolidated validation report with detailed information
     for each component.
-    
+
     Args:
         log_dir: Base log directory
         component_results: Dictionary mapping component names to their validation status
@@ -332,7 +332,7 @@ def create_consolidated_validation_report(
         bool: Overall pass/fail status
     """
     overall_status = all(component_results.values()) if component_results else True
-    
+
     try:
         report_dir = os.path.join(log_dir, "RxTx")
         os.makedirs(report_dir, exist_ok=True)
@@ -429,23 +429,23 @@ def write_consolidated_validation_summary(
 ) -> bool:
     """
     Write the overall validation summary to the consolidated report.
-    
+
     Args:
         log_dir: Base log directory
         component_results: Dictionary mapping component names to their validation status
         component_hosts: Dictionary mapping component names to their host names
-    
+
     Returns:
         bool: Overall pass/fail status
     """
     if component_results is None:
         component_results = {}
-    
+
     if component_hosts is None:
         component_hosts = {}
-    
+
     overall_status = all(component_results.values()) if component_results else True
-    
+
     try:
         report_dir = os.path.join(log_dir, "RxTx")
         os.makedirs(report_dir, exist_ok=True)

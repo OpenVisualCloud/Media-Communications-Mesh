@@ -72,7 +72,7 @@ def test_video_25_03(
     # TODO add validate() function to check if the output file is correct
 
     rx_executor.cleanup()
-    
+
     # Write the consolidated validation summary
     write_executor_validation_summary(log_path, tx_executor, rx_executor)
 

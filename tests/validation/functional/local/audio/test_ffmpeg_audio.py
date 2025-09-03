@@ -139,7 +139,7 @@ def test_local_ffmpeg_audio(
     # TODO add validate() function to check if the output file is correct
 
     mcm_rx_executor.cleanup()
-    
+
     # Write the consolidated validation summary
     write_executor_validation_summary(log_path, mcm_tx_executor, mcm_rx_executor)
 

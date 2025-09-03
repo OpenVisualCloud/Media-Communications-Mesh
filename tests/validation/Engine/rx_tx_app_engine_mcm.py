@@ -264,7 +264,7 @@ class AppRunnerBase:
 
                 # Add a short delay to ensure logs are fully written
                 time.sleep(0.5)
-                
+
                 validation_result = validate_log_file(
                     log_file_path, required_phrases, self.direction, strict_order=False
                 )

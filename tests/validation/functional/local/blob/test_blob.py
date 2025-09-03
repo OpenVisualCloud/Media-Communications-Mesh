@@ -62,7 +62,7 @@ def test_blob(build_TestApp, hosts, media_proxy, media_path, file, log_path) -> 
     # TODO add validate() function to check if the output file is correct
 
     rx_executor.cleanup()
-    
+
     # Write the consolidated validation summary
     write_executor_validation_summary(log_path, tx_executor, rx_executor)
 
