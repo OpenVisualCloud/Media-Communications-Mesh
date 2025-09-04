@@ -9,7 +9,6 @@ from Engine.const import STOP_GRACEFULLY_PERIOD
 
 logger = logging.getLogger(__name__)
 
-# Constants for logging
 MTL_MANAGER_ERROR_KEYWORDS = ["[ERROR]", "exception", "fail", "critical"]
 
 
@@ -38,7 +37,6 @@ class MtlManager:
         self.log_path = log_path
         self.subdir = Path("mtl_manager_logs", self.host.name)
         self.filename = "mtl_manager.log"
-        # Use the log_path directly without adding test-specific subdirectories
         self.log_file_path = Path(
             log_path if log_path else LOG_FOLDER, self.subdir, self.filename
         )
@@ -61,7 +59,6 @@ class MtlManager:
                     logger.error(f"MtlManager failed to start. Error output:\n{err}")
                     return False
 
-                # Start background logging thread
                 def log_output():
                     for line in self.mtl_manager_process.get_stdout_iter():
                         save_process_log(
@@ -92,7 +89,6 @@ class MtlManager:
         :param log_path: Optional path to save logs, overrides the path set during initialization
         :return: True if the process was stopped successfully, False otherwise
         """
-        # Use the provided log_path or the one stored in the object
         log_path = log_path if log_path is not None else self.log_path
 
         connection = self.host.connection
@@ -101,25 +97,28 @@ class MtlManager:
                 self.mtl_manager_process.stop()
                 time.sleep(
                     STOP_GRACEFULLY_PERIOD
-                )  # Give some time for the process to stop
+                )
                 if self.mtl_manager_process.running:
                     self.mtl_manager_process.kill()
                     logger.error(
                         f"MtlManager process on host {self.host.name} did not exit gracefully and had to be killed."
                     )
 
-            # Additional backup method - use pkill to ensure it's stopped
-            logger.info("Stopping MtlManager using sudo pkill MtlManager...")
             try:
-                connection.execute_command("sudo pkill MtlManager")
-            except ConnectionCalledProcessError as e:
-                # Ignore errors from pkill as they might mean the process is already gone
-                if "no process found" not in str(e).lower():
-                    logger.warning(f"pkill command had non-zero exit: {e}")
+                result = connection.execute_command("pgrep MtlManager")
+                if result.returncode == 0:
+                    logger.info("Stopping MtlManager using sudo pkill MtlManager...")
+                    try:
+                        connection.execute_command("sudo pkill MtlManager")
+                    except ConnectionCalledProcessError as e:
+                        logger.warning(f"pkill command had non-zero exit: {e}")
+                else:
+                    logger.info(f"No MtlManager process found running on host {self.host.name}")
+            except ConnectionCalledProcessError:
+                logger.info(f"No MtlManager process found running on host {self.host.name}")
 
             logger.info(f"MtlManager stopped on host {self.host.name}")
 
-            # Validate the log output to determine if the process exited successfully
             try:
                 result = output_validator(
                     log_file_path=str(self.log_file_path),

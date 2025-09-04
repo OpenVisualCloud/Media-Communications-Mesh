@@ -83,15 +83,29 @@ jobs:
               echo "| Test Name | Status | Duration (ms) |"
               echo "| --------- | ------ | ------------- |"
               
-              # Process each test from the report - fixed to work with nested test structure
-              jq -r '.results[] | recurse(.suites[]?) | 
-                select(.type == "test") | 
-                (.name // .title) + "|" + 
-                (if .status == "passed" then "✅ Passed" 
-                elif .status == "failed" then "❌ Failed" 
-                elif .status == "skipped" then "⏭️ Skipped" 
-                else "⚠️ Error" end) + "|" + 
-                (.duration | tostring)' "$REPORT_FILE" 2>/dev/null || echo "| Error parsing test results | ⚠️ | - |"
+              # Process each test from the report with simplified approach
+              jq -r '
+                def process_tests:
+                  if type == "object" then
+                    if .type == "test" then
+                      [.name // .title, 
+                       if .status == "passed" then "✅ Passed" 
+                       elif .status == "failed" then "❌ Failed" 
+                       elif .status == "skipped" then "⏭️ Skipped" 
+                       else "⚠️ Error" end, 
+                       .duration // "-"]
+                    elif .results? then
+                      (.results[] | process_tests)
+                    elif .suites? then
+                      (.suites[] | process_tests)
+                    else
+                      empty
+                    end
+                  else
+                    empty
+                  end;
+                . | process_tests | join("|")
+              ' "$REPORT_FILE" 2>/dev/null || echo "| Error parsing test results | ⚠️ | - |"
               
               # Extract warnings if available
               WARNINGS_TEXT=$(jq -r '.warnings[]? | "- " + . // ""' "$REPORT_FILE" 2>/dev/null)

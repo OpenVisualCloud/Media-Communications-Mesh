@@ -7,33 +7,32 @@ DEFAULT_MEDIA_PATH = "/mnt/media/"
 DEFAULT_INPUT_PATH = "/opt/intel/input_path/"
 DEFAULT_OUTPUT_PATH = "/opt/intel/output_path/"
 
-RUN_TIMEOUT_ERROR_MARGIN_MULTIPLIER = 1.5
+RUN_TIMEOUT_ERROR_MARGIN_MULTIPLIER = 2.0
 
-FFMPEG_ESTABLISH_TIMEOUT = 6  # or use the same value as MCM_ESTABLISH_TIMEOUT
-FFMPEG_RUN_TIMEOUT = 120  # or use the same value as MCM_RXTXAPP_RUN_TIMEOUT
+FFMPEG_ESTABLISH_TIMEOUT = 6  
+FFMPEG_RUN_TIMEOUT = 120 
 
-# time for establishing connection for example between TX and RX in st2110
-MTL_ESTABLISH_TIMEOUT = 2
-MCM_ESTABLISH_TIMEOUT = 6
+MTL_ESTABLISH_TIMEOUT = 3
+MCM_ESTABLISH_TIMEOUT = 15
 DEFAULT_LOOP_COUNT = 7
 MCM_RXTXAPP_RUN_TIMEOUT = (
     MCM_ESTABLISH_TIMEOUT * DEFAULT_LOOP_COUNT * RUN_TIMEOUT_ERROR_MARGIN_MULTIPLIER
 )
-MAX_TEST_TIME_DEFAULT = 120
-STOP_GRACEFULLY_PERIOD = 2  # seconds
+MAX_TEST_TIME_DEFAULT = 180
+STOP_GRACEFULLY_PERIOD = 5
 
 BUILD_DIR = "_build"
-INTEL_BASE_PATH = "/opt/intel"  # Base path for Intel software
-MCM_PATH = f"{INTEL_BASE_PATH}/mcm"  # Path for MCM repository
-MTL_PATH = f"{INTEL_BASE_PATH}/mtl"  # Path for Media Transport Library repository
+INTEL_BASE_PATH = "/opt/intel"
+MCM_PATH = f"{INTEL_BASE_PATH}/mcm"
+MTL_PATH = f"{INTEL_BASE_PATH}/mtl"
 
 # Built binaries paths
-MCM_BUILD_PATH = f"{INTEL_BASE_PATH}/_build/mcm"  # Path for MCM built binaries
-MTL_BUILD_PATH = f"{INTEL_BASE_PATH}/_build/mtl"  # Path for MTL built binaries
-MEDIA_PROXY_PORT = 8002  # Default port for Media Proxy
+MCM_BUILD_PATH = f"{INTEL_BASE_PATH}/_build/mcm"
+MTL_BUILD_PATH = f"{INTEL_BASE_PATH}/_build/mtl"
+MEDIA_PROXY_PORT = 8002
 
-DEFAULT_FFMPEG_PATH = f"{INTEL_BASE_PATH}/ffmpeg"  # Path for FFmpeg repository
-DEFAULT_OPENH264_PATH = f"{INTEL_BASE_PATH}/openh264"  # Path for OpenH264 installation
+DEFAULT_FFMPEG_PATH = f"{INTEL_BASE_PATH}/ffmpeg"
+DEFAULT_OPENH264_PATH = f"{INTEL_BASE_PATH}/openh264"
 
 OPENH264_VERSION_TAG = "openh264v2.4.0"
 

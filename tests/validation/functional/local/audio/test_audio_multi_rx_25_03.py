@@ -85,30 +85,31 @@ def test_audio_multi_rx_25_03(
         instance_num=3,  # Add instance number for unique log file
     )
 
-    # Start all RX executors
     rx_executor1.start()
+    sleep(MCM_ESTABLISH_TIMEOUT)
     rx_executor2.start()
+    sleep(MCM_ESTABLISH_TIMEOUT)
     rx_executor3.start()
 
     sleep(MCM_ESTABLISH_TIMEOUT)
 
-    # Start TX executor after all RX executors are ready
     tx_executor.start()
 
-    # Wait for RX executors to complete
     rx_executors = [rx_executor1, rx_executor2, rx_executor3]
     for i, rx_executor in enumerate(rx_executors, 1):
         try:
             if rx_executor.process.running:
+                logging.info(f"Waiting up to {MCM_RXTXAPP_RUN_TIMEOUT}s for RX executor {i} to complete")
                 rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
         except Exception as e:
             logging.warning(
                 f"RX executor {i} did not finish in time or error occurred: {e}"
             )
 
-    # Stop all executors
     tx_executor.stop()
-    for rx_executor in rx_executors:
+    
+    for i, rx_executor in enumerate(rx_executors, 1):
+        logging.info(f"Stopping RX executor {i}")
         rx_executor.stop()
 
     # TODO add validate() function to check if the output files are correct
