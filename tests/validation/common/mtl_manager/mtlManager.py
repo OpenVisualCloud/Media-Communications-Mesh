@@ -95,9 +95,7 @@ class MtlManager:
         try:
             if self.mtl_manager_process and self.mtl_manager_process.running:
                 self.mtl_manager_process.stop()
-                time.sleep(
-                    STOP_GRACEFULLY_PERIOD
-                )
+                time.sleep(STOP_GRACEFULLY_PERIOD)
                 if self.mtl_manager_process.running:
                     self.mtl_manager_process.kill()
                     logger.error(
@@ -113,9 +111,13 @@ class MtlManager:
                     except ConnectionCalledProcessError as e:
                         logger.warning(f"pkill command had non-zero exit: {e}")
                 else:
-                    logger.info(f"No MtlManager process found running on host {self.host.name}")
+                    logger.info(
+                        f"No MtlManager process found running on host {self.host.name}"
+                    )
             except ConnectionCalledProcessError:
-                logger.info(f"No MtlManager process found running on host {self.host.name}")
+                logger.info(
+                    f"No MtlManager process found running on host {self.host.name}"
+                )
 
             logger.info(f"MtlManager stopped on host {self.host.name}")
 

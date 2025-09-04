@@ -61,7 +61,9 @@ def test_audio_25_03(
 
     try:
         if rx_executor.process.running:
-            logging.info(f"Waiting up to {MCM_RXTXAPP_RUN_TIMEOUT}s for RX process to complete")
+            logging.info(
+                f"Waiting up to {MCM_RXTXAPP_RUN_TIMEOUT}s for RX process to complete"
+            )
             rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
     except Exception as e:
         logging.warning(f"RX executor did not finish in time or error occurred: {e}")
