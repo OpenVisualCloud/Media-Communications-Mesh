@@ -173,7 +173,7 @@ def validate_log_file(
     if not log_pass:
         validation_info.append(f"Missing or out-of-order phrases analysis:")
         for phrase in missing:
-            validation_info.append(f"\n  Expected phrase: \"{phrase}\"")
+            validation_info.append(f'\n  Expected phrase: "{phrase}"')
             validation_info.append(f"  Context in log file:")
             if phrase in context_lines:
                 for line in context_lines[phrase]:
@@ -254,7 +254,7 @@ def append_to_consolidated_validation_report(
             for line in validation_info:
                 f.write(f"{line}\n")
             f.write(f"Component status: {'PASS' if component_status else 'FAIL'}\n")
-            f.write("="*50 + "\n")
+            f.write("=" * 50 + "\n")
 
         logger.info(
             f"Component validation for {host_name}:{component_name} appended to consolidated report"
@@ -369,9 +369,13 @@ def create_consolidated_validation_report(
             for host, components in sorted(host_components.items()):
                 f.write(f"Host: {host}\n")
                 for component, status in sorted(components):
-                    f.write(f'  Component: {component} - {"PASS" if status else "FAIL"}\n')
+                    f.write(
+                        f'  Component: {component} - {"PASS" if status else "FAIL"}\n'
+                    )
 
-            f.write(f'\n=== Overall Test Result: {"PASS" if overall_status else "FAIL"} ===\n\n')
+            f.write(
+                f'\n=== Overall Test Result: {"PASS" if overall_status else "FAIL"} ===\n\n'
+            )
 
             # Detailed section
             f.write("=== Individual Component Validation Reports ===\n\n")
@@ -399,38 +403,60 @@ def create_consolidated_validation_report(
                     f.write(f"Total errors found: 0\n")
 
                 # Additional validation for RX components (file validation)
-                if direction == "Rx" and "file_validation" in component_data and component_data["file_validation"]:
+                if (
+                    direction == "Rx"
+                    and "file_validation" in component_data
+                    and component_data["file_validation"]
+                ):
                     file_validation = component_data["file_validation"]
-                    
+
                     f.write("\n=== Rx Output File Validation ===\n")
                     if "file_path" in file_validation:
-                        f.write(f"Expected output file: {file_validation['file_path']}\n")
-                    
+                        f.write(
+                            f"Expected output file: {file_validation['file_path']}\n"
+                        )
+
                     if "file_exists" in file_validation:
-                        f.write(f"File existence: {'PASS' if file_validation['file_exists'] else 'FAIL'}\n")
-                    
+                        f.write(
+                            f"File existence: {'PASS' if file_validation['file_exists'] else 'FAIL'}\n"
+                        )
+
                     if "file_size" in file_validation:
                         f.write(f"File size: {file_validation['file_size']} bytes")
                         if "file_size_check_output" in file_validation:
-                            f.write(f" (checked via ls -l: {file_validation['file_size_check_output']})\n")
+                            f.write(
+                                f" (checked via ls -l: {file_validation['file_size_check_output']})\n"
+                            )
                         else:
                             f.write("\n")
-                    
+
                     if "file_size_check" in file_validation:
-                        f.write(f"File size check: {'PASS' if file_validation['file_size_check'] else 'FAIL'}\n")
+                        f.write(
+                            f"File size check: {'PASS' if file_validation['file_size_check'] else 'FAIL'}\n"
+                        )
 
                 # Overall component validation summary
                 f.write("\n=== Overall Validation Summary ===\n")
                 f.write(f"Overall validation: {'PASS' if is_pass else 'FAIL'}\n")
                 f.write(f"App log validation: {'PASS' if is_pass else 'FAIL'}\n")
 
-                if direction == "Rx" and "file_validation" in component_data and component_data["file_validation"]:
-                    file_validation_pass = component_data["file_validation"].get("is_pass", False)
-                    f.write(f"File validation: {'PASS' if file_validation_pass else 'FAIL'}\n")
+                if (
+                    direction == "Rx"
+                    and "file_validation" in component_data
+                    and component_data["file_validation"]
+                ):
+                    file_validation_pass = component_data["file_validation"].get(
+                        "is_pass", False
+                    )
+                    f.write(
+                        f"File validation: {'PASS' if file_validation_pass else 'FAIL'}\n"
+                    )
 
                 f.write("\n")
 
-        logger.info(f"Consolidated validation summary written to {report_path} with result: {'PASS' if overall_status else 'FAIL'}")
+        logger.info(
+            f"Consolidated validation summary written to {report_path} with result: {'PASS' if overall_status else 'FAIL'}"
+        )
         return overall_status
     except Exception as e:
         logger.error(f"Error writing consolidated validation report: {e}")
@@ -467,7 +493,7 @@ def write_consolidated_validation_summary(
         report_path = os.path.join(report_dir, "log_validation.log")
 
         with open(report_path, "a", encoding="utf-8") as f:
-            f.write("\n" + "="*50 + "\n")
+            f.write("\n" + "=" * 50 + "\n")
             f.write("=== OVERALL TEST VALIDATION SUMMARY ===\n")
             f.write(f"Overall status: {'PASS' if overall_status else 'FAIL'}\n")
 
@@ -487,10 +513,12 @@ def write_consolidated_validation_summary(
                     f.write(f"\n  {host}:\n")
                     for component, status in sorted(components):
                         f.write(f"    - {component}: {'PASS' if status else 'FAIL'}\n")
-                    
-            f.write("="*50 + "\n\n")
 
-        logger.info(f"Consolidated validation summary written: {'PASS' if overall_status else 'FAIL'}")
+            f.write("=" * 50 + "\n\n")
+
+        logger.info(
+            f"Consolidated validation summary written: {'PASS' if overall_status else 'FAIL'}"
+        )
         return overall_status
     except Exception as e:
         logger.error(f"Error writing consolidated validation summary: {e}")
