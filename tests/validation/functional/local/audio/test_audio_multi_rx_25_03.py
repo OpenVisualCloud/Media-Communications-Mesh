@@ -18,14 +18,13 @@ from Engine.const import (
 from Engine.media_files import audio_files_25_03
 
 
-# @pytest.mark.parametrize(
-#     "file",
-#     [
-#         pytest.param("PCM16_48000_Mono", marks=pytest.mark.smoke),
-#         *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"],
-#     ],
-# )
-@pytest.mark.parametrize("file", audio_files_25_03.keys())
+@pytest.mark.parametrize(
+    "file",
+    [
+        pytest.param("PCM16_48000_Mono", marks=pytest.mark.smoke),
+        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"],
+    ],
+)
 def test_audio_multi_rx_25_03(
     build_TestApp, hosts, media_proxy, media_path, file, log_path
 ) -> None:

@@ -466,7 +466,7 @@ def create_consolidated_validation_report(
 def write_consolidated_validation_summary(
     log_dir: str,
     component_results: Optional[Dict[str, bool]] = None,
-    component_hosts: Optional[Dict[str, str]] = None
+    component_hosts: Optional[Dict[str, str]] = None,
 ) -> bool:
     """
     Write the overall validation summary to the consolidated report.

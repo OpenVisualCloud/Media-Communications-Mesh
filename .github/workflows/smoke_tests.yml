@@ -42,7 +42,7 @@ env:
   MEDIA_PATH: "/mnt/media"
   BUILD_DIR: "${{ github.workspace }}/_build"
   INPUT_PATH: "/mnt/media/"
-  OUTPUT_PATH: "${{ github.workspace }}/received/"
+  OUTPUT_PATH: "${{ github.workspace }}/received"
   MCM_BINARIES_DIR: "./mcm-binaries"
   MEDIA_PROXY: "./mcm-binaries/media_proxy"
   MESH_AGENT: "./mcm-binaries/mesh-agent"
