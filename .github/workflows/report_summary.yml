@@ -54,6 +54,7 @@ jobs:
               FAILED=$(jq '.summary.failed // 0' "$REPORT_FILE")
               SKIPPED=$(jq '.summary.skipped // 0' "$REPORT_FILE")
               ERROR=$(jq '.summary.errors // 0' "$REPORT_FILE")
+              WARNINGS=$(jq '.summary.warnings // 0' "$REPORT_FILE")
 
               # Add summary stats
               echo "| Status | Count |"
@@ -62,6 +63,7 @@ jobs:
               echo "| ❌ Failed | ${FAILED:-0} |"
               echo "| ⚠️ Error | ${ERROR:-0} |"
               echo "| ⏭️ Skipped | ${SKIPPED:-0} |"
+              echo "| ⚠️ Warnings | ${WARNINGS:-0} |"
               echo ""
 
               # Add test result details if available
@@ -81,17 +83,35 @@ jobs:
               echo "| Test Name | Status | Duration (ms) |"
               echo "| --------- | ------ | ------------- |"
               
-              # Process each test from the report
-              jq -r '.results[] | . as $test | 
-                $test.title + "|" + 
-                (if $test.status == "passed" then "✅ Passed" 
-                elif $test.status == "failed" then "❌ Failed" 
-                elif $test.status == "skipped" then "⏭️ Skipped" 
+              # Process each test from the report - fixed to work with nested test structure
+              jq -r '.results[] | recurse(.suites[]?) | 
+                select(.type == "test") | 
+                (.name // .title) + "|" + 
+                (if .status == "passed" then "✅ Passed" 
+                elif .status == "failed" then "❌ Failed" 
+                elif .status == "skipped" then "⏭️ Skipped" 
                 else "⚠️ Error" end) + "|" + 
-                ($test.duration | tostring)' "$REPORT_FILE" | while read -r line; do
-                echo "| $line |"
-              done
-              echo ""
+                (.duration | tostring)' "$REPORT_FILE" 2>/dev/null || echo "| Error parsing test results | ⚠️ | - |"
+              
+              # Extract warnings if available
+              WARNINGS_TEXT=$(jq -r '.warnings[]? | "- " + . // ""' "$REPORT_FILE" 2>/dev/null)
+              if [ -n "$WARNINGS_TEXT" ]; then
+                echo ""
+                echo "### Warnings"
+                echo ""
+                echo "$WARNINGS_TEXT"
+              fi
+              
+              # Extract failures summary if available
+              FAILURES_SUMMARY=$(jq -r '.summary.failures_summary // ""' "$REPORT_FILE")
+              if [ -n "$FAILURES_SUMMARY" ]; then
+                echo ""
+                echo "### Failures Summary"
+                echo ""
+                echo '```'
+                echo "$FAILURES_SUMMARY"
+                echo '```'
+              fi
             else
               echo "❌ No report.json file was generated"
             fi
