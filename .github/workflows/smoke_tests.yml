@@ -65,7 +65,7 @@ jobs:
     outputs:
       runner_id: ${{ steps.get-runner-id.outputs.runner_id }}
     steps:
-      - name: 'preparation: Get Runner ID'
+      - name: "preparation: Get Runner ID"
         id: get-runner-id
         run: |
           # Extract runner number from RUNNER_NAME (e.g., "cicd-1" -> "1")
@@ -85,7 +85,7 @@ jobs:
       runner: ${{ needs.get-runner-id.outputs.runner_id }}
 
   validation-prepare-setup-mcm:
-    runs-on: "self-hosted, ${{ needs.get-runner-id.outputs.runner_id }}"
+    runs-on: ${{ needs.get-runner-id.outputs.runner_id }}
     needs: [get-runner-id, call-bare-metal-build]
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
@@ -142,7 +142,7 @@ jobs:
 
   validation-run-tests:
     needs: [validation-prepare-setup-mcm, get-runner-id]
-    runs-on: "self-hosted, ${{ needs.get-runner-id.outputs.runner_id }}"
+    runs-on: ${{ needs.get-runner-id.outputs.runner_id }}
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     env:
