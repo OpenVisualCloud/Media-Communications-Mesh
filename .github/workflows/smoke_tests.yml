@@ -77,7 +77,6 @@ jobs:
 
   call-bare-metal-build:
     needs: get-runner-id
-    # Allow all workflow runs, including PRs from the same repo
     uses: ./.github/workflows/bare-metal-build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
@@ -88,7 +87,6 @@ jobs:
     runs-on: [self-hosted, "${{ needs.get-runner-id.outputs.runner_id }}"]
     needs: [get-runner-id, call-bare-metal-build]
     timeout-minutes: 60
-    # Allow all workflow runs, including PRs from the same repo
     outputs:
       pipenv-activate: ${{ steps.pipenv-install.outputs.VIRTUAL_ENV }}
     steps:
@@ -116,7 +114,7 @@ jobs:
           ls -la ${{ env.BUILD_DIR }}/ffmpeg-7-0/ || true
 
       - name: "installation: Install pipenv environment"
-        working-directory: tests/validation
+        working-directory: ${{ github.workspace }}/tests/validation
         id: pipenv-install
         run: |
           python3 -m venv venv
@@ -125,26 +123,26 @@ jobs:
           echo "VIRTUAL_ENV=$PWD/venv/bin/activate" >> "$GITHUB_ENV"
 
       - name: "add user name to environment and config"
+        working-directory: ${{ github.workspace }}
         run: |
           echo "USER=${USER}" >> "$GITHUB_ENV"
-          sed -i "s/{{ USER }}/root/g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/id_rsa|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ INTEGRITY_PATH }}|${{ env.INTEGRITY_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ OUTPUT_PATH }}|${{ env.OUTPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ INPUT_PATH }}|${{ env.INPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ MTL_PATH }}|${{ env.BUILD_DIR }}/mtl/|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ MCM_FFMPEG_7_0 }}|${{ env.MCM_FFMPEG_7_0 }}|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ LD_LIBRARY_PATH }}|${{ env.MCM_LD_LIBRARY_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ OUTPUT_PATH }}|${{ github.workspace }}/received/|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ NICCTL_PATH }}|${{ env.BUILD_DIR }}/mtl/script/|g" tests/validation/configs/topology_config_workflow.yaml
-          sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
+          sed -i "s/{{ USER }}/root/g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/id_rsa|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ INTEGRITY_PATH }}|${{ env.INTEGRITY_PATH }}|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ OUTPUT_PATH }}|${{ env.OUTPUT_PATH }}|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ INPUT_PATH }}|${{ env.INPUT_PATH }}|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MTL_PATH }}|${{ env.BUILD_DIR }}/mtl/|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MCM_FFMPEG_7_0 }}|${{ env.MCM_FFMPEG_7_0 }}|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ LD_LIBRARY_PATH }}|${{ env.MCM_LD_LIBRARY_PATH }}|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ OUTPUT_PATH }}|${{ github.workspace }}/received/|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ NICCTL_PATH }}|${{ env.BUILD_DIR }}/mtl/script/|g" ${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" ${{ github.workspace }}/tests/validation/configs/test_config_workflow.yaml
 
   validation-run-tests:
     needs: [validation-prepare-setup-mcm, get-runner-id]
     runs-on: [self-hosted, "${{ needs.get-runner-id.outputs.runner_id }}"]
     timeout-minutes: 60
-    # Allow all workflow runs, including PRs from the same repo
     env:
       PYTEST_RETRIES: "3"
       MARKERS: ${{ github.event.inputs.markers || 'smoke' }}
@@ -156,15 +154,17 @@ jobs:
           sudo killall -SIGINT pytest || true
       - name: "list all tests marked with ${{ env.MARKERS }}"
         if: ${{ env.LIST_TESTS == 'true' }}
+        working-directory: ${{ github.workspace }}
         run: |
           tests/validation/venv/bin/python3 -m pytest \
             --collect-only --quiet ./tests/validation/functional/ \
             -m "${{ env.MARKERS }}"
       - name: "execution: Run validation-bare-metal tests in virtual environment"
+        working-directory: ${{ github.workspace }}
         run: |
           tests/validation/venv/bin/python3 -m pytest \
-            --topology_config=tests/validation/configs/topology_config_workflow.yaml \
-            --test_config=tests/validation/configs/test_config_workflow.yaml \
+            --topology_config=${{ github.workspace }}/tests/validation/configs/topology_config_workflow.yaml \
+            --test_config=${{ github.workspace }}/tests/validation/configs/test_config_workflow.yaml \
             ./tests/validation/functional/ \
             --template=html/index.html --report=report.html \
             --json-report --json-report-file=report.json \
@@ -185,7 +185,7 @@ jobs:
         with:
           name: smoke-tests-report
           path: |
-            report.html
+            ${{ github.workspace }}/report.html
       - name: "upload json report"
         if: always()
         id: upload-report-json
@@ -193,7 +193,7 @@ jobs:
         with:
           name: smoke-tests-report-json
           path: |
-            report.json
+            ${{ github.workspace }}/report.json
 
   call-report-summary:
     if: always() && needs.validation-run-tests.result != 'skipped'
