@@ -77,7 +77,7 @@ jobs:
 
   call-bare-metal-build:
     needs: get-runner-id
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    # Allow all workflow runs, including PRs from the same repo
     uses: ./.github/workflows/bare-metal-build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
@@ -85,10 +85,10 @@ jobs:
       runner: ${{ needs.get-runner-id.outputs.runner_id }}
 
   validation-prepare-setup-mcm:
-    runs-on: ${{ needs.get-runner-id.outputs.runner_id }}
+    runs-on: [self-hosted, "${{ needs.get-runner-id.outputs.runner_id }}"]
     needs: [get-runner-id, call-bare-metal-build]
     timeout-minutes: 60
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    # Allow all workflow runs, including PRs from the same repo
     outputs:
       pipenv-activate: ${{ steps.pipenv-install.outputs.VIRTUAL_ENV }}
     steps:
@@ -142,9 +142,9 @@ jobs:
 
   validation-run-tests:
     needs: [validation-prepare-setup-mcm, get-runner-id]
-    runs-on: ${{ needs.get-runner-id.outputs.runner_id }}
+    runs-on: [self-hosted, "${{ needs.get-runner-id.outputs.runner_id }}"]
     timeout-minutes: 60
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    # Allow all workflow runs, including PRs from the same repo
     env:
       PYTEST_RETRIES: "3"
       MARKERS: ${{ github.event.inputs.markers || 'smoke' }}
@@ -196,7 +196,7 @@ jobs:
             report.json
 
   call-report-summary:
-    if: always() && needs.validation-run-tests.result != 'skipped' && (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository)
+    if: always() && needs.validation-run-tests.result != 'skipped'
     needs: validation-run-tests
     uses: ./.github/workflows/report_summary.yml
     with:

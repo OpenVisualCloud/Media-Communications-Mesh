@@ -13,9 +13,8 @@ on:
         type: string
         description: "Tag to checkout"
       runner:
-        required: false
+        required: true
         type: string
-        default: "runner-4"
         description: "Runner to use for the build job"
 
 env:
