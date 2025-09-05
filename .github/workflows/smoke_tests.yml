@@ -56,21 +56,37 @@ permissions:
   contents: read
 
 concurrency:
-  group: smoke-tests-runner-4-${{ github.workflow }}-${{ github.ref }}
+  group: smoke-tests-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
+  get-runner-id:
+    runs-on: [self-hosted]
+    outputs:
+      runner_id: ${{ steps.get-runner-id.outputs.runner_id }}
+    steps:
+      - name: 'preparation: Get Runner ID'
+        id: get-runner-id
+        run: |
+          # Extract runner number from RUNNER_NAME (e.g., "cicd-1" -> "1")
+          RUNNER_NUMBER=$(echo "$RUNNER_NAME" | grep -o '[0-9]\+$' || echo "4")
+          # Format as runner-X
+          RUNNER_ID="runner-${RUNNER_NUMBER}"
+          echo "runner_id=$RUNNER_ID" >> "$GITHUB_OUTPUT"
+          echo "Using runner ID: $RUNNER_ID (from runner name: $RUNNER_NAME)"
+
   call-bare-metal-build:
+    needs: get-runner-id
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     uses: ./.github/workflows/bare-metal-build.yml
     with:
       branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
-      runner: runner-4
+      runner: ${{ needs.get-runner-id.outputs.runner_id }}
 
   validation-prepare-setup-mcm:
-    runs-on: [self-hosted, runner-4]
-    needs: call-bare-metal-build
+    runs-on: "self-hosted, ${{ needs.get-runner-id.outputs.runner_id }}"
+    needs: [get-runner-id, call-bare-metal-build]
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     outputs:
@@ -125,8 +141,8 @@ jobs:
           sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
 
   validation-run-tests:
-    needs: validation-prepare-setup-mcm
-    runs-on: [self-hosted, runner-4]
+    needs: [validation-prepare-setup-mcm, get-runner-id]
+    runs-on: "self-hosted, ${{ needs.get-runner-id.outputs.runner_id }}"
     timeout-minutes: 60
     if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
     env:

@@ -104,7 +104,7 @@ class MtlManager:
 
             try:
                 result = connection.execute_command("pgrep MtlManager")
-                if result.returncode == 0:
+                if result.return_code == 0:
                     logger.info("Stopping MtlManager using sudo pkill MtlManager...")
                     try:
                         connection.execute_command("sudo pkill MtlManager")
