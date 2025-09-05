@@ -2,12 +2,16 @@ name: smoke-tests-bare-metal
 
 on:
   push:
-    branches: ["main", "smoke-tests"]
+    branches:
+      - main
+      - 'maint-**'
     paths-ignore:
       - "**.md"
       - "docs/**"
   pull_request:
-    branches: ["main"]
+    branches:
+      - main
+      - 'maint-**'
     paths-ignore:
       - "**.md"
       - "docs/**"
@@ -79,7 +83,7 @@ jobs:
     needs: get-runner-id
     uses: ./.github/workflows/bare-metal-build.yml
     with:
-      branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
+      branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout }}
       tag: ${{ github.event.inputs.tag-to-checkout }}
       runner: ${{ needs.get-runner-id.outputs.runner_id }}
 
