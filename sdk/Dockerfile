@@ -8,15 +8,18 @@ ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
+ARG MCM_DIR="/opt/mcm"
 ARG VERSIONS_FILE="versions.env"
 COPY "${VERSIONS_FILE}" /opt/versions.env
-ENV BASH_ENV=/opt/versions.env
-
-ARG MCM_DIR=/opt/mcm
-ARG PREFIX_DIR="/install"
-ARG GRPC_DIR="/opt/grpc"
 
 SHELL ["/bin/bash", "-exo", "pipefail", "-c"]
+ENV BASH_ENV=/opt/versions.env
+
+ENV PREFIX_DIR="/install"
+ENV REPO_DIR="${MCM_DIR}"
+ENV BUILD_DIR="${REPO_DIR}/_build}"
+ENV GRPC_DIR="${BUILD_DIR}/grpc"
+
 RUN apt-get update && \
     apt-get full-upgrade -y && \
     apt-get install --no-install-recommends -y \
@@ -48,8 +51,8 @@ LABEL org.opencontainers.image.version="25.03.0"
 LABEL org.opencontainers.image.vendor="Intel Corporation"
 LABEL org.opencontainers.image.licenses="BSD 3-Clause License"
 
-ARG MCM_DIR="/opt/mcm"
-ARG PREFIX_DIR="/install"
+ENV MCM_DIR="/opt/mcm"
+ENV PREFIX_DIR="/install"
 
 ENV HOME="${MCM_DIR}"
 ENV DEBIAN_FRONTEND=noninteractive
