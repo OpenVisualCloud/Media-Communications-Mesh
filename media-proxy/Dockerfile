@@ -8,30 +8,26 @@ ARG IMAGE_NAME=library/ubuntu:22.04@sha256:a6d2b38300ce017add71440577d5b0a90460d
 
 FROM ${IMAGE_CACHE_REGISTRY}/${IMAGE_NAME} AS builder
 
-ARG VERSIONS_FILE="versions.env"
-COPY "${VERSIONS_FILE}" /opt/versions.env
-ENV BASH_ENV=/opt/versions.env
-
-ARG MTL_VER=""
-ARG DPDK_VER=""
-ARG GPRC_VER=""
-ARG JPEGXS_VER=""
-ARG LIBFABRIC_VER=""
-
 ARG MCM_DIR="/opt/mcm"
-ARG MTL_DIR="/opt/mtl"
-ARG DPDK_DIR="/opt/dpdk"
-ARG XDP_DIR="/opt/xdp"
-ARG GRPC_DIR="/opt/grpc"
-ARG JPEGXS_DIR="/opt/jpegxs"
-ARG LIBFABRIC_DIR="/opt/libfabric"
+ARG VERSIONS_FILE="versions.env"
+COPY "${VERSIONS_FILE}" /opt/intel/versions.env
+COPY ./scripts/* /opt/intel/scripts/
+SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
+ENV BASH_ENV=/opt/intel/versions.env
+
+ENV PREFIX_DIR="/install"
+ENV REPO_DIR="${MCM_DIR}"
+ENV BUILD_DIR="${REPO_DIR}/_build}"
+ENV GRPC_DIR="${BUILD_DIR}/grpc"
+ENV DPDK_DIR="${BUILD_DIR}/dpdk"
+ENV XDP_DIR="${BUILD_DIR}/xdp"
+ENV JPEGXS_DIR="${BUILD_DIR}/jpegxs"
+ENV LIBFABRIC_DIR="${BUILD_DIR}/libfabric"
 
 ARG GITHUB_CREDENTIALS=""
-ARG PREFIX_DIR="/install"
 ENV PATH="${PREFIX_DIR}/bin:/root/.local/bin:/root/bin:/root/usr/bin:$PATH"
 ENV PKG_CONFIG_PATH=/usr/lib/pkgconfig:/usr/local/lib/pkgconfig:/usr/lib64/pkgconfig:/usr/local/lib/x86_64-linux-gnu/pkgconfig
 
-SHELL ["/bin/bash", "-ex", "-o", "pipefail", "-c"]
 # Install package dependencies
 RUN apt-get update --fix-missing && \
     apt-get full-upgrade -y && \
@@ -122,7 +118,6 @@ RUN ./build.sh build-only && \
 
 # Build MCM
 WORKDIR ${MCM_DIR}
-COPY . ${MCM_DIR}
 RUN ./build.sh "${PREFIX_DIR}" && \
     cp "${MTL_DIR}/build/manager/MtlManager" "${PREFIX_DIR}/usr/local/bin/" && \
     cp -fR "/usr/local/lib/bpf/"* "${PREFIX_DIR}/usr/local/lib/bpf/" && \
