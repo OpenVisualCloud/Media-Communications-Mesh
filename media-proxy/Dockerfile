@@ -53,69 +53,8 @@ RUN curl -Lf "https://go.dev/dl/go${GOLANG_GO_VER}.linux-amd64.tar.gz" -o "/usr/
     go install "${GOLANG_PROTOBUF_GEN}" && \
     go install "${GOLANG_GRPC_GEN}"
 
-# Clone MTL, DPDK and xdp-tools repo
-WORKDIR ${DPDK_DIR}
-RUN git clone --branch main https://${GITHUB_CREDENTIALS}github.com/OpenVisualCloud/Media-Transport-Library "${MTL_DIR}" && \
-    git -C "${MTL_DIR}" checkout ${MTL_VER} && \
-    git clone --branch v${DPDK_VER} --depth 1 https://github.com/DPDK/dpdk.git "${DPDK_DIR}" && \
-    git clone --recurse-submodules https://github.com/xdp-project/xdp-tools.git "${XDP_DIR}" && \
-    git clone --depth 1 --branch "${LIBFABRIC_VER}" https://github.com/ofiwg/libfabric "${LIBFABRIC_DIR}" && \
-    git clone --branch ${GPRC_VER} --recurse-submodules --depth 1 --shallow-submodules https://github.com/grpc/grpc "${GRPC_DIR}" && \
-    git clone https://github.com/OpenVisualCloud/SVT-JPEG-XS "${JPEGXS_DIR}" && \
-    git -C ${JPEGXS_DIR} checkout ${JPEGXS_VER} && \
-    patch -p1 -i <(cat "${MTL_DIR}/patches/dpdk/${DPDK_VER}/"*.patch)
-RUN patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/hdr_split/"*.patch || true
-RUN patch -d "${DPDK_DIR}" -p1 < "${MTL_DIR}/patches/dpdk/${DPDK_VER}/tsn/"*.patch || true
-
-# Build the xdp-tools project
-WORKDIR ${XDP_DIR}
-RUN ./configure && \
-    make && \
-    make install && \
-    DESTDIR="${PREFIX_DIR}" make install && \
-    make -C "${XDP_DIR}/lib/libbpf/src" && \
-    make -C "${XDP_DIR}/lib/libbpf/src" install && \
-    DESTDIR="${PREFIX_DIR}" make -C "${XDP_DIR}/lib/libbpf/src" install
-
-WORKDIR ${LIBFABRIC_DIR}
-RUN ./autogen.sh && \
-    ./configure --enable-verbs && \
-    make "-j$(nproc)" && \
-    make install && \
-    DESTDIR="${PREFIX_DIR}" make install
-
-# Build the DPDK
-WORKDIR ${DPDK_DIR}
-RUN meson setup build && \
-    ninja -C build && \
-    meson install -C build && \
-    DESTDIR="${PREFIX_DIR}" meson install -C build
-
-# Build MTL
-WORKDIR ${MTL_DIR}
-RUN ./build.sh && \
-    DESTDIR="${PREFIX_DIR}" meson install -C build
-
-# gRPC
-WORKDIR ${GRPC_DIR}/cmake/build
-RUN cmake -DgRPC_BUILD_TESTS=OFF -DgRPC_INSTALL=ON ../.. && \
-    make "-j$(nproc)" && \
-    make install && \
-    cmake -DgRPC_BUILD_TESTS=ON -DgRPC_INSTALL=ON ../.. && \
-    make "-j$(nproc)" grpc_cli && \
-    cp grpc_cli "${PREFIX_DIR}/usr/local/bin/"
-
-# Build and install JPEG XS
-WORKDIR ${JPEGXS_DIR}/Build/linux
-RUN ./build.sh release install && \
-    ./build.sh release --prefix "${PREFIX_DIR}/usr/local" install
-
-# Build and install JPEG XS imtl plugin
-WORKDIR ${JPEGXS_DIR}/imtl-plugin
-RUN ./build.sh build-only && \
-    DESTDIR="${PREFIX_DIR}" meson install --no-rebuild -C build && \
-    mkdir -p /install/usr/local/etc/ && \
-    cp ${JPEGXS_DIR}/imtl-plugin/kahawai.json /install/usr/local/etc/jpegxs.json
+WORKDIR "${MCM_DIR}"
+RUN scripts/setup_build_env.sh
 
 # Build MCM
 WORKDIR ${MCM_DIR}
