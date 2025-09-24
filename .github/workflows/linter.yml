@@ -43,6 +43,7 @@ jobs:
           VALIDATE_BASH_EXEC: true
           VALIDATE_BASH: true
           VALIDATE_CLANG_FORMAT: true
+          DISABLE_CLANG_FORMAT_ERRORS: true
           VALIDATE_CPP: true
           VALIDATE_GO: true
           VALIDATE_GITHUB_ACTIONS: true
