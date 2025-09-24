@@ -42,7 +42,6 @@ jobs:
           GITHUB_STATUS_UPDATES: false
           VALIDATE_BASH_EXEC: true
           VALIDATE_BASH: true
-          VALIDATE_CLANG_FORMAT: false # Do not enforce clang-format since the code style differs. Instead, use it locally.
           VALIDATE_CPP: true
           VALIDATE_GO: true
           VALIDATE_GITHUB_ACTIONS: true
