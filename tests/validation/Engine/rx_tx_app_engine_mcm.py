@@ -11,20 +11,24 @@ from mfd_connect.exceptions import RemoteProcessInvalidState
 
 import Engine.rx_tx_app_client_json
 import Engine.rx_tx_app_connection_json
-from Engine.const import LOG_FOLDER, RX_TX_APP_ERROR_KEYWORDS, DEFAULT_OUTPUT_PATH
+from Engine.const import LOG_FOLDER, DEFAULT_OUTPUT_PATH, TESTCMD_LVL
+from common.log_constants import (
+    RX_REQUIRED_LOG_PHRASES,
+    TX_REQUIRED_LOG_PHRASES,
+    RX_TX_APP_ERROR_KEYWORDS,
+)
 from Engine.mcm_apps import (
     get_media_proxy_port,
-    output_validator,
     save_process_log,
     get_mcm_path,
 )
-from Engine.rx_tx_app_file_validation_utils import validate_file
+from Engine.rx_tx_app_file_validation_utils import validate_file, cleanup_file
 
 logger = logging.getLogger(__name__)
 
 
 def create_client_json(
-    build: str, client: Engine.rx_tx_app_client_json.ClientJson
+    build: str, client: Engine.rx_tx_app_client_json.ClientJson, log_path: str = ""
 ) -> None:
     logger.debug("Client JSON:")
     for line in client.to_json().splitlines():
@@ -32,10 +36,15 @@ def create_client_json(
     output_path = str(Path(build, "tests", "tools", "TestApp", "build", "client.json"))
     logger.debug(f"Client JSON path: {output_path}")
     client.prepare_and_save_json(output_path=output_path)
+    # Use provided log_path or default to LOG_FOLDER
+    log_dir = log_path if log_path else LOG_FOLDER
+    client.copy_json_to_logs(log_path=log_dir)
 
 
 def create_connection_json(
-    build: str, rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson
+    build: str,
+    rx_tx_app_connection: Engine.rx_tx_app_connection_json.ConnectionJson,
+    log_path: str = "",
 ) -> None:
     logger.debug("Connection JSON:")
     for line in rx_tx_app_connection.to_json().splitlines():
@@ -45,6 +54,9 @@ def create_connection_json(
     )
     logger.debug(f"Connection JSON path: {output_path}")
     rx_tx_app_connection.prepare_and_save_json(output_path=output_path)
+    # Use provided log_path or default to LOG_FOLDER
+    log_dir = log_path if log_path else LOG_FOLDER
+    rx_tx_app_connection.copy_json_to_logs(log_path=log_dir)
 
 
 class AppRunnerBase:
@@ -164,13 +176,19 @@ class AppRunnerBase:
                 logger.warning(f"Error creating directory {output_dir}: {str(e)}")
 
     def start(self):
-        create_client_json(self.mcm_path, self.rx_tx_app_client_json)
-        create_connection_json(self.mcm_path, self.rx_tx_app_connection_json)
+        # Use self.log_path for consistent logging across the application
+        log_dir = self.log_path if self.log_path else LOG_FOLDER
+        create_client_json(self.mcm_path, self.rx_tx_app_client_json, log_path=log_dir)
+        create_connection_json(
+            self.mcm_path, self.rx_tx_app_connection_json, log_path=log_dir
+        )
         self._ensure_output_directory_exists()
 
     def stop(self):
         validation_info = []
         file_validation_passed = True
+        app_log_validation_status = False
+        app_log_error_count = 0
 
         if self.process:
             try:
@@ -183,40 +201,78 @@ class AppRunnerBase:
                 logger.info("Process has already finished (nothing to stop).")
             logger.info(f"{self.direction} app stopped.")
 
-            log_dir = self.log_path if self.log_path else LOG_FOLDER
+            log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             subdir = f"RxTx/{self.host.name}"
             filename = f"{self.direction.lower()}.log"
             log_file_path = os.path.join(log_dir, subdir, filename)
 
-            result = output_validator(
-                log_file_path=log_file_path,
-                error_keywords=RX_TX_APP_ERROR_KEYWORDS,
-            )
-            if result["errors"]:
-                logger.warning(f"Errors found: {result['errors']}")
+            app_log_validation_status = False
+            app_log_error_count = 0
+            # Using common log validation utility
+            from common.log_validation_utils import check_phrases_in_order
 
-            self.is_pass = result["is_pass"]
+            if self.direction in ("Rx", "Tx"):
+                from common.log_validation_utils import validate_log_file
 
-            # Collect log validation info
-            validation_info.append(f"=== {self.direction} App Log Validation ===")
-            validation_info.append(f"Log file: {log_file_path}")
-            validation_info.append(
-                f"Validation result: {'PASS' if result['is_pass'] else 'FAIL'}"
-            )
-            validation_info.append(f"Errors found: {len(result['errors'])}")
-            if result["errors"]:
-                validation_info.append("Error details:")
-                for error in result["errors"]:
-                    validation_info.append(f"  - {error}")
-            if result["phrase_mismatches"]:
-                validation_info.append("Phrase mismatches:")
-                for phrase, found, expected in result["phrase_mismatches"]:
-                    validation_info.append(
-                        f"  - {phrase}: found '{found}', expected '{expected}'"
+                required_phrases = (
+                    RX_REQUIRED_LOG_PHRASES
+                    if self.direction == "Rx"
+                    else TX_REQUIRED_LOG_PHRASES
+                )
+
+                validation_result = validate_log_file(
+                    log_file_path, required_phrases, self.direction, strict_order=False
+                )
+
+                self.is_pass = validation_result["is_pass"]
+                app_log_validation_status = validation_result["is_pass"]
+                app_log_error_count = validation_result["error_count"]
+                validation_info.extend(validation_result["validation_info"])
+
+                # Additional logging if validation failed
+                if (
+                    not validation_result["is_pass"]
+                    and validation_result["missing_phrases"]
+                ):
+                    print(
+                        f"{self.direction} process did not pass. First missing phrase: {validation_result['missing_phrases'][0]}"
                     )
+            else:
+                from common.log_validation_utils import output_validator
 
-        # File validation for Rx only run if output path isn't "/dev/null"
-        if self.direction == "Rx" and self.output and self.output_path != "/dev/null":
+                result = output_validator(
+                    log_file_path=log_file_path,
+                    error_keywords=RX_TX_APP_ERROR_KEYWORDS,
+                )
+                if result["errors"]:
+                    logger.warning(f"Errors found: {result['errors']}")
+                self.is_pass = result["is_pass"]
+                app_log_validation_status = result["is_pass"]
+                app_log_error_count = len(result["errors"])
+                validation_info.append(f"=== {self.direction} App Log Validation ===")
+                validation_info.append(f"Log file: {log_file_path}")
+                validation_info.append(
+                    f"Validation result: {'PASS' if result['is_pass'] else 'FAIL'}"
+                )
+                validation_info.append(f"Errors found: {len(result['errors'])}")
+                if result["errors"]:
+                    validation_info.append("Error details:")
+                    for error in result["errors"]:
+                        validation_info.append(f"  - {error}")
+                if result["phrase_mismatches"]:
+                    validation_info.append("Phrase mismatches:")
+                    for phrase, found, expected in result["phrase_mismatches"]:
+                        validation_info.append(
+                            f"  - {phrase}: found '{found}', expected '{expected}'"
+                        )
+
+        # File validation for Rx only run if output path isn't "/dev/null" or doesn't start with "/dev/null/"
+        if (
+            self.direction == "Rx"
+            and self.output
+            and self.output_path
+            and not str(self.output_path).startswith("/dev/null")
+        ):
             validation_info.append(f"\n=== {self.direction} Output File Validation ===")
             validation_info.append(f"Expected output file: {self.output}")
 
@@ -234,7 +290,7 @@ class AppRunnerBase:
             )
             validation_info.append(f"Overall validation: {overall_status}")
             validation_info.append(
-                f"App log validation: {'PASS' if result['is_pass'] else 'FAIL'}"
+                f"App log validation: {'PASS' if app_log_validation_status else 'FAIL'}"
             )
             if self.direction == "Rx":
                 file_status = "PASS" if file_validation_passed else "FAIL"
@@ -245,8 +301,7 @@ class AppRunnerBase:
                         "Note: Overall validation fails if either app log or file validation fails"
                     )
 
-            # Save to validation report file
-            log_dir = self.log_path if self.log_path else LOG_FOLDER
+            log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
             subdir = f"RxTx/{self.host.name}"
             validation_filename = f"{self.direction.lower()}_validation.log"
 
@@ -279,22 +334,20 @@ class LapkaExecutor:
                 f"Starting Tx app with payload: {self.payload.payload_type} on {self.host}"
             )
             cmd = self._get_app_cmd("Tx")
+            logger.log(TESTCMD_LVL, f"Tx command: {cmd}")
             self.process = self.host.connection.start_process(
                 cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
             )
 
-            # Start background logging thread
-            subdir = f"RxTx/{self.host.name}"
-            filename = "tx.log"
-
             def log_output():
+                log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
                 for line in self.process.get_stdout_iter():
                     save_process_log(
-                        subdir=subdir,
-                        filename=filename,
+                        subdir=f"RxTx/{self.host.name}",
+                        filename="tx.log",
                         text=line.rstrip(),
                         cmd=cmd,
-                        log_dir=self.log_path,
+                        log_dir=log_dir,
                     )
 
             threading.Thread(target=log_output, daemon=True).start()
@@ -334,22 +387,20 @@ class LapkaExecutor:
                 f"Starting Rx app with payload: {self.payload.payload_type} on {self.host}"
             )
             cmd = self._get_app_cmd("Rx")
+            logger.log(TESTCMD_LVL, f"Rx command: {cmd}")
             self.process = self.host.connection.start_process(
                 cmd, shell=True, stderr_to_stdout=True, cwd=self.app_path
             )
 
-            # Start background logging thread
-            subdir = f"RxTx/{self.host.name}"
-            filename = "rx.log"
-
             def log_output():
+                log_dir = self.log_path if self.log_path is not None else LOG_FOLDER
                 for line in self.process.get_stdout_iter():
                     save_process_log(
-                        subdir=subdir,
-                        filename=filename,
+                        subdir=f"RxTx/{self.host.name}",
+                        filename="rx.log",
                         text=line.rstrip(),
                         cmd=cmd,
-                        log_dir=self.log_path,
+                        log_dir=log_dir,
                     )
 
             threading.Thread(target=log_output, daemon=True).start()
@@ -357,8 +408,6 @@ class LapkaExecutor:
 
         def cleanup(self):
             """Clean up the output file created by the Rx app."""
-            from Engine.rx_tx_app_file_validation_utils import cleanup_file
-
             if self.output:
                 success = cleanup_file(self.host.connection, str(self.output))
                 if success:

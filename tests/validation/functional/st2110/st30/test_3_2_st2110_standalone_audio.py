@@ -107,7 +107,7 @@ def test_3_2_st2110_standalone_audio(hosts, test_config, audio_type, log_path):
         ffmpeg_output=rx_ffmpeg_output,
         yes_overwrite=True,
     )
-    rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance=rx_ffmpeg)
+    rx_executor = FFmpegExecutor(rx_host, log_path=log_path, ffmpeg_instance=rx_ffmpeg)
 
     tx_executor.start()
     sleep(MCM_ESTABLISH_TIMEOUT)

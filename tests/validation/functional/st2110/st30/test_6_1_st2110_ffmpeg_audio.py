@@ -19,7 +19,7 @@ from common.nicctl import Nicctl
 
 @pytest.mark.usefixtures("media_proxy")
 @pytest.mark.parametrize("audio_file", audio_files)
-def test_6_1_st2110_ffmpeg_audio(hosts, test_config, audio_file):
+def test_6_1_st2110_ffmpeg_audio(hosts, test_config, audio_file, log_path):
     audio_file = audio_files[audio_file]
 
     tx_host = hosts["mesh-agent"]
@@ -85,6 +85,7 @@ def test_6_1_st2110_ffmpeg_audio(hosts, test_config, audio_file):
     mtl_tx_ffmpeg_executor = FFmpegExecutor(
         host=tx_host,
         ffmpeg_instance=mtl_tx_ffmpeg,
+        log_path=log_path,
     )
 
     # Host A --- MCM FFmpeg Rx
@@ -122,6 +123,7 @@ def test_6_1_st2110_ffmpeg_audio(hosts, test_config, audio_file):
     mcm_rx_a_ffmpeg_executor = FFmpegExecutor(
         host=rx_a_host,
         ffmpeg_instance=mcm_rx_a_ffmpeg,
+        log_path=log_path,
     )
 
     # Host B --- MCM FFmpeg Rx
@@ -159,6 +161,7 @@ def test_6_1_st2110_ffmpeg_audio(hosts, test_config, audio_file):
     mcm_rx_b_ffmpeg_executor = FFmpegExecutor(
         host=rx_b_host,
         ffmpeg_instance=mcm_rx_b_ffmpeg,
+        log_path=log_path,
     )
 
     mtl_tx_ffmpeg_executor.start()

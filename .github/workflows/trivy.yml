@@ -1,14 +1,14 @@
 name: Trivy
 on:
   push:
-    branches: [ "main", "maint-*" ]
+    branches: ["main", "maint-*"]
   pull_request:
-    branches: [ "main", "maint-*" ]
+    branches: ["main", "maint-*"]
   workflow_dispatch:
     inputs:
       branch:
-        description: 'branch to run scans on'
-        default: 'main'
+        description: "branch to run scans on"
+        default: "main"
         type: string
 
 permissions:
@@ -21,7 +21,7 @@ concurrency:
 jobs:
   scan:
     permissions:
-      security-events: write  # for github/codeql-action/upload-sarif to upload SARIF results
+      security-events: write # for github/codeql-action/upload-sarif to upload SARIF results
     runs-on: ubuntu-22.04
     name: "Trivy: Perform scans job"
     steps:
@@ -40,8 +40,8 @@ jobs:
         with:
           scan-type: config
           skip-dirs: deployment #helm charts not supported
-          exit-code: '0'
-          format: 'sarif'
+          exit-code: "0"
+          format: "sarif"
           output: "trivy-config-scan-results-${{ github.event.pull_request.number || github.sha }}.sarif"
 
       - name: "Trivy: Run vulnerability scanner for type=config (out=table)"
@@ -50,8 +50,8 @@ jobs:
         with:
           scan-type: config
           skip-dirs: deployment #helm charts not supported
-          exit-code: '0'
-          format: 'table'
+          exit-code: "0"
+          format: "table"
           output: "trivy-config-scan-results-${{ github.event.pull_request.number || github.sha }}.txt"
 
       - name: "Trivy: Upload scan results to GitHub Security tab"

@@ -1,0 +1,6 @@
+self-hosted-runner:
+  # Labels of self-hosted runner in array of strings.
+  labels:
+    - DPDK
+    - runner-1
+    - runner-4

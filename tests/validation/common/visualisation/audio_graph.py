@@ -416,7 +416,7 @@ if __name__ == "__main__":
         epilog="""
         Example usage:
         python3 audio_graph.py /path/to/file1.pcm /path/to/file2.pcm --sample_rate 44100 --output_file output.png --num_channels1 1 --num_channels2 1 --downsample_factor 10 --start_time 0 --end_time 0.03 --pcm_format 16
-        
+
         For single file:
         python3 audio_graph.py /path/to/file1.pcm --sample_rate 44100 --output_file output.png --num_channels1 2 --downsample_factor 10 --pcm_format 16
         """,

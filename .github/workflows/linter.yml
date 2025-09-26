@@ -38,6 +38,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           BASH_SEVERITY: "warning"
           LINTER_RULES_PATH: ".github/configs"
+          GITHUB_ACTIONS_CONFIG_FILE: "actionlint.yml"
           GITHUB_COMMENT_ON_PR: false
           GITHUB_STATUS_UPDATES: false
           VALIDATE_BASH_EXEC: true

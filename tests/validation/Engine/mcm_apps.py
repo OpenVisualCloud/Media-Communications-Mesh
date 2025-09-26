@@ -17,6 +17,21 @@ from Engine.const import (
 logger = logging.getLogger(__name__)
 
 
+def get_log_folder_path(test_config: dict) -> Path:
+    """
+    Returns the path to the log folder on the given host.
+    If the host has a custom log folder path set in its extra_info, it will return that.
+    Otherwise, it returns the default log folder path.
+    """
+    validation_dir = Path(__file__).parent.parent
+    log_path = test_config.get("log_path")
+    default_log_path = Path(validation_dir, LOG_FOLDER)
+
+    if log_path:
+        return Path(log_path)
+    return default_log_path
+
+
 def get_mtl_path(host) -> str:
     """
     Returns the path to the Media Transport Library (MTL) on the given host.
@@ -71,7 +86,7 @@ def save_process_log(
             write_cmd = True
     with open(log_file, "a") as f:
         if write_cmd:
-            f.write(cmd + "\n\n")
+            f.write((cmd if cmd is not None else "") + "\n\n")
         f.write(cleaned_text + "\n")
 
 
@@ -107,6 +122,9 @@ def output_validator(
     if log_file_path:
         with open(log_file_path, "r") as f:
             output = f.read()
+
+    if output is None:
+        output = ""
 
     errors = []
     phrase_mismatches = []

@@ -1,0 +1,186 @@
+name: smoke-tests-bare-metal
+
+on:
+  push:
+    branches: ["main", "smoke-tests"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  pull_request:
+    branches: ["main"]
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
+  workflow_dispatch:
+    inputs:
+      branch-to-checkout:
+        type: string
+        default: "main"
+        required: false
+        description: "Branch name to use"
+      tag-to-checkout:
+        type: string
+        required: false
+        description: "Tag name to use"
+      list_tests:
+        type: choice
+        required: false
+        description: "List all tests before running"
+        options:
+          - "true"
+          - "false"
+      markers:
+        type: string
+        default: "smoke"
+        required: false
+        description: "Markers to use for pytest"
+
+env:
+  BUILD_TYPE: "Release"
+  DPDK_VERSION: "23.11"
+  DPDK_REBUILD: "false"
+  MEDIA_PATH: "/mnt/media"
+  BUILD_DIR: "${{ github.workspace }}/_build"
+  INPUT_PATH: "/mnt/media/"
+  OUTPUT_PATH: "${{ github.workspace }}/received/"
+  MCM_BINARIES_DIR: "./mcm-binaries"
+  MEDIA_PROXY: "./mcm-binaries/media_proxy"
+  MESH_AGENT: "./mcm-binaries/mesh-agent"
+  MCM_FFMPEG_7_0: "${{ github.workspace }}/_build/ffmpeg-7-0/ffmpeg"
+  MCM_LD_LIBRARY_PATH: "${{ github.workspace }}/_build/ffmpeg-7-0/lib/"
+  MTL_FFMPEG_7_0: "./mtl-binaries/ffmpeg-7-0/ffmpeg"
+  INTEGRITY_PATH: "${{ github.workspace }}/tests/validation/common/integrity"
+  LOG_DIR: "${{ github.workspace }}/logs"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: smoke-tests-runner-4-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  call-bare-metal-build:
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    uses: ./.github/workflows/bare-metal-build.yml
+    with:
+      branch: ${{ github.event_name == 'push' && github.ref_name || github.event.inputs.branch-to-checkout || 'main' }}
+      tag: ${{ github.event.inputs.tag-to-checkout }}
+      runner: runner-4
+
+  validation-prepare-setup-mcm:
+    runs-on: [self-hosted, runner-4]
+    needs: call-bare-metal-build
+    timeout-minutes: 60
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    outputs:
+      pipenv-activate: ${{ steps.pipenv-install.outputs.VIRTUAL_ENV }}
+    steps:
+      - name: "preparation: Harden Runner"
+        uses: step-security/harden-runner@6c439dc8bdf85cadbbce9ed30d1c7b959517bc49 # v2.12.2
+        with:
+          egress-policy: audit
+      - name: "preparation: Restore valid repository owner and print env"
+        if: always()
+        run: |
+          sudo chown -R "${USER}" "$(pwd)" || true
+          env | grep BUILD_ || true
+          env | grep DPDK_ || true
+      - name: "Verify build artifacts"
+        run: |
+          # Just verify that binaries exist and are executable
+          echo "Verifying binaries in build directory..."
+          ls -la ${{ env.BUILD_DIR }}/ || true
+          ls -la ${{ env.BUILD_DIR }}/mtl/ || true
+          ls -la ${{ env.BUILD_DIR }}/mcm/bin/ || true
+          ls -la ${{ env.BUILD_DIR }}/mcm/bin/media_proxy || true
+          ls -la ${{ env.BUILD_DIR }}/mcm/bin/mesh-agent || true
+          ls -la ${{ env.BUILD_DIR }}/mcm/lib/libmcm_dp.so.* || true
+          ls -la ${{ env.BUILD_DIR }}/ffmpeg-6-1/ || true
+          ls -la ${{ env.BUILD_DIR }}/ffmpeg-7-0/ || true
+
+      - name: "installation: Install pipenv environment"
+        working-directory: tests/validation
+        id: pipenv-install
+        run: |
+          python3 -m venv venv
+          source venv/bin/activate
+          pip install -r requirements.txt
+          echo "VIRTUAL_ENV=$PWD/venv/bin/activate" >> "$GITHUB_ENV"
+
+      - name: "add user name to environment and config"
+        run: |
+          echo "USER=${USER}" >> "$GITHUB_ENV"
+          sed -i "s/{{ USER }}/root/g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ KEY_PATH }}|/home/${USER}/.ssh/id_rsa|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ INTEGRITY_PATH }}|${{ env.INTEGRITY_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ OUTPUT_PATH }}|${{ env.OUTPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ INPUT_PATH }}|${{ env.INPUT_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MTL_PATH }}|${{ env.BUILD_DIR }}/mtl/|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MCM_PATH }}|${{ github.workspace }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ MCM_FFMPEG_7_0 }}|${{ env.MCM_FFMPEG_7_0 }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ LD_LIBRARY_PATH }}|${{ env.MCM_LD_LIBRARY_PATH }}|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ OUTPUT_PATH }}|${{ github.workspace }}/received/|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ NICCTL_PATH }}|${{ env.BUILD_DIR }}/mtl/script/|g" tests/validation/configs/topology_config_workflow.yaml
+          sed -i "s|{{ LOG_PATH }}|${{ env.LOG_DIR }}|g" tests/validation/configs/test_config_workflow.yaml
+
+  validation-run-tests:
+    needs: validation-prepare-setup-mcm
+    runs-on: [self-hosted, runner-4]
+    timeout-minutes: 60
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    env:
+      PYTEST_RETRIES: "3"
+      MARKERS: ${{ github.event.inputs.markers || 'smoke' }}
+      LIST_TESTS: ${{ github.event.inputs.list_tests || 'true' }}
+    steps:
+      - name: "preparation: Kill pytest routines"
+        run: |
+          sudo killall -SIGINT pipenv || true
+          sudo killall -SIGINT pytest || true
+      - name: "list all tests marked with ${{ env.MARKERS }}"
+        if: ${{ env.LIST_TESTS == 'true' }}
+        run: |
+          tests/validation/venv/bin/python3 -m pytest \
+            --collect-only --quiet ./tests/validation/functional/ \
+            -m "${{ env.MARKERS }}"
+      - name: "execution: Run validation-bare-metal tests in virtual environment"
+        run: |
+          tests/validation/venv/bin/python3 -m pytest \
+            --topology_config=tests/validation/configs/topology_config_workflow.yaml \
+            --test_config=tests/validation/configs/test_config_workflow.yaml \
+            ./tests/validation/functional/ \
+            --template=html/index.html --report=report.html \
+            --json-report --json-report-file=report.json \
+            --show-capture=no \
+            -m "${{ env.MARKERS }}"
+      - name: "upload logs"
+        if: always()
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: smoke-tests-logs
+          path: |
+            ${{ env.LOG_DIR }}/*
+
+      - name: "upload report"
+        if: always()
+        id: upload-report
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: smoke-tests-report
+          path: |
+            report.html
+      - name: "upload json report"
+        if: always()
+        id: upload-report-json
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4.4.3
+        with:
+          name: smoke-tests-report-json
+          path: |
+            report.json
+
+  call-report-summary:
+    needs: validation-run-tests
+    uses: ./.github/workflows/report_summary.yml
+    with:
+      artifact-name: smoke-tests-report-json
