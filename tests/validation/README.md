@@ -65,9 +65,12 @@ To manually run the `test_blob_25_03` test from `test_blob_25_03.py` with the pa
 
 ```bash
 sudo .venv/bin/python3 -m pytest \
-  --topology_config=./configs/topology_config_workflow.yaml \
-  --test_config=./configs/test_config_workflow.yaml \
-  ./functional/local/blob/test_blob_25_03.py::test_blob_25_03[|file = random_bin_100M|]
+  --topology_config=./configs/topology_config.yaml \
+  --test_config=./configs/test_config.yaml \
+  ./functional/local/blob/test_blob_25_03.py::test_blob_25_03[|file = random_bin_100M|] \
+  --template=html/index.html --report=report.html \
+  --json-report --json-report-file=report.json \
+  --show-capture=no
 ```
 
 To collect all smoke tests use:

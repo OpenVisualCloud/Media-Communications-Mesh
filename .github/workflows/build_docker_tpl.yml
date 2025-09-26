@@ -6,15 +6,15 @@ on:
       build_type:
         required: false
         type: string
-        default: 'Release'
+        default: "Release"
       docker_registry:
         required: false
         type: string
-        default: 'ghcr.io'
+        default: "ghcr.io"
       docker_registry_prefix:
         required: false
         type: string
-        default: 'openvisualcloud/media-communications-mesh'
+        default: "openvisualcloud/media-communications-mesh"
       docker_registry_login:
         required: false
         type: boolean
@@ -26,11 +26,11 @@ on:
       docker_build_args:
         required: false
         type: string
-        default: ''
+        default: ""
       docker_build_platforms:
         required: false
         type: string
-        default: 'linux/amd64'
+        default: "linux/amd64"
       docker_image_tag:
         required: false
         type: string
@@ -40,7 +40,7 @@ on:
       docker_file_path:
         required: false
         type: string
-        default: './Dockerfile'
+        default: "./Dockerfile"
     secrets:
       docker_registry_login:
         required: false

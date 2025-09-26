@@ -19,7 +19,7 @@ from common.nicctl import Nicctl
 
 @pytest.mark.usefixtures("media_proxy")
 @pytest.mark.parametrize("video_file", video_files)
-def test_6_1_st2110_ffmpeg_video(hosts, test_config, video_file):
+def test_6_1_st2110_ffmpeg_video(hosts, test_config, video_file, log_path):
     video_file = video_files[video_file]
 
     tx_host = hosts["mesh-agent"]
@@ -76,6 +76,7 @@ def test_6_1_st2110_ffmpeg_video(hosts, test_config, video_file):
     mtl_tx_ffmpeg_executor = FFmpegExecutor(
         host=tx_host,
         ffmpeg_instance=mtl_tx_ffmpeg,
+        log_path=log_path,
     )
 
     # Host A --- MCM FFmpeg Rx
@@ -115,6 +116,7 @@ def test_6_1_st2110_ffmpeg_video(hosts, test_config, video_file):
     mcm_rx_a_ffmpeg_executor = FFmpegExecutor(
         host=rx_a_host,
         ffmpeg_instance=mcm_rx_a_ffmpeg,
+        log_path=log_path,
     )
 
     # Host B --- MCM FFmpeg Rx
@@ -154,6 +156,7 @@ def test_6_1_st2110_ffmpeg_video(hosts, test_config, video_file):
     mcm_rx_b_ffmpeg_executor = FFmpegExecutor(
         host=rx_b_host,
         ffmpeg_instance=mcm_rx_b_ffmpeg,
+        log_path=log_path,
     )
 
     mtl_tx_ffmpeg_executor.start()

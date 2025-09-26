@@ -7,7 +7,7 @@
 import pytest
 import logging
 
-from ....Engine.media_files import yuv_files
+from Engine.media_files import video_files_25_03
 
 from common.ffmpeg_handler.ffmpeg import FFmpeg, FFmpegExecutor
 from common.ffmpeg_handler.ffmpeg_enums import (
@@ -17,20 +17,40 @@ from common.ffmpeg_handler.ffmpeg_enums import (
 
 from common.ffmpeg_handler.ffmpeg_io import FFmpegVideoIO
 from common.ffmpeg_handler.mcm_ffmpeg import FFmpegMcmMemifVideoIO
+from common.log_validation_utils import write_executor_validation_summary
+from Engine.const import (
+    FFMPEG_RUN_TIMEOUT,
+    DEFAULT_OUTPUT_PATH,
+)
 
 logger = logging.getLogger(__name__)
 
 
-@pytest.mark.parametrize("video_type", [k for k in yuv_files.keys()])
-def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) -> None:
-    # media_proxy fixture used only to ensure that the media proxy is running
-    # Get TX and RX hosts
+@pytest.mark.usefixtures("media_proxy")
+@pytest.mark.parametrize(
+    "file",
+    [
+        pytest.param("FullHD_59.94", marks=pytest.mark.smoke),
+        *[f for f in video_files_25_03.keys() if f != "FullHD_59.94"],
+    ],
+)
+def test_local_ffmpeg_video(
+    hosts, test_config, file: str, log_path, media_path
+) -> None:
     host_list = list(hosts.values())
     if len(host_list) < 1:
         pytest.skip("Local tests require at least 1 host")
     tx_host = rx_host = host_list[0]
-    tx_prefix_variables = test_config["tx"].get("prefix_variables", None)
-    rx_prefix_variables = test_config["rx"].get("prefix_variables", None)
+
+    if hasattr(tx_host.topology.extra_info, "mcm_prefix_variables"):
+        tx_prefix_variables = dict(tx_host.topology.extra_info.mcm_prefix_variables)
+    else:
+        tx_prefix_variables = {}
+    if hasattr(rx_host.topology.extra_info, "mcm_prefix_variables"):
+        rx_prefix_variables = dict(rx_host.topology.extra_info.mcm_prefix_variables)
+    else:
+        rx_prefix_variables = {}
+
     tx_prefix_variables["MCM_MEDIA_PROXY_PORT"] = (
         tx_host.topology.extra_info.media_proxy["sdk_port"]
     )
@@ -38,10 +58,12 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
         rx_host.topology.extra_info.media_proxy["sdk_port"]
     )
 
-    frame_rate = str(yuv_files[video_type]["fps"])
-    video_size = f'{yuv_files[video_type]["width"]}x{yuv_files[video_type]["height"]}'
+    frame_rate = str(video_files_25_03[file]["fps"])
+    video_size = (
+        f'{video_files_25_03[file]["width"]}x{video_files_25_03[file]["height"]}'
+    )
     pixel_format = video_file_format_to_payload_format(
-        str(yuv_files[video_type]["file_format"])
+        str(video_files_25_03[file]["file_format"])
     )
     conn_type = McmConnectionType.mpg.value
 
@@ -51,7 +73,7 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
         video_size=video_size,
         pixel_format=pixel_format,
         stream_loop=False,
-        input_path=f'{test_config["tx"]["filepath"]}{yuv_files[video_type]["filename"]}',
+        input_path=f'{media_path}{video_files_25_03[file]["filename"]}',
     )
     mcm_tx_outp = FFmpegMcmMemifVideoIO(
         f="mcm",
@@ -63,14 +85,16 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
     )
     mcm_tx_ff = FFmpeg(
         prefix_variables=tx_prefix_variables,
-        ffmpeg_path=test_config["tx"]["ffmpeg_path"],
+        ffmpeg_path=tx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_tx_inp,
         ffmpeg_output=mcm_tx_outp,
         yes_overwrite=False,
     )
 
     logger.debug(f"Tx command: {mcm_tx_ff.get_command()}")
-    mcm_tx_executor = FFmpegExecutor(tx_host, ffmpeg_instance=mcm_tx_ff)
+    mcm_tx_executor = FFmpegExecutor(
+        tx_host, log_path=log_path, ffmpeg_instance=mcm_tx_ff
+    )
 
     # >>>>> MCM Rx
     mcm_rx_inp = FFmpegMcmMemifVideoIO(
@@ -86,20 +110,40 @@ def test_local_ffmpeg_video(media_proxy, hosts, test_config, video_type: str) ->
         framerate=frame_rate,
         video_size=video_size,
         pixel_format=pixel_format,
-        output_path=f'{test_config["rx"]["filepath"]}test_{yuv_files[video_type]["filename"]}',
+        output_path=f'{getattr(rx_host.topology.extra_info, "output_path", DEFAULT_OUTPUT_PATH)}/test_{video_files_25_03[file]["filename"]}',
     )
     mcm_rx_ff = FFmpeg(
         prefix_variables=rx_prefix_variables,
-        ffmpeg_path=test_config["rx"]["ffmpeg_path"],
+        ffmpeg_path=rx_host.topology.extra_info.mcm_ffmpeg_path,
         ffmpeg_input=mcm_rx_inp,
         ffmpeg_output=mcm_rx_outp,
         yes_overwrite=True,
     )
 
     logger.debug(f"Rx command: {mcm_rx_ff.get_command()}")
-    mcm_rx_executor = FFmpegExecutor(rx_host, ffmpeg_instance=mcm_rx_ff)
+    mcm_rx_executor = FFmpegExecutor(
+        rx_host, log_path=log_path, ffmpeg_instance=mcm_rx_ff
+    )
 
     mcm_rx_executor.start()
     mcm_tx_executor.start()
+    try:
+        mcm_rx_executor.wait_with_timeout(timeout=FFMPEG_RUN_TIMEOUT)
+    except Exception as e:
+        logging.warning(f"RX executor did not finish in time or error occurred: {e}")
+
     mcm_rx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
     mcm_tx_executor.stop(wait=test_config.get("test_time_sec", 0.0))
+
+    mcm_rx_executor.validate()
+    mcm_tx_executor.validate()
+
+    # TODO add validate() function to check if the output file is correct
+
+    mcm_rx_executor.cleanup()
+
+    # Write the consolidated validation summary
+    write_executor_validation_summary(log_path, mcm_tx_executor, mcm_rx_executor)
+
+    assert mcm_tx_executor.is_pass is True, "TX FFmpeg process did not pass"
+    assert mcm_rx_executor.is_pass is True, "RX FFmpeg process did not pass"
