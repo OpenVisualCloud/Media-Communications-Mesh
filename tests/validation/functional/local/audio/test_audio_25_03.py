@@ -15,9 +15,16 @@ from Engine.const import (
     MCM_RXTXAPP_RUN_TIMEOUT,
 )
 from Engine.media_files import audio_files_25_03
+from common.log_validation_utils import write_executor_validation_summary
 
 
-@pytest.mark.parametrize("file", audio_files_25_03.keys())
+@pytest.mark.parametrize(
+    "file",
+    [
+        pytest.param("PCM16_48000_Mono", marks=pytest.mark.smoke),
+        *[f for f in audio_files_25_03.keys() if f != "PCM16_48000_Stereo"],
+    ],
+)
 def test_audio_25_03(
     build_TestApp, hosts, media_proxy, media_path, file, log_path
 ) -> None:
@@ -54,14 +61,22 @@ def test_audio_25_03(
 
     try:
         if rx_executor.process.running:
+            logging.info(
+                f"Waiting up to {MCM_RXTXAPP_RUN_TIMEOUT}s for RX process to complete"
+            )
             rx_executor.process.wait(timeout=MCM_RXTXAPP_RUN_TIMEOUT)
     except Exception as e:
         logging.warning(f"RX executor did not finish in time or error occurred: {e}")
 
     tx_executor.stop()
+
     rx_executor.stop()
+
+    # TODO add validate() function to check if the output file is correct
+
+    rx_executor.cleanup()
+    # Write the consolidated validation summary
+    write_executor_validation_summary(log_path, tx_executor, rx_executor)
 
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-
-    # TODO add validate() function to check if the output file is correct

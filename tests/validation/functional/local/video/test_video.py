@@ -10,8 +10,13 @@ import pytest
 import Engine.rx_tx_app_connection
 import Engine.rx_tx_app_engine_mcm as utils
 import Engine.rx_tx_app_payload
-from Engine.const import DEFAULT_LOOP_COUNT, MCM_ESTABLISH_TIMEOUT
+from Engine.const import (
+    DEFAULT_LOOP_COUNT,
+    MCM_ESTABLISH_TIMEOUT,
+    MCM_RXTXAPP_RUN_TIMEOUT,
+)
 from Engine.media_files import yuv_files
+from common.log_validation_utils import write_executor_validation_summary
 
 logger = logging.getLogger(__name__)
 
@@ -58,7 +63,12 @@ def test_video(build_TestApp, hosts, media_proxy, media_path, file, log_path) ->
     tx_executor.stop()
     rx_executor.stop()
 
+    # TODO add validate() function to check if the output file is correct
+
+    rx_executor.cleanup()
+
+    # Write the consolidated validation summary
+    write_executor_validation_summary(log_path, tx_executor, rx_executor)
+
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-
-    # TODO add validate() function to check if the output file is correct
