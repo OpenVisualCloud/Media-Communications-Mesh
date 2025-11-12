@@ -11,6 +11,8 @@
 
 namespace mesh::log {
 
+Level currentLogLevel = Level::info;
+
 void StandardFormatter::formatMessage(std::ostringstream& ostream, Level level,
                                       const char *format, va_list args)
 {
@@ -127,21 +129,24 @@ void setFormatter(std::unique_ptr<Formatter> new_formatter)
     formatter = std::move(new_formatter);
 }
 
+void setLogLevel(Level level) {
+    currentLogLevel = level;
+}
+
 Logger::Logger(Level level, const char *format, va_list args)
 {
-    if (formatter) {
+    if (level >= currentLogLevel && formatter) {
         formatter->formatBefore(ostream);
         formatter->formatMessage(ostream, level, format, args);
     }
 }
 
-Logger::~Logger()
-{
-    if (formatter) 
-        formatter->formatAfter(ostream);
-
-    if (!ostream.str().empty())
+Logger::~Logger() {
+    if (!ostream.str().empty() && level >= currentLogLevel) {
+        if (formatter)
+            formatter->formatAfter(ostream);
         std::cout << ostream.str() << std::endl;
+    }
 }
 
 Logger info(const char* format, ...)
