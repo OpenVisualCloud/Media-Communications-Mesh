@@ -7,6 +7,7 @@ import os
 import shutil
 from ipaddress import IPv4Interface
 from pathlib import Path
+from typing import Dict
 
 from mfd_host import Host
 from mfd_connect.exceptions import (
@@ -17,6 +18,7 @@ import pytest
 
 from common.mtl_manager.mtlManager import MtlManager
 from common.nicctl import Nicctl
+
 from Engine.const import (
     ALLOWED_FFMPEG_VERSIONS,
     DEFAULT_FFMPEG_PATH,
@@ -29,15 +31,45 @@ from Engine.const import (
     DEFAULT_OPENH264_PATH,
     DEFAULT_OUTPUT_PATH,
     INTEL_BASE_PATH,
-    LOG_FOLDER,
     MCM_BUILD_PATH,
     MTL_BUILD_PATH,
     OPENH264_VERSION_TAG,
+    TESTCMD_LVL
 )
-from Engine.mcm_apps import MediaProxy, MeshAgent, get_mcm_path, get_mtl_path
+from Engine.csv_report import (
+    csv_add_test,
+    csv_write_report,
+    update_compliance_result,
+
+)
+from Engine.mcm_apps import (
+    MediaProxy,
+    MeshAgent,
+    get_mcm_path,
+    get_mtl_path,
+    get_log_folder_path,
+)
 from datetime import datetime
+from mfd_common_libs.custom_logger import add_logging_level
+from mfd_common_libs.log_levels import TEST_FAIL, TEST_INFO, TEST_PASS
+from pytest_mfd_logging.amber_log_formatter import AmberLogFormatter
+
+import re
 
 logger = logging.getLogger(__name__)
+phase_report_key = pytest.StashKey[Dict[str, pytest.CollectReport]]()
+
+
+@pytest.hookimpl(wrapper=True, tryfirst=True)
+def pytest_runtest_makereport(item, call):
+    # execute all other hooks to obtain the report object
+    rep = yield
+
+    # store test results for each phase of a call, which can
+    # be "setup", "call", "teardown"
+    item.stash.setdefault(phase_report_key, {})[rep.when] = rep
+
+    return rep
 
 
 @pytest.fixture(scope="function")
@@ -175,36 +207,58 @@ def media_path(test_config: dict) -> str:
 
 
 @pytest.fixture(scope="session")
-def log_path_dir(test_config: dict) -> str:
+def log_path_dir(test_config: dict, pytestconfig):
+    """
+    Creates and returns the main log directory path for the test session.
+
+    The directory is created under the path provided by get_log_folder_path.
+    If keep_logs is False, the existing log directory is removed before creating a new one.
+
+    :param test_config: Dictionary containing test configuration.
+    """
+    add_logging_level("TESTCMD", TESTCMD_LVL)
     keep_logs = test_config.get("keep_logs", True)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     log_dir_name = f"log_{timestamp}"
-    validation_dir = Path(__file__).parent
-    log_path = test_config.get("log_path")
-    log_dir = Path(log_path) if log_path else Path(validation_dir, LOG_FOLDER)
+    log_dir = get_log_folder_path(test_config)
 
     if log_dir.exists() and not keep_logs:
         shutil.rmtree(log_dir)
     log_dir = Path(log_dir, log_dir_name)
     log_dir.mkdir(parents=True, exist_ok=True)
-    return str(log_dir)
+    yield str(log_dir)
+    pytest_log = Path(pytestconfig.inicfg["log_file"])
+    shutil.copy(str(pytest_log), log_dir / pytest_log.name)
+    csv_write_report(str(log_dir / "report.csv"))
+
+
+def sanitize_name(test_name):
+    """
+    Sanitizes a test name by replacing invalid characters with underscores,
+    collapsing multiple underscores into one, and removing leading/trailing underscores.
+    """
+    sanitized_name = re.sub(r'[|<>:"*?\r\n\[\]]| = |_{2,}', "_", test_name)
+    sanitized_name = re.sub(r"_{2,}", "_", sanitized_name).strip("_")
+    return sanitized_name
 
 
 @pytest.fixture(scope="function")
-def log_path(log_path_dir: str, request) -> str:
+def log_path(log_path_dir: str, request) -> Path:
     """
     Create a test-specific subdirectory within the main log directory.
+    Sanitizes test names to ensure valid directory names by replacing invalid characters.
 
-    :param log_path: The main log directory path from the log_path fixture.
-    :type log_path: str
+    :param log_path_dir: The main log directory path from the log_path_dir fixture.
+    :type log_path_dir: str
     :param request: Pytest request object to get test name.
     :return: Path to test-specific log subdirectory.
     :rtype: str
     """
     test_name = request.node.name
-    test_log_path = Path(log_path_dir, test_name)
+    sanitized_name = sanitize_name(test_name)
+    test_log_path = Path(log_path_dir, sanitized_name)
     test_log_path.mkdir(parents=True, exist_ok=True)
-    return str(test_log_path)
+    return Path(test_log_path)
 
 
 @pytest.fixture(scope="session")
@@ -300,22 +354,19 @@ def mtl_manager(hosts):
 @pytest.fixture(scope="session", autouse=True)
 def cleanup_processes(hosts: dict) -> None:
     """
-    Kills mesh-agent, media_proxy, ffmpeg, and all Rx*App and Tx*App processes on all hosts before running the tests.
+    Kill mesh-agent, media_proxy, ffmpeg, and all Rx*App/Tx*App processes on all hosts before running tests.
     """
     for host in hosts.values():
+        connection = host.connection
         for proc in ["mesh-agent", "media_proxy", "ffmpeg"]:
             try:
-                connection = host.connection
-                # connection.enable_sudo()
                 connection.execute_command(f"pgrep {proc}", stderr_to_stdout=True)
                 connection.execute_command(f"pkill -9 {proc}", stderr_to_stdout=True)
             except Exception as e:
-                logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
-        # Kill all Rx*App and Tx*App processes (e.g., RxVideoApp, RxAudioApp, RxBlobApp, TxVideoApp, etc.)
+                if not (hasattr(e, "returncode") and e.returncode == 1):
+                    logger.warning(f"Failed to check/kill {proc} on {host.name}: {e}")
         for pattern in ["^Rx[A-Za-z]+App$", "^Tx[A-Za-z]+App$"]:
             try:
-                connection = host.connection
-                # connection.enable_sudo()
                 connection.execute_command(
                     f"pgrep -f '{pattern}'", stderr_to_stdout=True
                 )
@@ -323,9 +374,10 @@ def cleanup_processes(hosts: dict) -> None:
                     f"pkill -9 -f '{pattern}'", stderr_to_stdout=True
                 )
             except Exception as e:
-                logger.warning(
-                    f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"
-                )
+                if not (hasattr(e, "returncode") and e.returncode == 1):
+                    logger.warning(
+                        f"Failed to check/kill processes matching {pattern} on {host.name}: {e}"
+                    )
     logger.info("Cleanup of processes completed.")
 
 
@@ -787,3 +839,35 @@ def log_interface_driver_info(hosts: dict[str, Host]) -> None:
             logger.info(
                 f"Interface {interface.name} on host {host.name} uses driver: {driver_info.driver_name} ({driver_info.driver_version})"
             )
+
+
+@pytest.fixture(scope="function", autouse=True)
+def log_case(request, caplog: pytest.LogCaptureFixture):
+    case_id = request.node.nodeid
+    yield
+    report = request.node.stash[phase_report_key]
+    if report["setup"].failed:
+        logging.log(level=TEST_FAIL, msg=f"Setup failed for {case_id}")
+        result = "Fail"
+    elif ("call" not in report) or report["call"].failed:
+        logging.log(level=TEST_FAIL, msg=f"Test failed for {case_id}")
+        result = "Fail"
+    elif report["call"].passed:
+        logging.log(level=TEST_PASS, msg=f"Test passed for {case_id}")
+        result = "Pass"
+    else:
+        logging.log(level=TEST_INFO, msg=f"Test skipped for {case_id}")
+        result = "Skip"
+
+    commands = []
+    for record in caplog.get_records("call"):
+        if record.levelno == TESTCMD_LVL:
+            commands.append(record.message)
+
+    csv_add_test(
+        test_case=case_id,
+        commands="\n".join(commands),
+        result=result,
+        issue="n/a",
+        result_note="n/a",
+    )

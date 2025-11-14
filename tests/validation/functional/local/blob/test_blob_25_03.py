@@ -18,6 +18,7 @@ from Engine.const import (
 from Engine.media_files import blob_files_25_03
 
 
+@pytest.mark.smoke
 @pytest.mark.parametrize("file", [file for file in blob_files_25_03.keys()])
 def test_blob_25_03(
     build_TestApp, hosts, media_proxy, media_path, file, log_path
@@ -62,7 +63,9 @@ def test_blob_25_03(
     tx_executor.stop()
     rx_executor.stop()
 
+    # TODO add validate() function to check if the output file is correct
+
+    rx_executor.cleanup()
+
     assert tx_executor.is_pass is True, "TX process did not pass"
     assert rx_executor.is_pass is True, "RX process did not pass"
-
-    # TODO add validate() function to check if the output file is correct
