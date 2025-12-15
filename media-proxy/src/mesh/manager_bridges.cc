@@ -257,9 +257,10 @@ int BridgesManager::create_bridge(context::Context& ctx, Connection*& bridge,
         // Create Ingress RDMA Bridge
         } else if (cfg.kind == Kind::receiver) {
             auto ingress_bridge = new(std::nothrow) RdmaRx;
-            if (!ingress_bridge)
+            if (!ingress_bridge) {
                 free(_rdma_provider_dup);
                 return -ENOMEM;
+            }
 
             req.type = is_rx;
             
